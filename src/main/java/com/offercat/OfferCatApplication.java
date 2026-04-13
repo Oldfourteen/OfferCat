@@ -9,5 +9,4 @@ public class OfferCatApplication {
     public static void main(String[] args) {
         SpringApplication.run(OfferCatApplication.class, args);
     }
-
 }

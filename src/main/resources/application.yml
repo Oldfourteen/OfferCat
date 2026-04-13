@@ -1,0 +1,12 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: offercat-backend
+
+# 也可以在这里配置数据库、日志等
+logging:
+  level:
+    root: INFO
+    com.offercat: DEBUG

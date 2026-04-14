@@ -1,0 +1,75 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: offercat-backend
+  
+  # 数据库配置 - 使用MySQL数据库
+  datasource:
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    url: jdbc:mysql://localhost:3306/offer_cat
+    username: root
+    password: 123456
+  
+  # MyBatis配置
+  mybatis:
+    mapper-locations: classpath:mapper/**/*.xml
+    type-aliases-package: com.offercat.entity
+  
+  # 缓存配置
+  cache:
+    type: redis
+    redis:
+      time-to-live: 3600000
+      cache-names: careerProfileCache,resumeCache
+  data:
+    redis:
+      host: localhost
+      port: 6379
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.offercat: DEBUG
+    org.mybatis: DEBUG
+
+# Actuator监控配置
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,configprops,env
+      base-path: /actuator
+  endpoint:
+    health:
+      show-details: always
+      probes:
+        enabled: true
+    metrics:
+      enabled: true
+    prometheus:
+      enabled: true
+  metrics:
+    tags:
+      application: ${spring.application.name}
+  prometheus:
+    metrics:
+      export:
+        enabled: true
+
+# Seata分布式事务配置
+seata:
+  enabled: true
+  application-id: offercat-backend
+  tx-service-group: offercat_group
+  service:
+    vgroup-mapping:
+      offercat_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  config:
+    type: file
+  registry:
+    type: file

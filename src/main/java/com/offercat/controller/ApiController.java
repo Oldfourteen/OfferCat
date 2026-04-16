@@ -18,7 +18,6 @@ public class ApiController {
         Map<String, Object> response = new HashMap<>();
         response.put("code", 200);
         response.put("message", "后端接口调用成功！");
-        response.put("data", "这是来自 Java SpringBoot 的数据");
         return response;
     }
 }

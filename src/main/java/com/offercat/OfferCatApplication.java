@@ -23,7 +23,7 @@ public class OfferCatApplication {
     
     /**
      * 配置ObjectMapper
-     * @return ObjectMapper实例
+     * @return ObjectMapper
      */
     @Bean
     public ObjectMapper objectMapper() {

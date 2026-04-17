@@ -1,4 +1,4 @@
-package com.offercat.Dao;
+package com.offercat.dao;
 
 import com.offercat.entity.Resume;
 import org.apache.ibatis.annotations.Mapper;
@@ -18,7 +18,7 @@ public interface ResumeMapper {
      * @param studentId 学生ID
      * @return 简历列表
      */
-    List<Resume> findByStudentId(@Param("studentId") Long studentId);
+    List<Resume> findByStudentId(@Param("stuxudentId") Long studentId);
     
     /**
      * 根据ID获取简历详情

@@ -4,6 +4,10 @@ spring:
   application:
     name: offercat-backend
 
+deepseek:
+  api-key: "sk-9ade88d5f7884100892bb3b01a85a29f"
+  base-url: "https://api.deepseek.com"
+
 logging:
   level:
     root: INFO

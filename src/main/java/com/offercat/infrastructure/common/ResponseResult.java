@@ -52,6 +52,13 @@ public class ResponseResult<T> {
         result.setData(null);
         return result;
     }
+
+    /**
+     * 错误响应 (默认状态码 500)
+     */
+    public static <T> ResponseResult<T> error(String message) {
+        return error(500, message);
+    }
     
     /**
      * 参数错误响应

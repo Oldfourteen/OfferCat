@@ -4,6 +4,13 @@ spring:
   application:
     name: offercat-backend
 
+# 短信宝配置
+smsbao:
+  username: ofteen  # 填写您的短信宝账号
+  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
+  api-url: https://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
+  sign: "【OfferCat】"           # 短信签名，需在短信宝后台报备
+
 deepseek:
   api-key: "sk-9ade88d5f7884100892bb3b01a85a29f"
   base-url: "https://api.deepseek.com"

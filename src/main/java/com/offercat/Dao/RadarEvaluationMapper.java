@@ -1,4 +1,4 @@
-package com.offercat.dao;
+package com.offercat.Dao;
 
 import com.offercat.entity.RadarEvaluation;
 import org.apache.ibatis.annotations.Mapper;

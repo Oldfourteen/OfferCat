@@ -2,17 +2,19 @@ package com.offercat.service;
 
 import com.offercat.dao.AIMessageMapper;
 import com.offercat.entity.AiConsult;
-import com.offercat.infrastructure.common.AiConstants;
 import com.offercat.infrastructure.common.MajorEnum;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
+import org.springframework.util.StreamUtils;
 import org.springframework.web.client.RestTemplate;
 
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -23,7 +25,7 @@ import java.util.Map;
  * @author: Ofteen
  * @data: 2026/4/17 - 19:42
  * @mail: oldfourteen41@gmail.com
- * @info:
+ * @info: DeepSeekChat的服务层，进行事件处理相关内容，包括
  */
 
 @Service
@@ -38,10 +40,21 @@ public class DeepSeekChatServices {
 
     private final RestTemplate restTemplate = new RestTemplate();
 
+    //从 resources/skills 目录下读取 Markdown 格式的 Skill 定义
+    private String loadSkillPrompt(String skillFileName) {
+        try {
+            ClassPathResource resource = new ClassPathResource("skills/" + skillFileName);
+            return StreamUtils.copyToString(resource.getInputStream(), StandardCharsets.UTF_8);
+        } catch (Exception e) {
+            return "你是一个专业的AI助手。";
+        }
+    }
+
     public String chatWithAI(Long userId, String majorCode, String userQuestion){
-        //获取专业名并生成 Prompt
+        // 1. 获取专业名并从 Markdown 文件加载 Skill Prompt
         String majorName = MajorEnum.getNameByCode(majorCode);
-        String systemPrompt = String.format(AiConstants.HR_SYSTEM_PROMPT, majorName);
+        String skillTemplate = loadSkillPrompt("hr_consultant.md");
+        String systemPrompt = String.format(skillTemplate, majorName);
 
 
         //组装发给DeepSeek的请求体

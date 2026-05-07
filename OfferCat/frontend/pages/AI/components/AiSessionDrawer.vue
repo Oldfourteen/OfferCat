@@ -1,12 +1,15 @@
 <template>
 	<view v-if="visible" class="drawer-wrap">
+		<!-- 蒙层：点击空白处关闭会话抽屉 -->
 		<view class="drawer-mask" @click="$emit('close')"></view>
 		<view class="drawer-panel-wrapper">
 			<view class="drawer-panel" :class="themeClass">
+				<!-- 抽屉头部：标题 + 新建会话入口 -->
 				<view class="drawer-head">
 					<text class="drawer-title">对话列表</text>
 					<view class="drawer-create" @click="$emit('create')">新建</view>
 				</view>
+				<!-- 会话列表：支持切换、重命名和删除单个会话 -->
 				<scroll-view class="drawer-list" scroll-y>
 					<view
 						v-for="item in conversations"
@@ -15,6 +18,7 @@
 						:class="{ active: item.id === activeId }"
 						@click="$emit('select', item.id)"
 					>
+						<!-- 重命名态：显示输入框，失焦或回车后提交 -->
 						<input
 							v-if="editingId === item.id"
 							class="drawer-item-input"
@@ -25,6 +29,7 @@
 							@confirm="confirmRename(item.id)"
 							@click.stop
 						/>
+						<!-- 常规展示态：显示标题、摘要、更新时间和操作按钮 -->
 						<text v-else class="drawer-item-title">{{ item.title }}</text>
 						<text class="drawer-item-preview">{{ item.preview }}</text>
 						<text class="drawer-item-time">{{ item.updatedAt }}</text>

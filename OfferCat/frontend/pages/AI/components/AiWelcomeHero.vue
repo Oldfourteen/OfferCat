@@ -1,4 +1,5 @@
-<template><!-- 空页面 -->
+<template>
+	<!-- 欢迎区：当前对话为空时，告诉用户这是一个求职 AI 助手页面 -->
 	<view class="welcome" :class="themeClass">
 		<text class="welcome-title">同学，很高兴见到你</text>
 		<text class="welcome-subtitle">有什么求职相关的问题需要我帮忙解答吗？</text>

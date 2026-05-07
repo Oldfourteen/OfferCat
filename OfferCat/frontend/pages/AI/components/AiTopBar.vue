@@ -1,10 +1,13 @@
-<template><!-- //顶部 -->
+<template>
 	<view class="topbar" :class="themeClass">
+		<!-- 左侧菜单按钮：打开会话抽屉 -->
 		<view class="icon-btn" @click="$emit('menu')">
 			<view class="menu-line"></view>
 			<view class="menu-line short"></view>
 		</view>
+		<!-- 中间标题：显示当前会话名称 -->
 		<text class="topbar-title">{{ title }}</text>
+		<!-- 右侧新建按钮：快速创建空白会话 -->
 		<view class="icon-btn create" @click="$emit('create')">+</view>
 	</view>
 </template>

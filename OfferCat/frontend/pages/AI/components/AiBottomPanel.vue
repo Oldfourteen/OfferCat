@@ -1,5 +1,6 @@
 <template>
 	<view class="bottom-panel" :class="[{ compact: compact }, themeClass, { 'recording-lock': recording }]" @click="handleRootClick">
+		<!-- 快捷功能条：让用户一键切换简历润色、面试、岗位分析等模式 -->
 		<scroll-view class="actions-scroll" scroll-x :show-scrollbar="false">
 			<view class="actions-row">
 				<view
@@ -15,7 +16,9 @@
 			</view>
 		</scroll-view>
 
+		<!-- 输入区主体：承载图片草稿、多行文本框和发送按钮 -->
 		<view class="composer-shell">
+			<!-- 图片草稿区：发送前先预览已选中的图片 -->
 			<view v-if="images && images.length" class="composer-images">
 				<view v-for="(img, index) in images" :key="index" class="composer-image-item">
 					<image :src="img" mode="aspectFill" class="img-content" />
@@ -24,6 +27,7 @@
 					</view>
 				</view>
 			</view>
+			<!-- 文本输入行：左侧展开更多，中间输入，右侧发送 -->
 			<view class="composer-row" :class="{ 'is-disabled': disabledInput }">
 				<view class="composer-add" @click.stop="toggleMore">+</view>
 				<textarea
@@ -49,8 +53,10 @@
 			</view>
 		</view>
 
+		<!-- 更多功能蒙层：点空白收起相册/录音面板 -->
 		<view v-if="moreVisible" class="more-mask" @tap="closeMore"></view>
 
+		<!-- 更多功能面板：当前提供相册和按住说话两个入口 -->
 		<view class="more-panel" :class="{ open: moreVisible }" @click.stop>
 			<view class="more-grid">
 				<view class="more-item album-item" @click="pickAlbum">
@@ -70,6 +76,7 @@
 			</view>
 		</view>
 
+		<!-- 录音提示：录音中展示波形，提示用户当前处于语音输入状态 -->
 		<view v-if="recording" class="voice-hint">
 			<view class="voice-wave">
 				<view class="voice-bar b1"></view>
@@ -156,10 +163,12 @@
 			}
 		},
 		methods: {
+			// 面试锁定期间，子组件把操作升级为父组件弹窗提示。
 			showInterviewLockedToast() {
 				// 将子组件的 Toast 改为触发父组件的方法以显示弹窗
 				this.$parent.showGiveUpModal = true
 			},
+			// 图片管理：删除已选图片，并同步给父组件更新草稿状态。
 			handleRemoveImage(index) {
 				if (this.recording || this.disabledInput) return
 				this.$emit('remove-image', index)
@@ -169,6 +178,7 @@
 					this.moreVisible = false
 				}
 			},
+			// 快捷模式入口：点击功能卡片时通知父页面切换模式。
 			handleSelect(text) {
 				if (this.interviewLock) {
 					this.showInterviewLockedToast()
@@ -180,6 +190,7 @@
 				this.moreVisible = false
 				this.$emit('select', text)
 			},
+			// 更多面板：控制相册/录音入口的开关显示。
 			toggleMore() {
 				if (this.recording || this.disabledInput) {
 					return
@@ -210,6 +221,7 @@
 					}
 				})
 			},
+			// 录音管理：统一处理录音器实例、开始录音与结束录音事件。
 			getRecorderManager() {
 				if (this.recorderManager) {
 					return this.recorderManager
@@ -275,6 +287,7 @@
 				}
 				this.startVoice()
 			},
+			// 输入与发送：同步多行高度，并在满足条件时触发父组件发送消息。
 			onInput(event) {
 				if (this.recording) {
 					return

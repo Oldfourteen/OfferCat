@@ -1,4 +1,4 @@
-<template><!-- //对话 -->
+<template>
 	<view v-if="messages.length" class="message-list" :class="themeClass">
 		<view
 			v-for="item in renderedMessages"
@@ -6,12 +6,14 @@
 			class="message-row"
 			:class="item.role"
 		>
+			<!-- 头像区：AI 固定头像，用户走通用头像组件 -->
 			<view class="avatar">
 				<image v-if="item.role === 'assistant'" class="avatar-img" src="@/asset/image/AIHR.png" mode="aspectFill"></image>
 				<CommonAvatar v-else class="avatar-img" :src="userAvatar" image-class="avatar-img" />
 			</view>
 			<view class="bubble-wrap">
 				<view class="bubble" :class="{ loading: item.loading }">
+					<!-- 图片消息：支持一张或多张图片预览 -->
 					<view v-if="item.filePaths && item.filePaths.length" class="bubble-image-grid" :style="{ marginBottom: item.text ? '12rpx' : '0' }">
 						<image
 							v-for="(src, index) in item.filePaths"
@@ -30,8 +32,10 @@
 						:style="{ marginBottom: item.text ? '12rpx' : '0' }"
 						@tap="previewImages([item.filePath], 0)"
 					/>
+					<!-- 文本消息：AI 使用 markdown 渲染，用户使用纯文本渲染 -->
 					<rich-text v-if="item.text" class="bubble-rich text-wrap-safe" :nodes="item.html"></rich-text>
 				</view>
+				<!-- 底部信息：显示发送时间，以及 AI 语音播报按钮 -->
 				<view class="message-footer">
 					<text class="time">{{ item.time }}</text>
 					<view v-if="item.role === 'assistant' && item.text && !item.loading" class="voice-btn" @tap="handlePlayVoice(item)">
@@ -107,10 +111,12 @@
 			}
 		},
 		methods: {
+			// 同步用户头像，保证聊天页头像与个人资料保持一致。
 			updateProfile() {
 				const user = getUserProfile()
 				this.userAvatar = user.avatar
 			},
+			// 把 AI 文本交给语音接口播报，再维护当前播放状态。
 			async handlePlayVoice(item) {
 				if (this.playingId === item.id) {
 					// 如果正在播放当前音频，则停止
@@ -147,6 +153,7 @@
 					uni.showToast({ title: e.message || '语音播报失败', icon: 'none' })
 				}
 			},
+			// 点击图片后打开系统预览器，同时避免返回页面时误刷新聊天页。
 			previewImages(urls, index = 0) {
 				const list = Array.isArray(urls) ? urls.filter(Boolean) : []
 				if (!list.length) {

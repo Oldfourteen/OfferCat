@@ -1,5 +1,6 @@
 <template>
 	<view class="ai-page" :class="themeClass" :key="refreshSeed">
+		<!-- 会话抽屉：管理历史对话、切换会话、重命名和删除 -->
 		<AiSessionDrawer
 			:visible="drawerVisible"
 			:conversations="conversations"
@@ -13,6 +14,7 @@
 		/>
 
 		<view class="ai-shell">
+			<!-- 顶部栏：展示当前会话标题，并提供菜单/新建入口 -->
 			<view class="animate-fade-down" style="animation-delay: 0.1s; position: relative; z-index: 10;">
 				<AiTopBar
 					:title="currentConversation.title"
@@ -22,6 +24,7 @@
 				/>
 			</view>
 
+			<!-- 主滚动区：承载欢迎区、消息流和底部留白，保证聊天区可滚动 -->
 			<scroll-view
 				class="ai-scroll animate-item"
 				style="animation-delay: 0.2s;"
@@ -33,13 +36,18 @@
 				@scroll="onScroll"
 			>
 				<view class="ai-scroll-inner">
+					<!-- 空会话欢迎区：当前没有消息时给用户一个功能入口提示 -->
 					<AiWelcomeHero v-if="!hasMessages" :theme="theme" />
+					<!-- 消息列表：统一渲染用户消息、AI 回复、图片和语音播报入口 -->
 					<AiMessageList :messages="currentConversation.messages" :theme="theme" @preview="skipNextOnShow = true" />
+					<!-- 底部锚点：用于自动滚动到最新消息 -->
 					<view id="ai-scroll-anchor" class="ai-scroll-anchor"></view>
+					<!-- 底部占位：避免输入面板遮挡最后一条消息 -->
 					<view class="ai-bottom-space" :style="aiBottomSpaceStyle"></view>
 				</view>
 			</scroll-view>
 
+			<!-- 底部输入面板：快捷模式、图文输入、录音输入都在这里完成 -->
 			<view class="ai-bottom animate-slide-up" style="animation-delay: 0.3s;" @tap.stop>
 				<AiBottomPanel
 					ref="bottomPanel"
@@ -62,6 +70,7 @@
 				/>
 			</view>
 
+			<!-- 面试锁定弹窗：模拟面试进行中时拦截退出和切换操作 -->
 			<view v-if="showGiveUpModal" class="give-up-modal-mask" @tap="cancelGiveUp">
 				<view class="give-up-modal" @tap.stop>
 					<view class="modal-title">确定要放弃面试吗？</view>
@@ -87,10 +96,12 @@
 	import { BASE_URL } from '@/api/config.js'
 	import { saveQuestionHistory } from '@/utils/questionHistory.js'
 
+	// 统一生成聊天时间文案，当前页面都按即时消息处理。
 	function getTimestamp() {
 		return '刚刚'
 	}
 
+	// 占位中的 AI 消息，先渲染 loading，再用流式结果替换。
 	function createPendingAssistantMessage() {
 		return {
 			id: Date.now() + 1,
@@ -124,13 +135,17 @@
 		data() {
 			const firstConversation = createConversationItem(1)
 			return {
+				// 抽屉与输入状态
 				drawerVisible: false,
 				draft: '',
 				sending: false,
+				// 布局与滚动状态
 				bottomPanelHeight: 0,
 				scrollIntoViewId: '',
+				// 会话数据
 				activeConversationId: firstConversation.id,
 				conversations: [firstConversation],
+				// 快捷功能模式
 				quickActions: [
 					{ id: 1, icon: '简', text: '帮我润色简历经历', mode: 'RESUME_POLISH' },
 					{ id: 4, icon: 'AI', text: '开启HR模拟面试', mode: 'AIHR' },
@@ -138,12 +153,14 @@
 					{ id: 3, icon: '岗', text: '分析岗位匹配度', mode: 'JOB_MATCH' }
 				],
 				currentMode: '',
+				// 键盘与面试流程控制
 				keyboardHeight: 0,
 				isKeyboardVisible: false,
 				isInterviewMode: false,
 				interviewEnded: false,
 				hasRecordedInterview: false,
 				showGiveUpModal: false,
+				// 页面刷新与自动滚动控制
 				refreshSeed: 0,
 				isUserScrolling: false,
 				userHasScrolled: false,
@@ -152,6 +169,7 @@
 			}
 		},
 		computed: {
+			// 当前正在查看的会话对象，所有消息发送/展示都以它为准。
 			currentConversation() {
 				return this.conversations.find(item => item.id === this.activeConversationId) || this.conversations[0]
 			},
@@ -172,6 +190,7 @@
 			}
 		},
 		watch: {
+			// 切换会话或消息区状态变化后，重新同步底部布局。
 			activeConversationId() {
 				this.handleBottomLayoutChange(true)
 				this.saveLocalConversations()
@@ -189,6 +208,7 @@
 				}
 			}
 		},
+		// 生命周期：负责恢复会话、监听键盘以及处理中断中的面试状态。
 		mounted() {
 			this.handleBottomLayoutChange(true)
 			this.initKeyboardListener()
@@ -240,6 +260,7 @@
 			}
 		},
 		methods: {
+			// 本地/云端历史：优先恢复缓存，再补充云端聊天记录。
 			loadLocalConversations() {
 				try {
 					const user = uni.getStorageSync('user')
@@ -345,6 +366,7 @@
 				// 将原本简单的 Toast 提示改为直接弹窗确认
 				this.showGiveUpModal = true
 			},
+			// 底部布局与键盘：保证输入区高度变化后，消息区仍能保持在可读位置。
 			closeBottomMore() {
 				const panel = this.$refs.bottomPanel
 				if (panel && typeof panel.closeMore === 'function') {
@@ -409,6 +431,7 @@
 			closeDrawer() {
 				this.drawerVisible = false
 			},
+			// 会话管理：新建、切换、重命名、删除都统一在父页面处理。
 			createConversation(silent = false) {
 				if (this.isLocked) {
 					this.showGiveUpModal = true
@@ -508,6 +531,7 @@
 				}
 				this.handleBottomLayoutChange(true)
 			},
+			// 快捷模式：负责切换简历润色、HR 面试、群面、岗位匹配等入口状态。
 			useQuickAction(text) {
 				const action = this.quickActions.find(a => a.text === text)
 
@@ -555,6 +579,7 @@
 				this.draft = ''
 				this.sendMessage(text, isHidden)
 			},
+			// 多模态输入：处理图片草稿、录音转文字和逐字填充输入框。
 			handlePickImage(filePaths) {
 				const paths = (Array.isArray(filePaths) ? filePaths : [filePaths]).filter(Boolean)
 				if (!paths.length) {
@@ -612,6 +637,7 @@
 					}
 				}, 30)
 			},
+			// 消息滚动：用户手动上滑时暂停自动滚到底，避免打断阅读。
 			onScroll(e) {
 				const { scrollHeight, scrollTop } = e.detail
 				
@@ -636,6 +662,7 @@
 					this.scrollIntoViewId = 'ai-scroll-anchor'
 				})
 			},
+			// 发送消息：组装用户消息、插入 AI 占位、并发起流式回复请求。
 			async sendMessage(content, isHidden = false) {
 				const textContent = typeof content === 'string' ? content : ''
 								this.userHasScrolled = false; // Reset scroll flag
@@ -731,6 +758,7 @@
 					}
 				)
 			},
+			// AI 回复回填：流式更新文本，同时判断模拟面试是否已经结束。
 			replaceAssistantReply(conversationId, messageId, text) {
 				let interviewEndedNow = false;
 				if (this.isInterviewMode && !this.interviewEnded) {

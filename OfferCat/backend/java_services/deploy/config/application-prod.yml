@@ -1,0 +1,30 @@
+# 生产环境配置覆盖
+# 此文件放置于服务器 D:\offercat\config\application-prod.yml
+# 所有微服务在 prod profile 下均会加载此文件（优先级高于 jar 内置配置）
+
+# 关闭 Seata 分布式事务（无 Seata Server 时必须关闭，否则服务无法启动）
+seata:
+  enabled: false
+
+# 短信宝配置
+smsbao:
+  username: ofteen  # 填写您的短信宝账号
+  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
+  api-url: https://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
+  sign: "【OfferCat】"           # 临时改为【OfferCat】签名试试
+spring:
+  data:
+    redis:
+      timeout: 3000
+      lettuce:
+        pool:
+          max-active: 8
+          max-wait: 3000
+
+radar:
+  cpp:
+    # c++ 雷达评分分析 端口：22565
+    base-url: http://[::1]:22565
+  python:
+    # Python 雷达图生成服务 端口15000
+    base-url: http://127.0.0.1:15000

@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.CompetitionAwardMapper">
+
+    <select id="getByStudentId" resultType="com.offercat.student.entity.CompetitionAward">
+        SELECT award_id as awardId, student_id as studentId, competition_name as competitionName,
+               award_grade as awardGrade, award_time as awardTime, achievement_desc as achievementDesc,
+               create_time as createTime
+        FROM competition_award
+        WHERE student_id = #{studentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="awardId">
+        INSERT INTO competition_award (
+            student_id, competition_name, award_grade, award_time, achievement_desc
+        ) VALUES (
+            #{studentId}, #{competitionName}, #{awardGrade}, #{awardTime}, #{achievementDesc}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE competition_award
+        <set>
+            <if test="competitionName != null">competition_name = #{competitionName},</if>
+            <if test="awardGrade != null">award_grade = #{awardGrade},</if>
+            <if test="awardTime != null">award_time = #{awardTime},</if>
+            <if test="achievementDesc != null">achievement_desc = #{achievementDesc},</if>
+        </set>
+        WHERE award_id = #{awardId} AND student_id = #{studentId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM competition_award
+        WHERE award_id = #{awardId} AND student_id = #{studentId}
+    </delete>
+
+</mapper>

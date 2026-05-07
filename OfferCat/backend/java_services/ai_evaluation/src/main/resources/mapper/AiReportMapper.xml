@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.ai.dao.AiReportMapper">
+    <resultMap id="BaseResultMap" type="com.offercat.ai.entity.AiReport">
+        <id column="report_id" property="reportId"/>
+        <result column="student_id" property="studentId"/>
+        <result column="total_score" property="totalScore"/>
+        <result column="advantage" property="advantage"/>
+        <result column="disadvantage" property="disadvantage"/>
+        <result column="career_suggest" property="careerSuggest"/>
+        <result column="create_time" property="createTime"/>
+    </resultMap>
+
+    <select id="findByStudentId" resultMap="BaseResultMap">
+        SELECT * FROM ai_report WHERE student_id = #{studentId} ORDER BY create_time DESC LIMIT 1
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM ai_report WHERE report_id = #{reportId}
+    </select>
+
+    <insert id="insert" parameterType="com.offercat.ai.entity.AiReport" useGeneratedKeys="true" keyProperty="reportId">
+        INSERT INTO ai_report (student_id, total_score, advantage, disadvantage, career_suggest, create_time)
+        VALUES (#{studentId}, #{totalScore}, #{advantage}, #{disadvantage}, #{careerSuggest}, NOW())
+    </insert>
+
+    <update id="update" parameterType="com.offercat.ai.entity.AiReport">
+        UPDATE ai_report SET
+            total_score = #{totalScore},
+            advantage = #{advantage},
+            disadvantage = #{disadvantage},
+            career_suggest = #{careerSuggest}
+        WHERE report_id = #{reportId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM ai_report WHERE report_id = #{reportId}
+    </delete>
+</mapper>

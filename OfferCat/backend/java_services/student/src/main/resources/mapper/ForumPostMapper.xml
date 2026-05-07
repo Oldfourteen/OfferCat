@@ -1,0 +1,130 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.ForumPostMapper">
+
+    <select id="searchPosts" resultType="com.offercat.student.vo.ForumPostVO">
+        SELECT
+            p.post_id AS postId,
+            p.user_id AS userId,
+            u.nickname AS authorName,
+            u.avatar AS authorAvatar,
+            p.title,
+            p.content,
+            p.images,
+            p.like_count AS likeCount,
+            p.comment_count AS commentCount,
+            p.view_count AS viewCount,
+            p.status,
+            p.create_time AS createTime,
+            p.update_time AS updateTime
+        FROM forum_post p
+        LEFT JOIN `user` u ON p.user_id = u.user_id
+        <where>
+            p.status = 1 <!-- 只查询正常状态的帖子 -->
+            <if test="keyword != null and keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%') OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+        <if test="orderBy != null and orderBy != ''">
+            ORDER BY ${orderBy}
+        </if>
+        <if test="limit != null and offset != null">
+            LIMIT #{offset}, #{limit}
+        </if>
+    </select>
+
+    <select id="countSearchPosts" resultType="long">
+        SELECT COUNT(*)
+        FROM forum_post p
+        <where>
+            p.status = 1
+            <if test="keyword != null and keyword != ''">
+                AND (p.title LIKE CONCAT('%', #{keyword}, '%') OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+        </where>
+    </select>
+
+    <select id="getPostDetail" resultType="com.offercat.student.vo.ForumPostVO">
+        SELECT
+            p.post_id AS postId,
+            p.user_id AS userId,
+            u.nickname AS authorName,
+            u.avatar AS authorAvatar,
+            p.title,
+            p.content,
+            p.images,
+            p.like_count AS likeCount,
+            p.comment_count AS commentCount,
+            p.view_count AS viewCount,
+            p.status,
+            p.create_time AS createTime,
+            p.update_time AS updateTime
+        FROM forum_post p
+        LEFT JOIN `user` u ON p.user_id = u.user_id
+        WHERE p.post_id = #{postId} AND p.status = 1
+    </select>
+
+
+
+    <select id="findLike" resultType="java.lang.Integer">
+        SELECT COUNT(*)
+        FROM forum_post_like
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <insert id="insertLike">
+        INSERT INTO forum_post_like(post_id, user_id)
+        VALUES(#{postId}, #{userId})
+    </insert>
+
+    <delete id="deleteLike">
+        DELETE FROM forum_post_like
+        WHERE post_id = #{postId} AND user_id = #{userId}
+    </delete>
+
+    <update id="incrementViewCount">
+        UPDATE forum_post
+        SET view_count = view_count + 1
+        WHERE post_id = #{postId}
+    </update>
+
+    <update id="incrementCommentCount">
+        UPDATE forum_post
+        SET comment_count = comment_count + 1
+        WHERE post_id = #{postId}
+    </update>
+
+    <select id="getCommentsByPostId" resultType="com.offercat.student.vo.ForumCommentVO">
+        SELECT
+            c.comment_id AS commentId,
+            c.post_id AS postId,
+            c.user_id AS userId,
+            u.nickname AS authorName,
+            u.avatar AS authorAvatar,
+            c.content,
+            c.create_time AS createTime
+        FROM forum_comment c
+        LEFT JOIN `user` u ON c.user_id = u.user_id
+        WHERE c.post_id = #{postId} AND c.status = 1
+        ORDER BY c.create_time DESC
+    </select>
+
+    <insert id="insertComment" parameterType="com.offercat.student.dto.ForumCommentDTO">
+        INSERT INTO forum_comment(post_id, user_id, content)
+        VALUES(#{postId}, #{userId}, #{content})
+    </insert>
+
+    <insert id="insertPost">
+        INSERT INTO forum_post(user_id, title, content, images, status, create_time, update_time)
+        VALUES(#{userId}, #{title}, #{content}, #{images, jdbcType=VARCHAR}, 1, NOW(), NOW())
+    </insert>
+
+    <update id="deletePost">
+        UPDATE forum_post
+        SET status = 0, update_time = NOW()
+        WHERE post_id = #{postId} AND user_id = #{userId} AND status = 1
+    </update>
+
+</mapper>

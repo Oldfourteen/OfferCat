@@ -1,0 +1,89 @@
+server:
+  port: 14132
+
+spring:
+  codec:
+    max-in-memory-size: 50MB
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      discovery:
+        locator:
+          enabled: true
+          lower-case-service-id: true
+      routes:
+        - id: user-service-auth
+          uri: lb://user-service
+          predicates:
+            - Path=/auth/**
+
+        - id: user-service-api
+          uri: lb://user-service
+          predicates:
+            - Path=/api/user/**
+
+        - id: user-service-profile
+          uri: lb://user-service
+          predicates:
+            - Path=/user/**
+
+        - id: ai-evaluation-service
+          uri: lb://ai-evaluation-service
+          predicates:
+            - Path=/api/ai/**
+
+        - id: resume-service
+          uri: lb://resume-service
+          predicates:
+            - Path=/api/resume/**
+
+        - id: radar-evaluation-service
+          uri: lb://radar-evaluation-service
+          predicates:
+            - Path=/api/radar/**
+
+        - id: radar-chart-service
+          uri: lb://radar-evaluation-service
+          predicates:
+            - Path=/api/radar-chart/**
+
+        - id: student-service
+          uri: lb://student-service
+          predicates:
+            - Path=/api/student/**
+          filters:
+            - StripPrefix=1
+
+        - id: growth-service
+          uri: lb://student-service
+          predicates:
+            - Path=/api/growth/**
+          filters:
+            - StripPrefix=1
+
+        - id: forum-service
+          uri: lb://student-service
+          predicates:
+            - Path=/api/forum/**
+          filters:
+            - StripPrefix=1
+
+        - id: recruitment-service
+          uri: lb://recruitment-service
+          predicates:
+            - Path=/api/recruitment/**
+
+# Eureka Client 配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    org.springframework.cloud.gateway: INFO

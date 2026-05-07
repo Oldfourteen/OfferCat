@@ -1,0 +1,112 @@
+server:
+  port: 8086
+
+spring:
+  application:
+    name: ai-evaluation-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: 1029384756
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 50MB
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.offercat.ai.entity
+
+question:
+  bank:
+    path: "c:/Users/14101/Desktop/uniapp/OfferCat/backend/java_services/question_bank"
+
+# Eureka Client 配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+seata:
+  enabled: true
+  application-id: ai-evaluation-service
+  tx-service-group: my_test_tx_group
+  service:
+    vgroup-mapping:
+      my_test_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  config:
+    type: file
+  registry:
+    type: file
+
+# DeepSeek API 配置
+deepseek:
+  api-key: "sk-9ade88d5f7884100892bb3b01a85a29f"
+  base-url: "https://api.deepseek.com"
+  model: "deepseek-chat"
+
+# 百度智能云 AppBuilder 搜索配置
+baidu:
+  app-builder:
+    api-key: "bce-v3/ALTAK-smeOu3EVplQub55huhUdr/e4a61fa1837ae566727f8bd9eba2d8320fc01d5f"
+    base-url: "https://gw.baidubce.com/rpc/2.0/cloud_search/v1/search"
+
+#硅基流动 生成 API 配置
+siliconFlow:
+  api-key: "sk-wjfdhvenoniavcoynimnolscqirnqglkckmguxqgvnkmorfh"
+  base-url: "https://api.siliconflow.cn"
+  model: "Qwen/Qwen-Image-Edit-2509"
+  #ASR 语音转文字技术 0W0
+  asr:
+    transcriptions-path: "/v1/audio/transcriptions"
+    model: "FunAudioLLM/SenseVoiceSmall"
+  #TTS 语音输入功能
+  tts:
+    speech-path: "/v1/audio/speech"
+    model: "fnlp/MOSS-TTSD-v0.5"
+    voice: "alex"
+    response-format: "mp3"
+    stream: false
+    speed: 1.0
+
+#OCR识图技术，原先为OCR.space，现已升级为使用SiliconFlow的Qwen2.5-VL模型，无1MB限制且识图更智能！
+
+#AI生成用户画像PROMPT工程 加了消极提示词进行对撞，让AI更好的看懂要求！
+avatar:
+  generation:
+    num-inference-steps: 20
+    cfg: 4.0
+  prompt:
+    base: |
+      你是一名专业的人像求职照修图师。请基于输入的“用户正面照片”进行写实风格的形象优化，生成适合招聘求职平台使用的头像/半身像。
+
+      【硬性要求】
+      1) 风格必须写实、照片质感真实，不要卡通/插画/二次元/油画/3D渲染。
+      2) 构图为上半身或半身（胸部以上到头顶），正面或轻微侧转，适合头像裁切。
+      3) 必须穿着正式商务正装：深色西装外套 + 白色或浅色衬衫（可选领带），整体干净专业。
+      4) 只能进行合理轻度美化：自然磨皮、均匀肤色、轻微去瑕疵、适度提亮；发型只允许整理顺滑、去毛躁、补齐碎发，保持真实。
+      5) 保持人物身份一致：脸型、五官、肤色、年龄特征、性别特征不得明显改变；不要换成另一个人。
+      6) 不要改变原始背景为复杂场景；背景保持干净简洁（纯白/浅灰/浅蓝皆可）。
+      7) 只允许“添加正装与合理美化”，不得进行夸张修图或风格化。
+
+      【输入约束】
+      输入图片应为单人正面清晰照片，无遮挡、无墨镜/口罩，头部完整。
+
+      【输出目标】
+      生成一张求职招聘用的写实正装半身头像，看起来像真实摄影棚拍摄的职业照。
+    negative: |
+      卡通, 动漫, 二次元, 插画, 3D, CG, 渲染感, 油画, 过度磨皮, 夸张美颜, 网红滤镜, 大眼瘦脸, 改变五官, 换脸,
+      改变年龄, 改变性别, 改变肤色, 浓妆, 夸张妆容, 暴露服装, 制服, 奇装异服, 休闲装, T恤, 卫衣, 裙装, 露肩, 露胸,
+      复杂背景, 街景, 室内杂乱, 水印, 文字, logo, 模糊, 低清晰度, 失真, 噪点, 手部, 多人

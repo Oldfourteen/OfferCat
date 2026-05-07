@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.CertificateQualificationMapper">
+
+    <select id="getByStudentId" resultType="com.offercat.student.entity.CertificateQualification">
+        SELECT cert_id as certId, student_id as studentId, cert_name as certName,
+               score_or_grade as scoreOrGrade, obtain_time as obtainTime,
+               supplementary_desc as supplementaryDesc, create_time as createTime
+        FROM certificate_qualification
+        WHERE student_id = #{studentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="certId">
+        INSERT INTO certificate_qualification (
+            student_id, cert_name, score_or_grade, obtain_time, supplementary_desc
+        ) VALUES (
+            #{studentId}, #{certName}, #{scoreOrGrade}, #{obtainTime}, #{supplementaryDesc}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE certificate_qualification
+        <set>
+            <if test="certName != null">cert_name = #{certName},</if>
+            <if test="scoreOrGrade != null">score_or_grade = #{scoreOrGrade},</if>
+            <if test="obtainTime != null">obtain_time = #{obtainTime},</if>
+            <if test="supplementaryDesc != null">supplementary_desc = #{supplementaryDesc},</if>
+        </set>
+        WHERE cert_id = #{certId} AND student_id = #{studentId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM certificate_qualification
+        WHERE cert_id = #{certId} AND student_id = #{studentId}
+    </delete>
+
+</mapper>

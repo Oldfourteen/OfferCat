@@ -1,0 +1,59 @@
+server:
+  port: 8085
+
+radar:
+  cpp:
+    # c++ 雷达评分分析 端口：22565
+    base-url: http://127.0.0.1:22565
+  python:
+    # Python 雷达图生成服务 端口15000
+    base-url: http://127.0.0.1:15000
+    # 生成图的路径
+    path: /radar-chart
+
+spring:
+  application:
+    name: radar-evaluation-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: 1029384756
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+
+# 雷达图页面模块接入deepseek
+deepseek:
+  api-key: "sk-9ade88d5f7884100892bb3b01a85a29f"
+  base-url: "https://api.deepseek.com"
+  model: "deepseek-chat"
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.offercat.radar.entity
+
+# Eureka Client 配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+seata:
+  enabled: true
+  application-id: radar-evaluation-service
+  tx-service-group: my_test_tx_group
+  service:
+    vgroup-mapping:
+      my_test_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  config:
+    type: file
+  registry:
+    type: file

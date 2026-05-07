@@ -1,0 +1,145 @@
+专业：英语
+套题：A
+题型：高难度模拟面试选择题（单选题，固定四选项ABCD）
+题量：20
+
+1. 让表达更“可量化”的做法是？（场景变体5）
+A. 用数据/范围/对比描述成果（e.g., reduced time by 30%）
+B. 用“a lot/very”多堆形容词
+C. 只写“worked hard”
+D. 不写结果只写过程
+答案：A
+
+2. 英文商务邮件中更专业的做法是？（场景变体4）
+A. 先总结结论/行动项，再给背景细节
+B. 先写一大段背景，不给结论
+C. 全程使用口语缩写与俚语
+D. 不写主题与称呼
+答案：A
+
+3. 跨文化客户沟通中，“同理但不背锅”的更佳表达是？（场景变体14）
+A. I understand your concern. Let me clarify the scope and propose next steps with a timeline.
+B. It's not our fault. You should read the contract again.
+C. Calm down. You are wrong.
+D. We will do everything for free forever.
+答案：A
+
+4. 英文商务邮件中更专业的做法是？（场景变体6）
+A. 先总结结论/行动项，再给背景细节
+B. 先写一大段背景，不给结论
+C. 全程使用口语缩写与俚语
+D. 不写主题与称呼
+答案：A
+
+5. 英文商务邮件中更专业的做法是？（场景变体9）
+A. 先总结结论/行动项，再给背景细节
+B. 先写一大段背景，不给结论
+C. 全程使用口语缩写与俚语
+D. 不写主题与称呼
+答案：A
+
+6. 英文自我介绍更符合面试场景的结构通常是？（场景变体1）
+A. Background → Strengths → Evidence/Project → Fit/Goal
+B. 从兴趣爱好开始讲10分钟
+C. 只背单词列表
+D. 只念身份证号码
+答案：A
+
+7. 让表达更“可量化”的做法是？（场景变体7）
+A. 用数据/范围/对比描述成果（e.g., reduced time by 30%）
+B. 用“a lot/very”多堆形容词
+C. 只写“worked hard”
+D. 不写结果只写过程
+答案：A
+
+8. 跨文化客户沟通中，“同理但不背锅”的更佳表达是？（场景变体5）
+A. I understand your concern. Let me clarify the scope and propose next steps with a timeline.
+B. It's not our fault. You should read the contract again.
+C. Calm down. You are wrong.
+D. We will do everything for free forever.
+答案：A
+
+9. 让表达更“可量化”的做法是？（场景变体13）
+A. 用数据/范围/对比描述成果（e.g., reduced time by 30%）
+B. 用“a lot/very”多堆形容词
+C. 只写“worked hard”
+D. 不写结果只写过程
+答案：A
+
+10. 英文商务邮件中更专业的做法是？（场景变体1）
+A. 先总结结论/行动项，再给背景细节
+B. 先写一大段背景，不给结论
+C. 全程使用口语缩写与俚语
+D. 不写主题与称呼
+答案：A
+
+11. 跨文化客户沟通中，“同理但不背锅”的更佳表达是？（场景变体12）
+A. I understand your concern. Let me clarify the scope and propose next steps with a timeline.
+B. It's not our fault. You should read the contract again.
+C. Calm down. You are wrong.
+D. We will do everything for free forever.
+答案：A
+
+12. 翻译任务中遇到歧义，最合理的处理是？（场景变体3）
+A. 标注歧义点并向需求方确认，或选择不承诺过度的表述
+B. 随便选一个意思不需要说明
+C. 直接删掉含糊句子
+D. 只用机器翻译不校对
+答案：A
+
+13. 英文自我介绍更符合面试场景的结构通常是？（场景变体13）
+A. Background → Strengths → Evidence/Project → Fit/Goal
+B. 从兴趣爱好开始讲10分钟
+C. 只背单词列表
+D. 只念身份证号码
+答案：A
+
+14. 翻译任务中遇到歧义，最合理的处理是？（场景变体10）
+A. 标注歧义点并向需求方确认，或选择不承诺过度的表述
+B. 随便选一个意思不需要说明
+C. 直接删掉含糊句子
+D. 只用机器翻译不校对
+答案：A
+
+15. 英文商务邮件中更专业的做法是？（场景变体12）
+A. 先总结结论/行动项，再给背景细节
+B. 先写一大段背景，不给结论
+C. 全程使用口语缩写与俚语
+D. 不写主题与称呼
+答案：A
+
+16. 翻译任务中遇到歧义，最合理的处理是？（场景变体11）
+A. 标注歧义点并向需求方确认，或选择不承诺过度的表述
+B. 随便选一个意思不需要说明
+C. 直接删掉含糊句子
+D. 只用机器翻译不校对
+答案：A
+
+17. 英文自我介绍更符合面试场景的结构通常是？（场景变体6）
+A. Background → Strengths → Evidence/Project → Fit/Goal
+B. 从兴趣爱好开始讲10分钟
+C. 只背单词列表
+D. 只念身份证号码
+答案：A
+
+18. 跨文化客户沟通中，“同理但不背锅”的更佳表达是？（场景变体11）
+A. I understand your concern. Let me clarify the scope and propose next steps with a timeline.
+B. It's not our fault. You should read the contract again.
+C. Calm down. You are wrong.
+D. We will do everything for free forever.
+答案：A
+
+19. 翻译任务中遇到歧义，最合理的处理是？（场景变体5）
+A. 标注歧义点并向需求方确认，或选择不承诺过度的表述
+B. 随便选一个意思不需要说明
+C. 直接删掉含糊句子
+D. 只用机器翻译不校对
+答案：A
+
+20. 让表达更“可量化”的做法是？（场景变体11）
+A. 用数据/范围/对比描述成果（e.g., reduced time by 30%）
+B. 用“a lot/very”多堆形容词
+C. 只写“worked hard”
+D. 不写结果只写过程
+答案：A
+

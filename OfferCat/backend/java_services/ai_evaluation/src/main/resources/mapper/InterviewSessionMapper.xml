@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.ai.dao.InterviewSessionMapper">
+    <resultMap id="BaseResultMap" type="com.offercat.ai.entity.InterviewSession">
+        <id column="session_id" property="sessionId"/>
+        <result column="student_id" property="studentId"/>
+        <result column="target_position" property="targetPosition"/>
+        <result column="interview_mode" property="interviewMode"/>
+        <result column="total_questions" property="totalQuestions"/>
+        <result column="answered_questions" property="answeredQuestions"/>
+        <result column="difficulty_level" property="difficultyLevel"/>
+        <result column="session_status" property="sessionStatus"/>
+        <result column="current_stage" property="currentStage"/>
+        <result column="start_time" property="startTime"/>
+        <result column="end_time" property="endTime"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM interview_session WHERE session_id = #{sessionId}
+    </select>
+
+    <select id="findByStudentId" resultMap="BaseResultMap">
+        SELECT * FROM interview_session WHERE student_id = #{studentId}
+    </select>
+
+    <select id="findByStudentIdOrderByCreateTimeDesc" resultMap="BaseResultMap">
+        SELECT * FROM interview_session WHERE student_id = #{studentId} ORDER BY create_time DESC
+    </select>
+
+    <select id="findActiveSession" resultMap="BaseResultMap">
+        SELECT * FROM interview_session
+        WHERE student_id = #{studentId} AND session_status = 1
+        ORDER BY create_time DESC LIMIT 1
+    </select>
+
+    <insert id="insert" parameterType="com.offercat.ai.entity.InterviewSession" useGeneratedKeys="true" keyProperty="sessionId">
+        INSERT INTO interview_session (student_id, target_position, interview_mode, total_questions,
+            answered_questions, difficulty_level, session_status, current_stage, start_time, create_time, update_time)
+        VALUES (#{studentId}, #{targetPosition}, #{interviewMode}, #{totalQuestions},
+            #{answeredQuestions}, #{difficultyLevel}, #{sessionStatus}, #{currentStage}, #{startTime}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.offercat.ai.entity.InterviewSession">
+        UPDATE interview_session SET
+            target_position = #{targetPosition},
+            interview_mode = #{interviewMode},
+            total_questions = #{totalQuestions},
+            answered_questions = #{answeredQuestions},
+            difficulty_level = #{difficultyLevel},
+            session_status = #{sessionStatus},
+            current_stage = #{currentStage},
+            end_time = #{endTime},
+            update_time = NOW()
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="updateStatus">
+        UPDATE interview_session SET session_status = #{status}, update_time = NOW()
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="incrementAnswered">
+        UPDATE interview_session SET answered_questions = answered_questions + 1, update_time = NOW()
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <update id="updateStage">
+        UPDATE interview_session SET current_stage = #{stage}, update_time = NOW()
+        WHERE session_id = #{sessionId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM interview_session WHERE session_id = #{sessionId}
+    </delete>
+</mapper>

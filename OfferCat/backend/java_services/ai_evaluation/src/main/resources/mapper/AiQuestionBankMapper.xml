@@ -1,0 +1,63 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.ai.dao.AiQuestionBankMapper">
+    <resultMap id="BaseResultMap" type="com.offercat.ai.entity.AiQuestionBank">
+        <id column="question_id" property="questionId"/>
+        <result column="question_type" property="questionType"/>
+        <result column="question_content" property="questionContent"/>
+        <result column="core_point" property="corePoint"/>
+        <result column="answer" property="answer"/>
+        <result column="difficulty_level" property="difficultyLevel"/>
+        <result column="subject" property="subject"/>
+        <result column="score" property="score"/>
+        <result column="ai_tag" property="aiTag"/>
+        <result column="is_enable" property="isEnable"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="findByType" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank WHERE question_type = #{questionType} AND is_enable = 1
+    </select>
+
+    <select id="findByTypeAndSubject" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank
+        WHERE question_type = #{questionType} AND subject = #{subject} AND is_enable = 1
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank WHERE question_id = #{questionId}
+    </select>
+
+    <select id="findRandomQuestions" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank
+        WHERE question_type = #{questionType} AND is_enable = 1
+        ORDER BY RAND() LIMIT #{count}
+    </select>
+
+    <insert id="insert" parameterType="com.offercat.ai.entity.AiQuestionBank" useGeneratedKeys="true" keyProperty="questionId">
+        INSERT INTO ai_question_bank (question_type, question_content, core_point, answer,
+            difficulty_level, subject, score, ai_tag, is_enable, create_time, update_time)
+        VALUES (#{questionType}, #{questionContent}, #{corePoint}, #{answer},
+            #{difficultyLevel}, #{subject}, #{score}, #{aiTag}, #{isEnable}, NOW(), NOW())
+    </insert>
+
+    <update id="update" parameterType="com.offercat.ai.entity.AiQuestionBank">
+        UPDATE ai_question_bank SET
+            question_type = #{questionType},
+            question_content = #{questionContent},
+            core_point = #{corePoint},
+            answer = #{answer},
+            difficulty_level = #{difficultyLevel},
+            subject = #{subject},
+            score = #{score},
+            ai_tag = #{aiTag},
+            is_enable = #{isEnable},
+            update_time = NOW()
+        WHERE question_id = #{questionId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM ai_question_bank WHERE question_id = #{questionId}
+    </delete>
+</mapper>

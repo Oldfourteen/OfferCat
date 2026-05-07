@@ -1,0 +1,339 @@
+{
+	"pages": [
+		{
+			"path": "pages/login/login",
+			"style": {
+				"navigationStyle": "custom",
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/login/otherLogin",
+			"style": {
+				"navigationStyle": "custom",
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/initProfile/initProfile",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "完善资料",
+				"app-plus": {
+					"titleNView": false
+				}
+			}
+		},
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "首页"
+			}
+		},
+		{
+			"path": "pages/GrowthArchive/GrowthArchive",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "档案"
+			}
+		},
+		{
+			"path": "pages/my/my",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "我的"
+			}
+		},
+		{
+			"path": "pages/AI/AI",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "",
+				"app-plus": {
+					"softinputMode": "adjustResize"
+				}
+			}
+		},
+		{
+			"path": "pages/index/components/QuestionBankModules",
+			"style": {}
+		}
+	],
+	"subPackages": [
+		{
+			"root": "subPages",
+			"pages": [
+				{
+					"path": "search/search",
+					"style": {
+						"navigationBarTitleText": "搜索",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "archive/manage",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "档案管理",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/exercise",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/written",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/interview",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/detail",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/result",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/history",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "questionBank/favorites",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "profile/profile",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "编辑个人信息",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "settings/system",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "设置",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "settings/privacy",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "隐私政策",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "settings/agreement",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "用户服务协议",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "settings/acknowledgment",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "鸣谢",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "onlineResumeMake/onlineResumeMake",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "onlineResumeMake/previewResume",
+					"style": {
+						"navigationBarTitleText": "简历预览",
+						"navigationStyle": "custom"
+					}
+				},
+				{
+					"path": "resumeEdit/editContainer",
+					"style": {
+						"navigationStyle": "custom",
+						"disableScroll": true,
+						"app-plus": {
+							"titleNView": false,
+							"bounce": "none"
+						}
+					}
+				},
+				{
+					"path": "searchTest/searchTest",
+					"style": {
+						"navigationBarTitleText": "题库测试",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "searchTest/searchTestResult",
+					"style": {
+						"navigationBarTitleText": "测试结果",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "resumeRepoPage/resumeRepoPage",
+					"style": {
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "springCamp/springCamp",
+					"style": {
+						"navigationBarTitleText": "2026春招AI冲刺营",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/detail",
+					"style": {
+						"navigationBarTitleText": "论坛详情",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/publish",
+					"style": {
+						"navigationBarTitleText": "发布动态",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				}
+			]
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "white",
+		"navigationBarBackgroundColor": "#4AA9FE",
+		"backgroundColor": "#F8F8F8"
+	},
+	"tabBar": {
+		"color": "#8FA196",
+		"selectedColor": "#5d76bd",
+		"backgroundColor": "#FCFEFC",
+		"borderStyle": "white",
+		"list": [
+			{
+				"pagePath": "pages/index/index",
+				"text": "首页",
+				"iconPath": "static/tabbar/home.png",
+				"selectedIconPath": "static/tabbar/home_active.png"
+			},
+			{
+				"pagePath": "pages/GrowthArchive/GrowthArchive",
+				"text": "档案",
+				"iconPath": "static/tabbar/archive.png",
+				"selectedIconPath": "static/tabbar/archive_active.png"
+			},
+			{
+				"pagePath": "pages/AI/AI",
+				"text": "AI",
+				"iconPath": "static/tabbar/ai.png",
+				"selectedIconPath": "static/tabbar/ai_active.png"
+			},
+			{
+				"pagePath": "pages/my/my",
+				"text": "我的",
+				"iconPath": "static/tabbar/my.png",
+				"selectedIconPath": "static/tabbar/my_active.png"
+			}
+		]
+	},
+	"uniIdRouter": {},
+	"condition": {
+		"current": 0,
+		"list": [
+			{
+				"name": "",
+				"path": "",
+				"query": ""
+			}
+		]
+	}
+}

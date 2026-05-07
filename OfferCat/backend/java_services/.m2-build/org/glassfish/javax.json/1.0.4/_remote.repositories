@@ -1,0 +1,4 @@
+#NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
+#Fri Apr 24 22:31:54 CST 2026
+javax.json-1.0.4.jar>nexus-aliyun=
+javax.json-1.0.4.pom>nexus-aliyun=

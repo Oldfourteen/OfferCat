@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.ProjectExperienceMapper">
+
+    <select id="getByStudentId" resultType="com.offercat.student.entity.ProjectExperience">
+        SELECT project_id as projectId, student_id as studentId, project_name as projectName,
+               tech_stack as techStack, responsibility as responsibility,
+               project_highlights as projectHighlights, create_time as createTime
+        FROM project_experience
+        WHERE student_id = #{studentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="projectId">
+        INSERT INTO project_experience (
+            student_id, project_name, tech_stack, responsibility, project_highlights
+        ) VALUES (
+            #{studentId}, #{projectName}, #{techStack}, #{responsibility}, #{projectHighlights}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE project_experience
+        <set>
+            <if test="projectName != null">project_name = #{projectName},</if>
+            <if test="techStack != null">tech_stack = #{techStack},</if>
+            <if test="responsibility != null">responsibility = #{responsibility},</if>
+            <if test="projectHighlights != null">project_highlights = #{projectHighlights},</if>
+        </set>
+        WHERE project_id = #{projectId} AND student_id = #{studentId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM project_experience
+        WHERE project_id = #{projectId} AND student_id = #{studentId}
+    </delete>
+
+</mapper>

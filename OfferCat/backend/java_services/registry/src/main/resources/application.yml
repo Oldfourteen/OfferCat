@@ -1,0 +1,31 @@
+server:
+  port: 8761
+
+spring:
+  application:
+    name: registry-service
+  cloud:
+    config:
+      server:
+        git:
+          uri: https://github.com/your-username/offercat-config
+          search-paths: config
+          username: your-username
+          password: your-password
+
+# Eureka Server 配置
+eureka:
+  instance:
+    hostname: localhost
+  client:
+    register-with-eureka: false
+    fetch-registry: false
+    service-url:
+      defaultZone: http://${eureka.instance.hostname}:${server.port}/eureka/
+
+# 日志配置
+logging:
+  level:
+    root: INFO
+    com.netflix.eureka: INFO
+    com.netflix.discovery: INFO

@@ -1,0 +1,54 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: user-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    username: root
+    password: 1029384756
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 
+      database: 0
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.offercat.user.entity
+
+seata:
+  enabled: true
+  application-id: user-service
+  tx-service-group: my_test_tx_group
+  service:
+    vgroup-mapping:
+      my_test_tx_group: default
+    grouplist:
+      default: 127.0.0.1:8091
+  config:
+    type: file
+  registry:
+    type: file
+
+# 短信宝配置
+smsbao:
+  username: ofteen  # 填写您的短信宝账号
+  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
+  api-url: https://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
+  sign: "【OfferCat】"
+
+# Eureka Client 配置
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+# 头像存储路径配置
+file:
+  avatar-dir: D:/offercat/avatars/

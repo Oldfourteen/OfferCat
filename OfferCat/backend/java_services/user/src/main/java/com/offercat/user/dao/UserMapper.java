@@ -1,0 +1,50 @@
+package com.offercat.user.dao;
+
+import com.offercat.user.entity.User;
+import org.apache.ibatis.annotations.*;
+
+/**
+@author: blue
+@date: 2026/4/17 - 20:06
+@mail: 3590038173@qq.com
+@info: 用户Mapper
+*/
+@Mapper
+public interface UserMapper {
+    @Select("SELECT * FROM `user` WHERE phone = #{phone}")
+    User selectByPhone(String phone);
+
+    @Select("SELECT * FROM `user` WHERE email = #{email}")
+    User selectByEmail(String email);
+
+    @Insert("INSERT INTO `user`(password, nickname, phone, email, user_role, user_status, create_time) " +
+            "VALUES(#{password}, #{nickname}, #{phone}, #{email}, #{userRole}, #{userStatus}, #{createTime})")
+    @Options(useGeneratedKeys = true, keyProperty = "userId")
+    int insert(User user);
+
+    @Update("UPDATE `user` SET user_role = #{userRole}, real_name = #{realName}, " +
+            "id_card = #{idCard}, school = #{school}, update_time = NOW() " +
+            "WHERE user_id = #{userId}")
+    int updateRoleAndInfo(User user);
+
+    @Update("UPDATE `user` SET password = #{password}, update_time = NOW() WHERE user_id = #{userId}")
+    int updatePassword(@Param("userId") Long userId, @Param("password") String password);
+
+    @Select("SELECT * FROM `user` WHERE user_id = #{userId}")
+    User selectById(Long userId);
+
+    @Update({"<script>",
+            "UPDATE `user`",
+            "<set>",
+            "<if test='nickname != null'>nickname = #{nickname},</if>",
+            "<if test='gender != null'>gender = #{gender},</if>",
+            "<if test='avatar != null'>avatar = #{avatar},</if>",
+            "<if test='realName != null'>real_name = #{realName},</if>",
+            "<if test='phone != null'>phone = #{phone},</if>",
+            "<if test='email != null'>email = #{email},</if>",
+            "update_time = NOW()",
+            "</set>",
+            "WHERE user_id = #{userId}",
+            "</script>"})
+    int updateProfileInfo(User user);
+}

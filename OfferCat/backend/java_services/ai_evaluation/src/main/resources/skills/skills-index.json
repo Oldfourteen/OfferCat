@@ -1,0 +1,185 @@
+{
+  "version": "2026-04-20",
+  "format": "skill-index.v1",
+  "skills": [
+    {
+      "id": "policy.hr-safety.v1",
+      "type": "policy",
+      "priority": 1000,
+      "path": "skills/policies/safety-policy.md",
+      "tags": ["安全", "合规", "边界", "真实性"],
+      "constraints": {}
+    },
+    {
+      "id": "base.hr.v1",
+      "type": "base",
+      "priority": 100,
+      "path": "skills/base/base-hr.md",
+      "tags": ["HR", "校招", "模拟面试", "追问", "结构化面试"],
+      "constraints": {}
+    },
+    {
+      "id": "base.interview-flow.v1",
+      "type": "base",
+      "priority": 95,
+      "path": "skills/base/interview-flow.md",
+      "tags": ["面试流程", "阶段", "状态机", "校招"],
+      "constraints": {}
+    },
+
+    {
+      "id": "major.cs.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-cs.md",
+      "tags": ["计算机科学与技术", "校招", "后端", "Java", "算法", "数据结构", "计网", "操作系统", "数据库"],
+      "constraints": { "major_in": ["计算机科学与技术"] }
+    },
+    {
+      "id": "major.accounting.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-accounting.md",
+      "tags": ["会计学", "校招", "财务", "审计", "报表", "成本", "税务"],
+      "constraints": { "major_in": ["会计学"] }
+    },
+    {
+      "id": "major.marketing.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-marketing.md",
+      "tags": ["市场营销", "校招", "增长", "用户", "渠道", "品牌", "内容运营", "数据分析"],
+      "constraints": { "major_in": ["市场营销"] }
+    },
+    {
+      "id": "major.law.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-law.md",
+      "tags": ["法学", "校招", "法务", "合规", "合同审核", "诉讼", "风险控制"],
+      "constraints": { "major_in": ["法学"] }
+    },
+    {
+      "id": "major.ee-automation.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-ee.md",
+      "tags": ["电气工程及其自动化", "校招", "电路", "电机", "电力系统", "自动控制", "PLC", "嵌入式"],
+      "constraints": { "major_in": ["电气工程及其自动化"] }
+    },
+    {
+      "id": "major.english.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-english.md",
+      "tags": ["英语", "校招", "翻译", "口译", "写作", "教学", "外贸", "跨文化沟通"],
+      "constraints": { "major_in": ["英语"] }
+    },
+    {
+      "id": "major.clinical-medicine.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-clinical-medicine.md",
+      "tags": ["临床医学", "校招", "规培", "病史采集", "体格检查", "诊断思路", "医患沟通", "规范"],
+      "constraints": { "major_in": ["临床医学"] }
+    },
+    {
+      "id": "major.finance.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-finance.md",
+      "tags": ["金融学", "校招", "投研", "风控", "银行", "证券", "基金", "财务分析", "宏观"],
+      "constraints": { "major_in": ["金融学"] }
+    },
+    {
+      "id": "major.software-engineering.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-software-engineering.md",
+      "tags": ["软件工程", "校招", "需求分析", "设计", "测试", "版本管理", "质量", "工程实践"],
+      "constraints": { "major_in": ["软件工程"] }
+    },
+    {
+      "id": "major.data-science-bigdata.v1",
+      "type": "major",
+      "priority": 90,
+      "path": "skills/majors/major-data-science-bigdata.md",
+      "tags": ["数据科学与大数据技术", "校招", "统计", "机器学习", "特征工程", "SQL", "数据仓库", "Spark", "A/B测试"],
+      "constraints": { "major_in": ["数据科学与大数据技术"] }
+    },
+
+    {
+      "id": "stage.written.v1",
+      "type": "stage",
+      "priority": 75,
+      "path": "skills/stages/stage-written-test.md",
+      "tags": ["笔试", "测评", "题型", "限时", "通过率"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.tech1.v1",
+      "type": "stage",
+      "priority": 80,
+      "path": "skills/stages/stage-tech-1.md",
+      "tags": ["技术一面", "基础", "快问快答", "简历核验"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.tech2.v1",
+      "type": "stage",
+      "priority": 85,
+      "path": "skills/stages/stage-tech-2.md",
+      "tags": ["技术二面", "深挖", "方案设计", "系统设计", "代码能力"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.tech3_manager.v1",
+      "type": "stage",
+      "priority": 78,
+      "path": "skills/stages/stage-tech-3-or-manager.md",
+      "tags": ["技术三面", "主管面", "综评", "影响力", "协作", "取舍"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.hr.v1",
+      "type": "stage",
+      "priority": 82,
+      "path": "skills/stages/stage-hr.md",
+      "tags": ["HR面", "动机", "价值观", "稳定性", "薪资", "入职时间"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.offer.v1",
+      "type": "stage",
+      "priority": 65,
+      "path": "skills/stages/stage-offer.md",
+      "tags": ["Offer", "发放", "口头offer", "书面offer", "入职", "谈薪"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.project-deepdive.v1",
+      "type": "stage",
+      "priority": 70,
+      "path": "skills/stages/stage-project-deepdive.md",
+      "tags": ["项目", "深挖", "复盘", "证据链", "追问"],
+      "constraints": {}
+    },
+    {
+      "id": "stage.star.v1",
+      "type": "stage",
+      "priority": 60,
+      "path": "skills/stages/stage-star-behavior.md",
+      "tags": ["行为面试", "STAR", "沟通", "抗压", "团队"],
+      "constraints": {}
+    },
+
+    {
+      "id": "output.scorecard.v1",
+      "type": "output",
+      "priority": 80,
+      "path": "skills/outputs/output-scorecard.md",
+      "tags": ["打分", "结构化输出", "评价", "建议"],
+      "constraints": {}
+    }
+  ]
+}

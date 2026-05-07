@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.resume.dao.ResumeMapper">
+
+    <resultMap id="BaseResultMap" type="com.offercat.resume.entity.Resume">
+        <id column="resume_id" property="resumeId" />
+        <result column="resume_name" property="resumeName" />
+        <result column="user_id" property="userId" />
+        <result column="real_name" property="realName" />
+        <result column="gender" property="gender" />
+        <result column="phone" property="phone" />
+        <result column="email" property="email" />
+        <result column="photo" property="photo" />
+        <result column="campus_experience" property="campusExperience" />
+        <result column="work_experience" property="workExperience" />
+        <result column="project_experience" property="projectExperience" />
+        <result column="self_evaluation" property="selfEvaluation" />
+        <result column="ai_score" property="aiScore" />
+        <result column="ai_evaluation" property="aiEvaluation" />
+        <result column="resume_status" property="resumeStatus" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+    </resultMap>
+
+    <select id="findByUserId" resultMap="BaseResultMap">
+        SELECT * FROM resume WHERE user_id = #{userId}
+    </select>
+
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM resume WHERE resume_id = #{resumeId}
+    </select>
+
+    <select id="findEnabledByUserId" resultMap="BaseResultMap">
+        SELECT * FROM resume WHERE user_id = #{userId} AND resume_status = 1
+    </select>
+
+    <insert id="insert" parameterType="com.offercat.resume.entity.Resume" useGeneratedKeys="true" keyProperty="resumeId">
+        INSERT INTO resume (
+            resume_name, user_id, real_name, gender, phone, email,
+            photo, campus_experience, work_experience, project_experience,
+            self_evaluation, ai_score, ai_evaluation, resume_status,
+            create_time, update_time
+        ) VALUES (
+            #{resumeName}, #{userId}, #{realName}, #{gender}, #{phone}, #{email},
+            #{photo}, #{campusExperience}, #{workExperience}, #{projectExperience},
+            #{selfEvaluation}, #{aiScore}, #{aiEvaluation}, #{resumeStatus},
+            #{createTime}, #{updateTime}
+        )
+    </insert>
+
+    <update id="update" parameterType="com.offercat.resume.entity.Resume">
+        UPDATE resume SET
+            resume_name = #{resumeName},
+            user_id = #{userId},
+            real_name = #{realName},
+            gender = #{gender},
+            phone = #{phone},
+            email = #{email},
+            photo = #{photo},
+            campus_experience = #{campusExperience},
+            work_experience = #{workExperience},
+            project_experience = #{projectExperience},
+            self_evaluation = #{selfEvaluation},
+            ai_score = #{aiScore},
+            ai_evaluation = #{aiEvaluation},
+            resume_status = #{resumeStatus},
+            update_time = #{updateTime}
+        WHERE resume_id = #{resumeId}
+    </update>
+
+    <delete id="deleteById">
+        DELETE FROM resume WHERE resume_id = #{resumeId}
+    </delete>
+</mapper>

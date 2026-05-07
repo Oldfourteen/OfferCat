@@ -1,0 +1,50 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.radar.dao.RadarEvaluationMapper">
+    
+    <resultMap id="BaseResultMap" type="com.offercat.radar.entity.RadarEvaluation">
+        <id column="radar_id" property="radarId" />
+        <result column="student_id" property="studentId" />
+        <result column="professional_ability" property="professionalAbility" />
+        <result column="project_experience" property="projectExperience" />
+        <result column="competition_results" property="competitionResults" />
+        <result column="academic_background" property="academicBackground" />
+        <result column="soft_skills" property="softSkills" />
+        <result column="industry_cognition" property="industryCognition" />
+        <result column="stress_execution" property="stressExecution" />
+        <result column="total_score" property="totalScore" />
+        <result column="create_time" property="createTime" />
+    </resultMap>
+    
+    <select id="findByStudentId" resultMap="BaseResultMap">
+        SELECT * FROM radar_evaluation WHERE student_id = #{studentId}
+    </select>
+    
+    <insert id="insert" parameterType="com.offercat.radar.entity.RadarEvaluation">
+        INSERT INTO radar_evaluation (
+            student_id, professional_ability, project_experience, competition_results, 
+            academic_background, soft_skills, industry_cognition, stress_execution, total_score, create_time
+        ) VALUES (
+            #{studentId}, #{professionalAbility}, #{projectExperience}, #{competitionResults}, 
+            #{academicBackground}, #{softSkills}, #{industryCognition}, #{stressExecution}, #{totalScore}, #{createTime}
+        )
+    </insert>
+    
+    <update id="update" parameterType="com.offercat.radar.entity.RadarEvaluation">
+        UPDATE radar_evaluation SET
+            student_id = #{studentId},
+            professional_ability = #{professionalAbility},
+            project_experience = #{projectExperience},
+            competition_results = #{competitionResults},
+            academic_background = #{academicBackground},
+            soft_skills = #{softSkills},
+            industry_cognition = #{industryCognition},
+            stress_execution = #{stressExecution},
+            total_score = #{totalScore}
+        WHERE radar_id = #{radarId}
+    </update>
+    
+    <delete id="deleteById">
+        DELETE FROM radar_evaluation WHERE radar_id = #{radarId}
+    </delete>
+</mapper>

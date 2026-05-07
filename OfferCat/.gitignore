@@ -1,0 +1,36 @@
+# IntelliJ IDEA
+.idea/
+*.iml
+out/
+
+# Maven / Java build outputs
+target/
+*.class
+
+# Node.js / Frontend
+node_modules/
+unpackage/
+.hbuilderx/
+
+# UniApp specific
+uni_modules/
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+venv/
+env/
+ENV/
+
+# Maven local repository
+.java_services/.m2-build/

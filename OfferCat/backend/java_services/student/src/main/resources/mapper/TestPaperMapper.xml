@@ -1,0 +1,52 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.TestPaperMapper">
+
+    <select id="countPapers" resultType="long">
+        SELECT COUNT(1)
+        FROM test_paper
+        <where>
+            <if test="paperType != null">
+                AND paper_type = #{paperType}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    company LIKE CONCAT('%', #{keyword}, '%')
+                    OR
+                    paper_name LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+    </select>
+
+    <select id="searchPapersPage" resultType="com.offercat.student.entity.TestPaper">
+        SELECT paper_id as paperId, paper_name as paperName, company,
+               paper_type as paperType, question_count as questionCount,
+               create_time as createTime, update_time as updateTime
+        FROM test_paper
+        <where>
+            <if test="paperType != null">
+                AND paper_type = #{paperType}
+            </if>
+            <if test="keyword != null and keyword != ''">
+                AND (
+                    company LIKE CONCAT('%', #{keyword}, '%') 
+                    OR 
+                    paper_name LIKE CONCAT('%', #{keyword}, '%')
+                )
+            </if>
+        </where>
+        ORDER BY create_time DESC
+        LIMIT #{pageSize} OFFSET #{offset}
+    </select>
+
+    <select id="getPaperById" resultType="com.offercat.student.entity.TestPaper">
+        SELECT paper_id as paperId, paper_name as paperName, company,
+               paper_type as paperType, question_count as questionCount,
+               create_time as createTime, update_time as updateTime
+        FROM test_paper
+        WHERE paper_id = #{paperId}
+    </select>
+
+</mapper>

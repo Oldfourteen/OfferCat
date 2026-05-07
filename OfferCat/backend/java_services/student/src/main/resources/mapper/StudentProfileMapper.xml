@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.StudentProfileMapper">
+
+    <select id="getStudentProfile" resultType="com.offercat.student.vo.StudentProfileVO">
+        SELECT 
+            s.student_id as studentId,
+            s.user_id as userId,
+            u.avatar,
+            u.nickname,
+            u.real_name as realName,
+            u.phone,
+            u.email,
+            u.gender,
+            s.major,
+            s.grade,
+            s.job_status as jobStatus,
+            s.bio,
+            s.job_direction as jobDirection,
+            s.intent_city as intentCity,
+            s.expected_salary as expectedSalary
+        FROM `student` s
+        INNER JOIN `user` u ON s.user_id = u.user_id
+        WHERE s.student_id = #{studentId}
+    </select>
+
+    <update id="updateUserByStudentId">
+        UPDATE `user` u
+        INNER JOIN `student` s ON u.user_id = s.user_id
+        <set>
+            <if test="avatar != null">u.avatar = #{avatar},</if>
+            <if test="nickname != null">u.nickname = #{nickname},</if>
+            <if test="realName != null">u.real_name = #{realName},</if>
+            <if test="phone != null">u.phone = #{phone},</if>
+            <if test="email != null">u.email = #{email},</if>
+            <if test="gender != null">u.gender = #{gender},</if>
+        </set>
+        WHERE s.student_id = #{studentId}
+    </update>
+
+    <update id="updateStudentProfile">
+        UPDATE `student`
+        <set>
+            <if test="major != null">major = #{major},</if>
+            <if test="grade != null">grade = #{grade},</if>
+            <if test="jobStatus != null">job_status = #{jobStatus},</if>
+            <if test="bio != null">bio = #{bio},</if>
+            <if test="jobDirection != null">job_direction = #{jobDirection},</if>
+            <if test="intentCity != null">intent_city = #{intentCity},</if>
+            <if test="expectedSalary != null">expected_salary = #{expectedSalary},</if>
+        </set>
+        WHERE student_id = #{studentId}
+    </update>
+
+</mapper>

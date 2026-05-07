@@ -1,0 +1,39 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.InternshipExperienceMapper">
+
+    <select id="getByStudentId" resultType="com.offercat.student.entity.InternshipExperience">
+        SELECT internship_id as internshipId, student_id as studentId, company as company,
+               position_name as positionName, time_period as timePeriod,
+               experience_desc as experienceDesc, create_time as createTime
+        FROM internship_experience
+        WHERE student_id = #{studentId}
+        ORDER BY create_time DESC
+    </select>
+
+    <insert id="insert" useGeneratedKeys="true" keyProperty="internshipId">
+        INSERT INTO internship_experience (
+            student_id, company, position_name, time_period, experience_desc
+        ) VALUES (
+            #{studentId}, #{company}, #{positionName}, #{timePeriod}, #{experienceDesc}
+        )
+    </insert>
+
+    <update id="update">
+        UPDATE internship_experience
+        <set>
+            <if test="company != null">company = #{company},</if>
+            <if test="positionName != null">position_name = #{positionName},</if>
+            <if test="timePeriod != null">time_period = #{timePeriod},</if>
+            <if test="experienceDesc != null">experience_desc = #{experienceDesc},</if>
+        </set>
+        WHERE internship_id = #{internshipId} AND student_id = #{studentId}
+    </update>
+
+    <delete id="delete">
+        DELETE FROM internship_experience
+        WHERE internship_id = #{internshipId} AND student_id = #{studentId}
+    </delete>
+
+</mapper>

@@ -1,0 +1,87 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.GrowthRecordMapper">
+
+    <resultMap id="GrowthRecordMap" type="com.offercat.student.entity.GrowthRecord">
+        <id column="record_id" property="recordId"/>
+        <result column="student_id" property="studentId"/>
+        <result column="resume_count" property="resumeCount"/>
+        <result column="interview_count" property="interviewCount"/>
+        <result column="practice_count" property="practiceCount"/>
+        <result column="collection_count" property="collectionCount"/>
+        <result column="continuous_checkin_days" property="continuousCheckinDays"/>
+        <result column="last_checkin_date" property="lastCheckinDate"/>
+        <result column="create_time" property="createTime"/>
+        <result column="update_time" property="updateTime"/>
+    </resultMap>
+
+    <select id="getByStudentId" resultMap="GrowthRecordMap">
+        SELECT * FROM growth_record WHERE student_id = #{studentId}
+    </select>
+
+    <insert id="insertGrowthRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO growth_record (
+            student_id, resume_count, interview_count, practice_count, collection_count, 
+            continuous_checkin_days, last_checkin_date
+        ) VALUES (
+            #{studentId}, #{resumeCount}, #{interviewCount}, #{practiceCount}, #{collectionCount}, 
+            #{continuousCheckinDays}, #{lastCheckinDate}
+        )
+    </insert>
+
+    <update id="updateGrowthRecord">
+        UPDATE growth_record
+        <set>
+            <if test="resumeCount != null">resume_count = #{resumeCount},</if>
+            <if test="interviewCount != null">interview_count = #{interviewCount},</if>
+            <if test="practiceCount != null">practice_count = #{practiceCount},</if>
+            <if test="collectionCount != null">collection_count = #{collectionCount},</if>
+            <if test="continuousCheckinDays != null">continuous_checkin_days = #{continuousCheckinDays},</if>
+            <if test="lastCheckinDate != null">last_checkin_date = #{lastCheckinDate},</if>
+        </set>
+        WHERE student_id = #{studentId}
+    </update>
+
+    <select id="countPdfResumes" resultType="int">
+        SELECT COUNT(*) FROM resume_pdf WHERE student_id = #{studentId}
+    </select>
+
+    <select id="countAiInterviews" resultType="int">
+        SELECT COUNT(*) 
+        FROM ai_consult ac
+        INNER JOIN student s ON ac.user_id = s.user_id
+        WHERE s.student_id = #{studentId} 
+          AND ac.user_content LIKE CONCAT('%', '开始面试', '%')
+    </select>
+
+    <select id="countCollections" resultType="int">
+        SELECT COUNT(*) FROM student_question_collect WHERE student_id = #{studentId}
+    </select>
+
+    <select id="countWrittenTestRecords" resultType="int">
+        SELECT COUNT(*) FROM student_written_test_record WHERE student_id = #{studentId}
+    </select>
+
+    <select id="countInterviewTestRecords" resultType="int">
+        SELECT COUNT(*) FROM student_interview_record WHERE student_id = #{studentId}
+    </select>
+
+    <insert id="insertQuestionCollect">
+        INSERT IGNORE INTO student_question_collect (student_id, question_id, question_type) 
+        VALUES (#{studentId}, #{questionId}, #{questionType})
+    </insert>
+
+    <insert id="insertCheckinRecord">
+        INSERT IGNORE INTO growth_checkin_record (student_id, checkin_date)
+        VALUES (#{studentId}, #{checkinDate})
+    </insert>
+
+    <select id="getCheckinDatesBetween" resultType="java.time.LocalDate">
+        SELECT checkin_date 
+        FROM growth_checkin_record 
+        WHERE student_id = #{studentId} 
+          AND checkin_date BETWEEN #{startDate} AND #{endDate}
+        ORDER BY checkin_date ASC
+    </select>
+
+</mapper>

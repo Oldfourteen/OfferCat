@@ -1,0 +1,74 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.ai.dao.QuestionBankMapper">
+    
+    <resultMap id="BaseResultMap" type="com.offercat.ai.entity.QuestionBank">
+        <id column="question_id" property="questionId" />
+        <result column="question_type" property="questionType" />
+        <result column="question_content" property="questionContent" />
+        <result column="core_point" property="corePoint" />
+        <result column="answer" property="answer" />
+        <result column="difficulty_level" property="difficultyLevel" />
+        <result column="subject" property="subject" />
+        <result column="score" property="score" />
+        <result column="ai_tag" property="aiTag" />
+        <result column="is_enable" property="isEnable" />
+        <result column="create_time" property="createTime" />
+        <result column="update_time" property="updateTime" />
+        <result column="option_a" property="optionA" />
+        <result column="option_b" property="optionB" />
+        <result column="option_c" property="optionC" />
+        <result column="option_d" property="optionD" />
+    </resultMap>
+    
+    <select id="findBySubjectAndType" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank 
+        WHERE is_enable = 1
+        <if test="subject != null">
+            AND subject = #{subject}
+        </if>
+        <if test="questionType != null">
+            AND question_type = #{questionType}
+        </if>
+        ORDER BY question_id
+    </select>
+    
+    <select id="findById" resultMap="BaseResultMap">
+        SELECT * FROM ai_question_bank 
+        WHERE question_id = #{questionId}
+    </select>
+    
+    <insert id="insert" parameterType="com.offercat.ai.entity.QuestionBank">
+        INSERT INTO ai_question_bank (
+            question_type, question_content, core_point, answer, difficulty_level,
+            subject, score, ai_tag, is_enable, option_a, option_b, option_c, option_d
+        ) VALUES (
+            #{questionType}, #{questionContent}, #{corePoint}, #{answer}, #{difficultyLevel},
+            #{subject}, #{score}, #{aiTag}, #{isEnable}, #{optionA}, #{optionB}, #{optionC}, #{optionD}
+        )
+    </insert>
+    
+    <insert id="batchInsert" parameterType="java.util.List">
+        INSERT INTO ai_question_bank (
+            question_type, question_content, core_point, answer, difficulty_level,
+            subject, score, ai_tag, is_enable, option_a, option_b, option_c, option_d
+        ) VALUES
+        <foreach collection="list" item="item" separator=",">
+            (
+                #{item.questionType}, #{item.questionContent}, #{item.corePoint}, #{item.answer}, #{item.difficultyLevel},
+                #{item.subject}, #{item.score}, #{item.aiTag}, #{item.isEnable}, #{item.optionA}, #{item.optionB}, #{item.optionC}, #{item.optionD}
+            )
+        </foreach>
+    </insert>
+    
+    <select id="countBySubjectAndType" resultType="int">
+        SELECT COUNT(*) FROM ai_question_bank 
+        WHERE is_enable = 1
+        <if test="subject != null">
+            AND subject = #{subject}
+        </if>
+        <if test="questionType != null">
+            AND question_type = #{questionType}
+        </if>
+    </select>
+</mapper>

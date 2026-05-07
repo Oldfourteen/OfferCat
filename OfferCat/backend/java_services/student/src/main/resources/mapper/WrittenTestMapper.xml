@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.WrittenTestMapper">
+
+    <select id="getQuestionById" resultType="com.offercat.student.entity.WrittenTestQuestionBank">
+        SELECT question_id as questionId, major, paper_set as paperSet, question_type as questionType,
+               question_content as questionContent, option_a as optionA, option_b as optionB,
+               option_c as optionC, option_d as optionD, correct_answer as correctAnswer,
+               create_time as createTime, update_time as updateTime
+        FROM written_test_question_bank
+        WHERE question_id = #{questionId}
+    </select>
+
+    <select id="getQuestionsByPaperId" resultType="com.offercat.student.entity.WrittenTestQuestionBank">
+        SELECT question_id as questionId, paper_id as paperId, major, paper_set as paperSet, question_type as questionType,
+               question_content as questionContent, option_a as optionA, option_b as optionB,
+               option_c as optionC, option_d as optionD, correct_answer as correctAnswer,
+               create_time as createTime, update_time as updateTime
+        FROM written_test_question_bank
+        WHERE paper_id = #{paperId}
+    </select>
+
+    <insert id="insertStudentRecord" useGeneratedKeys="true" keyProperty="recordId">
+        INSERT INTO student_written_test_record (
+            student_id, paper_record_id, question_id, user_answer, is_correct, total_score, answer_time
+        ) VALUES (
+            #{studentId}, #{paperRecordId}, #{questionId}, #{userAnswer}, #{isCorrect}, #{totalScore}, NOW()
+        )
+    </insert>
+
+</mapper>

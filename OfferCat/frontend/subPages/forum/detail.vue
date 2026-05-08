@@ -91,6 +91,7 @@
 	import { request } from '@/api/request.js'
 	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
+	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -315,6 +316,13 @@
 			},
 			sendComment() {
 				if (!this.commentText.trim()) return
+				
+				const sensitiveResult = checkContent(this.commentText)
+				if (sensitiveResult.hasSensitive) {
+					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
+					this.commentText = getRandomPoemPair()
+				}
+				
 				const user = uni.getStorageSync('user') || {}
 				const userId = user.userId || user.id || 1
 				

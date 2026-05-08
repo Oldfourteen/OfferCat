@@ -7,6 +7,7 @@ import com.offercat.student.service.ForumPostService;
 import com.offercat.student.vo.ForumPostVO;
 import com.offercat.student.dto.ForumCommentDTO;
 import com.offercat.student.vo.ForumCommentVO;
+import com.offercat.shared.sensitive.SensitiveWordService;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.multipart.MultipartFile;
@@ -31,6 +32,11 @@ public class ForumPostController {
      */
     @Autowired
     private ForumPostService forumPostService;
+    /**
+     * 敏感词过滤服务
+     */
+    @Autowired
+    private SensitiveWordService sensitiveWordService;
     /**
      * 论坛图片目录
      */
@@ -121,6 +127,9 @@ public class ForumPostController {
      */
     @PostMapping("/comment")
     public ResponseResult<Void> addComment(@RequestBody ForumCommentDTO dto) {
+        if (sensitiveWordService.containsSensitiveWord(dto.getContent())) {
+            dto.setContent(sensitiveWordService.getReplacementText());
+        }
         forumPostService.addComment(dto);
         return ResponseResult.success();
     }
@@ -135,6 +144,9 @@ public class ForumPostController {
         }
         if (dto.getContent().trim().length() > 200) {
             return ResponseResult.error(400, "帖子内容最多不能超过200字");
+        }
+        if (sensitiveWordService.containsSensitiveWord(dto.getContent())) {
+            dto.setContent(sensitiveWordService.getReplacementText());
         }
         try {
             forumPostService.createPost(dto);

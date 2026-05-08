@@ -24,6 +24,13 @@
             <artifactId>spring-boot-starter-web</artifactId>
         </dependency>
 
+        <!-- Shared Config -->
+        <dependency>
+            <groupId>com.offercat</groupId>
+            <artifactId>shared_config</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <!-- Spring Cloud Eureka Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>

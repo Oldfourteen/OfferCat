@@ -97,6 +97,7 @@
 	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getUserProfile } from '@/utils/userProfile.js'
+	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -268,6 +269,12 @@
 				if (len > 200) {
 					uni.showToast({ title: '帖子内容最多不能超过200字哦', icon: 'none' })
 					return
+				}
+				
+				const sensitiveResult = checkContent(this.content)
+				if (sensitiveResult.hasSensitive) {
+					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
+					this.content = getRandomPoemPair()
 				}
 				
 				// 检查是否还有正在上传的图片

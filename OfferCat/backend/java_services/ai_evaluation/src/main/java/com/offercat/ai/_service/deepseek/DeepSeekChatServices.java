@@ -28,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.time.LocalDateTime;
+import java.time.Year;
 import java.util.*;
 import lombok.extern.slf4j.Slf4j;
 
@@ -75,24 +76,35 @@ public class DeepSeekChatServices {
         sb.append(loadSkillPrompt("skills/base/base-hr.md")).append("\n\n");
         sb.append(loadSkillPrompt("skills/base/interview-flow.md")).append("\n\n");
         sb.append(loadSkillPrompt("skills/policies/safety-policy.md")).append("\n\n");
-        
+
         // 根据专业映射到具体的专业技能文件
         String majorFile = "skills/majors/major-software-engineering.md"; // 默认
         if (majorName != null) {
-            if (majorName.contains("计算机")) majorFile = "skills/majors/major-cs.md";
-            else if (majorName.contains("软件")) majorFile = "skills/majors/major-software-engineering.md";
-            else if (majorName.contains("数据") || majorName.contains("大数据")) majorFile = "skills/majors/major-data-science-bigdata.md";
-            else if (majorName.contains("会计")) majorFile = "skills/majors/major-accounting.md";
-            else if (majorName.contains("营销")) majorFile = "skills/majors/major-marketing.md";
-            else if (majorName.contains("法学")) majorFile = "skills/majors/major-law.md";
-            else if (majorName.contains("电气")) majorFile = "skills/majors/major-ee.md";
-            else if (majorName.contains("英语")) majorFile = "skills/majors/major-english.md";
-            else if (majorName.contains("临床") || majorName.contains("医学")) majorFile = "skills/majors/major-clinical-medicine.md";
-            else if (majorName.contains("金融")) majorFile = "skills/majors/major-finance.md";
+            if (majorName.contains("计算机")) {
+                majorFile = "skills/majors/major-cs.md";
+            } else if (majorName.contains("软件")) {
+                majorFile = "skills/majors/major-software-engineering.md";
+            } else if (majorName.contains("数据") || majorName.contains("大数据")) {
+                majorFile = "skills/majors/major-data-science-bigdata.md";
+            } else if (majorName.contains("会计")) {
+                majorFile = "skills/majors/major-accounting.md";
+            } else if (majorName.contains("营销")) {
+                majorFile = "skills/majors/major-marketing.md";
+            } else if (majorName.contains("法学")) {
+                majorFile = "skills/majors/major-law.md";
+            } else if (majorName.contains("电气")) {
+                majorFile = "skills/majors/major-ee.md";
+            } else if (majorName.contains("英语")) {
+                majorFile = "skills/majors/major-english.md";
+            } else if (majorName.contains("临床") || majorName.contains("医学")) {
+                majorFile = "skills/majors/major-clinical-medicine.md";
+            } else if (majorName.contains("金融")) {
+                majorFile = "skills/majors/major-finance.md";
+            }
         }
-        
+
         sb.append(loadSkillPrompt(majorFile)).append("\n\n");
-        
+
         // 追加阶段性规则和输出模板
         sb.append(loadSkillPrompt("skills/stages/stage-hr.md")).append("\n\n");
         sb.append(loadSkillPrompt("skills/stages/stage-project-deepdive.md")).append("\n\n");
@@ -103,94 +115,103 @@ public class DeepSeekChatServices {
     }
 
     // 兼容旧接口：默认 AIHR
-    public String chatWithAI(Long userId, String majorCode, String userQuestion){
+    public String chatWithAI(Long userId, String majorCode, String userQuestion) {
         return chatWithAI(userId, majorCode, "AIHR", userQuestion, null);
     }
 
     // 新接口：按 mode 切换 prompt
-    public String chatWithAI(Long userId, String majorCode, String modeStr, String userQuestion, List<String> userImages){
+    public String chatWithAI(Long userId, String majorCode, String modeStr, String userQuestion, List<String> userImages) {
         String majorName = MajorEnum.getNameByCode(majorCode);
 
         AiChatMode mode = AiChatMode.from(modeStr);
         String systemPrompt;
-        
+
         if (mode == AiChatMode.AIHR) {
             systemPrompt = loadHRKnowledgeBase(majorName);
         } else {
             String skillFile = switch (mode) {
-                case RESUME_POLISH -> "resume_polish.md";
-                case GROUP_INTERVIEW -> "group_interview.md";
-                case JOB_MATCH -> "job_match.md";
-                case SPRING_CAMP -> "spring_camp.md";
-                default -> "hr_consultant.md";
+                case RESUME_POLISH ->
+                    "resume_polish.md";
+                case GROUP_INTERVIEW ->
+                    "group_interview.md";
+                case JOB_MATCH ->
+                    "job_match.md";
+                case SPRING_CAMP ->
+                    "spring_camp.md";
+                default ->
+                    "hr_consultant.md";
             };
             String skillTemplate = loadSkillPrompt(skillFile);
             systemPrompt = skillTemplate.replace("{{majorName}}", majorName);
         }
 
-        // 如果是 SPRING_CAMP 模式，调用百度联网搜索获取实时背景
-        if (mode == AiChatMode.SPRING_CAMP) {
-                    String searchQuery = "2026年 招聘 冲刺 备考 建议 " + majorName + "专业";
-                    String searchContext = baiduSearchService.searchForContext(searchQuery);
-                    systemPrompt = systemPrompt.replace("{{searchContext}}", searchContext);
-                }
+        // 如果是 SPRING_CAMP 或 AIHR 模式，调用百度联网搜索获取实时背景
+        if (mode == AiChatMode.SPRING_CAMP || mode == AiChatMode.AIHR) {
+            String currentYear = String.valueOf(Year.now().getValue());
+            String searchQuery = currentYear + "年 招聘 求职 面试 " + majorName + "专业";
+            String searchContext = baiduSearchService.searchForContext(searchQuery);
+            systemPrompt = systemPrompt.replace("{{searchContext}}", searchContext);
+        }
 
-                String finalUserQuestion = userQuestion;
-                // 处理 OCR 逻辑
-                if (userImages != null && !userImages.isEmpty()) {
-                    StringBuilder ocrTextBuilder = new StringBuilder();
-                    for (String imageUrl : userImages) {
-                        try {
-                            String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
-                            File file = new File("D:/offercat/photo", fileName);
-                            if (file.exists()) {
-                                String mimeType = "image/jpeg";
-                                if (fileName.endsWith(".png")) mimeType = "image/png";
-                                else if (fileName.endsWith(".webp")) mimeType = "image/webp";
-                                
-                                String base64Image = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
-                                String fullImageUrl = "data:" + mimeType + ";base64," + base64Image;
-                                
-                                OcrRecognizeResponse ocrRes = ocrService.recognizeByBase64(fullImageUrl);
-                                if (ocrRes != null) {
-                                    if (ocrRes.getText() != null && !ocrRes.getText().isEmpty()) {
-                                        ocrTextBuilder.append(ocrRes.getText()).append("\\n");
-                                    } else if (ocrRes.getRawError() != null) {
-                                        log.error("OCR API 错误: {}", ocrRes.getRawError());
-                                        ocrTextBuilder.append("图片识别失败: ").append(ocrRes.getRawError()).append("\\n");
-                                    }
-                                }
+        String finalUserQuestion = userQuestion;
+        // 处理 OCR 逻辑
+        if (userImages != null && !userImages.isEmpty()) {
+            StringBuilder ocrTextBuilder = new StringBuilder();
+            for (String imageUrl : userImages) {
+                try {
+                    String fileName = imageUrl.substring(imageUrl.lastIndexOf("/") + 1);
+                    File file = new File("D:/offercat/photo", fileName);
+                    if (file.exists()) {
+                        String mimeType = "image/jpeg";
+                        if (fileName.endsWith(".png")) {
+                            mimeType = "image/png";
+                        } else if (fileName.endsWith(".webp")) {
+                            mimeType = "image/webp";
+                        }
+
+                        String base64Image = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
+                        String fullImageUrl = "data:" + mimeType + ";base64," + base64Image;
+
+                        OcrRecognizeResponse ocrRes = ocrService.recognizeByBase64(fullImageUrl);
+                        if (ocrRes != null) {
+                            if (ocrRes.getText() != null && !ocrRes.getText().isEmpty()) {
+                                ocrTextBuilder.append(ocrRes.getText()).append("\\n");
+                            } else if (ocrRes.getRawError() != null) {
+                                log.error("OCR API 错误: {}", ocrRes.getRawError());
+                                ocrTextBuilder.append("图片识别失败: ").append(ocrRes.getRawError()).append("\\n");
                             }
-                        } catch (Exception e) {
-                            log.error("OCR 处理图片失败", e);
                         }
                     }
-                    
-                    if (ocrTextBuilder.length() > 0) {
-                        String baseQuestion = userQuestion;
-                        if (baseQuestion != null && baseQuestion.contains("[图片]")) {
-                            baseQuestion = baseQuestion.replace("[图片]", "请帮我分析和润色以下图片中的简历内容：");
-                        }
-                        finalUserQuestion = baseQuestion + "\n\n【系统已自动通过OCR提取图片文字，内容如下】：\n" + ocrTextBuilder.toString().replace("\\n", "\n");
-                    }
+                } catch (Exception e) {
+                    log.error("OCR 处理图片失败", e);
                 }
+            }
 
-                Map<String, Object> requestBody = new HashMap<>();
-                requestBody.put("model", "deepseek-chat");
+            if (ocrTextBuilder.length() > 0) {
+                String baseQuestion = userQuestion;
+                if (baseQuestion != null && baseQuestion.contains("[图片]")) {
+                    baseQuestion = baseQuestion.replace("[图片]", "请帮我分析和润色以下图片中的简历内容：");
+                }
+                finalUserQuestion = baseQuestion + "\n\n【系统已自动通过OCR提取图片文字，内容如下】：\n" + ocrTextBuilder.toString().replace("\\n", "\n");
+            }
+        }
 
-                List<Map<String, String>> messages = new ArrayList<>();
-                messages.add(Map.of("role", "system", "content", systemPrompt != null ? systemPrompt : ""));
-                messages.add(Map.of("role", "user", "content", finalUserQuestion != null ? finalUserQuestion : ""));
-        requestBody.put("messages",messages);
+        Map<String, Object> requestBody = new HashMap<>();
+        requestBody.put("model", "deepseek-chat");
+
+        List<Map<String, String>> messages = new ArrayList<>();
+        messages.add(Map.of("role", "system", "content", systemPrompt != null ? systemPrompt : ""));
+        messages.add(Map.of("role", "user", "content", finalUserQuestion != null ? finalUserQuestion : ""));
+        requestBody.put("messages", messages);
 
         HttpHeaders httpHeaders = new HttpHeaders();
         httpHeaders.setContentType(org.springframework.http.MediaType.APPLICATION_JSON);
         httpHeaders.setBearerAuth(apiKey);
 
-        HttpEntity<Map<String,Object>> entity = new HttpEntity<>(requestBody, httpHeaders);
+        HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, httpHeaders);
 
-        try{
-            ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl + "/v1/chat/completions",entity,Map.class);
+        try {
+            ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl + "/v1/chat/completions", entity, Map.class);
 
             List choices = (List) response.getBody().get("choices");
             Map choice = (Map) choices.get(0);
@@ -209,7 +230,7 @@ public class DeepSeekChatServices {
             aiMessageMapper.insertConsult(aiConsult);
 
             return aiAnswer;
-        }catch (Exception e){
+        } catch (Exception e) {
             return "AI 暂时无法回答：" + e.getMessage();
         }
     }
@@ -221,29 +242,36 @@ public class DeepSeekChatServices {
                 String majorName = MajorEnum.getNameByCode(majorCode);
                 AiChatMode mode = AiChatMode.from(modeStr);
                 String systemPrompt;
-                
+
                 if (mode == AiChatMode.AIHR) {
                     systemPrompt = loadHRKnowledgeBase(majorName);
                 } else {
                     String skillFile = switch (mode) {
-                        case RESUME_POLISH -> "resume_polish.md";
-                        case GROUP_INTERVIEW -> "group_interview.md";
-                        case JOB_MATCH -> "job_match.md";
-                        case SPRING_CAMP -> "spring_camp.md";
-                        default -> "hr_consultant.md";
+                        case RESUME_POLISH ->
+                            "resume_polish.md";
+                        case GROUP_INTERVIEW ->
+                            "group_interview.md";
+                        case JOB_MATCH ->
+                            "job_match.md";
+                        case SPRING_CAMP ->
+                            "spring_camp.md";
+                        default ->
+                            "hr_consultant.md";
                     };
                     String skillTemplate = loadSkillPrompt(skillFile);
                     systemPrompt = skillTemplate.replace("{{majorName}}", majorName);
                 }
 
-                // 流式请求中如果是 SPRING_CAMP 模式，调用百度联网搜索获取实时背景
-                if (mode == AiChatMode.SPRING_CAMP) {
+                // 流式请求中如果是 SPRING_CAMP 或 AIHR 模式，调用百度联网搜索获取实时背景
+                if (mode == AiChatMode.SPRING_CAMP || mode == AiChatMode.AIHR) {
                     // 通知前端正在搜索（可选，部分前端如果没做特殊处理，直接显示字即可）
                     try {
                         emitter.send(SseEmitter.event().data("正在为你联网搜索最新的" + majorName + "专业招聘资讯...\\n\\n"));
-                    } catch (Exception ignored) {}
-                    
-                    String searchQuery = "2026年 招聘 冲刺 备考 建议 " + majorName + "专业";
+                    } catch (Exception ignored) {
+                    }
+
+                    String currentYear = String.valueOf(Year.now().getValue());
+                    String searchQuery = currentYear + "年 招聘 求职 面试 " + majorName + "专业";
                     String searchContext = baiduSearchService.searchForContext(searchQuery);
                     systemPrompt = systemPrompt.replace("{{searchContext}}", searchContext);
                 }
@@ -253,8 +281,9 @@ public class DeepSeekChatServices {
                 if (userImages != null && !userImages.isEmpty()) {
                     try {
                         emitter.send(SseEmitter.event().data("正在提取图片内容，请稍候...\\n\\n"));
-                    } catch (Exception ignored) {}
-                    
+                    } catch (Exception ignored) {
+                    }
+
                     StringBuilder ocrTextBuilder = new StringBuilder();
                     for (String imageUrl : userImages) {
                         try {
@@ -262,12 +291,15 @@ public class DeepSeekChatServices {
                             File file = new File("D:/offercat/photo", fileName);
                             if (file.exists()) {
                                 String mimeType = "image/jpeg";
-                                if (fileName.endsWith(".png")) mimeType = "image/png";
-                                else if (fileName.endsWith(".webp")) mimeType = "image/webp";
-                                
+                                if (fileName.endsWith(".png")) {
+                                    mimeType = "image/png";
+                                } else if (fileName.endsWith(".webp")) {
+                                    mimeType = "image/webp";
+                                }
+
                                 String base64Image = Base64.getEncoder().encodeToString(Files.readAllBytes(file.toPath()));
                                 String fullImageUrl = "data:" + mimeType + ";base64," + base64Image;
-                                
+
                                 OcrRecognizeResponse ocrRes = ocrService.recognizeByBase64(fullImageUrl);
                                 if (ocrRes != null) {
                                     if (ocrRes.getText() != null && !ocrRes.getText().isEmpty()) {
@@ -282,7 +314,7 @@ public class DeepSeekChatServices {
                             log.error("OCR 处理图片失败", e);
                         }
                     }
-                    
+
                     if (ocrTextBuilder.length() > 0) {
                         String baseQuestion = userQuestion;
                         if (baseQuestion != null && baseQuestion.contains("[图片]")) {

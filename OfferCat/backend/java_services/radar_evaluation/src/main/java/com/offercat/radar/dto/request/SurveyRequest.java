@@ -14,8 +14,9 @@ import java.util.Map;
 @Data
 public class SurveyRequest {
     @NotNull(message = "学生ID不能为空")
+    // 学生ID
     private Long studentId;
-    
+    // 答案映射，题目编号 -> 选项(A/B/C/D)
     @NotNull(message = "答案不能为空")
     private Map<Integer, String> answers; // 题目编号 -> 选项(A/B/C/D)
 }

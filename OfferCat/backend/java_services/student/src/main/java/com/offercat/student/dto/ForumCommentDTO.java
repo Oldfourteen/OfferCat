@@ -1,10 +1,17 @@
 package com.offercat.student.dto;
 
 import lombok.Data;
-
+/**
+ * 论坛评论DTO
+ * 功能：提供论坛评论相关的数据传输对象
+ */
 @Data
 public class ForumCommentDTO {
-    private Long postId;
-    private Long userId; // 如果可以从token获取则不需要，但为了方便这里保留
-    private String content;
+    // 论坛帖子ID
+    private Long postId; 
+    // 评论用户ID
+    private Long userId; 
+    // 评论内容
+    private String content; 
+    
 }

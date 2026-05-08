@@ -21,14 +21,22 @@ import org.springframework.web.multipart.MultipartFile;
 @RequestMapping("api/ai/images")
 @RequiredArgsConstructor
 public class SiliconFlowImageController {
+    /**
+     * 硅基流动生图服务
+     */
     private final SiliconFlowImageService siliconFlowImageService;
-
+    /**
+     * 生成岗位头像
+     */
     @PostMapping("/job-avatar")
     public ImageGenerationResponse generations(
             @RequestParam("image") MultipartFile image,
             @RequestParam(value = "style", required = false) String style,
             @RequestParam(value = "customPrompt", required = false) String customPrompt
     ) {
+        /**
+         * 生成岗位头像
+         */
         ImageGenerationRequest request = new ImageGenerationRequest();
         request.setStyle(style);
         request.setCustomPrompt(customPrompt);

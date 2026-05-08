@@ -4,7 +4,10 @@ import com.offercat.student.dto.StudentProfileDTO;
 import com.offercat.student.vo.StudentProfileVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
-
+/**
+ * 学生个人档案映射器
+ * 功能：提供学生个人档案相关的数据库操作
+ */
 @Mapper
 public interface StudentProfileMapper {
 

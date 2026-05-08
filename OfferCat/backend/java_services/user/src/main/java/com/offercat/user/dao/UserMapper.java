@@ -13,26 +13,26 @@ import org.apache.ibatis.annotations.*;
 public interface UserMapper {
     @Select("SELECT * FROM `user` WHERE phone = #{phone}")
     User selectByPhone(String phone);
-
+        /** 根据邮箱查询用户 */
     @Select("SELECT * FROM `user` WHERE email = #{email}")
     User selectByEmail(String email);
-
+        /** 插入用户 */
     @Insert("INSERT INTO `user`(password, nickname, phone, email, user_role, user_status, create_time) " +
             "VALUES(#{password}, #{nickname}, #{phone}, #{email}, #{userRole}, #{userStatus}, #{createTime})")
     @Options(useGeneratedKeys = true, keyProperty = "userId")
     int insert(User user);
-
+        /** 更新用户角色和信息 */
     @Update("UPDATE `user` SET user_role = #{userRole}, real_name = #{realName}, " +
             "id_card = #{idCard}, school = #{school}, update_time = NOW() " +
             "WHERE user_id = #{userId}")
     int updateRoleAndInfo(User user);
-
+        /** 更新用户密码 */
     @Update("UPDATE `user` SET password = #{password}, update_time = NOW() WHERE user_id = #{userId}")
     int updatePassword(@Param("userId") Long userId, @Param("password") String password);
-
+        /** 根据用户ID查询用户信息 */
     @Select("SELECT * FROM `user` WHERE user_id = #{userId}")
     User selectById(Long userId);
-
+        /** 更新用户个人信息 */
     @Update({"<script>",
             "UPDATE `user`",
             "<set>",

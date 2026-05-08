@@ -9,23 +9,15 @@ import java.time.LocalDateTime;
  */
 @Data
 public class CareerPortrait {
-    /**
-     * 画像ID
-     */
+    // 画像ID
     private Long portraitId;
     
-    /**
-     * 关联用户ID
-     */
+    // 关联用户ID
     private Long userId;
     
-    /**
-     * AI生成的画像图片URL
-     */
+    // AI生成的画像图片URL
     private String imageUrl;
     
-    /**
-     * 生成时间
-     */
+    // 生成时间
     private LocalDateTime createTime;
 }

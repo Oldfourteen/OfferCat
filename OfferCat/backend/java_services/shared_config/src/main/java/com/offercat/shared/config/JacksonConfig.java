@@ -20,7 +20,10 @@ import java.util.List;
  */
 @Configuration// 标识这是一个配置类
 public class JacksonConfig implements WebMvcConfigurer {
-
+    /**
+     * 配置 ObjectMapper，设置 JSON 序列化/反序列化规则
+     * @return ObjectMapper 实例
+     */
     @Bean
     public ObjectMapper objectMapper() {
         ObjectMapper objectMapper = new ObjectMapper();
@@ -31,7 +34,10 @@ public class JacksonConfig implements WebMvcConfigurer {
 
         return objectMapper;
     }
-
+    /**
+     * 配置 HTTP 消息转换器，将 ObjectMapper 应用到 JSON 消息转换
+     * @param converters 消息转换器列表
+     */
     @Override
     public void configureMessageConverters(List<HttpMessageConverter<?>> converters) {
         MappingJackson2HttpMessageConverter converter = new MappingJackson2HttpMessageConverter();// 创建 Jackson 消息转换器

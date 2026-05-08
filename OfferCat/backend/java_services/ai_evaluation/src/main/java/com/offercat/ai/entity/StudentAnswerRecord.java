@@ -4,9 +4,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/*
- * 学生答题记录实体类
- * 功能：存储学生答题记录信息
+/**
+ * 学生答题记录实体类, 用来存储学生答题记录信息
  * 实现：使用Lombok的@Data注解生成getter/setter等方法
  */
 @Data

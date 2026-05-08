@@ -11,7 +11,10 @@ import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
-
+    /**
+     * 配置跨域映射，允许所有来源的跨域请求
+     * @param registry 跨域注册器
+     */
     @Override
     public void addCorsMappings(CorsRegistry registry) {
         registry.addMapping("/**")// 添加跨域映射，匹配所有路径
@@ -21,7 +24,10 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowCredentials(true)// 允许跨域请求携带凭证
                 .maxAge(3600);// 跨域请求最大缓存时间，单位秒
     }
-
+    /**
+     * 配置拦截器，用于全局拦截 Web 请求
+     * @param registry 拦截器注册器
+     */
     @Override
     public void addInterceptors(InterceptorRegistry registry) {
         // 可以在这里添加统一的拦截器

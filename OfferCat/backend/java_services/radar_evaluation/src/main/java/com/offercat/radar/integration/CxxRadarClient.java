@@ -26,10 +26,14 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class CxxRadarClient {
     private final RestTemplate restTemplate;
-
+    
     @Value("${radar.cpp.base-url:http://localhost:22565}")
     private String baseUrl;
-
+    /**
+     * 调用C++雷达评估服务
+     * @param answers 学生回答的C++代码
+     * @return C++雷达评估响应
+     */
     public CxxRadarResponse score(List<String> answers){
         String url = baseUrl + "/radar";
 
@@ -43,6 +47,11 @@ public class CxxRadarClient {
         return restTemplate.postForObject(url, entity, CxxRadarResponse.class);
     }
 
+    /**
+     * C++雷达评估响应实体类
+     * 功能：存储C++雷达评估返回的响应数据
+     * 实现：使用Lombok的@Data注解生成getter/setter等方法
+     */
     @Data
     public static class CxxRadarResponse {
         @JsonProperty("valid")

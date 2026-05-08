@@ -23,6 +23,11 @@ public class GlobalExceptionHandler {
         ));
     }
 
+    /**
+     * 处理其他异常
+     * 输入：异常对象
+     * 输出：服务器异常响应
+     */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<Map<String,Object>> handleServerError(Exception e){
         String msg = e.getMessage();

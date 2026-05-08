@@ -2,7 +2,7 @@ package com.offercat.resume.entity.dto;
 
 import lombok.Data;
 
-/*
+/**
  * 简历统计响应类
  * 功能：返回简历统计数据
  */

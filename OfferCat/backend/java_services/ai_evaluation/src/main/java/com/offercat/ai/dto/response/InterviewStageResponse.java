@@ -11,33 +11,21 @@ import lombok.Data;
 @Data
 @Builder
 public class InterviewStageResponse {
-    /**
-     * 会话信息
-     */
+    // 会话信息
     private InterviewSession session;
     
-    /**
-     * 当前面试阶段
-     */
+    // 当前面试阶段
     private String currentStage;
     
-    /**
-     * 下一面试阶段
-     */
+    // 下一面试阶段
     private String nextStage;
     
-    /**
-     * 阶段问题
-     */
+    // 阶段问题
     private String stageQuestion;
     
-    /**
-     * 评估结果
-     */
+    // 评估结果
     private String evaluationResult;
     
-    /**
-     * 消息
-     */
+    // 消息
     private String message;
 }

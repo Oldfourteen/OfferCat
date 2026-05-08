@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.math.BigDecimal;
 
-/*
+/**
  * 雷达评估实体类
  * 功能：存储学生能力雷达评估信息
  * 实现：使用Lombok的@Data注解生成getter/setter等方法

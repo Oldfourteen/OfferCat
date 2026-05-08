@@ -6,11 +6,17 @@ import com.offercat.student.vo.GrowthRecordVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 成长档案控制器
+ * 功能：处理成长档案相关的请求
+ */
 @RestController
 @RequestMapping("/growth")
 @CrossOrigin(origins = "*")
 public class GrowthRecordController {
-
+    /**
+     * 成长档案服务
+     */
     @Autowired
     private GrowthRecordService growthRecordService;
 

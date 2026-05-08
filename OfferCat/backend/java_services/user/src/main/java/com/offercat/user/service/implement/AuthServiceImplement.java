@@ -26,23 +26,23 @@ import java.util.concurrent.TimeUnit;
 @Service
 @Slf4j
 public class AuthServiceImplement implements AuthService {
-
-    @Autowired
+    /** 用户数据访问层 */
+       @Autowired
     private UserMapper userMapper;
-
+    /** 学生数据访问层 */
     @Autowired
     private StudentMapper studentMapper;
-
+    /** Redis 模板 */
     @Autowired
     private StringRedisTemplate redisTemplate;
-
+    /** 短信服务 */
     @Autowired
     private SmsService smsService;
-
+    /** 邮箱服务 */
     @Autowired
     private EmailService emailService;
 
-    // Redis 中验证码的前缀和过期时间
+    /** Redis 中验证码的前缀和过期时间 */
     private static final String CODE_PREFIX = "auth:code:";
     private static final long CODE_EXPIRE = 5; // 5分钟过期
 
@@ -54,14 +54,14 @@ public class AuthServiceImplement implements AuthService {
      */
     @Override
     public ResponseResult<Void> sendVerificationCode(SendCodeRequest request) {
-        // 1. 生成6位随机验证码
+        /**  生成6位随机验证码 */
         String code = String.format("%06d", new Random().nextInt(1000000));
         
-        // 2. 存入 Redis
+        /**  存入 Redis */
         String key = CODE_PREFIX + request.getPhone();
         redisTemplate.opsForValue().set(key, code, CODE_EXPIRE, TimeUnit.MINUTES);
         
-        // 3. 调用基础设施层发送验证码 (仅支持手机号)
+        /**  调用基础设施层发送验证码 (仅支持手机号) */
         boolean sent = smsService.sendSms(request.getPhone(), code);
         
         if (!sent) {
@@ -83,24 +83,24 @@ public class AuthServiceImplement implements AuthService {
     @Override
     @Transactional
     public ResponseResult<AuthResponse> register(RegisterRequest request) {
-        // 1. 校验验证码
+        /**  校验验证码 */
         String key = CODE_PREFIX + request.getPhone();
         String cachedCode = redisTemplate.opsForValue().get(key);
         if (cachedCode == null || !cachedCode.equals(request.getCode())) {
             return ResponseResult.error("验证码错误或已过期");
         }
         
-        // 2. 校验两次密码是否一致
+        /**  校验两次密码是否一致 */
         if (request.getConfirmPassword() != null && !request.getPassword().equals(request.getConfirmPassword())) {
             return ResponseResult.error("两次输入的密码不一致");
         }
 
-        // 如果邮箱为空字符串，则设置为 null，以满足数据库约束
+        /**  处理邮箱为空字符串的情况 */
         if (request.getEmail() != null && request.getEmail().trim().isEmpty()) {
             request.setEmail(null);
         }
 
-        // 3. 检查是否已注册 (手机号和邮箱都必须唯一)
+        /**  检查是否已注册 (手机号和邮箱都必须唯一) */
         User user = userMapper.selectByPhone(request.getPhone());
         if (user != null) {
             return ResponseResult.error("该手机号已注册，请直接登录");
@@ -113,7 +113,7 @@ public class AuthServiceImplement implements AuthService {
             }
         }
 
-        // 4. 创建新用户
+        /** 创建新用户 */
         user = new User();
         user.setPassword(getMD5(request.getPassword())); // 使用 MD5 加密存储
         user.setPhone(request.getPhone());
@@ -123,10 +123,10 @@ public class AuthServiceImplement implements AuthService {
         user.setCreateTime(LocalDateTime.now());
         userMapper.insert(user);
 
-        // 5. 注册成功后清理验证码
+        /**  注册成功后清理验证码 */
         redisTemplate.delete(key);
 
-        // 6. 注册完自动执行登录逻辑并返回 Token
+        /**  注册完自动执行登录逻辑并返回 Token */
         return loginAfterAuth(user);
     }
 
@@ -149,24 +149,24 @@ public class AuthServiceImplement implements AuthService {
             return ResponseResult.error("用户不存在，请先注册");
         }
 
-        // 手机号必须绑定
+        /**  手机号必须绑定 */
         if (user.getPhone() == null || user.getPhone().trim().isEmpty()) {
             return ResponseResult.error("当前账号未绑定手机号，禁止登录");
         }
 
-        // 登录的角色也除去企业和教师，仅允许学生和管理员登录
+        /**  登录的角色也除去企业和教师，仅允许学生和管理员登录 */
         if (user.getUserRole() == null || (user.getUserRole() != 1 && user.getUserRole() != 4)) {
             return ResponseResult.error("当前角色禁止登录系统");
         }
 
         // 根据登录类型执行不同的校验逻辑
+        /**  模式1：密码登录 */
         if ("password".equals(request.getLoginType())) {
-            // 模式1：密码登录
             if (!getMD5(request.getPassword()).equals(user.getPassword())) {
                 return ResponseResult.error("密码错误");
             }
         } else if ("code".equals(request.getLoginType())) {
-            // 模式2：验证码登录 (仅支持手机号)
+            /**  模式2：验证码登录 (仅支持手机号) */
             if (user.getPhone() == null || !user.getPhone().equals(request.getTarget())) {
                 return ResponseResult.error("验证码登录仅支持使用手机号");
             }
@@ -175,7 +175,7 @@ public class AuthServiceImplement implements AuthService {
             if (cachedCode == null || !cachedCode.equals(request.getCode())) {
                 return ResponseResult.error("验证码错误或已过期");
             }
-            // 登录成功清理验证码
+            /**  登录成功清理验证码 */
             redisTemplate.delete(key);
         } else {
             return ResponseResult.error("不支持的登录类型");

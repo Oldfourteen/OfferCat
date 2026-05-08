@@ -2,6 +2,10 @@ package com.offercat.student.vo;
 
 import lombok.Data;
 
+/**
+ * 手写测试题目VO
+ * 功能：表示手写测试题目的VO信息
+ */
 @Data
 public class WrittenTestQuestionVO {
     private Long questionId;
@@ -9,9 +13,6 @@ public class WrittenTestQuestionVO {
     private String paperSet;
     private String questionType;
     private String questionContent;
-    
-    // These are the options sent to the frontend after shuffling.
-    // So "optionA" here might actually be the original option C from the database.
     private String optionA;
     private String optionB;
     private String optionC;

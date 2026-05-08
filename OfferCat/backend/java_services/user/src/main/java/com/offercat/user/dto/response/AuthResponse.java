@@ -10,18 +10,12 @@ import lombok.Data;
 @Data
 @Builder
 public class AuthResponse {
-    /**
-     * 令牌
-     */
+    // 令牌
     private String token;
     
-    /**
-     * 用户信息
-     */
+    // 用户信息
     private User user;
     
-    /**
-     * 信息是否完善
-     */
+    // 信息是否完善
     private boolean isComplete;
 }

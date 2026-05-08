@@ -24,49 +24,71 @@ import java.util.*;
 @RequestMapping("/api/ai/ocr")
 @RequiredArgsConstructor
 public class OcrController {
-
+    /**
+     * OCR服务
+     */
     private final OcrSpaceServiceImplement ocrService;
     private final DeepSeekChatServices deepSeekChatServices;
     private final RestTemplate restTemplate;
-
+    /**
+     * DeepSeek API密钥
+     */
     @Value("${deepseek.api-key}")
     private String apiKey;
-
+    /**
+     * DeepSeek API基础URL
+     */
     @Value("${deepseek.base-url}")
     private String apiUrl;
 
-    // 3) AI 配文生成
+    /**
+     * 生成图片的论坛帖子配文
+     */
     @PostMapping(value = "/generate-caption", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> generateCaption(@RequestPart("file") MultipartFile file,
                                              @RequestParam("length") String length,
                                              @RequestParam("style") String style) {
         try {
-            // 1. OCR识别图片内容
+            /**
+             * OCR识别图片内容
+             */
             OcrRecognizeResponse ocr = ocrService.recognize(file);
             if (ocr.getRawError() != null && !ocr.getRawError().isBlank()) {
                 return ResponseEntity.badRequest().body(Map.of("error", ocr.getRawError()));
             }
 
-            // 2. 构造DeepSeek Prompt
+            /**
+             * 构造DeepSeek Prompt
+             */
             String systemPrompt = "你是一个优秀的求职、校园、生活论坛的文案编辑。请根据提供的图片内容、要求的篇幅和风格，生成一段吸睛的论坛帖子配文。";
             String userPrompt = String.format("图片内容如下：%s\n\n要求篇幅：%s\n要求风格：%s\n请直接输出文案内容，不要有多余的解释，尽量带点合适的emoji。", ocr.getText(), length, style);
 
-            // 3. 调用DeepSeek API
+            /**
+             * 调用DeepSeek API
+             */
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("model", "deepseek-chat");
-            
+            /**
+             * 构造请求体
+             */
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", systemPrompt));
             messages.add(Map.of("role", "user", "content", userPrompt));
             requestBody.put("messages", messages);
-            
+            /**
+             *  发送请求
+             */
             HttpHeaders httpHeaders = new HttpHeaders();
             httpHeaders.setContentType(MediaType.APPLICATION_JSON);
             httpHeaders.setBearerAuth(apiKey);
-            
+            /**
+             * 解析响应
+             */
             HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, httpHeaders);
             ResponseEntity<Map> response = restTemplate.postForEntity(apiUrl + "/v1/chat/completions", entity, Map.class);
-            
+            /**
+             * 解析响应体
+             */
             Map<String, Object> responseBody = response.getBody();
             if (responseBody != null) {
                 List choices = (List) responseBody.get("choices");
@@ -87,7 +109,9 @@ public class OcrController {
         }
     }
 
-    // 1) 只做OCR
+    /**
+     * 只做OCR
+     */
     @PostMapping(value = "/recognize", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> recognize(@RequestPart("file") MultipartFile file) {
         try {
@@ -105,7 +129,9 @@ public class OcrController {
         }
     }
 
-    // 2) OCR + DeepSeekChat（AIHR对话）
+    /**
+     * OCR + DeepSeekChat（AIHR对话）
+     */
     @PostMapping(value = "/chat-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> chatImage(@RequestPart("file") MultipartFile file,
                                        @RequestParam("userId") Long userId,
@@ -120,10 +146,17 @@ public class OcrController {
             String userQuestion = (question == null || question.isBlank())
                     ? "请根据下方图片OCR内容，回答我的问题/给出解决方案。"
                     : question;
-
+            /**
+             * 合并用户问题和图片OCR内容
+             */
             String merged = userQuestion + "\n\n【图片OCR内容】\n" + ocr.getText();
+            /**
+             * 调用AI服务生成回答
+             */ 
             String answer = deepSeekChatServices.chatWithAI(userId, majorCode, merged);
-
+            /**
+             * 返回生成的对话结果
+             */
             return ResponseEntity.ok(ChatWithOcrImageResponse.builder()
                     .ocrText(ocr.getText())
                     .answer(answer)

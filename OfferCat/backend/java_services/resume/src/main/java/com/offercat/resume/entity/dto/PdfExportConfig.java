@@ -8,94 +8,58 @@ import lombok.Data;
  */
 @Data
 public class PdfExportConfig {
-    /**
-     * 纸张大小：A4、A5、或自定义
-     */
+    // 纸张大小：A4、A5、或自定义
     private String pageSize = "A4";
 
-    /**
-     * 纸张宽度（磅）
-     */
+    // 纸张宽度（磅）
     private Float pageWidth;
 
-    /**
-     * 纸张高度（磅）
-     */
+    // 纸张高度（磅）
     private Float pageHeight;
 
-    /**
-     * 左边距（磅）
-     */
+    // 左边距（磅）
     private Float marginLeft = 36f;
 
-    /**
-     * 右边距（磅）
-     */
+    // 右边距（磅）
     private Float marginRight = 36f;
 
-    /**
-     * 上边距（磅）
-     */
+    // 上边距（磅）
     private Float marginTop = 36f;
 
-    /**
-     * 下边距（磅）
-     */
+    // 下边距（磅）
     private Float marginBottom = 36f;
 
-    /**
-     * 正文字体名称
-     */
-            private String fontName = "fonts/SIMSUN.TTC,0";
+    // 正文字体名称
+    private String fontName = "fonts/SIMSUN.TTC,0";
 
-    /**
-     * 字体编码
-     */
-            private String fontEncoding = "Identity-H";
+    // 字体编码
+    private String fontEncoding = "Identity-H";
 
-    /**
-     * 正文字体大小
-     */
+    // 正文字体大小
     private Float bodyFontSize = 10f;
 
-    /**
-     * 标题字体大小
-     */
+    // 标题字体大小
     private Float titleFontSize = 24f;
 
-    /**
-     * 章节标题字体大小
-     */
+    // 章节标题字体大小
     private Float sectionTitleFontSize = 14f;
 
-    /**
-     * 标题颜色
-     */
+    // 标题颜色
     private String titleColor = "1A5276";
 
-    /**
-     * 章节标题颜色
-     */
+    // 章节标题颜色
     private String sectionTitleColor = "34495E";
 
-    /**
-     * 章节背景颜色
-     */
+    // 章节背景颜色
     private String sectionBgColor = "F5F5F5";
 
-    /**
-     * 简历标题文本
-     */
+    // 简历标题文本
     private String resumeTitle = "简 历";
 
-    /**
-     * 是否显示AI评估章节
-     */
+    // 是否显示AI评估章节
     private Boolean showAiEvaluation = true;
 
-    /**
-     * 是否显示生成时间
-     */
+    // 是否显示生成时间
     private Boolean showGenerationTime = true;
 
     // 默认A4配置

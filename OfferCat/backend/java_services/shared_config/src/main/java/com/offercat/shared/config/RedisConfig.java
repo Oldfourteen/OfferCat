@@ -19,8 +19,12 @@ import org.springframework.data.redis.serializer.StringRedisSerializer;
  */
 @Configuration
 public class RedisConfig {
-
-    @Bean// 标识这是一个 Bean，用于自动注入到其他组件中
+    /**
+     * 配置 Redis 模板，设置 JSON 序列化
+     * @param connectionFactory Redis 连接工厂
+     * @return RedisTemplate 实例
+     */
+    @Bean
     public RedisTemplate<String, Object> redisTemplate(RedisConnectionFactory connectionFactory) {
         RedisTemplate<String, Object> template = new RedisTemplate<>();// 创建 Redis 模板
         template.setConnectionFactory(connectionFactory);// 设置连接工厂
@@ -42,7 +46,11 @@ public class RedisConfig {
 
         return template;// 返回 Redis 模板
     }
-
+    /**
+     * 配置 StringRedisTemplate 模板，用于存储字符串键值对
+     * @param connectionFactory Redis 连接工厂
+     * @return StringRedisTemplate 实例
+     */
     @Bean
     public StringRedisTemplate stringRedisTemplate(RedisConnectionFactory connectionFactory) {
         return new StringRedisTemplate(connectionFactory);// 创建 StringRedisTemplate 模板

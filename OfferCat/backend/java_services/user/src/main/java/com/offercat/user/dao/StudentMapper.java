@@ -15,10 +15,10 @@ public interface StudentMapper {
             "VALUES(#{userId}, #{school}, #{college}, #{grade}, #{className}, #{major}, #{companyId}, #{age}, #{education}, #{bio}, #{jobStatus}, #{jobDirection}, #{intentCity}, #{expectedSalary}, #{radarId}, #{createTime})")
     @Options(useGeneratedKeys = true, keyProperty = "studentId")
     int insert(com.offercat.user.entity.Student student);
-
+        /** 根据用户ID查询学生信息 */
     @Select("SELECT * FROM `student` WHERE user_id = #{userId}")
     com.offercat.user.entity.Student selectByUserId(Long userId);
-
+        /** 更新学生信息 */
     @Update("UPDATE `student` SET school = #{school}, college = #{college}, grade = #{grade}, class_name = #{className}, major = #{major}, " +
             "company_id = #{companyId}, age = #{age}, education = #{education}, bio = #{bio}, job_status = #{jobStatus}, " +
             "job_direction = #{jobDirection}, intent_city = #{intentCity}, expected_salary = #{expectedSalary}, radar_id = #{radarId} " +

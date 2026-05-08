@@ -10,25 +10,17 @@ import lombok.Data;
  */
 @Data
 public class LoginRequest {
-    /**
-     * 登录目标：手机号或邮箱
-     */
+    // 登录目标：手机号或邮箱
     @NotBlank(message = "目标（手机号/邮箱）不能为空")
     private String target;
 
-    /**
-     * 登录密码：当 loginType 为 password 时必填
-     */
+    // 登录密码：当 loginType 为 password 时必填
     private String password;
 
-    /**
-     * 验证码：当 loginType 为 code 时必填
-     */
+    // 验证码：当 loginType 为 code 时必填
     private String code;
 
-    /**
-     * 登录类型：password (密码登录) 或 code (验证码登录)
-     */
+    // 登录类型：password (密码登录) 或 code (验证码登录)
     @NotBlank(message = "登录类型不能为空（password/code）")
     @Pattern(regexp = "^(password|code)$", message = "登录类型必须是 password 或 code")
     private String loginType;

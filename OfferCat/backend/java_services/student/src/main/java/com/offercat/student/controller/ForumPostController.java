@@ -18,15 +18,22 @@ import org.springframework.web.bind.annotation.*;
 
 import com.offercat.student.dto.LikeRequestDTO;
 import com.offercat.student.dto.ForumPostCreateDTO;
-
+    /**
+     * 论坛帖子控制器
+     * 功能：处理论坛帖子相关的请求
+     */
 @RestController
 @RequestMapping("/forum/post")
 @CrossOrigin(origins = "*")
 public class ForumPostController {
-
+    /**
+     * 论坛帖子服务
+     */
     @Autowired
     private ForumPostService forumPostService;
-
+    /**
+     * 论坛图片目录
+     */
     @Value("${file.forum-images-dir}")
     private String forumImagesDir;
 
@@ -62,7 +69,10 @@ public class ForumPostController {
             String newFilename = UUID.randomUUID().toString() + suffix;
             File dest = new File(dir, newFilename);
             file.transferTo(dest);
-            // 这里返回可以直接访问的相对路径，因为前端ai配文等逻辑可能强依赖于/api/ai/photo/**的网关路由，为了统一存放在photo下，此处将返回路径调整为该路由格式
+            /**
+             * 这里返回可以直接访问的相对路径，
+             * 因为前端ai配文等逻辑可能强依赖于/api/ai/photo/**的网关路由，为了统一存放在photo下，此处将返回路径调整为该路由格式
+             */
             return ResponseResult.success("/api/ai/photo/" + newFilename);
         } catch (IOException e) {
             e.printStackTrace();

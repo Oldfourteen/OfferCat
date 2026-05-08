@@ -14,21 +14,34 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
-
+/**
+ * 论坛帖子服务实现类
+ * 功能：提供论坛帖子相关的业务逻辑
+ */
 @Service
 public class ForumPostServiceImpl implements ForumPostService {
-
+    /**
+     * 论坛帖子映射器
+     */
     @Autowired
     private ForumPostMapper forumPostMapper;
-
+    /**
+     * 分页查询论坛帖子
+     * @param searchDTO 搜索参数DTO
+     * @return 分页结果VO
+     */
     @Override
     public PageResult<ForumPostVO> searchPosts(ForumPostSearchDTO searchDTO) {
-        // 构建 orderBy
+        /**
+         * 构建 orderBy
+         */
         String orderBy = "p.create_time DESC";
         if (searchDTO.getSortBy() != null) {
             String field = searchDTO.getSortBy();
             String direction = "asc".equalsIgnoreCase(searchDTO.getSortDirection()) ? "ASC" : "DESC";
-            // 防注入：只允许特定字段排序
+            /**
+             * 防止注入：只允许特定字段排序
+             */
             if ("like_count".equals(field)) {
                 orderBy = "p.like_count " + direction;
             } else if ("comment_count".equals(field)) {
@@ -38,30 +51,46 @@ public class ForumPostServiceImpl implements ForumPostService {
             }
         }
 
-        // 处理分页
+        /**
+         * 处理分页
+         */
         int pageNum = searchDTO.getPageNum() != null && searchDTO.getPageNum() > 0 ? searchDTO.getPageNum() : 1;
         int pageSize = searchDTO.getPageSize() != null && searchDTO.getPageSize() > 0 ? searchDTO.getPageSize() : 10;
         int offset = (pageNum - 1) * pageSize;
 
-        // 查询总数
+        /**
+         * 查询总数
+         */
         long total = forumPostMapper.countSearchPosts(searchDTO.getKeyword());
 
-        // 查询数据
+        /**
+         * 查询数据
+         */
         List<ForumPostVO> records = forumPostMapper.searchPosts(
                 searchDTO.getKeyword(),
                 orderBy,
                 offset,
                 pageSize
         );
-
+        /**
+         * 返回分页结果VO
+         */
         return new PageResult<>(total, records, pageNum, pageSize);
     }
-
+    /**
+     * 获取论坛帖子详情
+     * @param postId 帖子ID
+     * @return 帖子详情VO
+     */
     @Override
     public ForumPostVO getPostDetail(Long postId) {
         return forumPostMapper.getPostDetail(postId);
     }
-
+    /**
+     * 点赞论坛帖子
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     */
     @Override
     @Transactional
     public void likePost(Long postId, Integer userId) {
@@ -73,7 +102,11 @@ public class ForumPostServiceImpl implements ForumPostService {
             forumPostMapper.insertLike(postId, userId);
         }
     }
-
+    /**
+     * 取消点赞论坛帖子
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     */
     @Override
     @Transactional
     public void unlikePost(Long postId, Integer userId) {
@@ -85,24 +118,36 @@ public class ForumPostServiceImpl implements ForumPostService {
             forumPostMapper.deleteLike(postId, userId);
         }
     }
-
+    /**
+     * 获取论坛帖子评论
+     * @param postId 帖子ID
+     * @return 评论列表VO
+     */
     @Override
     public List<ForumCommentVO> getComments(Long postId) {
         return forumPostMapper.getCommentsByPostId(postId);
     }
-
+    /**
+     * @param dto 评论DTO
+     */
     @Override
+    @Transactional
     public void addComment(ForumCommentDTO dto) {
         // userId 默认给个1如果是空的话，方便测试
         if (dto.getUserId() == null) {
             dto.setUserId(1L);
         }
         forumPostMapper.insertComment(dto);
-        // 增加帖子评论数
+        /**
+         * 增加帖子评论数
+         */ 
         forumPostMapper.incrementCommentCount(dto.getPostId());
     }
-
+    /**
+     * 创建论坛帖子
+     */
     @Override
+    @Transactional
     public void createPost(ForumPostCreateDTO dto) {
         if (dto.getUserId() == null) {
             dto.setUserId(1L);
@@ -118,8 +163,13 @@ public class ForumPostServiceImpl implements ForumPostService {
         }
         forumPostMapper.insertPost(dto.getUserId(), dto.getTitle(), dto.getContent(), imagesStr);
     }
-
+    /**
+     * 删除论坛帖子
+     * @param postId 帖子ID
+     * @param userId 用户ID
+     */
     @Override
+    @Transactional
     public void deletePost(Long postId, Long userId) {
         int rows = forumPostMapper.deletePost(postId, userId);
         if (rows == 0) {

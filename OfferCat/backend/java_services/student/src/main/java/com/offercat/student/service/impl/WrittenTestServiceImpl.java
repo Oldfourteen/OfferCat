@@ -17,12 +17,20 @@ import java.util.Random;
 
 import java.util.stream.Collectors;
 
+/**
+ * 手写测试服务实现类
+ * 功能：表示手写测试服务实现
+ */
 @Service
 public class WrittenTestServiceImpl implements WrittenTestService {
-
     @Autowired
     private WrittenTestMapper writtenTestMapper;
-
+    /**
+     * 获取学生写测试的问题
+     * @param studentId 学生ID
+     * @param questionId 问题ID
+     * @return 问题VO
+     */
     @Override
     public WrittenTestQuestionVO getQuestionForStudent(Long studentId, Long questionId) {
         WrittenTestQuestionBank question = writtenTestMapper.getQuestionById(questionId);
@@ -32,6 +40,12 @@ public class WrittenTestServiceImpl implements WrittenTestService {
         return convertToVO(studentId, question);
     }
 
+    /**
+     * 获取学生写测试的所有问题
+     * @param studentId 学生ID
+     * @param paperId 试卷ID
+     * @return 问题VO列表
+     */
     @Override
     public List<WrittenTestQuestionVO> getPaperQuestionsForStudent(Long studentId, Long paperId) {
         List<WrittenTestQuestionBank> questions = writtenTestMapper.getQuestionsByPaperId(paperId);
@@ -39,7 +53,12 @@ public class WrittenTestServiceImpl implements WrittenTestService {
                 .map(q -> convertToVO(studentId, q))
                 .collect(Collectors.toList());
     }
-
+    /**
+     * 将问题实体转换为VO
+     * @param studentId 学生ID
+     * @param question 问题实体
+     * @return 问题VO
+     */
     private WrittenTestQuestionVO convertToVO(Long studentId, WrittenTestQuestionBank question) {
         // Get shuffled keys based on studentId and questionId to ensure deterministic randomization
         List<String> shuffledKeys = getShuffledKeys(studentId, question.getQuestionId());
@@ -59,7 +78,10 @@ public class WrittenTestServiceImpl implements WrittenTestService {
 
         return vo;
     }
-
+    /**
+     * 提交学生写测试的答案
+     * @param dto 提交答案DTO
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void submitAnswer(SubmitWrittenAnswerDTO dto) {
@@ -68,10 +90,14 @@ public class WrittenTestServiceImpl implements WrittenTestService {
             throw new RuntimeException("Question not found");
         }
 
-        // Re-generate the deterministic shuffled keys
+        /**
+         * 获取随机选项键
+         */
         List<String> shuffledKeys = getShuffledKeys(dto.getStudentId(), dto.getQuestionId());
 
-        // Find the original key corresponding to the user's selected option
+        /**
+         * 查找用户选择的选项对应的原始键
+         */
         String selectedOption = dto.getSelectedOption(); // Expected "A", "B", "C", or "D"
         if (selectedOption == null || !selectedOption.matches("[A-D]")) {
             throw new IllegalArgumentException("Invalid option selected");
@@ -80,18 +106,28 @@ public class WrittenTestServiceImpl implements WrittenTestService {
         int selectedIndex = selectedOption.charAt(0) - 'A';
         String originalKey = shuffledKeys.get(selectedIndex);
 
-        // Check correctness against the original correct answer
+        /**
+         * 检查答案是否正确
+         * @param originalKey 原始选项键
+         */
         boolean isCorrect = originalKey.equalsIgnoreCase(question.getCorrectAnswer());
 
-        // Calculate score (assuming each question is 5 points for demonstration)
+        /**
+         * 计算成绩
+         */
         int score = isCorrect ? 5 : 0;
 
-        // Save record
+        /**
+         * 保存学生写测试记录
+         * @param record 学生写测试记录实体
+         */
         StudentWrittenTestRecord record = new StudentWrittenTestRecord();
         record.setStudentId(dto.getStudentId());
         record.setPaperRecordId(dto.getPaperRecordId());
         record.setQuestionId(dto.getQuestionId());
-        // Save the original option key so it matches the correctAnswer in the question bank table
+        /**
+         * 保存用户选择的选项键
+         */
         record.setUserAnswer(originalKey);
         record.setIsCorrect(isCorrect ? 1 : 0);
         record.setTotalScore(score);
@@ -100,7 +136,7 @@ public class WrittenTestServiceImpl implements WrittenTestService {
     }
 
     /**
-     * Deterministically shuffle the options "A", "B", "C", "D" based on a seed derived from studentId and questionId
+     * 获取随机选项键
      */
     private List<String> getShuffledKeys(Long studentId, Long questionId) {
         List<String> keys = Arrays.asList("A", "B", "C", "D");
@@ -109,7 +145,12 @@ public class WrittenTestServiceImpl implements WrittenTestService {
         Collections.shuffle(keys, new Random(seed));
         return keys;
     }
-
+    /**
+     * 获取选项内容
+     * @param question 问题实体
+     * @param key 选项键
+     * @return 选项内容
+     */
     private String getOptionContent(WrittenTestQuestionBank question, String key) {
         switch (key) {
             case "A": return question.getOptionA();

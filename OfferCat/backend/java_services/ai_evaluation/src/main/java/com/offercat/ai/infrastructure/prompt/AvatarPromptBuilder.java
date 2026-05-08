@@ -3,6 +3,11 @@ package com.offercat.ai.infrastructure.prompt;
 import com.offercat.ai.dto.request.ImageGenerationRequest;
 
 /**
+ * 头像提示词构建器
+ * 用来构建头像生成的提示词
+ */
+
+/**
  * @author: Ofteen
  * @data: 2026/4/21 - 21:25
  * @mail: oldfourteen41@gmail.com
@@ -10,7 +15,12 @@ import com.offercat.ai.dto.request.ImageGenerationRequest;
  */
 
 public class AvatarPromptBuilder {
-
+    /**
+     * 构建头像生成的提示词
+     * @param basePrompt 基础提示词
+     * @param request 生成请求
+     * @return 完整的提示词
+     */
     public static String buildPrompt(String basePrompt, ImageGenerationRequest request) {
         StringBuilder prompt = new StringBuilder(basePrompt == null ? "" : basePrompt);
         
@@ -36,7 +46,10 @@ public class AvatarPromptBuilder {
                     break;
             }
         }
-        
+        /**
+         * 自定义提示词
+         * 用来添加自定义的提示词
+         */
         String customPrompt = request.getCustomPrompt();
         if (customPrompt != null && !customPrompt.isBlank()) {
             prompt.append(", ").append(customPrompt);

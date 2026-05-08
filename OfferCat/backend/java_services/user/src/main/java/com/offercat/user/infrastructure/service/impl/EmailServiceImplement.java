@@ -15,7 +15,7 @@ import org.springframework.stereotype.Service;
 public class EmailServiceImplement implements EmailService {
     @Override
     public boolean sendEmail(String email, String code) {
-        // 模拟邮件发送
+        /** 模拟邮件发送 */
         log.info("向 {} 发送验证码: {}", email, code);
         return true;
     }

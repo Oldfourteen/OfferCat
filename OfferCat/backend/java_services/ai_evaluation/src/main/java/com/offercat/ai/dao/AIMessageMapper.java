@@ -19,7 +19,9 @@ public interface AIMessageMapper {
     @Insert("INSERT INTO ai_consult(user_id, user_content, ai_content, user_images, ai_images, create_time) " +
             "VALUES(#{userId}, #{userContent}, #{aiContent}, #{userImages}, #{aiImages}, #{createTime})")
     int insertConsult(AiConsult aiConsult);
-
+    /**
+     * 根据用户ID查询AI咨询历史记录
+     */
     @Select("SELECT * FROM ai_consult WHERE user_id = #{userId} ORDER BY create_time DESC")
     List<AiConsult> selectHistoryByUserId(Long userId);
 }

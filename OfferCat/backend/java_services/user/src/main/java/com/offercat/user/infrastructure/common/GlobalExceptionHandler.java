@@ -10,7 +10,9 @@ import java.util.stream.Collectors;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
-
+    /**
+     * 处理方法参数校验异常
+     */
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseResult<Void> handleValidationExceptions(MethodArgumentNotValidException ex) {
         String errorMsg = ex.getBindingResult().getFieldErrors().stream()
@@ -18,12 +20,17 @@ public class GlobalExceptionHandler {
                 .collect(Collectors.joining(", "));
         return ResponseResult.badRequest(errorMsg);
     }
-
+    /**
+     * 处理 IllegalArgumentException 异常
+     */
     @ExceptionHandler(IllegalArgumentException.class)
     public ResponseResult<Void> handleIllegalArgumentException(IllegalArgumentException ex) {
         return ResponseResult.badRequest(ex.getMessage() != null ? ex.getMessage() : "参数错误");
     }
 
+    /**
+     * 处理其他异常
+     */ 
     @ExceptionHandler(Exception.class)
     public ResponseResult<Void> handleException(Exception ex) {
         return ResponseResult.internalError("服务器异常：" + (ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));

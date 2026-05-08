@@ -4,7 +4,7 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/*
+/**
  * 简历实体类
  * 功能：存储简历信息
  * 对应数据库表：resume

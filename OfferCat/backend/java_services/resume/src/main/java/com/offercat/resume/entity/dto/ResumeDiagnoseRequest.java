@@ -2,7 +2,7 @@ package com.offercat.resume.entity.dto;
 
 import lombok.Data;
 
-/*
+/**
  * 简历诊断请求DTO
  * 功能：接收简历诊断请求参数
  */

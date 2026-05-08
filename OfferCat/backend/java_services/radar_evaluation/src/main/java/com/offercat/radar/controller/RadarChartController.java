@@ -35,16 +35,30 @@ public class RadarChartController {
     private final QuestionnaireService questionnaireService;
     private final RadarEvaluationService radarEvaluationService;
 
+    /**
+     * 提交雷达图数据
+     * 输入：雷达图请求对象
+     * 输出：生成的雷达图响应对象
+     */
     @PostMapping("/submit")
     public ResponseEntity<RadarChartResponse> submit(@Valid @RequestBody RadarChartRequest request){
         return ResponseEntity.ok(radarChartService.generate(request));
     }
 
+    /**
+     * 获取我的雷达图评价
+     * 输入：学生ID
+     * 输出：我的雷达图评价对象
+     */
     @GetMapping("/my-evaluation")
     public ResponseEntity<RadarEvaluation> getMyEvaluation(@RequestParam("studentId") Long studentId) {
         return ResponseEntity.ok(radarEvaluationService.getRadarEvaluation(studentId));
     }
 
+    /**
+     * 获取所有问题
+     * 输出：所有问题列表
+     */ 
     @GetMapping("/questions")
     public ResponseEntity<List<QuestionnaireResponse>> getQuestions() {
         return ResponseEntity.ok(questionnaireService.getAllQuestions());

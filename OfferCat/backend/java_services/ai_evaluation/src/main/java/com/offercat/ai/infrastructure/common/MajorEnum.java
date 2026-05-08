@@ -3,6 +3,10 @@ package com.offercat.ai.infrastructure.common;
 import lombok.Getter;
 
 /**
+ * 专业枚举类
+ * 用来表示专业的枚举值
+ */
+/**
  * @author: Ofteen
  * @data: 2026/4/17 - 20:38
  * @mail: oldfourteen41@gmail.com
@@ -21,15 +25,25 @@ public enum MajorEnum {
     SE("software","软件工程"),
     DATA("bigdata", "数据科学与大数据技术");
 
-
-    private final String code;
+    // 专业代码
+       private final String code;
+    // 专业名称
     private final String name;
-
+    /**
+     * 构造函数
+     * @param code 专业代码
+     * @param name 专业名称
+     */
     MajorEnum(String code, String name){
         this.code = code;
         this.name = name;
     }
-
+    
+    /**
+     * 根据专业代码或名称获取专业名称
+     * @param codeOrName 专业代码或名称
+     * @return 专业名称
+     */
     public static String getNameByCode(String codeOrName){
         for(MajorEnum major : values()){
             if(major.getCode().equalsIgnoreCase(codeOrName) || major.getName().equalsIgnoreCase(codeOrName)){

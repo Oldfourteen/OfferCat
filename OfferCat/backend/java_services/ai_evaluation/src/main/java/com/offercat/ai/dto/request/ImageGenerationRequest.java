@@ -26,7 +26,7 @@ public class ImageGenerationRequest {
     //用户只能上传一张图片（URL或Base64）
     private String image;
     
-    // 前端传来的风格：professional, casual, tech, art, custom
+    // 前端传来的风格
     private String style;
     
     // 用户自定义的提示词（可选）

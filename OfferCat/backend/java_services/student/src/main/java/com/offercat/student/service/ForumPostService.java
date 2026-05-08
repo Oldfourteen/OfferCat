@@ -9,7 +9,10 @@ import com.offercat.student.vo.ForumCommentVO;
 import java.util.List;
 
 import com.offercat.student.dto.ForumPostCreateDTO;
-
+/**
+ * 论坛帖子服务接口
+ * 功能：提供论坛帖子的增删改查操作
+ */
 public interface ForumPostService {
     /**
      * 分页搜索论坛帖子

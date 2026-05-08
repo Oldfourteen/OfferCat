@@ -14,7 +14,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("/auth")
-@CrossOrigin(origins = "*") // 允许 Vue 等前端应用跨域访问
+@CrossOrigin(origins = "*") /** 允许 Vue 等前端应用跨域访问 */
 public class AuthController {
 
     @Autowired
@@ -58,5 +58,5 @@ public class AuthController {
         return authService.completeStudentInfo(request);
     }
 
-    // 已移除教师和企业相关接口
+    /** 已移除教师和企业相关接口 */
 }

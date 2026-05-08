@@ -4,9 +4,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/*
- * AI题库实体类
- * 功能：存储面试题目信息
+/**
+ * AI题库实体类, 用来存储面试题目信息
  * 实现：使用Lombok的@Data注解生成getter/setter等方法
  */
 @Data

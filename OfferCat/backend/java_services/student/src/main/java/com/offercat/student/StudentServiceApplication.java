@@ -16,7 +16,7 @@ public class StudentServiceApplication {
 
  
     public static void main(String[] args) {
-        // 启动应用
+       
         SpringApplication.run(StudentServiceApplication.class, args);
     }
 }

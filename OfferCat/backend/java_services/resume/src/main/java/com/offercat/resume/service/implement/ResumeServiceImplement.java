@@ -38,15 +38,26 @@ import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 
+/**
+ * 简历服务实现类
+ * 功能：提供简历相关的业务逻辑
+ */
 @Slf4j
 @Service
 @RequiredArgsConstructor// 注入 final 类型的字段
 public class ResumeServiceImplement implements ResumeService {
+    /**
+     * 简历数据访问层
+     */
 
     private final ResumeMapper resumeMapper;// 注入简历数据访问层
     private final AiServiceClient aiServiceClient;// 注入AI服务客户端
 
-
+    /**
+     * 创建简历
+     * 输入：简历对象
+     * 输出：创建的简历对象
+     */
     @Override
     public Resume createResume(Resume resume) {// 创建简历
         resume.setResumeStatus(1);
@@ -56,6 +67,11 @@ public class ResumeServiceImplement implements ResumeService {
         return resume;
     }
 
+    /**
+     * 更新简历
+     * 输入：简历对象
+     * 输出：更新后的简历对象
+     */
     @Override
     public Resume updateResume(Resume resume) {// 更新简历
         resume.setUpdateTime(LocalDateTime.now());
@@ -63,22 +79,42 @@ public class ResumeServiceImplement implements ResumeService {
         return resume;
     }
 
+    /**
+     * 删除简历
+     * 输入：简历ID
+     * 输出：是否删除成功
+     */
     @Override
     public boolean deleteResume(Long id) {// 删除简历
         int result = resumeMapper.deleteById(id);
         return result > 0;
     }
 
+    /**
+     * 获取简历
+     * 输入：简历ID
+     * 输出：简历对象
+     */
     @Override
     public Resume getResume(Long id) {// 获取简历
         return resumeMapper.findById(id);
     }
 
+    /**
+     * 获取简历列表
+     * 输入：用户ID
+     * 输出：简历列表
+     */
     @Override
     public List<Resume> getResumeList(Long userId) {// 获取简历列表
         return resumeMapper.findByUserId(userId);
     }
 
+    /**
+     * 启用简历
+     * 输入：简历ID
+     * 输出：启用后的简历对象
+     */
     @Override
     public Resume enableResume(Long id) {// 启用简历
         Resume resume = resumeMapper.findById(id);
@@ -90,6 +126,11 @@ public class ResumeServiceImplement implements ResumeService {
         return resume;
     }
 
+    /**
+     * 禁用简历
+     * 输入：简历ID
+     * 输出：禁用后的简历对象
+     */
     @Override
     public Resume disableResume(Long id) {// 禁用简历
         Resume resume = resumeMapper.findById(id);
@@ -101,6 +142,11 @@ public class ResumeServiceImplement implements ResumeService {
         return resume;
     }
 
+    /**
+     * 生成简历
+     * 输入：生成简历请求
+     * 输出：生成的简历对象
+     */
     @Override
     public Resume generateResume(ResumeGenerateRequest request) {// 生成简历
         String aiResult = aiServiceClient.generateResume(
@@ -119,6 +165,11 @@ public class ResumeServiceImplement implements ResumeService {
         return resume;
     }
 
+    /**
+     * 诊断简历
+     * 输入：诊断简历请求
+     * 输出：诊断结果
+     */
     @Override
     public ResumeDiagnoseResult diagnoseResume(ResumeDiagnoseRequest request) {// 诊断简历  
         Resume resume = resumeMapper.findById(request.getResumeId());
@@ -138,7 +189,9 @@ public class ResumeServiceImplement implements ResumeService {
         ResumeDiagnoseResult result = new ResumeDiagnoseResult();// 诊断结果
         result.setResumeId(request.getResumeId());// 简历ID
         
-        // 从AI返回的结果中提取分数
+        /**
+         * 从AI返回的结果中提取分数
+         */
         Integer score = extractScoreFromAiResult(aiResult);
         result.setScore(score);
         result.setDiagnosis(aiResult);
@@ -152,25 +205,39 @@ public class ResumeServiceImplement implements ResumeService {
         return result;
     }
 
+    /**
+     * 导出简历PDF
+     * 输入：简历ID
+     * 输出：PDF字节数组
+     */
     @Override
     public byte[] exportResumeToPdf(Long id) {// 导出简历PDF
         return exportResumeToPdf(id, PdfExportConfig.defaultA4Config());
     }
 
+    /**
+     * 导出简历PDF
+     * 输入：简历ID和导出配置
+     * 输出：PDF字节数组
+     */
     @Override
-    public byte[] exportResumeToPdf(Long id, PdfExportConfig config) {// 导出简历PDF
+    public byte[] exportResumeToPdf(Long id, PdfExportConfig config) {/** 导出简历PDF */
+        
         Resume resume = resumeMapper.findById(id);
         if (resume == null) {
             return null;
         }
 
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();// 输出流  
-
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();/** 输出流 */
+        /**
+         * 导出简历PDF
+         */
+        
         try {
-            PdfWriter writer = new PdfWriter(outputStream);// PDF写入器
-            PdfDocument pdfDoc = new PdfDocument(writer);// PDF文档
+            PdfWriter writer = new PdfWriter(outputStream);/** PDF写入器 */
+            PdfDocument pdfDoc = new PdfDocument(writer);/** PDF文档 */
 
-            Document document = createDocument(pdfDoc, config);// 创建文档      
+            Document document = createDocument(pdfDoc, config);/** 创建文档 */      
 
                                     PdfFont font = PdfFontFactory.createFont(config.getFontName(), config.getFontEncoding(), com.itextpdf.kernel.font.PdfFontFactory.EmbeddingStrategy.PREFER_EMBEDDED);
 
@@ -196,7 +263,7 @@ public class ResumeServiceImplement implements ResumeService {
             addInfoCell(infoTable, "创建时间", resume.getCreateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), font, bodyFontSize);
             addInfoCell(infoTable, "更新时间", resume.getUpdateTime().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss")), font, bodyFontSize);
 
-            document.add(infoTable);// 添加个人信息表格
+            document.add(infoTable);/** 添加个人信息表格 */
 
             addSection(document, "在校经历", resume.getCampusExperience(), sectionColor, lightGray, font, bodyFontSize, sectionTitleFontSize);
             addSection(document, "工作经历", resume.getWorkExperience(), sectionColor, lightGray, font, bodyFontSize, sectionTitleFontSize);
@@ -221,13 +288,17 @@ public class ResumeServiceImplement implements ResumeService {
             document.close();
 
         } catch (Exception e) {
-            log.error("导出简历PDF失败", e);// 导出简历PDF失败
+            log.error("导出简历PDF失败", e);/** 导出简历PDF失败 */
             return null;
         }
 
-        return outputStream.toByteArray();// 返回输出流中的字节数组
+        return outputStream.toByteArray();/** 返回输出流中的字节数组 */
     }
-
+    /**
+     * 创建文档
+     * 输入：PDF文档和导出配置
+     * 输出：文档对象
+     */
     private Document createDocument(PdfDocument pdfDoc, PdfExportConfig config) {// 创建文档
         PageSize pageSize = determinePageSize(config);// 纸张大小
         Document document = new Document(pdfDoc, pageSize);
@@ -311,8 +382,8 @@ public class ResumeServiceImplement implements ResumeService {
             return 0;
         }
         
-        // 尝试从AI返回的结果中提取分数
-        // 假设AI返回的结果中包含"评分：XX分"或"分数：XX"等格式
+        /** 尝试从AI返回的结果中提取分数 
+        *假设AI返回的结果中包含"评分：XX分"或"分数：XX"等格式 */
         try {
             // 查找分数模式
             String[] patterns = {"评分：", "分数：", "score:", "评分:", "分数:"};
@@ -323,7 +394,7 @@ public class ResumeServiceImplement implements ResumeService {
                     int startIndex = index + pattern.length();
                     int endIndex = startIndex;
                     
-                    // 提取数字
+                    /** 提取数字 */
                     while (endIndex < aiResult.length() && 
                            (Character.isDigit(aiResult.charAt(endIndex)) || aiResult.charAt(endIndex) == '.')) {
                         endIndex++;
@@ -332,7 +403,7 @@ public class ResumeServiceImplement implements ResumeService {
                     String scoreStr = aiResult.substring(startIndex, endIndex).trim();
                     if (!scoreStr.isEmpty()) {
                         double score = Double.parseDouble(scoreStr);
-                        // 确保分数在0-100之间
+                        /** 确保分数在0-100之间 */
                         if (score > 100) {
                             score = 100;
                         }
@@ -341,8 +412,8 @@ public class ResumeServiceImplement implements ResumeService {
                 }
             }
             
-            // 如果没有找到明确的分数，根据内容质量给出一个估算分数
-            // 这里使用简单的启发式方法
+            /** 如果没有找到明确的分数，根据内容质量给出一个估算分数
+            * 这里使用简单的启发式方法 */
             int estimatedScore = 70; // 基础分
             
             if (aiResult.contains("优秀") || aiResult.contains("很好")) {
@@ -363,7 +434,7 @@ public class ResumeServiceImplement implements ResumeService {
         }
     }
 
-    /*
+    /**
      * 添加个人信息表格单元格
      * 输入：表格、标签、值、字体、字体大小
      * 输出：无
@@ -378,7 +449,7 @@ public class ResumeServiceImplement implements ResumeService {
 
 
 
-    /*
+    /**
      * 添加章节
      * 输入：文档、章节标题、章节内容、章节颜色、背景颜色、字体、加粗字体、体大小、章节标题字体大小
      * 输出：无
@@ -394,7 +465,9 @@ public class ResumeServiceImplement implements ResumeService {
                     .setFontColor(sectionColor)
                     .setMarginTop(15)
                     .setMarginBottom(5));
-
+            
+            /** 添加章节内容表格 */
+            
             Table table = new Table(1).setWidth(UnitValue.createPercentValue(100));
             Cell cell = new Cell()
                     .add(new Paragraph(content).setFontSize(bodyFontSize).setFont(font))
@@ -405,7 +478,7 @@ public class ResumeServiceImplement implements ResumeService {
             document.add(table);
         }
     }
-    /*
+    /**
      * 获取学生简历统计信息
      * 输入：学生ID
      * 输出：简历统计信息对象
@@ -414,28 +487,29 @@ public class ResumeServiceImplement implements ResumeService {
     public ResumeStatsResponse getResumeStats(Long userId) {
         ResumeStatsResponse response = new ResumeStatsResponse();
         
-        // 获取用户的简历列表
+        /** 获取用户的简历列表 */
         List<Resume> resumes = resumeMapper.findByUserId(userId);
         
-        // 计算总简历数
+        /** 计算总简历数 */
         response.setTotalResumes(resumes.size());
         
-        // 计算近30天练习数
+        /** 计算近30天练习数 */
         LocalDateTime thirtyDaysAgo = LocalDateTime.now().minusDays(30);
         long recentDeliveries = resumes.stream()
                 .filter(resume -> resume.getUpdateTime().isAfter(thirtyDaysAgo))
                 .count();
         response.setRecentDeliveries((int) recentDeliveries);
         
-        // 计算简历完善度
+        /** 计算简历完善度 */
         if (resumes.isEmpty()) {
             response.setCompletion(0);
         } else {
-            // 取最新的简历计算完善度
+            /** 取最新的简历计算完善度 */
             Resume latestResume = resumes.stream()
                     .max((r1, r2) -> r1.getUpdateTime().compareTo(r2.getUpdateTime()))
                     .orElse(null);
             
+            /** 计算简历完善度 */
             if (latestResume != null) {
                 int completion = 0;
                 int totalFields = 4; // 在校经历、项目经验、自我评价、照片
@@ -461,21 +535,25 @@ public class ResumeServiceImplement implements ResumeService {
         
         return response;
     }
-
+    /**
+     * 上传简历
+     * 输入：学生ID、简历文件
+     * 输出：上传的简历对象
+     */
     @Override
     public Resume uploadResume(Long userId, MultipartFile file) {
-        // 验证文件类型
+        /** 验证文件类型 */
         String contentType = file.getContentType();
         if (!contentType.equals("application/pdf") && !contentType.equals("application/msword") && !contentType.equals("application/vnd.openxmlformats-officedocument.wordprocessingml.document")) {
             throw new IllegalArgumentException("只支持 PDF 和 Word 格式的文件");
         }
         
-        // 生成文件存储路径
+        /** 生成文件存储路径 */
         String fileName = file.getOriginalFilename();
         String uploadDir = "g:/uploads/resumes/" + userId;
         File dir = new File(uploadDir);
         
-        // 创建目录（如果不存在）
+        /** 创建目录（如果不存在） */
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
                 log.error("创建目录失败: {}", uploadDir);
@@ -483,11 +561,11 @@ public class ResumeServiceImplement implements ResumeService {
             }
         }
         
-        // 完整的文件路径
+        /** 完整的文件路径 */
         String filePath = uploadDir + "/" + fileName;
         File destFile = new File(filePath);
         
-        // 保存文件
+        /** 保存文件 */
         try {
             log.info("保存文件: {}", filePath);
             file.transferTo(destFile);
@@ -496,7 +574,7 @@ public class ResumeServiceImplement implements ResumeService {
             throw new RuntimeException("文件上传失败", e);
         }
         
-        // 创建简历记录
+        /** 创建简历记录 */
         Resume resume = new Resume();
         resume.setUserId(userId);
         resume.setProjectExperience("附件简历");
@@ -505,7 +583,7 @@ public class ResumeServiceImplement implements ResumeService {
         resume.setCreateTime(LocalDateTime.now());
         resume.setUpdateTime(LocalDateTime.now());
         
-        // 保存到数据库
+        /** 保存到数据库 */
         resumeMapper.insert(resume);
         
         return resume;

@@ -7,6 +7,10 @@ import com.offercat.student.vo.InterviewQuestionVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 面试控制器
+ * 功能：处理面试相关的请求
+ */
 @RestController
 @RequestMapping("/student/interview")
 public class InterviewController {
@@ -15,11 +19,11 @@ public class InterviewController {
     private InterviewService interviewService;
 
     /**
-     * Get an interview question for the student
+     * 获取面试问题
      *
-     * @param studentId  Student ID
-     * @param questionId Question ID
-     * @return InterviewQuestionVO
+     * @param studentId  学生ID
+     * @param questionId 问题ID
+     * @return 面试问题VO对象
      */
     @GetMapping("/question")
     public ResponseResult<InterviewQuestionVO> getQuestion(
@@ -35,11 +39,11 @@ public class InterviewController {
     }
 
     /**
-     * Get all interview questions for a specific test paper
+     * 获取测试试卷的所有面试问题
      *
-     * @param studentId Student ID
-     * @param paperId   Paper ID
-     * @return List of InterviewQuestionVO
+     * @param studentId 学生ID
+     * @param paperId   测试试卷ID
+     * @return 面试问题VO列表
      */
     @GetMapping("/paper-questions")
     public ResponseResult<java.util.List<InterviewQuestionVO>> getPaperQuestions(
@@ -54,10 +58,10 @@ public class InterviewController {
     }
 
     /**
-     * Submit an answer to an interview question
+     * 提交面试答案
      *
-     * @param dto SubmitInterviewAnswerDTO
-     * @return Success message
+     * @param dto SubmitInterviewAnswerDTO对象
+     * @return 成功消息
      */
     @PostMapping("/submit")
     public ResponseResult<String> submitAnswer(@RequestBody SubmitInterviewAnswerDTO dto) {

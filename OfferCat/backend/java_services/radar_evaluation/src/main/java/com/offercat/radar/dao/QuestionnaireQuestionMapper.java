@@ -7,10 +7,16 @@ import org.apache.ibatis.annotations.Results;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
-
+/**
+ * 问卷问题映射器
+ */
+ 
 @Mapper
 public interface QuestionnaireQuestionMapper {
-    
+    /**
+     * 获取所有问题
+     * 输出：所有问题列表
+     */
     @Select("SELECT * FROM questionnaire_question ORDER BY question_order ASC")
     @Results({
         @Result(property = "id", column = "id"),
@@ -26,5 +32,9 @@ public interface QuestionnaireQuestionMapper {
         @Result(property = "scoresC", column = "scores_c"),
         @Result(property = "scoresD", column = "scores_d")
     })
+    /**
+     * 获取所有问题
+     * 输出：所有问题列表
+     */
     List<QuestionnaireQuestion> selectAllQuestions();
 }

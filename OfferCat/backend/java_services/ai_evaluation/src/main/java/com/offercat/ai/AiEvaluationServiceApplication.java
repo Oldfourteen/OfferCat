@@ -5,7 +5,7 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 import org.springframework.cloud.openfeign.EnableFeignClients;
 
-/*
+/**
  * AI评估服务应用程序入口类
  * 功能：启动AI评估服务，提供面试和简历评估相关功能
  * 实现：使用Spring Boot自动配置，启用服务发现客户端
@@ -15,7 +15,7 @@ import org.springframework.cloud.openfeign.EnableFeignClients;
 @EnableFeignClients(basePackages = "com.offercat.ai._service")
 public class AiEvaluationServiceApplication {
 
-    /*
+    /**
      * 主方法
      * 输入：命令行参数
      * 实现：启动Spring Boot应用

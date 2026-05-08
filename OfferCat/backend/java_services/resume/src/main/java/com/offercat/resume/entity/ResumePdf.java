@@ -9,53 +9,33 @@ import java.time.LocalDateTime;
  */
 @Data
 public class ResumePdf {
-    /**
-     * PDF文件ID
-     */
+    // PDF文件ID
     private Long pdfId;
     
-    /**
-     * 归属学生ID
-     */
+    // 归属学生ID
     private Long studentId;
     
-    /**
-     * 关联简历ID
-     */
+    // 关联简历ID
     private Long resumeId;
     
-    /**
-     * 生成的PDF文件存储路径或URL
-     */
+    // 生成的PDF文件存储路径或URL
     private String fileUrl;
     
-    /**
-     * PDF文件名
-     */
+    // PDF文件名
     private String fileName;
     
-    /**
-     * 文件大小(字节)
-     */
+    // 文件大小(字节)
     private Integer fileSize;
     
-    /**
-     * 版本号(用于版本管理)
-     */
+    // 版本号(用于版本管理)
     private Integer fileVersion;
     
-    /**
-     * 文件哈希值(用于去重和校验)
-     */
+    // 文件哈希值(用于去重和校验)
     private String fileHash;
     
-    /**
-     * 生成时间
-     */
+    // 生成时间
     private LocalDateTime createTime;
     
-    /**
-     * 更新时间
-     */
+    // 更新时间
     private LocalDateTime updateTime;
 }

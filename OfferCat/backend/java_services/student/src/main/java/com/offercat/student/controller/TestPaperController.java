@@ -8,6 +8,10 @@ import com.offercat.student.vo.TestPaperVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
+/**
+ * 套卷控制器
+ * 功能：提供套卷相关的 API 接口
+ */
 @RestController
 @RequestMapping("/student/test-paper")
 public class TestPaperController {

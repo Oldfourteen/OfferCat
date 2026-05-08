@@ -6,7 +6,10 @@ import com.offercat.student.service.WrittenTestService;
 import com.offercat.student.vo.WrittenTestQuestionVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
-
+/**
+ * 书面测试控制器
+ * 功能：提供书面测试相关的 API 接口
+ */
 @RestController
 @RequestMapping("/student/written-test")
 public class WrittenTestController {
@@ -15,10 +18,9 @@ public class WrittenTestController {
     private WrittenTestService writtenTestService;
 
     /**
-     * Get a written test question with randomized options for the student
-     *
-     * @param studentId  Student ID
-     * @param questionId Question ID
+     * 获取随机选项的书面测试问题
+     * @param studentId 学生 ID
+     * @param questionId 问题 ID
      * @return Randomized WrittenTestQuestionVO
      */
     @GetMapping("/question")
@@ -35,11 +37,10 @@ public class WrittenTestController {
     }
 
     /**
-     * Get all questions for a specific test paper
-     *
-     * @param studentId Student ID
-     * @param paperId   Paper ID
-     * @return List of randomized WrittenTestQuestionVO
+     * 获取特定套卷的所有问题
+     * @param studentId 学生 ID
+     * @param paperId 套卷 ID
+     * @return 随机选项的书面测试问题列表
      */
     @GetMapping("/paper-questions")
     public ResponseResult<java.util.List<WrittenTestQuestionVO>> getPaperQuestions(
@@ -54,10 +55,9 @@ public class WrittenTestController {
     }
 
     /**
-     * Submit an answer to a written test question
-     *
-     * @param dto SubmitWrittenAnswerDTO containing selected randomized option
-     * @return Success message
+     * 提交书面测试答案
+     * @param dto SubmitWrittenAnswerDTO 包含选中的随机选项
+     * @return 成功消息 
      */
     @PostMapping("/submit")
     public ResponseResult<String> submitAnswer(@RequestBody SubmitWrittenAnswerDTO dto) {

@@ -1,5 +1,6 @@
 package com.offercat.ai.dto.response;
 
+
 /**
  * @author: Ofteen
  * @data: 2026/4/21 - 20:07
@@ -10,7 +11,10 @@ package com.offercat.ai.dto.response;
 import lombok.Data;
 
 import java.util.List;
-
+/**
+ * 图片生成响应DTO
+ * 用来接收图片生成的结果
+ */
 @Data
 public class ImageGenerationResponse {
     // 硅基流动返回的限期有效图片 通常限期为1小时内

@@ -25,24 +25,42 @@ import java.util.Map;
 public class DeepSeekChatController {
     @Autowired
     private DeepSeekChatServices deepSeekChatServices;
-
+    
+    /**
+     * 与AI HR咨询
+     * 输入：用户ID、专业代码、问题
+     * 输出：咨询结果
+     */
     @PostMapping("/chat")
     public String chat(
             @RequestParam Long userId,
             @RequestParam String majorCode,
             @RequestParam String question
     ){
+        /**
+         * 与AI HR咨询
+         * 输入：用户ID、专业代码、问题
+         * 输出：咨询结果
+         */
         String answer = deepSeekChatServices.chatWithAI(userId, majorCode, question);
         return answer;
     }
 
-    //全新的接口，支持四种不同的模式
+    /**
+     * 全新的的接口，支持四种不同的模式
+     * 输入：用户ID、专业代码、问题、咨询模式、用户图片
+     * 输出：咨询结果
+     */
     @PostMapping("/chat-mode")
     public String chatMode(@Valid @RequestBody AiChatModeRequest req){
         return deepSeekChatServices.chatWithAI(req.getUserId(), req.getMajorCode(), req.getMode(), req.getQuestion(), req.getUserImages());
     }
 
-    // 流式接口，返回 SseEmitter
+    /**
+     * 流式接口，返回 SseEmitter
+     * 输入：用户ID、专业代码、问题、咨询模式、用户图片
+     * 输出：咨询结果
+     */
     @PostMapping(value = "/chat-stream", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chatStream(@Valid @RequestBody AiChatModeRequest req) {
         SseEmitter emitter = new SseEmitter(120000L); // 2分钟超时
@@ -50,13 +68,21 @@ public class DeepSeekChatController {
         return emitter;
     }
 
-    // 获取历史对话记录
+    /**
+     * 获取历史对话记录
+     * 输入：用户ID
+     * 输出：对话记录列表
+     */
     @GetMapping("/history")
     public Object getHistory(@RequestParam Long userId) {
         return deepSeekChatServices.getHistoryByUserId(userId);
     }
 
-    // 上传聊天图片
+    /**
+     * 上传聊天图片
+     * 输入：聊天图片URL
+     * 输出：图片URL
+     */
     @PostMapping("/upload-image")
     public ResponseEntity<?> uploadChatImage(@RequestParam("file") MultipartFile file) {
         if (file.isEmpty()) {
@@ -70,7 +96,9 @@ public class DeepSeekChatController {
             }
             String fileName = UUID.randomUUID().toString().replace("-", "") + extension;
             
-            // 确保目录存在
+            /**
+             * 确保目录存在
+             */
             File dir = new File("D:/offercat/photo");
             if (!dir.exists()) {
                 dir.mkdirs();
@@ -79,7 +107,9 @@ public class DeepSeekChatController {
             File dest = new File(dir, fileName);
             file.transferTo(dest);
             
-            // 返回可访问的 URL（假设前端可以通过 /api/ai/photo/fileName 访问）
+            /**
+             * 返回可访问的 URL（假设前端可以通过 /api/ai/photo/fileName 访问）
+             */
             String fileUrl = "/api/ai/photo/" + fileName;
             return ResponseEntity.ok(Map.of("url", fileUrl));
         } catch (IOException e) {

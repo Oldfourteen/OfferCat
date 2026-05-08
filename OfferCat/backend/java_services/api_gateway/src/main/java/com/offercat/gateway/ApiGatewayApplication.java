@@ -4,7 +4,7 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
 
-/*
+/**
  * API网关服务应用程序入口类
  * 功能：启动API网关，提供请求路由和负载均衡功能
  */

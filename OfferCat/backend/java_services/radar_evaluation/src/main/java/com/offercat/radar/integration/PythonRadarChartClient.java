@@ -26,13 +26,24 @@ import java.util.Map;
 public class PythonRadarChartClient {
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper = new ObjectMapper();
-
+    /**
+     * Python雷达图评价客户端
+     */
+    
     @Value("${radar.python.base-url:http://localhost:5000}")
     private String baseUrl;
-
+    /**
+     * Python雷达图评价路径
+     */
     @Value("${radar.python.path:/radar-chart}")
     private String path;
-
+    /**
+     * 生成雷达图
+     * 功能：根据学生能力雷达评估结果生成雷达图
+     * 实现：使用Python的Flask应用，将fullScores作为POST请求体发送到Python服务
+     * @param fullScores 学生能力雷达评估结果
+     * @return 包含ImageBase64和top5的PythonRadarResponse对象
+     */
     public PythonRadarResponse generateChart(List<Integer> fullScores){
         String url = baseUrl + path;
 
@@ -55,7 +66,11 @@ public class PythonRadarChartClient {
             return null;
         }
     }
-
+    /**
+     * Python雷达图评价响应实体类
+     * 功能：存储Python雷达图评价返回的响应数据
+     * 实现：使用Lombok的@Data注解生成getter/setter等方法
+     */
     @lombok.Data
     public static class PythonRadarResponse {
         @com.fasterxml.jackson.annotation.JsonProperty("imageBase64")

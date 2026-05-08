@@ -13,12 +13,21 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+/**
+ * 面试服务实现类
+ * 功能：提供面试相关服务
+ */
 @Service
 public class InterviewServiceImpl implements InterviewService {
 
     @Autowired
     private InterviewMapper interviewMapper;
-
+    /**
+     * 获取面试题目
+     * @param studentId 学生ID
+     * @param questionId 题目ID
+     * @return 面试题目VO
+     */
     @Override
     public InterviewQuestionVO getQuestionForStudent(Long studentId, Long questionId) {
         InterviewQuestionBank question = interviewMapper.getQuestionById(questionId);
@@ -27,7 +36,12 @@ public class InterviewServiceImpl implements InterviewService {
         }
         return convertToVO(question);
     }
-
+    /**
+     * 获取面试试卷题目
+     * @param studentId 学生ID
+     * @param paperId 面试试卷ID
+     * @return 面试试卷题目VO列表
+     */
     @Override
     public List<InterviewQuestionVO> getPaperQuestionsForStudent(Long studentId, Long paperId) {
         List<InterviewQuestionBank> questions = interviewMapper.getQuestionsByPaperId(paperId);
@@ -44,7 +58,10 @@ public class InterviewServiceImpl implements InterviewService {
         vo.setQuestionContent(question.getQuestionContent());
         return vo;
     }
-
+    /**
+     * 提交面试答案
+     * @param dto 提交面试答案DTO
+     */
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void submitAnswer(SubmitInterviewAnswerDTO dto) {
@@ -53,7 +70,9 @@ public class InterviewServiceImpl implements InterviewService {
             throw new RuntimeException("Interview Question not found");
         }
 
-        // Save record (AI score and feedback would ideally be calculated here, we set defaults for now)
+        /**
+         * 保存面试记录
+         */
         StudentInterviewRecord record = new StudentInterviewRecord();
         record.setStudentId(dto.getStudentId());
         record.setPaperRecordId(dto.getPaperRecordId());

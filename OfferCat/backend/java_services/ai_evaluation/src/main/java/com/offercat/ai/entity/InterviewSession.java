@@ -4,9 +4,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/*
- * 面试会话实体类
- * 功能：存储面试会话信息
+/**
+ * 面试会话实体类, 用来存储面试会话信息
  * 实现：使用Lombok的@Data注解生成getter/setter等方法
  */
 @Data

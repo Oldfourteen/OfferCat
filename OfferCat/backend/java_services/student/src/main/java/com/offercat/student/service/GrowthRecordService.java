@@ -1,7 +1,10 @@
 package com.offercat.student.service;
 
 import com.offercat.student.vo.GrowthRecordVO;
-
+/**
+ * 学生成长档案服务接口
+ * 功能：提供学生成长档案的增删改查操作
+ */
 public interface GrowthRecordService {
     
     /**

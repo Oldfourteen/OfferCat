@@ -11,6 +11,8 @@ import lombok.Data;
 
 @Data
 public class DimensionScore {
+    // 维度名称
     private String dimension;
+    // 得分
     private Integer score;
 }

@@ -2,6 +2,10 @@ package com.offercat.ai.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
+/**
+ * 文本识别响应DTO
+ * 用来接收文本识别的结果
+ */
 
 /**
  * @author: Ofteen

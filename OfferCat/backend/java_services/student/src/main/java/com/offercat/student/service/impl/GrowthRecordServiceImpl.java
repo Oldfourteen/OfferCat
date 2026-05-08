@@ -13,18 +13,29 @@ import java.time.temporal.ChronoUnit;
 import java.time.DayOfWeek;
 import java.util.ArrayList;
 import java.util.List;
-
+/**
+ * 成长记录服务实现类
+ * 功能：表示成长记录服务实现
+ */
 @Service
 public class GrowthRecordServiceImpl implements GrowthRecordService {
-
+    /**
+     * 成长记录映射器
+     */
     @Autowired
     private GrowthRecordMapper growthRecordMapper;
-
+    /**
+     * 获取成长记录统计数据
+     * @param studentId 学生ID
+     * @return 成长记录统计数据VO
+     */
     @Override
     public GrowthRecordVO getGrowthRecordStats(Long studentId) {
         GrowthRecord record = growthRecordMapper.getByStudentId(studentId);
         
-        // 动态计算最新的统计数据
+        /**
+         * 动态计算最新的统计数据
+         */
         int resumeCount = growthRecordMapper.countPdfResumes(studentId);
         int interviewCount = growthRecordMapper.countAiInterviews(studentId);
         int collectionCount = growthRecordMapper.countCollections(studentId);
@@ -34,7 +45,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         LocalDate today = LocalDate.now();
         int continuousDays = 0;
         boolean checkedInToday = false;
-
+        /**
+         * 检查是否签到
+         */
         if (record == null) {
             // 不存在则创建一条默认记录
             record = new GrowthRecord();
@@ -47,7 +60,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
             record.setLastCheckinDate(null);
             growthRecordMapper.insertGrowthRecord(record);
         } else {
-            // 判断是否断签
+            /**
+             * 判断是否断签
+             */
             if (record.getLastCheckinDate() != null) {
                 long daysBetween = ChronoUnit.DAYS.between(record.getLastCheckinDate(), today);
                 int recordDays = record.getContinuousCheckinDays() == null ? 0 : record.getContinuousCheckinDays();
@@ -62,7 +77,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
                 }
             }
             
-            // 更新数据库
+            /**
+             * 更新数据库
+             */
             GrowthRecord updateRecord = new GrowthRecord();
             updateRecord.setStudentId(studentId);
             updateRecord.setResumeCount(resumeCount);
@@ -73,7 +90,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
             growthRecordMapper.updateGrowthRecord(updateRecord);
         }
 
-        // 构建VO返回
+        /**
+         * 构建VO返回
+         */
         GrowthRecordVO vo = new GrowthRecordVO();
         vo.setStudentId(studentId);
         vo.setResumeCount(resumeCount);
@@ -85,14 +104,20 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
         return vo;
     }
-
+    /**
+     * 签到成长记录
+     * @param studentId 学生ID
+     * @return 打卡天数
+     */
     @Override
     public int checkIn(Long studentId) {
         GrowthRecord record = growthRecordMapper.getByStudentId(studentId);
         LocalDate today = LocalDate.now();
         
         if (record == null) {
-            // 没有记录，直接初始化并打卡
+            /**
+             * 没有记录，直接初始化并打卡
+             */
             record = new GrowthRecord();
             record.setStudentId(studentId);
             record.setResumeCount(growthRecordMapper.countPdfResumes(studentId));
@@ -109,6 +134,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
         int continuousDays = record.getContinuousCheckinDays() == null ? 0 : record.getContinuousCheckinDays();
         if (record.getLastCheckinDate() != null) {
+            /**
+             * 检查是否断签
+             */
             long daysBetween = ChronoUnit.DAYS.between(record.getLastCheckinDate(), today);
             if (daysBetween == 0) {
                 // 今天已经打过卡了，不做操作，返回原打卡天数
@@ -121,11 +149,15 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
                 continuousDays = 1;
             }
         } else {
-            // 第一次打卡
+            /**
+             * 第一次打卡
+             */
             continuousDays = 1;
         }
 
-        // 更新数据库
+        /**
+         * 更新数据库
+         */
         GrowthRecord updateRecord = new GrowthRecord();
         updateRecord.setStudentId(studentId);
         updateRecord.setContinuousCheckinDays(continuousDays);
@@ -135,13 +167,21 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
         return continuousDays;
     }
-
+    /**
+     * 获取本周签到状态
+     * @param studentId 学生ID
+     * @return 本周签到状态列表
+     */
     @Override
     public List<Boolean> getWeeklyCheckinStatus(Long studentId) {
         LocalDate today = LocalDate.now();
-        // 获取本周一的日期
+        /**
+         * 获取本周一的日期
+         */
         LocalDate startOfWeek = today.with(DayOfWeek.MONDAY);
-        // 获取本周日的日期
+        /**
+         * 获取本周日的日期
+         */
         LocalDate endOfWeek = today.with(DayOfWeek.SUNDAY);
 
         List<LocalDate> checkinDates = growthRecordMapper.getCheckinDatesBetween(studentId, startOfWeek, endOfWeek);
@@ -153,12 +193,19 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         }
         return weeklyStatus;
     }
-
+    /**
+     * 收藏题库题目
+     * @param studentId 学生ID
+     * @param questionId 题目ID
+     * @param questionType 题目类型
+     */
     @Override
     public void collectQuestion(Long studentId, Long questionId, Integer questionType) {
         growthRecordMapper.insertQuestionCollect(studentId, questionId, questionType);
         
-        // 调用 stats 接口，动态同步最新的题库收藏数到 growth_record 表中，并保证记录一定存在
+        /**
+         * 调用 stats 接口，动态同步最新的题库收藏数到 growth_record 表中，并保证记录一定存在
+         */
         getGrowthRecordStats(studentId);
     }
 }

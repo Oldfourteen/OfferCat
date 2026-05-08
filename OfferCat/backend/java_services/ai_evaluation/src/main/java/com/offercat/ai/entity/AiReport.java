@@ -4,9 +4,8 @@ import lombok.Data;
 
 import java.time.LocalDateTime;
 
-/*
- * AI评估报告实体类
- * 功能：存储面试评估报告信息
+/**
+ * AI评估报告实体类, 用来存储面试评估报告信息
  * 实现：使用Lombok的@Data注解生成getter/setter等方法
  */
 @Data

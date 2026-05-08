@@ -11,7 +11,10 @@ import org.springframework.web.client.RestTemplate;
  */
 @Configuration// 标识这是一个配置类
 public class RestTemplateConfig {
-
+    /**
+     * 配置 RestTemplate 客户端，设置连接超时和读取超时
+     * @return RestTemplate 实例
+     */
     @Bean
     public RestTemplate restTemplate() {
         SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();

@@ -15,27 +15,31 @@ import java.time.LocalDateTime;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * 用户控制器
+ * 提供用户相关接口
+ */
 @RestController
 @RequestMapping("/user")
 @CrossOrigin(origins = "*")
 public class UserController {
-
+    /** 用户映射器 */
     @Autowired
     private UserMapper userMapper;
-
+    /** 学生映射器 */
     @Autowired
     private StudentMapper studentMapper;
-
+    /** 保存用户个人信息 */
     @PostMapping("/profile")
     @Transactional
     public ResponseResult<Map<String, Object>> saveProfile(@RequestBody @Valid UserProfileRequest request) {
-        // 打印接收到的请求体，用于调试
+        /** 打印接收到的请求体，用于调试 */
         System.out.println("Received profile request: " + request);
         User user = userMapper.selectById(request.getUserId());
         if (user == null) {
             return ResponseResult.error("用户不存在");
         }
-
+        /** 更新用户个人信息 */
         User userToUpdate = new User();
         userToUpdate.setUserId(request.getUserId());
         userToUpdate.setNickname(request.getNickname());
@@ -45,7 +49,7 @@ public class UserController {
         userToUpdate.setPhone(request.getPhone());
         userToUpdate.setEmail(request.getEmail());
         userMapper.updateProfileInfo(userToUpdate);
-
+        /** 更新学生个人信息 */
         Long studentId;
         Student existing = studentMapper.selectByUserId(request.getUserId());
         if (existing == null) {
@@ -78,8 +82,8 @@ public class UserController {
             studentMapper.update(existing);
             studentId = existing.getStudentId();
         }
-
-        Map<String, Object> result = new HashMap<>();
+        /** 返回更新后的学生ID */
+               Map<String, Object> result = new HashMap<>();
         result.put("studentId", studentId);
         return ResponseResult.success(result);
     }

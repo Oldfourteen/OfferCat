@@ -2,6 +2,10 @@ package com.offercat.ai.dto.request;
 
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
+/**
+ * 文本转语音请求DTO
+ * 用来接收文本转语音的参数
+ */
 
 /**
  * @author: Ofteen

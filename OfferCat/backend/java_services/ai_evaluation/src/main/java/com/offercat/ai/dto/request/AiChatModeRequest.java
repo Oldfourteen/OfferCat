@@ -3,6 +3,9 @@ package com.offercat.ai.dto.request;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import lombok.Data;
+/**
+ * 用来接收AI聊天模式的参数
+ */
 
 /**
  * @author: Ofteen
@@ -13,19 +16,21 @@ import lombok.Data;
 
 @Data
 public class AiChatModeRequest {
+    // 用户ID
     @NotNull
     private Long userId;
-
+    
+    // 专业代码
     @NotBlank
     private String majorCode;
 
-    /**
-     * AIHR / RESUME_POLISH / GROUP_INTERVIEW / JOB_MATCH
-     */
+    // 模式
+    @NotBlank
     private String mode;
-
+    // 问题
     @NotBlank
     private String question;
     
+    //  用户图片
     private java.util.List<String> userImages;
 }

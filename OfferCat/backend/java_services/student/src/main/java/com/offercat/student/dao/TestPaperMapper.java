@@ -4,7 +4,10 @@ import com.offercat.student.entity.TestPaper;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import java.util.List;
-
+/**
+ * 测试试卷映射器
+ * 功能：提供测试试卷相关的数据库操作
+ */
 @Mapper
 public interface TestPaperMapper {
     /**

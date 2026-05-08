@@ -2,6 +2,10 @@ package com.offercat.ai.dto.response;
 
 import lombok.Builder;
 import lombok.Data;
+/**
+ * 图片识别响应DTO
+ * 用来接收图片识别的结果
+ */
 
 /**
  * @author: Ofteen
@@ -13,6 +17,8 @@ import lombok.Data;
 @Data
 @Builder
 public class OcrRecognizeResponse {
+    // 图片识别结果
     private String text;
+    // 原始错误信息
     private String rawError;
 }

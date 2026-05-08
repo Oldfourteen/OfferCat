@@ -1,27 +1,25 @@
 <template>
-	<view class="job-tools" :class="themeClass" style="animation: fadeIn 0.6s ease-out;">
-		<view class="section-head">
+	<view class="job-tools" :class="themeClass" :key="animationKey">
+		<view class="section-head animate-float-up">
 			<view>
 				<text class="section-title">我的档案</text>
 			</view>
 			<text class="section-link" @click="navigateToGrowth">查看更多</text>
 		</view>
 
-		<view class="hero-banner">
+		<view class="hero-banner animate-float-up" :style="{ animationDelay: '0.04s' }">
 			<view class="banner-copy">
-				<!-- <text class="banner-tag">本周进度</text> -->
 				<text class="banner-title">Offer 冲刺计划</text>
 				<text class="banner-desc">继续保持简历优化和AI模拟面试，优先推进一面机会。</text>
-				<view class="banner-btn" @click="startDailyTask">开始今日任务</view>
+				<view class="banner-btn animate-float-up" :style="{ animationDelay: '0.1s' }" @click="startDailyTask">开始今日任务</view>
 			</view>
 
-			<view class="banner-art">
+			<view class="banner-art animate-float-up" :style="{ animationDelay: '0.1s' }">
 				<image :src="bannerImageSrc" mode="aspectFit" style="width: 100%; height: 100%; border-radius: 18rpx;"></image>
 			</view>
 		</view>
 
-		<!-- 每日打卡组件 -->
-		<view class="check-in-container">
+		<view class="check-in-container animate-float-up" :style="{ animationDelay: '0.12s' }">
 			<view class="check-in-header">
 				<view class="check-in-title">
 					<text>每日打卡</text>
@@ -34,8 +32,9 @@
 				<view 
 					v-for="(day, index) in weekDays" 
 					:key="index" 
-					class="check-in-day"
+					class="check-in-day animate-float-up"
 					:class="{ 'checked': day.checked, 'today': day.isToday }"
+					:style="{ animationDelay: (0.14 + index * 0.02) + 's' }"
 				>
 					<text class="day-name">{{ day.name }}</text>
 					<view class="day-status">
@@ -59,12 +58,12 @@
 		</view>
 		
 		<view class="tool-grid">
-			<view v-for="(item, index) in tools" :key="item.name" class="tool-item" :class="{
+			<view v-for="(item, index) in tools" :key="item.name" class="tool-item animate-float-up" :class="{
 				'resume-item': item.name === '我的简历',
 				'interview-item': item.name === '面试记录',
 				'certificate-item': item.name === '证书资质',
 				'competition-item': item.name === '竞赛奖项'
-			}" @click="handleToolClick(item)">
+			}" :style="{ animationDelay: (0.16 + index * 0.01) + 's' }" @click="handleToolClick(item)">
 				<view class="tool-icon" :class="item.uiClass">
 					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
@@ -88,6 +87,10 @@
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			animationKey: {
+				type: Number,
+				default: 0
 			}
 		},
 		data() {
@@ -738,6 +741,22 @@
 		from {
 			opacity: 0;
 			transform: translateY(-20rpx);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-float-up {
+		animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+		animation-fill-mode: both;
+	}
+
+	@keyframes floatUp {
+		from {
+			opacity: 0;
+			transform: translateY(60rpx);
 		}
 		to {
 			opacity: 1;

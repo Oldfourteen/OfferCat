@@ -1,20 +1,16 @@
 <template>
-	<view class="BasicInfo" :class="themeClass">
+	<view class="BasicInfo" :class="themeClass" :key="animationKey">
 		<view class="PageHeader">
 			<view class="logo">我的</view>
 			
 		</view>
-		<view class="UserInfo">
-			<view class="Avatar" @click="goToProfile">
+		<view class="UserInfo animate-float-up">
+			<view class="Avatar animate-float-up" :style="{ animationDelay: '0s' }" @click="goToProfile">
 				<view class="avatar">
 					<CommonAvatar class="avatar-img" :src="avatarUrl" image-class="avatar-img" />
-
-<!-- 					<view class="Level">
-							<text class="level">SVIP</text>
-						</view> -->
 				</view>
 			</view>
-			<view class="Profile">
+			<view class="Profile animate-float-up" :style="{ animationDelay: '0.05s' }">
 				<text class="Username">{{ userProfile.nickname }}</text>
 				<view class="Major">
 					<text class="major">
@@ -22,8 +18,8 @@
 					</text>
 				</view>
 				<view class="JobInfo">
-					<view class="jobInfo" v-for="(item, index) in tagList" 
-					:key="index">
+					<view class="jobInfo animate-float-up" v-for="(item, index) in tagList" 
+					:key="index" :style="{ animationDelay: (0.1 + index * 0.033) + 's' }">
 						{{item}}
 					</view>
 				</view>
@@ -33,7 +29,6 @@
 			<text class="bio-text">{{ userProfile.bio }}</text>
 		</view>
 
-		<!-- 简介弹窗 -->
 		<view class="bio-popup-mask" v-if="showBioPopup" @click="showBioPopup = false">
 			<view class="bio-popup-container" @click.stop>
 				<view class="bio-popup-header">
@@ -46,8 +41,8 @@
 			</view>
 		</view>
 
-		<view class="StatsBar">
-			<view class="statsBar" v-for="(item,index) in stats" :key="item.label" :class="{ noBorder: index === 3 }">
+		<view class="StatsBar animate-float-up" :style="{ animationDelay: '0.15s' }">
+			<view class="statsBar animate-float-up" v-for="(item,index) in stats" :key="item.label" :class="{ noBorder: index === 3 }" :style="{ animationDelay: (0.15 + index * 0.05) + 's' }">
 				<view class="statsBar1">
 					<text class="statsBar-value">{{ item.value }}</text>
 					<text class="statsBar-unit">{{ item.unit }}</text>
@@ -73,6 +68,10 @@
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			animationKey: {
+				type: Number,
+				default: 0
 			}
 		},
 		data() {
@@ -198,14 +197,20 @@
 				rgba(0, 122, 252, 0.7) 0%,
 				rgba(1, 188, 255, 0) 100%
 			);
-		animation: fadeIn 0.6s ease-out;
+		opacity: 1;
+		transform: translateY(0);
 		padding-bottom: 40rpx;
 	}
-	
-	@keyframes fadeIn {
+
+	.animate-float-up {
+		animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+		animation-fill-mode: both;
+	}
+
+	@keyframes floatUp {
 		from {
 			opacity: 0;
-			transform: translateY(-20rpx);
+			transform: translateY(60rpx);
 		}
 		to {
 			opacity: 1;
@@ -276,7 +281,7 @@
 						width: 100%;
 						height: 100%;
 						border-radius: 50%;
-						background-color: #55ffff;
+						background: transparent;
 						
 						.avatar-img {
 							width: 100%;
@@ -284,6 +289,7 @@
 							border-radius: 50%;
 							display: block;
 							overflow: hidden;
+							background: rgba(255, 255, 255, 0.3);
 						}
 						
 						.Level {
@@ -377,7 +383,9 @@
 				background: rgba(255, 255, 255, 0.1);
 				border: 2rpx solid rgba(255, 255, 255, 0.15);
 				backdrop-filter: blur(8rpx);
-				animation: slideInUp 0.8s ease-out 0.7s both;
+				opacity: 1;
+				transform: translateY(0);
+				will-change: transform, opacity;
 			}
 
 			.bio-text {

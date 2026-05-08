@@ -1,6 +1,6 @@
 <template>
-	<view class="growth-hub" :class="themeClass" style="animation: fadeIn 0.6s ease-out;">
-		<view class="section-head">
+	<view class="growth-hub" :class="themeClass" :key="animationKey">
+		<view class="section-head animate-float-up">
 			<view>
 				<text class="section-title">成长</text>
 			</view>
@@ -8,7 +8,7 @@
 		</view>
 
 		<view class="main-grid">
-			<view v-for="item in primaryTools" :key="item.name" class="main-item" @click="handleToolClick(item)">
+			<view v-for="(item, index) in primaryTools" :key="item.name" class="main-item animate-float-up" :style="{ animationDelay: (0.05 + index * 0.033) + 's' }" @click="handleToolClick(item)">
 				<view class="tool-icon" :class="item.uiClass">
 					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
@@ -37,6 +37,10 @@
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			animationKey: {
+				type: Number,
+				default: 0
 			}
 		},
 		data() {
@@ -344,6 +348,22 @@
 		from {
 			opacity: 0;
 			transform: translateY(-20rpx);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-float-up {
+		animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+		animation-fill-mode: both;
+	}
+
+	@keyframes floatUp {
+		from {
+			opacity: 0;
+			transform: translateY(60rpx);
 		}
 		to {
 			opacity: 1;

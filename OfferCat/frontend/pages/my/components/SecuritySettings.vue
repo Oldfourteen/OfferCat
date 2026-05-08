@@ -1,6 +1,6 @@
 <template>
-	<view class="security-settings" :class="themeClass" style="animation: fadeIn 0.6s ease-out;">
-		<view class="section-head">
+	<view class="security-settings" :class="themeClass" :key="animationKey">
+		<view class="section-head animate-float-up">
 			<view>
 				<text class="section-title">设置与帮助</text>
 				<text class="section-subtitle">账号、反馈和系统偏好统一从这里进入。</text>
@@ -8,7 +8,7 @@
 		</view>
 
 		<view class="settings-grid">
-			<view v-for="item in tools" :key="item.name" class="setting-item" @click="handleToolClick(item)">
+			<view v-for="(item, index) in tools" :key="item.name" class="setting-item animate-float-up" :style="{ animationDelay: (0.05 + index * 0.05) + 's' }" @click="handleToolClick(item)">
 				<view class="setting-icon" :class="item.uiClass">
 					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="setting-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
@@ -27,6 +27,10 @@
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			animationKey: {
+				type: Number,
+				default: 0
 			}
 		},
 		data() {
@@ -221,6 +225,22 @@
 		from {
 			opacity: 0;
 			transform: translateY(-20rpx);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+		}
+	}
+
+	.animate-float-up {
+		animation: floatUp 0.6s cubic-bezier(0.16, 1, 0.3, 1);
+		animation-fill-mode: both;
+	}
+
+	@keyframes floatUp {
+		from {
+			opacity: 0;
+			transform: translateY(60rpx);
 		}
 		to {
 			opacity: 1;

@@ -1,9 +1,9 @@
 <template>
-	<view class="my-page" :class="themeClass" :key="refreshSeed">
-		<UserInfoCard :theme="theme" />
-		<JobTools :theme="theme" />
-		<GrowthHub :theme="theme" />
-		<SecuritySettings :theme="theme" />
+	<view class="my-page" :class="themeClass">
+		<UserInfoCard :theme="currentTheme" :animationKey="animationKey" />
+		<JobTools :theme="currentTheme" :animationKey="animationKey" />
+		<GrowthHub :theme="currentTheme" :animationKey="animationKey" />
+		<SecuritySettings :theme="currentTheme" :animationKey="animationKey" />
 	</view>
 </template>
 <script>
@@ -12,6 +12,9 @@
 	import GrowthHub from './components/GrowthHub.vue'
 	import SecuritySettings from './components/SecuritySettings.vue'
 	import { applyTheme, getTheme } from '@/utils/theme.js'
+	
+	const SCROLL_KEY = 'MY_PAGE_SCROLL_TOP'
+	
 	export default {
 		components: {
 			UserInfoCard,
@@ -22,25 +25,43 @@
 		},
 		data() {
 			return {
-				theme: 'light',
-				refreshSeed: 0
+				currentTheme: 'light',
+				savedScrollTop: 0,
+				shouldRestoreScroll: false,
+				animationKey: 0
 			}
 		},
 		computed: {
 			themeClass() {
-				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+				return this.currentTheme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
+		onLoad() {
+			this.currentTheme = applyTheme(getTheme())
+			const saved = uni.getStorageSync(SCROLL_KEY)
+			this.savedScrollTop = parseInt(saved) || 0
+		},
 		onShow() {
-			this.theme = applyTheme(getTheme())
-			this.refreshSeed += 1 // 每次进入页面更新 key，重新触发动效
-			// 每次进入页面时滚动到顶部
-			setTimeout(() => {
-				uni.pageScrollTo({
-					scrollTop: 0,
-					duration: 300
-				})
-			}, 100)
+			this.animationKey += 1
+			
+			if (this.savedScrollTop > 0) {
+				this.shouldRestoreScroll = true
+				setTimeout(() => {
+					if (this.shouldRestoreScroll) {
+						uni.pageScrollTo({
+							scrollTop: this.savedScrollTop,
+							duration: 0
+						})
+					}
+				}, 30)
+			}
+		},
+		onHide() {
+			uni.setStorageSync(SCROLL_KEY, String(this.savedScrollTop))
+		},
+		onPageScroll(e) {
+			this.savedScrollTop = e.scrollTop
+			this.shouldRestoreScroll = false
 		},
 		methods: {
 			

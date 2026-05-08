@@ -1,6 +1,7 @@
 <template>
 	<view class="forum-section" :class="themeClass">
 		<view class="forum-header">
+			<!-- 标题区承接论坛内容列表和分页浏览。 -->
 			<text class="forum-title">论坛专区</text>
 		</view>
 		<view class="forum-list-container">
@@ -55,6 +56,7 @@
 			
 			<!-- 分页控件 -->
 			<view class="pagination-controls" v-if="totalPages > 0">
+				<!-- 首页/页码选择/尾页三种方式共同控制分页。 -->
 				<view class="page-btn" :class="{ disabled: pageNum === 1 }" @click="goToFirstPage">首页</view>
 				<picker class="page-picker" mode="selector" :range="pageRange" :value="pageNum - 1" @change="onPageChange">
 					<view class="page-picker-text">第 {{ pageNum }} 页 / 共 {{ totalPages }} 页 ▾</view>
@@ -78,6 +80,7 @@
 		},
 		data() {
 			return {
+				// 帖子列表与分页状态一起维护当前论坛卡片展示结果。
 				postList: [],
 				pageNum: 1,
 				pageSize: 3,
@@ -87,9 +90,11 @@
 		},
 		computed: {
 			themeClass() {
+				// 论坛区整体按主题切换毛玻璃背景和文字颜色。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			pageRange() {
+				// 生成 picker 使用的页码文案数组。
 				const range = []
 				for (let i = 1; i <= this.totalPages; i++) {
 					range.push(`第 ${i} 页`)
@@ -98,16 +103,20 @@
 			}
 		},
 		created() {
+			// 监听外部刷新事件，发帖或详情页操作后可主动更新首页列表。
 			uni.$on('refreshForumList', this.fetchPosts);
 		},
 		beforeDestroy() {
+			// 组件销毁时移除全局事件监听，避免重复绑定。
 			uni.$off('refreshForumList', this.fetchPosts);
 		},
 		mounted() {
+			// 首次进入首页时拉取第一页帖子数据。
 			this.fetchPosts()
 		},
 		methods: {
 			fetchPosts() {
+				// 按当前页码和页大小请求论坛帖子，并补齐点赞响应字段。
 				request({
 					url: '/api/forum/post/search',
 					method: 'POST',
@@ -132,6 +141,7 @@
 				})
 			},
 			goToDetail(item) {
+				// 详情页先缓存完整帖子数据，规避后端详情接口异常时无法展示。
 				const id = item.postId || item.id;
 				// 缓存完整帖子数据，绕过后端崩溃的 detail 接口
 				uni.setStorageSync('currentPost_' + id, item);
@@ -140,23 +150,27 @@
 				});
 			},
 			goToFirstPage() {
+				// 快速回到第一页并重新拉取列表。
 				if (this.pageNum > 1) {
 					this.pageNum = 1
 					this.fetchPosts()
 				}
 			},
 			goToLastPage() {
+				// 快速跳到最后一页并重新拉取列表。
 				if (this.pageNum < this.totalPages) {
 					this.pageNum = this.totalPages
 					this.fetchPosts()
 				}
 			},
 			onPageChange(e) {
+				// picker 选择页码后同步更新当前页并刷新数据。
 				const index = Number(e.detail.value)
 				this.pageNum = index + 1
 				this.fetchPosts()
 			},
 			getAvatar(avatar, postUserId) {
+				// 当前用户自己的帖子优先使用本地资料头像，避免接口返回旧头像。
 				const currentUser = uni.getStorageSync('user') || {}
 				const currentUserId = currentUser.userId || currentUser.id
 				
@@ -175,6 +189,7 @@
 				return BASE_URL + avatar
 			},
 			getAuthorName(name, postUserId) {
+				// 当前用户自己的帖子优先使用本地昵称，保持和个人资料页一致。
 				const currentUser = uni.getStorageSync('user') || {}
 				const currentUserId = currentUser.userId || currentUser.id
 				
@@ -190,6 +205,7 @@
 				return name || '匿名用户'
 			},
 			getImagesList(imagesStr) {
+				// 同时兼容 JSON 数组和逗号分隔字符串两种图片字段格式。
 				if (!imagesStr) return []
 				try {
 					let arr = JSON.parse(imagesStr)
@@ -200,6 +216,7 @@
 				return []
 			},
 			getCoverImage(item) {
+				// 兜底封面优先取首图，没有图片时退回作者头像。
 				let imagesStr = item.images;
 				if (imagesStr) {
 					try {
@@ -214,11 +231,13 @@
 				return this.getFullUrl(item.authorAvatar) || '/static/default-avatar.jpg'
 			},
 			getFullUrl(url) {
+				// 统一补全相对路径，兼容 http 和 base64 等已完整地址。
 				if (!url) return ''
 				if (url.startsWith('http') || url.startsWith('data:')) return url
 				return BASE_URL + url
 			},
 			formatTime(timeStr) {
+				// 同时兼容字符串时间和数组时间格式。
 				if (!timeStr) return ''
 				if (typeof timeStr === 'string') {
 					return timeStr.substring(0, 16).replace('T', ' ')
@@ -231,6 +250,7 @@
 				return String(timeStr)
 			},
 			likePost(item) {
+				// 先做乐观更新提升交互速度，失败时再回滚点赞状态。
 				const user = uni.getStorageSync('user_v2') || {};
 				const userId = user.userId || user.id;
 				if (!userId) {

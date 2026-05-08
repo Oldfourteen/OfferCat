@@ -1,18 +1,23 @@
 <template>
 	<scroll-view class="learning-scroll" scroll-y :show-scrollbar="false" @scroll="emitScroll">
 		<view class="learning-page" :key="refreshSeed">
+			<!-- 公告区滚动展示平台通知和功能更新提示。 -->
 			<view class="animate-item" style="animation-delay: 0.1s;">
 				<NoticeBar :theme="theme" />
 			</view>
+			<!-- 活动横幅承接当前招季的主推活动入口。 -->
 			<view class="animate-item" style="animation-delay: 0.2s;">
 				<Activity :theme="theme" />
 			</view>
+			<!-- 题库模块聚合笔试和面试两类刷题入口。 -->
 			<view class="animate-item" style="animation-delay: 0.3s;">
 				<QuestionBankModules :theme="theme" :refresh-seed="refreshSeed" />
 			</view>
+			<!-- AI 顾问卡片负责引导用户快速进入 AI 页面。 -->
 			<view class="animate-item" style="animation-delay: 0.4s;">
 				<ChatFooter :theme="theme" />
 			</view>
+			<!-- 论坛区展示分页帖子列表，承接社区内容浏览。 -->
 			<view class="animate-item" style="animation-delay: 0.5s;">
 				<ForumList :theme="theme" />
 			</view>
@@ -40,6 +45,7 @@
 			}
 		},
 		components: {
+			// 首页模块都由学习区统一编排，父页面只关心滚动和主题透传。
 			NoticeBar,
 			Activity,
 			QuestionBankModules,
@@ -48,6 +54,7 @@
 		},
 		methods: {
 			emitScroll(event) {
+				// 将 scroll-view 的滚动事件继续抛给父页面，供头部折叠计算使用。
 				this.$emit('scroll', event)
 			}
 		}

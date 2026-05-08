@@ -1,16 +1,19 @@
 <template>
 	<view class="BasicInfo" :class="themeClass" :key="animationKey">
 		<view class="PageHeader">
+			<!-- 页面标题区当前仅展示“我的”作为一级入口标识。 -->
 			<view class="logo">我的</view>
 			
 		</view>
 		<view class="UserInfo animate-float-up">
+			<!-- 头像区支持跳转到资料编辑页。 -->
 			<view class="Avatar animate-float-up" :style="{ animationDelay: '0s' }" @click="goToProfile">
 				<view class="avatar">
 					<CommonAvatar class="avatar-img" :src="avatarUrl" image-class="avatar-img" />
 				</view>
 			</view>
 			<view class="Profile animate-float-up" :style="{ animationDelay: '0.05s' }">
+				<!-- 用户昵称、专业摘要和求职标签构成个人身份信息区。 -->
 				<text class="Username">{{ userProfile.nickname }}</text>
 				<view class="Major">
 					<text class="major">
@@ -26,9 +29,11 @@
 			</view>
 		</view>
 		<view class="PersonalBio" v-if="userProfile.bio" @click="showBioPopup = true">
+			<!-- 个人简介默认单行展示，点击后展开完整弹窗。 -->
 			<text class="bio-text">{{ userProfile.bio }}</text>
 		</view>
 
+		<!-- 简介弹窗用于完整查看较长的个人介绍内容。 -->
 		<view class="bio-popup-mask" v-if="showBioPopup" @click="showBioPopup = false">
 			<view class="bio-popup-container" @click.stop>
 				<view class="bio-popup-header">
@@ -42,6 +47,7 @@
 		</view>
 
 		<view class="StatsBar animate-float-up" :style="{ animationDelay: '0.15s' }">
+			<!-- 四项统计直接读取成长档案聚合数据，展示当前活跃度。 -->
 			<view class="statsBar animate-float-up" v-for="(item,index) in stats" :key="item.label" :class="{ noBorder: index === 3 }" :style="{ animationDelay: (0.15 + index * 0.05) + 's' }">
 				<view class="statsBar1">
 					<text class="statsBar-value">{{ item.value }}</text>
@@ -76,6 +82,7 @@
 		},
 		data() {
 			return {
+				// 控制个人简介弹窗显隐，并维护头像、资料与统计展示数据。
 				showBioPopup: false,
 				avatarUrl: DEFAULT_AVATAR,
 				userProfile: {
@@ -95,6 +102,7 @@
 			}
 		},
 		created() {
+			// 监听资料、档案和题库事件，保证卡片信息始终和最新状态同步。
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(USER_PROFILE_UPDATED_EVENT, this.loadUserInfo)
 				uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.refreshDashboardStats)
@@ -103,6 +111,7 @@
 			}
 		},
 		beforeDestroy() {
+			// 兼容 Vue2 生命周期，销毁时清理全局事件监听。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.loadUserInfo)
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.refreshDashboardStats)
@@ -111,6 +120,7 @@
 			}
 		},
 		beforeUnmount() {
+			// 兼容 Vue3 生命周期，销毁时清理全局事件监听。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.loadUserInfo)
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.refreshDashboardStats)
@@ -120,22 +130,27 @@
 		},
 		computed: {
 			themeClass() {
+				// 头部信息卡根据主题切换浅色/深色背景方案。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			profileSummary() {
+				// 将专业、毕业年份和求职状态压缩成一行摘要文案。
 				return [this.userProfile.major, this.userProfile.graduationYear, this.userProfile.jobStatus].filter(Boolean).join(' · ')
 			}
 		},
 		mounted() {
+			// 首次挂载时分别加载用户资料和统计数据。
 			this.loadUserInfo()
 			this.refreshDashboardStats()
 		},
 		onShow() {
+			// 页面重新展示时再次同步资料和统计，避免跨页修改后未刷新。
 			this.loadUserInfo()
 			this.refreshDashboardStats()
 		},
 		methods: {
 			loadUserInfo() {
+				// 从本地资料缓存回填头像、昵称、简介和期望标签信息。
 				const user = getUserProfile()
 				this.avatarUrl = user.avatar
 				this.userProfile = {
@@ -153,6 +168,7 @@
 				}
 			},
 			refreshDashboardStats() {
+				// 读取成长档案聚合指标并映射成四项头部统计卡数据。
 				const metrics = getDashboardMetrics()
 				this.stats = [
 					{ label: '简历优化', value: String(metrics.resumeCount), unit: '次' },
@@ -162,6 +178,7 @@
 				]
 			},
 			goToProfile() {
+				// 点击头像后进入资料页继续编辑个人信息。
 				uni.navigateTo({
 					url: '/subPages/profile/profile'
 				})

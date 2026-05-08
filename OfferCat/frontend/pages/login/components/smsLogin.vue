@@ -1,18 +1,22 @@
 <template>
 	<view class="component-wrapper">
 		<view class="form-area">
+			<!-- 短信登录表单复用手机号+验证码输入组件。 -->
 			<phoneCode v-model:phone="phone" v-model:code="code" scene="login" />
 		</view>
 		
+		<!-- 登录前需要先通过人机验证。 -->
 		<humanVerify @verify="onHumanVerify"></humanVerify>
 		
 		<view class="agreement-wrapper">
+			<!-- 协议勾选与弹窗确认逻辑复用公共协议组件。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doLogin"></confirmAgreement>
 		</view>
 		
 		<view class="submit-btn" @click="handleSubmit">登录</view>
 		
 		<view class="switch-mode">
+			<!-- 底部切换入口支持返回密码登录或进入注册。 -->
 			<view class="side left">
 				<text class="link" @click="switchToPassword">密码登录</text>
 			</view>
@@ -40,6 +44,7 @@
 		},
 		data() {
 			return {
+				// 短信登录页维护输入值、协议状态和人机验证状态。
 				phone: '',
 				code: '',
 				isAgreed: false,
@@ -48,18 +53,23 @@
 		},
 		methods: {
 			onAgreementChange(val) {
+				// 同步协议勾选状态。
 				this.isAgreed = val;
 			},
 			onHumanVerify(val) {
+				// 接收人机验证结果，控制是否允许提交。
 				this.isHuman = val;
 			},
 			switchToPassword() {
+				// 切换回账号密码登录模式。
 				this.$emit('switchPassword')
 			},
 			switchToRegister() {
+				// 切换到注册模式。
 				this.$emit('switchRegister')
 			},
 			handleSubmit() {
+				// 先校验必填项、人机验证和协议状态，再真正发起登录。
 				if(!this.phone || !this.code) {
 					uni.showToast({ title: '请填写完整信息', icon: 'none' });
 					return;
@@ -75,6 +85,7 @@
 				this.doLogin();
 			},
 			async doLogin() {
+				// 验证码登录成功后写入 token 和用户信息，并按资料完整度跳转。
 				uni.showLoading({ title: '登录中', mask: true })
 				try {
 					const result = await login({

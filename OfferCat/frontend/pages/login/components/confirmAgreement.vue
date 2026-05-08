@@ -1,5 +1,6 @@
 <template>
 	<view class="agreement-area">
+		<!-- 协议勾选区负责管理用户服务协议与隐私政策的确认入口。 -->
 		<view class="radio-label">
 			<view class="radio-wrapper" @click.stop="toggleAgree">
 				<view class="radio-icon" :class="{'is-checked': agreed}">
@@ -14,7 +15,7 @@
 			</text>
 		</view>
 
-		<!-- 自定义协议弹窗 -->
+		<!-- 未勾选时弹出的二次确认框，防止用户跳过协议直接登录。 -->
 		<view class="custom-modal" v-if="showAgreementModal">
 			<view class="modal-mask" @click="showAgreementModal = false"></view>
 			<view class="modal-content">
@@ -41,30 +42,37 @@
 		},
 		data() {
 			return {
+				// 弹窗显示状态仅由父组件或本组件勾选流程触发。
 				showAgreementModal: false
 			};
 		},
 		methods: {
 			toggleAgree() {
+				// 单击圆点时只切换协议勾选状态，不直接触发登录。
 				this.$emit('change', !this.agreed);
 			},
 			showModal() {
+				// 暴露给父组件的弹窗打开方法，用于登录前补充确认。
 				this.showAgreementModal = true;
 			},
 			handleAgree() {
+				// 用户在弹窗中同意后，既更新勾选状态，也通知父组件继续执行登录。
 				this.showAgreementModal = false;
 				this.$emit('change', true);
 				this.$emit('agreed-login'); // 通知父组件继续执行登录
 			},
 			handleDisagree() {
+				// 不同意时只关闭弹窗，保留未勾选状态。
 				this.showAgreementModal = false;
 			},
 			goToAgreement() {
+				// 打开用户服务协议详情页。
 				uni.navigateTo({
 					url: '/subPages/settings/agreement'
 				});
 			},
 			goToPrivacy() {
+				// 打开隐私政策详情页。
 				uni.navigateTo({
 					url: '/subPages/settings/privacy'
 				});

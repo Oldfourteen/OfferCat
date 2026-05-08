@@ -2,6 +2,7 @@
 	<view class="component-wrapper">
 		<!-- 表单区 -->
 		<view class="form-area">
+			<!-- 邮箱输入为选填项，仅在填写时校验格式。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'email'}">
 				<input 
 					type="text" 
@@ -13,6 +14,7 @@
 				/>
 			</view>
 			<view class="error-text" v-if="emailError">{{ emailError }}</view>
+			<!-- 密码输入框要求满足注册密码复杂度规则。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'password'}">
 				<input 
 					type="text"
@@ -26,6 +28,7 @@
 				<view class="toggle-btn" @click="togglePasswordVisible">{{ showPassword ? '隐藏' : '显示' }}</view>
 			</view>
 			<view class="error-text" v-if="passwordError">{{ passwordError }}</view>
+			<!-- 确认密码输入框用于二次校验两次密码是否一致。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'confirmPassword'}">
 				<input 
 					type="text"
@@ -39,13 +42,16 @@
 				<view class="toggle-btn" @click="toggleConfirmPasswordVisible">{{ showConfirmPassword ? '隐藏' : '显示' }}</view>
 			</view>
 			<view class="error-text" v-if="confirmPasswordError">{{ confirmPasswordError }}</view>
+			<!-- 手机号和验证码输入复用公共组件，负责发送验证码与倒计时。 -->
 			<phoneCode v-model:phone="phone" v-model:code="code" scene="register" />
 			
 		</view>
 		
+		<!-- 注册前同样要求通过人机验证。 -->
 		<humanVerify @verify="onHumanVerify"></humanVerify>
 		
 		<view class="agreement-wrapper">
+			<!-- 协议组件统一处理勾选和弹窗确认。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doRegister"></confirmAgreement>
 		</view>
 		
@@ -54,6 +60,7 @@
 		
 		<!-- 切换登录/注册状态 -->
 		<view class="switch-mode">
+			<!-- 底部入口允许用户返回已有账号登录。 -->
 			<text class="tips">已有账号？</text>
 			<text class="link" @click="toggleMode">去登录</text>
 		</view>
@@ -74,6 +81,7 @@
 		},
 		data() {
 			return {
+				// 注册页维护账号资料、密码校验状态、协议状态和人机验证状态。
 				phone: '',
 				email: '',
 				code: '',
@@ -94,32 +102,36 @@
 		},
 		methods: {
 			handleFocus(field) {
+				// 记录当前聚焦字段，驱动输入框高亮样式。
 				this.currentFocus = field;
 			},
 			handleBlur() {
 				this.currentFocus = '';
 			},
 			onEmailInput() {
+				// 邮箱输入过程中实时执行选填格式校验。
 				if (this.email) this.emailTouched = true;
 				this.validateEmail();
 			},
 			handleEmailBlur() {
+				// 邮箱失焦时标记为已触达并补一次校验。
 				this.emailTouched = true;
 				this.validateEmail();
 				this.handleBlur();
 			},
 			validateEmail() {
-				// 邮箱是选填项，如果为空，则不校验
+				// 邮箱是选填项，只有输入后才检查是否合法。
 				if (!this.email) {
 					this.emailError = '';
 					return true;
 				}
-				// 正则表达式校验邮箱格式
+				// 使用简单邮箱正则校验基础格式。
 				const ok = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(this.email);
 				this.emailError = ok ? '' : '请输入有效的邮箱地址';
 				return ok;
 			},
 			onPasswordInput() {
+				// 密码变化后实时刷新密码强度和确认密码一致性结果。
 				if (this.password) this.passwordTouched = true
 				this.validatePassword()
 				if (this.confirmPasswordTouched) {
@@ -127,20 +139,24 @@
 				}
 			},
 			onConfirmPasswordInput() {
+				// 确认密码变化时实时校验两次密码是否一致。
 				if (this.confirmPassword) this.confirmPasswordTouched = true
 				this.validateConfirmPassword()
 			},
 			handlePasswordBlur() {
+				// 密码失焦后补做一次完整校验。
 				this.passwordTouched = true
 				this.validatePassword()
 				this.handleBlur()
 			},
 			handleConfirmPasswordBlur() {
+				// 确认密码失焦后补做一次一致性校验。
 				this.confirmPasswordTouched = true
 				this.validateConfirmPassword()
 				this.handleBlur()
 			},
 			validatePassword() {
+				// 密码要求至少 8 位且同时包含大小写字母。
 				if (!this.password) {
 					this.passwordError = ''
 					return true
@@ -150,6 +166,7 @@
 				return ok
 			},
 			validateConfirmPassword() {
+				// 只有两项都填写后才比较密码是否一致。
 				if (!this.confirmPassword || !this.password) {
 					this.confirmPasswordError = ''
 					return true
@@ -159,22 +176,27 @@
 				return ok
 			},
 			togglePasswordVisible() {
+				// 切换主密码输入框的明文/密文状态。
 				this.showPassword = !this.showPassword
 			},
 			toggleConfirmPasswordVisible() {
+				// 切换确认密码输入框的明文/密文状态。
 				this.showConfirmPassword = !this.showConfirmPassword
 			},
 			toggleMode() {
+				// 注册成功后或用户主动切换时返回登录模式。
 				this.$emit('switchMode');
 			},
 			onAgreementChange(val) {
+				// 同步协议勾选状态。
 				this.isAgreed = val;
 			},
 			onHumanVerify(val) {
+				// 记录人机验证是否已通过。
 				this.isHuman = val;
 			},
 			handleSubmit() {
-				// 邮箱是选填，所以这里不检查 this.email
+				// 提交前先校验必填项、人机验证、协议状态和密码规则。
 				if(!this.phone || !this.code || !this.password || !this.confirmPassword) {
 					uni.showToast({ title: '请填写完整信息', icon: 'none' });
 					return;
@@ -197,6 +219,7 @@
 				this.doRegister();
 			},
 			async doRegister() {
+				// 注册成功后提示用户并切回登录模式继续登录。
 				uni.showLoading({ title: '注册中', mask: true })
 				try {
 					await register({

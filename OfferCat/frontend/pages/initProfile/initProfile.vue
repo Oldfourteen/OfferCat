@@ -1,11 +1,13 @@
 <template>
 	<view class="init-profile-page">
+		<!-- 头部文案用于说明首次初始化资料的目的和引导语。 -->
 		<view class="header">
 			<text class="title">欢迎来到 OfferCat</text>
 			<text class="subtitle">请完善您的基础信息，让大家更好地认识您</text>
 		</view>
 
 		<view class="form-container">
+			<!-- 头像区负责展示当前头像，并提供上传入口。 -->
 			<view class="avatar-section">
 				<view class="avatar-wrapper" @click="chooseAvatar">
 					<CommonAvatar :src="avatarUrl" image-class="avatar-img" :sync-profile="false" />
@@ -17,10 +19,12 @@
 			</view>
 
 			<view class="input-section">
+				<!-- 昵称输入区只采集初始化资料阶段最基础的展示名称。 -->
 				<view class="input-label">您的昵称</view>
 				<input class="nickname-input" v-model="nickname" maxlength="10" placeholder="请输入您的昵称 (2-10字)" />
 			</view>
 
+			<!-- 提交按钮用于保存初始化资料并进入首页。 -->
 			<view class="submit-btn" :class="{ disabled: submitting }" @click="handleSubmit">
 				<text>开启求职之旅</text>
 			</view>
@@ -37,17 +41,20 @@ import { BASE_URL } from '@/api/config'
 import { getToken } from '@/utils/token'
 import { getUser } from '@/utils/user'
 
+// 页面仅维护首次资料初始化所需的头像、昵称和提交状态。
 const avatarUrl = ref(DEFAULT_AVATAR)
 const nickname = ref('')
 const submitting = ref(false)
 
 onMounted(() => {
+	// 首次进入时优先使用本地已缓存的头像和昵称做回显。
 	const user = getUserProfile()
 	if (user.avatar) avatarUrl.value = user.avatar
 	if (user.nickname && user.nickname !== '王小桃同学') nickname.value = user.nickname
 })
 
 const persistAvatarFile = (tempFilePath) => new Promise((resolve) => {
+	// 头像文件统一先上传到后端，再将可访问地址写回本地状态。
 	if (!tempFilePath) {
 		resolve(DEFAULT_AVATAR)
 		return
@@ -66,7 +73,7 @@ const persistAvatarFile = (tempFilePath) => new Promise((resolve) => {
 			try {
 				const data = JSON.parse(uploadRes.data)
 				if (data.code === 200) {
-					// data.data 返回的是 /user/avatars/xxxxx.png
+					// data.data 返回的是相对路径，这里补全成完整头像地址。
 					resolve(`${BASE_URL}${data.data}`)
 				} else {
 					uni.showToast({ title: data.message || '上传失败', icon: 'none' })
@@ -86,6 +93,7 @@ const persistAvatarFile = (tempFilePath) => new Promise((resolve) => {
 })
 
 const chooseAvatar = () => {
+	// 先让用户选择来源，再压缩选图并交给统一上传流程处理。
 	uni.showActionSheet({
 		itemList: ['从相册选择', '拍照'],
 		success: (res) => {
@@ -104,6 +112,7 @@ const chooseAvatar = () => {
 }
 
 const handleSubmit = async () => {
+	// 提交流程：校验昵称 -> 组装基础资料 -> 同步后端 -> 保存本地 -> 进入首页。
 	if (submitting.value) return
 	
 	const trimmedNickname = String(nickname.value || '').trim()
@@ -117,6 +126,7 @@ const handleSubmit = async () => {
 
 	try {
 		const storedUser = getUser()
+		// 当前页只提交昵称和最小必要字段，其他资料在后续完善页继续补齐。
 		const payload = {
 			userId: storedUser && storedUser.userId ? storedUser.userId : null,
 			nickname: trimmedNickname,
@@ -125,7 +135,7 @@ const handleSubmit = async () => {
 		}
 
 		const token = getToken()
-		// 同步到后端
+		// 先同步到后端，确保用户基础资料初始化完成。
 		const resp = await request({
 			url: '/user/profile',
 			method: 'POST',
@@ -135,7 +145,7 @@ const handleSubmit = async () => {
 
 		const studentId = resp && resp.data && resp.data.studentId ? resp.data.studentId : null
 		
-		// 保存到本地
+		// 再写入本地资料缓存，供首页头部和个人页直接读取。
 		saveUserProfile({
 			avatar: avatarUrl.value,
 			nickname: trimmedNickname,

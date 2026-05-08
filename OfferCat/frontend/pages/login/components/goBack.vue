@@ -1,7 +1,7 @@
 <template>
 	<!-- back -->
 	<view class="custom-nav">
-		<!-- back button -->
+		<!-- 返回按钮组件可复用于登录相关子页面顶部。 -->
 	    <view class="back-btn" @click="goBack">
 			<!-- back image -->
 			<image class="back" src="/static/close.png" mode=""></image>
@@ -13,6 +13,7 @@
 	export default{
 		methods:{
 			goBack(){
+				// 点击后直接回到上一页。
 				uni.navigateBack()
 			}
 		}

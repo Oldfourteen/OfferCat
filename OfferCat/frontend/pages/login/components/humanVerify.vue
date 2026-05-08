@@ -1,5 +1,6 @@
 <template>
 	<view class="captcha-container" @click="handleVerify">
+		<!-- 左侧复选框区域负责展示验证前、验证中、验证后的三种状态。 -->
 		<view class="left-section">
 			<view class="checkbox" :class="{'verified': isVerified, 'loading': isVerifying}">
 				<view v-if="isVerified" class="check-icon"></view>
@@ -8,6 +9,7 @@
 			<text class="text">进行人机身份验证</text>
 		</view>
 		<view class="right-section">
+			<!-- 右侧区域仅用于模拟 reCAPTCHA 的品牌说明与提示。 -->
 			<image class="recaptcha-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj4KICA8cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNMTIgMi41YTkuNSA5LjUgMCAwIDAtOS41IDkuNUgwbDMuNSAzLjVMNyAxMkg0LjVhNy41IDcuNSAwIDEgMSAyLjIgNS4zbC0xLjQgMS40QTkuNSA5LjUgMCAxIDAgMTIgMi41eiIvPgo8L3N2Zz4=" mode="aspectFit"></image>
 			<view class="privacy-text">reCAPTCHA</view>
 			<view class="privacy-links">隐私权 - 使用条款</view>
@@ -19,12 +21,14 @@
 	export default {
 		data() {
 			return {
+				// 验证组件内部只维护是否已通过和是否处于模拟验证中。
 				isVerified: false,
 				isVerifying: false
 			}
 		},
 		methods: {
 			handleVerify() {
+				// 这里只做前端模拟验证，通过延时反馈已通过状态并通知父组件。
 				if (this.isVerified || this.isVerifying) return;
 				
 				this.isVerifying = true;

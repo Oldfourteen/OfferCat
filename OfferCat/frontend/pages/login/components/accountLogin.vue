@@ -2,6 +2,7 @@
 	<view class="component-wrapper">
 		<!-- 表单区 -->
 		<view class="form-area">
+			<!-- 账号输入框兼容手机号或邮箱两种登录目标。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'account'}">
 				<input 
 					type="text" 
@@ -11,6 +12,7 @@
 					@blur="handleBlur" 
 				/>
 			</view>
+			<!-- 密码输入框支持明文/密文切换。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'password'}">
 				<input 
 					type="text" 
@@ -24,9 +26,11 @@
 			</view>
 		</view>
 		
+		<!-- 登录前要求通过人机验证。 -->
 		<humanVerify @verify="onHumanVerify"></humanVerify>
 		
 		<view class="agreement-wrapper">
+			<!-- 协议组件统一处理勾选和未勾选时的二次确认。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doLogin"></confirmAgreement>
 		</view>
 		
@@ -35,6 +39,7 @@
 		
 		<!-- 切换登录/注册状态 -->
 		<view class="switch-mode">
+			<!-- 底部切换入口支持验证码登录与立即注册。 -->
 			<view class="side left">
 				<text class="link" @click="switchSms">验证码登录</text>
 			</view>
@@ -60,6 +65,7 @@
 		},
 		data() {
 			return {
+				// 账号登录页维护账号、密码、协议状态和验证状态。
 				account: '',
 				password: '',
 				currentFocus: '',
@@ -70,27 +76,34 @@
 		},
 		methods: {
 			togglePasswordVisible() {
+				// 在明文和密文显示之间切换密码输入框状态。
 				this.showPassword = !this.showPassword;
 			},
 			handleFocus(field) {
+				// 记录当前聚焦字段，驱动输入框高亮样式。
 				this.currentFocus = field;
 			},
 			handleBlur() {
 				this.currentFocus = '';
 			},
 			toggleMode() {
+				// 切换到注册模式。
 				this.$emit('switchMode');
 			},
 			switchSms() {
+				// 切换到验证码登录模式。
 				this.$emit('switchSms')
 			},
 			onAgreementChange(val) {
+				// 同步协议勾选状态。
 				this.isAgreed = val;
 			},
 			onHumanVerify(val) {
+				// 记录是否已通过人机验证。
 				this.isHuman = val;
 			},
 			handleSubmit() {
+				// 登录前先校验输入完整性、人机验证和协议状态。
 				if(!this.account || !this.password) {
 					uni.showToast({ title: '请填写完整信息', icon: 'none' });
 					return;
@@ -106,6 +119,7 @@
 				this.doLogin();
 			},
 			async doLogin() {
+				// 密码登录成功后写入 token 和用户信息，并按资料完整度分流跳转。
 				uni.showLoading({ title: '登录中', mask: true })
 				try {
 					const result = await login({

@@ -4,10 +4,13 @@
 		<!-- goBack -->
 <!-- 		<goBack></goBack> -->
 		<view class="content-wrapper">
-			<!-- logo area -->
+			<!-- 顶部品牌区展示 logo，并承接主登录页的视觉入口。 -->
 			<logoArea></logoArea>
+			<!-- 手机号展示区回显当前设备或本地用户手机号。 -->
 			<telephone></telephone>
+			<!-- 协议区统一处理勾选状态与未勾选时的拦截弹窗。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doLogin"></confirmAgreement>
+			<!-- 登录操作区提供一键登录和切换其他登录方式入口。 -->
 			<loginArea @login="handleLogin" @otherLogin="handleOtherLogin"></loginArea>
 		</view>
 	</view>
@@ -22,17 +25,21 @@
 	export default{
 		data() {
 			return {
+				// 当前页只维护协议是否勾选，登录动作由按钮区和协议弹窗共同驱动。
 				isAgreed: false
 			}
 		},
 		methods:{
 			goBack(){
+				// 预留返回能力，当前模板中默认隐藏返回按钮。
 				uni.navigateBack()
 			},
 			onAgreementChange(val) {
+				// 协议组件变更时同步父页面勾选状态。
 				this.isAgreed = val;
 			},
 			handleLogin() {
+				// 一键登录前先校验协议，未勾选则弹出协议确认框。
 				if (!this.isAgreed) {
 					this.$refs.agreementRef.showModal();
 				} else {
@@ -40,6 +47,7 @@
 				}
 			},
 			async doLogin() {
+				// 当前一键登录能力暂时关闭，统一展示不可用提示避免误操作。
 				uni.showLoading({ title: '登录中', mask: true })
 				try {
 					// 暂时禁用
@@ -63,7 +71,7 @@
 				}
 			},
 			handleOtherLogin() {
-				// 跳转到其他登录/注册页面
+				// 跳转到其他登录/注册页，在账号登录、验证码登录和注册间切换。
 				uni.navigateTo({
 					url: '/pages/login/otherLogin',
 					animationType: 'slide-in-right',

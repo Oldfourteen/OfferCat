@@ -1,15 +1,19 @@
 const fs = require('fs');
 const path = require('path');
 
+// 题库原始文本来源目录。
 const bishiPath = path.join(__dirname, '../../backend/java_services/question_bank/bishi');
 const mianshiPath = path.join(__dirname, '../../backend/java_services/question_bank/mianshi');
 
+// 分别存放生成后的笔试套题、面试套题和试卷详情映射。
 const writtenSets = [];
 const interviewSets = [];
 const paperMap = {};
 
+// 为每一套导入后的题目生成唯一编号。
 let idCounter = 1;
 
+// 随机打乱选项顺序，并同步计算新的正确答案下标。
 function shuffleOptions(options, correctLetter) {
     const correctText = options.find(o => o.letter === correctLetter).text;
     const shuffled = [...options].sort(() => Math.random() - 0.5);
@@ -25,16 +29,19 @@ function shuffleOptions(options, correctLetter) {
     return { options: newOptions, answer: newCorrectLetter };
 }
 
+// 解析单个题库文本文件，提取套题信息和题目详情。
 function parseFile(filePath, type) {
     const content = fs.readFileSync(filePath, 'utf-8');
     const lines = content.split('\n').map(l => l.trim()).filter(l => l);
     
+    // 记录当前文件在解析过程中的专业、套题类型和题目临时状态。
     let major = '';
     let setType = '';
     let questions = [];
     let currentQuestion = null;
     let options = [];
     
+    // 按行识别专业、套题、题干、选项和答案字段。
     for (const line of lines) {
         if (line.startsWith('专业：')) {
             major = line.replace('专业：', '').trim();
@@ -71,6 +78,7 @@ function parseFile(filePath, type) {
         questions.push(currentQuestion);
     }
     
+    // 组装题库列表页需要展示的套题摘要数据。
     const setId = `set_${idCounter++}`;
     const companyShort = major.length > 2 ? major.substring(0, 2) : major;
     const setObj = {
@@ -91,12 +99,14 @@ function parseFile(filePath, type) {
         isFavorite: false
     };
     
+    // 根据套题类型分别写入笔试或面试集合。
     if (type === 'bishi') {
         writtenSets.push(setObj);
     } else {
         interviewSets.push(setObj);
     }
     
+    // 生成做题页使用的试卷题目结构。
     paperMap[setId] = questions.map((q, i) => ({
         id: `q_${setId}_${i}`,
         type: 'single',
@@ -106,17 +116,21 @@ function parseFile(filePath, type) {
     }));
 }
 
+// 扫描全部原始题库文件，并输出前端可直接引用的数据模块。
 function generateData() {
+    // 导入所有笔试题库文本。
     const bishiFiles = fs.readdirSync(bishiPath).filter(f => f.endsWith('.txt'));
     for (const f of bishiFiles) {
         parseFile(path.join(bishiPath, f), 'bishi');
     }
     
+    // 导入所有面试题库文本。
     const mianshiFiles = fs.readdirSync(mianshiPath).filter(f => f.endsWith('.txt'));
     for (const f of mianshiFiles) {
         parseFile(path.join(mianshiPath, f), 'mianshi');
     }
     
+    // 拼接 questionBank 页面使用的静态数据文件内容。
     const jsContent = `export const bankTabs = [
 	{ key: 'written', label: '笔试真题', icon: 'written-icon' },
 	{ key: 'interview', label: '面试真题', icon: 'interview-icon' }
@@ -141,8 +155,10 @@ export function getQuestionPaper(id) {
 }
 `;
 
+    // 写入前端题库数据文件。
     fs.writeFileSync(path.join(__dirname, '../subPages/questionBank/data.js'), jsContent);
     console.log('Data generated successfully!');
 }
 
+// 执行题库导入流程。
 generateData();

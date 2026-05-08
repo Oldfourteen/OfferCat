@@ -1,6 +1,7 @@
 <template>
 	<view class="question-bank" :class="themeClass">
 		<view class="section-head">
+			<!-- 标题区说明题库模块提供笔试与面试两类刷题能力。 -->
 			<view>
 				<text class="section-title">题库专区</text>
 				<text class="section-subtitle">面试真题和笔试真题一站式刷题</text>
@@ -8,6 +9,7 @@
 		</view>
 
 		<view class="module-list">
+			<!-- 模块列表根据配置项渲染题库入口卡片。 -->
 			<view
 				v-for="item in modules"
 				:key="item.key"
@@ -42,11 +44,13 @@
 		},
 		computed: {
 			themeClass() {
+				// 题库容器按主题切换浅色/深色外观。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
 		data() {
 			return {
+				// 两类题库入口的静态配置，包含标题、文案和跳转地址。
 				modules: [
 					{
 						key: 'written',
@@ -74,6 +78,7 @@
 		},
 		methods: {
 			goModule(item) {
+				// 按配置跳转到对应题库子页面。
 				uni.navigateTo({
 					url: item.url
 				})

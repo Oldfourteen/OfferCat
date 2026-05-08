@@ -2,12 +2,14 @@
 	<view class="growth-hub" :class="themeClass" :key="animationKey">
 		<view class="section-head animate-float-up">
 			<view>
+				<!-- 标题区说明该模块承接成长相关入口与复盘内容。 -->
 				<text class="section-title">成长</text>
 			</view>
 			<text class="section-link" @click="navigateToTrajectory">查看趋势</text>
 		</view>
 
 		<view class="main-grid">
+			<!-- 主功能网格聚合成长档案、打卡、冲刺营和收藏等入口。 -->
 			<view v-for="(item, index) in primaryTools" :key="item.name" class="main-item animate-float-up" :style="{ animationDelay: (0.05 + index * 0.033) + 's' }" @click="handleToolClick(item)">
 				<view class="tool-icon" :class="item.uiClass">
 					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
@@ -45,6 +47,7 @@
 		},
 		data() {
 			return {
+				// primaryTools 定义成长区各入口的文案、图标与描述信息。
 				primaryTools: [
 					{ name: '成长档案', desc: '查看阶段成果', icon: 'data:image/svg+xml;base64,PHN2ZyB0PSIxNzc2OTkzNTc2Mzc1IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjE0MzQ1IiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PHBhdGggZD0iTTAgMG0yMDQuOCAwbDYxNC40IDBxMjA0LjggMCAyMDQuOCAyMDQuOGwwIDYxNC40cTAgMjA0LjgtMjA0LjggMjA0LjhsLTYxNC40IDBxLTIwNC44IDAtMjA0LjgtMjA0LjhsMC02MTQuNHEwLTIwNC44IDIwNC44LTIwNC44WiIgZmlsbD0iI0Y2QkQxNiIgcC1pZD0iMTQzNDYiPjwvcGF0aD48cGF0aCBkPSJNMjkzLjM3NiAyNjguOGwxNDcuMDA4IDAuMDM4NGMzOC41NjY0IDAgNTIuNzc0NCAyMi45NjMyIDU4Ljc1MiA2NC4yODE2bDAuNjQgNC44NjQgNC40MTYgMTguODkyOGgyMjYuNDcwNGMyNC43NjgtMC4xNjY0IDQ1Ljg4OCAxOS40MzA0IDQ5LjYyNTYgNDYuMDQxNmwwLjM4NCAzLjczNzYgMC4xMjggMy44NHYyOTEuMDQ2NGMtMC4xOTIgMjguMzUyLTIwLjU0NCA1MS43MTItNDYuNTkyIDUzLjUyOTZsLTMuNTg0IDAuMTI4SDI5My4zNzZjLTI2LjExMiAwLjE2NjQtNDcuOTM2LTIxLjU2OC01MC4wNDgtNDkuODE3NmwtMC4xMjgtMy44NjU2VjMyMi40NTc2YzAuMTkyLTI4LjM1MiAyMC41MDU2LTUxLjcxMiA0Ni41OTItNTMuNTI5NmwzLjU4NC0wLjEyOHogbTM5Mi43OTM2IDIxMy4zMjQ4YTI1LjYgMjUuNiAwIDAgMC0zNi4xNDcyLTEuOTk2OGwtOTcuNzUzNiA4Ny41MDA4LTU5LjgxNDQtNjAuMzY0OC0xLjY1MTItMS41MzZhMjUuNiAyNS42IDAgMCAwLTMyLjA3NjgtMC43NjhsLTExNS44Nzg0IDg4LjYwMTYtMS42MTI4IDEuMzQ0YTI1LjYgMjUuNiAwIDAgMC0zLjE3NDQgMzQuNTQ3MmwxLjM0NCAxLjYxMjhhMjUuNiAyNS42IDAgMCAwIDM0LjU0NzIgMy4xNzQ0bDk3Ljk3MTItNzQuOTQ0IDYxLjEwNzIgNjEuNjcwNCAxLjY1MTIgMS41MzZhMjUuNiAyNS42IDAgMCAwIDMzLjYxMjgtMC40NzM2bDExNS44Nzg0LTEwMy43NTY4IDEuNTc0NC0xLjUzNmEyNS42IDI1LjYgMCAwIDAgMC40MjI0LTM0LjYxMTJ6TTY5My42MzIgMjY4LjhDNzIwLjU2MzIgMjY4LjggNzQyLjQgMjg2Ljg0OCA3NDIuNCAzMDkuMDU2IDc0Mi40IDMyMi4xNzYgNzI5LjU0ODggMzMyLjggNzEzLjY1MTIgMzMyLjhhMzAuMDY3MiAzMC4wNjcyIDAgMCAxLTI1LjI5MjgtMTIuNDE2bC0xLjIxNi0yLjA3MzYtMC44OTYtMi4wNDhINTUzLjU0ODhhMjcuOTY4IDI3Ljk2OCAwIDAgMS0yOC4xNi0xOC45NDRsLTAuNDM1Mi0yLjMyOTYtMC4xNTM2LTIuNDQ0OGEyNi4wMzUyIDI2LjAzNTIgMCAwIDEgMjUuODE3Ni0yMy42MTZsMi45MzEyLTAuMTE1Mkg2OTMuNjMyeiIgZmlsbD0iI0ZGRkZGRiIgcC1pZD0iMTQzNDciPjwvcGF0aD48L3N2Zz4=', uiClass: 'ui-1' },
 					{ name: '打卡天数', desc: '维持连续节奏', icon: 'data:image/svg+xml;base64,PHN2ZyB0PSIxNzc2OTkzNzYyNDkzIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIxMzk2IiB3aWR0aD0iMjAwIiBoZWlnaHQ9IjIwMCI+PHBhdGggZD0iTTc5LjUxMzYgODIxLjg2MjRhMTMzLjQyNzIgMTMzLjQyNzIgMCAwIDAgMTMzLjM3NiAxMzMuMTJoNTk4LjIyMDhhMTMzLjQyNzIgMTMzLjQyNzIgMCAwIDAgMTMzLjM3Ni0xMzMuMTJWMzg0LjM1ODRINzkuNTEzNnpNODExLjExMDQgMTU3LjMzNzZoLTI4Ljk3OTJ2LTQ3LjEwNGE1Ny4zNDQgNTcuMzQ0IDAgMSAwLTExNC42MzY4IDB2NDcuMTA0SDM3MC4xMjQ4di00Ny4xMDRhNTcuMzQ0IDU3LjM0NCAwIDEgMC0xMTQuNjM2OCAwdjQ3LjEwNGgtNDIuNTk4NGExMzMuMzc2IDEzMy4zNzYgMCAwIDAtMTMzLjEyIDEzMy4zNzZ2MjQuMzJoODY0LjcxNjh2LTI0LjMyYTEzMy4zNzYgMTMzLjM3NiAwIDAgMC0xMzMuMzc2LTEzMy4zNzZ6IiBmaWxsPSIjQ0E2M0U0IiBwLWlkPSIyMTM5NyI+PC9wYXRoPjxwYXRoIGQ9Ik01MDcuNDQzMiA4MTUuMjA2NGgtMS4zODI0YTM1Ljg0IDM1Ljg0IDAgMCAxLTI2LjA2MDgtMTIuNzQ4OGwtMTMwLjUwODgtMTU1LjU0NTZhMzUuODQgMzUuODQgMCAxIDEgNTQuODg2NC00Ni4wOGwxMDUuMTY0OCAxMjUuMjg2NCAyMDAuNDk5Mi0yMDQuNDkyOGEzNS44NCAzNS44NCAwIDEgMSA1MS4yIDUwLjE3NmwtMjI4LjE0NzIgMjMyLjcwNGEzNS44NCAzNS44NCAwIDAgMS0yNS42NTEyIDEwLjcwMDh6IiBmaWxsPSIjRURGN0ZGIiBwLWlkPSIyMTM5OCI+PC9wYXRoPjwvc3ZnPg==', uiClass: 'ui-2' },
@@ -64,9 +67,11 @@
 		},
 		computed: {
 			themeClass() {
+				// 成长区按主题切换模块底色与文字配色。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			totalCheckInDays() {
+				// 打卡入口读取用户累计签到天数，用于弹窗反馈文案。
 				const checkInKey = getCheckInKey()
 				const checkIns = uni.getStorageSync(checkInKey) || {}
 				return Object.values(checkIns).filter(Boolean).length
@@ -74,12 +79,14 @@
 		},
 		methods: {
 			navigateToTrajectory() {
+				// 查看趋势前先写入目标锚点，切到成长档案页后自动滚动到趋势区。
 				uni.setStorageSync('growth_archive_scroll_target', 'trend')
 				uni.switchTab({
 					url: '/pages/GrowthArchive/GrowthArchive'
 				})
 			},
 			handleToolClick(item) {
+				// 不同成长入口分发到成长档案、历史记录、收藏和冲刺营等页面。
 				const actions = {
 					'成长档案': () => {
 						uni.switchTab({

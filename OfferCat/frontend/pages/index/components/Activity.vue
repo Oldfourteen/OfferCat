@@ -1,5 +1,6 @@
 <template>
 	<view class="banner-card shadow-strong" :class="themeClass" @click="goToSpringCamp">
+		<!-- 左侧文案区展示当前招季和活动主标题。 -->
 		<view class="banner-copy">
 			<text class="banner-title">{{ currentYear }} {{ seasonText }}</text>
 			<text class="banner-title">AI 冲刺营</text>
@@ -7,6 +8,7 @@
 			<view class="banner-action">开始规划 →</view>
 		</view>
 		<view class="banner-graphic">
+			<!-- 右侧装饰图形只承担视觉强调作用。 -->
 			<view class="graphic-sheet"></view>
 			<view class="graphic-arrow"></view>
 			<view class="graphic-glow"></view>
@@ -27,17 +29,21 @@
 		},
 		computed: {
 			themeClass() {
+				// 横幅卡片根据主题切换整体视觉风格。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			currentYear() {
+				// 使用统一日期工具生成当前年份文案。
 				return getCurrentYear();
 			},
 			seasonText() {
+				// 根据当前时间判断春招/秋招等招季描述。
 				return getRecruitmentSeason();
 			}
 		},
 		methods: {
 			goToSpringCamp() {
+				// 点击横幅后进入冲刺营活动页。
 				uni.navigateTo({
 					url: '/subPages/springCamp/springCamp'
 				});

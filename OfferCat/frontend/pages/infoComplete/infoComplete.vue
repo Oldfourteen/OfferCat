@@ -1,5 +1,6 @@
 <template>
 	<view class="page">
+		<!-- 顶部栏提供页面标题和返回入口，兼容从独立页或流程页进入。 -->
 		<view class="topbar">
 			<view class="topbar-side" @click="goBack">
 				<text class="topbar-back">返回</text>
@@ -9,15 +10,18 @@
 		</view>
 
 		<view class="card">
+			<!-- 表单卡片集中收纳必填资料项，并在字段下方给出校验提示。 -->
 			<view class="card-desc">为继续使用，请完善以下信息</view>
 			<view class="form">
 				<view class="field">
+					<!-- 昵称输入框用于采集基础展示名称。 -->
 					<view class="label"><text class="req">*</text>姓名/昵称</view>
 					<input class="input" type="text" placeholder="请输入 2-20 位昵称" v-model="form.nickname" @input="onInput('nickname', $event)" @blur="onBlur('nickname')" />
 					<text v-if="showError('nickname')" class="error">{{ errors.nickname }}</text>
 				</view>
 
 				<view class="field">
+					<!-- 性别通过 picker 选择，实际提交使用枚举值。 -->
 					<view class="label"><text class="req">*</text>性别</view>
 					<picker mode="selector" :range="genderOptions" range-key="label" @change="onGenderChange">
 						<view class="picker">
@@ -28,12 +32,14 @@
 				</view>
 
 				<view class="field">
+					<!-- 学号字段用于绑定学生身份，限制输入格式。 -->
 					<view class="label"><text class="req">*</text>学号</view>
 					<input class="input" type="text" placeholder="请输入学号" v-model="form.student_id" @input="onInput('student_id', $event)" @blur="onBlur('student_id')" />
 					<text v-if="showError('student_id')" class="error">{{ errors.student_id }}</text>
 				</view>
 
 				<view class="field">
+					<!-- 年级通过固定选项选择，避免自由输入带来的脏数据。 -->
 					<view class="label"><text class="req">*</text>年级</view>
 					<picker mode="selector" :range="gradeOptions" range-key="label" @change="onGradeChange">
 						<view class="picker">
@@ -44,12 +50,14 @@
 				</view>
 
 				<view class="field">
+					<!-- 专业字段用于补齐用户画像和后续推荐能力。 -->
 					<view class="label"><text class="req">*</text>专业</view>
 					<input class="input" type="text" placeholder="请输入专业（2-50 字）" v-model="form.major" @input="onInput('major', $event)" @blur="onBlur('major')" />
 					<text v-if="showError('major')" class="error">{{ errors.major }}</text>
 				</view>
 
 				<view class="field">
+					<!-- 出生日期由日期选择器输入，并实时推导年龄展示。 -->
 					<view class="label"><text class="req">*</text>出生日期</view>
 					<picker mode="date" :value="form.birthday" @change="onBirthdayChange">
 						<view class="picker">
@@ -58,6 +66,7 @@
 					</picker>
 					<text v-if="showError('birthday')" class="error">{{ errors.birthday }}</text>
 					<view class="age-row">
+						<!-- 年龄为只读展示字段，始终根据出生日期重新计算。 -->
 						<view class="age-label">年龄</view>
 						<view class="age-value">{{ computedAgeText }}</view>
 					</view>
@@ -66,6 +75,7 @@
 		</view>
 
 		<view class="footer">
+			<!-- 底部操作区负责提交资料，并显示接口层面的提交失败信息。 -->
 			<view class="btn" :class="{ disabled: submitting }" @click="handleSubmit">保存并继续</view>
 			<text v-if="submitError" class="submit-error">{{ submitError }}</text>
 		</view>
@@ -79,10 +89,12 @@
 	import { getToken } from '../../utils/token'
 
 	function safeTrim(v) {
+		// 统一处理空值和前后空格，避免表单校验和提交时出现类型不一致。
 		return String(v == null ? '' : v).trim()
 	}
 
 	function calcAgeFromBirthday(birthday) {
+		// 仅接受 yyyy-mm-dd 格式，并在合法日期基础上计算周岁年龄。
 		const v = safeTrim(birthday)
 		if (!v) return null
 		const m = /^([0-9]{4})-([0-9]{2})-([0-9]{2})$/.exec(v)
@@ -110,9 +122,12 @@
 	export default {
 		data() {
 			return {
+				// 保存提交成功后需要跳转的目标地址。
 				redirectUrl: '',
+				// 提交状态用于防止重复点击和控制按钮禁用态。
 				submitting: false,
 				submitError: '',
+				// 枚举选项统一放在本地，供 picker 文案与提交值复用。
 				genderOptions: [
 					{ label: '未知', value: 0 },
 					{ label: '男', value: 1 },
@@ -124,6 +139,7 @@
 					{ label: '大三', value: '大三' },
 					{ label: '大四', value: '大四' }
 				],
+				// form 维护当前页面可编辑的全部字段。
 				form: {
 					nickname: '',
 					gender: 0,
@@ -133,6 +149,7 @@
 					birthday: '',
 					age: ''
 				},
+				// touched 用来控制错误提示只在交互后展示。
 				touched: {
 					nickname: false,
 					gender: false,
@@ -141,6 +158,7 @@
 					major: false,
 					birthday: false
 				},
+				// errors 存储每个字段的即时校验结果。
 				errors: {
 					nickname: '',
 					gender: '',
@@ -153,34 +171,42 @@
 		},
 		computed: {
 			genderText() {
+				// 根据枚举值转换出 picker 中展示的性别文案。
 				const found = this.genderOptions.find((x) => x.value === Number(this.form.gender))
 				return found ? found.label : '请选择'
 			},
 			gradeText() {
+				// 根据当前年级值回显 picker 展示文案。
 				const found = this.gradeOptions.find((x) => x.value === String(this.form.grade || ''))
 				return found ? found.label : '请选择'
 			},
 			birthdayText() {
+				// 生日未选择时显示占位文案，已选择时原样回显。
 				return this.form.birthday ? String(this.form.birthday) : '请选择出生日期'
 			},
 			computedAge() {
+				// 年龄只从生日推导，避免与手动输入值不一致。
 				return calcAgeFromBirthday(this.form.birthday)
 			},
 			computedAgeText() {
+				// 页面展示层将合法年龄格式化为“xx 岁”。
 				const n = this.computedAge
 				return Number.isInteger(n) ? `${n} 岁` : '-'
 			}
 		},
 		onLoad(options) {
+			// 接收外部传入的回跳地址，并优先尝试用本地用户资料预填表单。
 			const redirect = options && options.redirect ? decodeURIComponent(String(options.redirect)) : ''
 			this.redirectUrl = redirect
 			this.prefillFromLocal()
 		},
 		methods: {
 			showError(key) {
+				// 仅在字段被触达且确有错误时显示错误文案。
 				return Boolean(this.touched[key] && this.errors[key])
 			},
 			goBack() {
+				// 有页面栈时回退上一页，否则回到首页兜底。
 				const pages = getCurrentPages()
 				if (pages && pages.length > 1) {
 					uni.navigateBack()
@@ -189,6 +215,7 @@
 				uni.switchTab({ url: '/pages/index/index' })
 			},
 			prefillFromLocal() {
+				// 从本地用户对象回填表单，兼容 profile 嵌套和旧字段格式。
 				const user = getUser() || {}
 				const src = user.profile ? user.profile : user
 				this.form.nickname = safeTrim(src.nickname)
@@ -209,6 +236,7 @@
 				this.form.age = src.age != null ? String(src.age) : ''
 			},
 			onGenderChange(e) {
+				// picker 选中后更新性别枚举值，并立即触发校验。
 				const idx = e && e.detail ? Number(e.detail.value) : 0
 				const item = this.genderOptions[idx]
 				this.form.gender = item ? item.value : 0
@@ -216,6 +244,7 @@
 				this.onBlur('gender')
 			},
 			onGradeChange(e) {
+				// picker 选中后更新年级值，并立即触发校验。
 				const idx = e && e.detail ? Number(e.detail.value) : 0
 				const item = this.gradeOptions[idx]
 				this.form.grade = item ? item.value : '大一'
@@ -223,16 +252,19 @@
 				this.onBlur('grade')
 			},
 			onInput(key, e) {
+				// 文本输入时同步更新表单值，并实时刷新当前字段错误状态。
 				const v = e && e.detail ? String(e.detail.value || '') : ''
 				if (key in this.form) this.form[key] = v
 				if (key in this.touched) this.touched[key] = true
 				this.errors[key] = this.validateField(key)
 			},
 			onBlur(key) {
+				// 失焦后将字段标记为已触达，并重新执行单字段校验。
 				if (key in this.touched) this.touched[key] = true
 				this.errors[key] = this.validateField(key)
 			},
 			onBirthdayChange(e) {
+				// 生日变化后同时更新生日和推导年龄，保证展示一致性。
 				const v = e && e.detail ? String(e.detail.value || '') : ''
 				this.form.birthday = v
 				const age = calcAgeFromBirthday(v)
@@ -241,6 +273,7 @@
 				this.onBlur('birthday')
 			},
 			validateField(key) {
+				// 每个字段都在这里集中校验，便于输入态和提交态复用同一规则。
 				if (key === 'nickname') {
 					const v = safeTrim(this.form.nickname)
 					if (v.length < 2 || v.length > 20) return '请输入 2-20 位昵称'
@@ -278,6 +311,7 @@
 				return ''
 			},
 			validateAll() {
+				// 提交前批量触发所有字段校验，并统一标记为已触达。
 				const keys = ['nickname', 'gender', 'student_id', 'grade', 'major', 'birthday']
 				let ok = true
 				keys.forEach((k) => {
@@ -289,6 +323,7 @@
 				return ok
 			},
 			isTabUrl(url) {
+				// 区分 tabBar 页面与普通页面，决定使用 switchTab 还是 redirectTo。
 				const tabs = new Set([
 					'/pages/index/index',
 					'/pages/GrowthArchive/GrowthArchive',
@@ -298,6 +333,7 @@
 				return tabs.has(url)
 			},
 			navigateAfterSuccess() {
+				// 保存成功后优先按 redirect 回跳，否则回退上一页或返回首页。
 				const url = this.redirectUrl
 				if (url) {
 					if (this.isTabUrl(url)) {
@@ -315,6 +351,7 @@
 				uni.switchTab({ url: '/pages/index/index' })
 			},
 			async handleSubmit() {
+				// 提交流程：前端校验 -> 组装 payload -> 请求保存 -> 本地同步 -> 页面跳转。
 				if (this.submitting) return
 				this.submitError = ''
 				const ok = this.validateAll()
@@ -324,6 +361,7 @@
 				}
 
 				const storedUser = getUser()
+				// 提交给后端的字段名与本地 form 结构不完全一致，这里统一转换。
 				const payload = {
 					userId: storedUser && storedUser.userId ? storedUser.userId : null,
 					nickname: safeTrim(this.form.nickname),
@@ -337,6 +375,7 @@
 				this.submitting = true
 				uni.showLoading({ title: '保存中', mask: true })
 				try {
+					// 带 token 请求用户资料保存接口，并用返回结果补齐本地画像数据。
 					const token = getToken()
 					const resp = await request({
 						url: '/user/profile',

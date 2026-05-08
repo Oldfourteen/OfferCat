@@ -1,6 +1,7 @@
 <template>
 	<!-- logo-area -->
 	<view class="logo-area">
+		<!-- Logo 图片作为欢迎页品牌识别的核心视觉元素。 -->
 		<image class="logo" src="/static/logo-nobg.png"></image>
 	</view>
 </template>

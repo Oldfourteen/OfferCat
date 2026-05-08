@@ -1,11 +1,11 @@
 <template>
 	<view class="login-button-area">
-		<!-- 本机号码一键登录 -->
+		<!-- 主按钮触发一键登录，由父组件决定是否可继续执行。 -->
 		<view class="btn primary-btn" @click="onLoginClick">
 			本机号码一键登录
 		</view>
 		
-		<!-- 其他登录方式 -->
+		<!-- 文本入口跳转到其他登录方式页。 -->
 		<view class="text-link" @click="onOtherLoginClick">
 			其他登录方式
 		</view>
@@ -19,9 +19,11 @@
 		},
 		methods: {
 			onLoginClick() {
+				// 将一键登录点击事件抛给父页面处理协议校验和登录逻辑。
 				this.$emit('login');
 			},
 			onOtherLoginClick() {
+				// 将其他登录方式入口点击事件抛给父页面做页面跳转。
 				this.$emit('otherLogin');
 			}
 		}

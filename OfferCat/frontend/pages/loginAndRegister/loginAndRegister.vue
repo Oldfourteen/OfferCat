@@ -3,10 +3,11 @@
 	<view class="container" :class="{'shrink-anim': isShrinking}">
 		<!-- wrapper -->
 		<view class="wrapper">
+			<!-- 品牌展示区由 logo 和标题文案组成，用于首页首屏引导。 -->
 			<logoArea></logoArea>
 			<titleArea></titleArea>
 		</view>
-		<!-- login in -->
+		<!-- 底部按钮负责触发进入登录流程。 -->
 		<view class="login-in">
 			<button @click="goLogin">点击进入</button>
 		</view>
@@ -19,17 +20,19 @@
 	export default {
 		data() {
 			return {
+				// 进入登录页前先执行收缩动画，增强页面切换的过渡感。
 				isShrinking: false
 			}
 		},
 		onShow() {
-			// 每次显示页面时，恢复原状
+			// 每次返回欢迎页时重置动画状态，避免页面保持缩小态。
 			this.isShrinking = false;
 		},
 		methods: {
 			goLogin() {
+				// 先触发缩放动画，再以底部滑入方式打开登录页。
 				this.isShrinking = true;
-				// 延迟一点时间等动画开始后再跳转
+				// 延迟一点时间等动画开始后再跳转。
 				setTimeout(() => {
 					uni.navigateTo({
 						url: "/pages/login/login",
@@ -40,6 +43,7 @@
 			}
 		},
 		components:{
+			// 欢迎页只依赖品牌 logo 和标题两个静态展示组件。
 			logoArea,
 			titleArea
 		}

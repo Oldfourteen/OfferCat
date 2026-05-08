@@ -1,6 +1,7 @@
 <template>
 	<view class="hero-card" :class="themeClass">
 		<view class="hero-copy">
+			<!-- 标题区显示档案名称、重新评估入口和最近更新时间。 -->
 			<view class="hero-header">
 				<text class="hero-title">求职成长总览</text>
 				<view class="re-evaluate-btn" @tap="handleRetakeSurvey">重新评估</view>
@@ -11,6 +12,7 @@
 		</view>
 
 		<view class="stats-grid">
+			<!-- 四项核心统计展示简历、面试、练习和收藏数据。 -->
 			<view v-for="item in stats" :key="item.label" class="stat-item">
 				<text class="stat-value">{{ item.value }}</text>
 				<text class="stat-label">{{ item.label }}</text>
@@ -41,6 +43,7 @@
 		},
 		data() {
 			return {
+				// 先用占位值兜底，等待本地或远端统计结果覆盖。
 				stats: [
 					{ label: '我的简历', value: '-' },
 					{ label: '面试记录', value: '-' },
@@ -50,6 +53,7 @@
 			}
 		},
 		created() {
+			// 首次进入立即拉取统计，并监听档案与题库事件刷新概览数据。
 			this.fetchStats()
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.fetchStats)
@@ -58,6 +62,7 @@
 			}
 		},
 		beforeDestroy() {
+			// 兼容 Vue2 生命周期，离开时取消事件监听。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchStats)
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.fetchStats)
@@ -65,6 +70,7 @@
 			}
 		},
 		beforeUnmount() {
+			// 兼容 Vue3 生命周期，离开时取消事件监听。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchStats)
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.fetchStats)
@@ -73,9 +79,11 @@
 		},
 		computed: {
 			themeClass() {
+				// 根据主题切换总览卡片的浅色/深色背景。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			formattedDate() {
+				// 同时兼容后端数组日期和 ISO 字符串日期。
 				if (this.radarData && this.radarData.createTime) {
 					const ct = this.radarData.createTime
 					let year, month, day
@@ -108,6 +116,7 @@
 		},
 		methods: {
 			handleRetakeSurvey() {
+				// 清除已评估标记后重新进入问卷，允许用户重做能力测评。
 				const user = getUser()
 				const userId = user && user.userId ? user.userId : (user ? user.id : null)
 				if (userId) {
@@ -120,6 +129,7 @@
 				})
 			},
 			applyLocalStats() {
+				// 网络不可用时回退到本地聚合数据，保证首页有可展示内容。
 				const metrics = getDashboardMetrics()
 				this.stats = [
 					{ label: '我的简历', value: String(metrics.resumeCount) },
@@ -129,6 +139,7 @@
 				]
 			},
 			fetchStats() {
+				// 优先读后端统计，失败时再使用本地缓存统计。
 				const user = getUser()
 				const studentId = user && user.studentId ? user.studentId : null
 				if (!studentId || !BASE_URL) {

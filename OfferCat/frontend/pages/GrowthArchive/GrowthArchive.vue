@@ -1,11 +1,13 @@
 <template>
 	<view class="growth-page" :class="themeClass">
+		<!-- 顶部栏固定，内容区按 tab 切换不同的成长模块。 -->
 		<view class="animate-fade-down" style="animation-delay: 0.1s;">
 			<GrowthTopBar :active-index="activeIndex" :theme="theme" @change="onTabChange" />
 		</view>
 		<view class="topbar-spacer"></view>
 		<view class="page">
 			<template v-if="activeIndex === 0">
+				<!-- 成长档案页：总览、档案管理、趋势图、AI 分析按顺序展开。 -->
 				<view class="animate-item" style="animation-delay: 0.2s;">
 					<ArchiveHeroCard :theme="theme" :radarData="radarData" />
 				</view>
@@ -20,17 +22,20 @@
 				</view>
 			</template>
 			<template v-else-if="activeIndex === 1">
+				<!-- 简历工坊页：聚合附件简历、在线简历、简历仓库三个入口。 -->
 				<view class="animate-item" style="animation-delay: 0.2s;">
 					<ResumeWorkshop :theme="theme" />
 				</view>
 			</template>
 			<template v-else>
+				<!-- AI 画像页：上传照片并生成职业形象照。 -->
 				<view class="animate-item" style="animation-delay: 0.2s;">
 					<AISelfImage :theme="theme" />
 				</view>
 			</template>
 		</view>
 
+		<!-- 首次进入成长档案时的问卷引导弹窗。 -->
 		<view v-if="showAssessmentModal" class="assessment-modal-mask" @tap="handleAssessmentCancel">
 			<view class="assessment-modal" @tap.stop>
 				<view class="modal-title">档案评估</view>
@@ -68,14 +73,18 @@
 		},
 		data() {
 			return {
+				// 当前顶部 tab，下标分别对应成长档案 / 简历工坊 / AI画像。
 				activeIndex: 0,
+				// 问卷引导弹窗显示状态及其交互模式。
 				showAssessmentModal: false,
 				showAssessmentCancel: false,
 				assessmentSeenKey: '',
+				// 雷达测评数据会透传给多个子组件共用。
 				radarData: null
 			}
 		},
 		onShow() {
+			// 每次回到页面都尝试恢复目标滚动位置和最新测评数据。
 			this.handlePendingScroll()
 			this.checkFirstTimeRadar()
 			// 先尝试从全局数据加载（APK中setStorageSync跨页面不可靠）
@@ -92,52 +101,54 @@
 		},
 		methods: {
 			async fetchRadarData() {
-			const user = uni.getStorageSync('user_v2') || {}
-			const userId = user.userId || user.id
-			if (!userId) return
-			try {
-				const res = await request({
-					url: '/api/radar-chart/my-evaluation',
-					method: 'GET',
-					data: { studentId: userId }
-				})
-				// 兼容不同封装的响应结构
-				const realData = res.data || res
-				if (realData && realData.totalScore !== undefined) {
-					this.radarData = realData
-					// 同时缓存到全局，供后续使用
-					const app = getApp()
-					if (app && app.globalData) {
-						app.globalData.radarDataCache = app.globalData.radarDataCache || {}
-						app.globalData.radarDataCache[userId] = realData
+				// 页面优先拉取最新测评结果，并同步写入全局缓存供其他页面复用。
+				const user = uni.getStorageSync('user_v2') || {}
+				const userId = user.userId || user.id
+				if (!userId) return
+				try {
+					const res = await request({
+						url: '/api/radar-chart/my-evaluation',
+						method: 'GET',
+						data: { studentId: userId }
+					})
+					// 兼容不同封装的响应结构
+					const realData = res.data || res
+					if (realData && realData.totalScore !== undefined) {
+						this.radarData = realData
+						// 同时缓存到全局，供后续使用
+						const app = getApp()
+						if (app && app.globalData) {
+							app.globalData.radarDataCache = app.globalData.radarDataCache || {}
+							app.globalData.radarDataCache[userId] = realData
+						}
+					} else {
+						// 后端没有查到数据，尝试使用全局缓存
+						const app = getApp()
+						if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
+							this.radarData = app.globalData.radarDataCache[userId]
+						} else {
+							// 清除 has_submitted_radar flag，以便下次可以重新弹窗引导
+							uni.removeStorageSync('has_submitted_radar_' + userId)
+							this.checkFirstTimeRadar()
+						}
 					}
-				} else {
-					// 后端没有查到数据，尝试使用全局缓存
+				} catch (e) {
+					// 查询失败时，尝试使用全局缓存
 					const app = getApp()
 					if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
 						this.radarData = app.globalData.radarDataCache[userId]
 					} else {
-						// 清除 has_submitted_radar flag，以便下次可以重新弹窗引导
-						uni.removeStorageSync('has_submitted_radar_' + userId)
-						this.checkFirstTimeRadar()
+						uni.showModal({
+							title: '档案数据同步失败',
+							content: `请检查网络连接后重试。\n错误详情: ${e.message}`,
+							showCancel: false
+						});
 					}
+					console.error('获取雷达数据失败', e)
 				}
-			} catch (e) {
-				// 查询失败时，尝试使用全局缓存
-				const app = getApp()
-				if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
-					this.radarData = app.globalData.radarDataCache[userId]
-				} else {
-					uni.showModal({
-						title: '档案数据同步失败',
-						content: `请检查网络连接后重试。\n错误详情: ${e.message}`,
-						showCancel: false
-					});
-				}
-				console.error('获取雷达数据失败', e)
-			}
-		},
+			},
 			checkFirstTimeRadar() {
+				// 未完成问卷时弹出引导弹窗，二次进入后才允许暂时跳过。
 				const user = uni.getStorageSync('user_v2') || {}
 				const userId = user.userId || user.id
 				if (!userId) return
@@ -155,10 +166,12 @@
 				}
 			},
 			handleAssessmentCancel() {
+				// 第一次进入必须去填写问卷，因此不允许直接关闭。
 				if (!this.showAssessmentCancel) return // 第一次不能取消
 				this.showAssessmentModal = false
 			},
 			handleAssessmentConfirm() {
+				// 记录用户已看过弹窗后，跳转到问卷页面继续评估。
 				if (!this.showAssessmentCancel && this.assessmentSeenKey) {
 					uni.setStorageSync(this.assessmentSeenKey, true)
 				}
@@ -168,19 +181,21 @@
 				})
 			},
 			onTabChange(index) {
+				// 切换 tab 时回到页面顶部，避免保留上一个模块的滚动位置。
 				this.activeIndex = index
 				uni.pageScrollTo({ scrollTop: 0, duration: 0 })
 			},
 			handlePendingScroll() {
+				// 支持从其他页面带着目标锚点返回到指定 tab 或趋势模块。
 				const target = uni.getStorageSync('growth_archive_scroll_target')
-			if (target !== 'trend') {
-				if (target === 'resume') {
-					uni.removeStorageSync('growth_archive_scroll_target')
-					this.activeIndex = 1
-					uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+				if (target !== 'trend') {
+					if (target === 'resume') {
+						uni.removeStorageSync('growth_archive_scroll_target')
+						this.activeIndex = 1
+						uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+					}
+					return
 				}
-				return
-			}
 
 				uni.removeStorageSync('growth_archive_scroll_target')
 				this.activeIndex = 0

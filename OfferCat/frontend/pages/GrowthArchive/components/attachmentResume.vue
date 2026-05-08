@@ -1,10 +1,12 @@
 <template>
 	<view class="resume-card attachment-resume" :class="themeClass">
 		<view class="card-header">
+			<!-- 标题区说明附件简历支持上传与生成两种处理方式。 -->
 			<text class="title">附件简历</text>
 			<text class="subtitle">支持多种格式，一键投递</text>
 		</view>
 		<view class="card-body">
+			<!-- 左侧主按钮根据是否有润色结果，切换为生成 PDF 的主流程入口。 -->
 			<view class="action-btn make-btn" :class="{ 'has-result': polishedText }" @click="handleMake">
 				<view class="icon-wrap">
 					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEzOTUwNzc4IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIwOTg4MSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMjA5ODgyIj48L3BhdGg+PC9zdmc+" class="attachment-icon" mode="aspectFit" />
@@ -15,6 +17,7 @@
 				</view>
 			</view>
 			<view class="action-btn upload-btn" @click="handleUpload">
+				<!-- 上传入口负责选择附件简历并交给后端进行润色。 -->
 				<view class="icon-wrap">
 					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEzOTUwNzc4IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIwOTg4MSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMjA5ODgyIj48L3BhdGg+PC9zdmc+" class="attachment-icon" mode="aspectFit" />
 				</view>
@@ -41,19 +44,23 @@
 		},
 		data() {
 			return {
+				// 保存后端返回的润色文本，作为后续生成 PDF 的输入。
 				polishedText: ''
 			}
 		},
 		computed: {
+			// 暗色状态供模板和样式类切换复用。
 		isDarkTheme() {
 			return this.theme === 'dark' || this.theme === 'theme-dark'
 		},
 			themeClass() {
+				// 输出根节点主题类名，统一控制整张卡片的外观。
 			return this.isDarkTheme ? 'theme-dark' : ''
 			}
 		},
 		methods: {
 			handleMake() {
+				// 先完成 PDF 润色，再允许用户导出新的附件简历。
 				if (!this.polishedText) {
 					uni.showToast({ title: '请先在右侧上传简历进行润色', icon: 'none' })
 					return
@@ -86,6 +93,7 @@
 			},
 			saveAndOpenPdf(data) {
 				// #ifdef H5
+				// H5 直接走浏览器下载能力，不依赖本地文件系统。
 				const blob = new Blob([data], { type: 'application/pdf' });
 				const url = window.URL.createObjectURL(blob);
 				const a = document.createElement('a');
@@ -99,6 +107,7 @@
 				// #endif
 
 				// #ifndef H5
+				// 非 H5 需要先落盘，再交给系统文档查看器打开。
 				const fs = uni.getFileSystemManager ? uni.getFileSystemManager() : null;
 				if (!fs) {
 					uni.showToast({ title: '当前环境不支持直接打开 PDF', icon: 'none' })
@@ -151,6 +160,7 @@
 			},
 			handleUpload() {
 				// #ifdef MP-WEIXIN
+				// 小程序优先使用消息文件选择器，用户更容易拿到 PDF 文件。
 				uni.chooseMessageFile({
 					count: 1,
 					type: 'file',
@@ -211,6 +221,7 @@
 				// #endif
 			},
 			uploadPdfForPolish(filePath) {
+				// 上传 PDF 后将后端返回的润色文本缓存到当前组件，供生成新 PDF 复用。
 				uni.showLoading({ title: 'AI 润色中...', mask: true })
 				uni.uploadFile({
 					url: `${BASE_URL}/api/ai/resume/polish-pdf`,

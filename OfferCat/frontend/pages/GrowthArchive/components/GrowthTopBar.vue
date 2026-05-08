@@ -1,6 +1,8 @@
 <template>
 	<view class="growth-topbar" :class="themeClass">
+		<!-- 顶部切换条只负责视图切换，通过 change 事件通知父页面。 -->
 		<view class="segmented">
+			<!-- 三个入口分别对应成长档案、简历工坊和 AI 画像。 -->
 			<view
 				v-for="(item, index) in items"
 				:key="item.key"
@@ -29,11 +31,13 @@
 		},
 		computed: {
 			themeClass() {
+				// 顶部栏根据主题切换浅色/深色视觉样式。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
 		data() {
 			return {
+				// 顶部导航项配置，父组件只关心选中的下标。
 				items: [
 					{ key: 'archive', label: '成长档案' },
 					{ key: 'resume', label: '简历工坊' },
@@ -43,6 +47,7 @@
 		},
 		methods: {
 			onSelect(index) {
+				// 重复点击当前分段时不再触发父级刷新。
 				if (index === this.activeIndex) return
 				this.$emit('change', index)
 			}

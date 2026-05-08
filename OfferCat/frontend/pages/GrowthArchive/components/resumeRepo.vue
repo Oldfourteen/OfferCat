@@ -2,6 +2,7 @@
 	<view class="resume-card resume-repo" :class="themeClass" @click="handleManage">
 		<view class="card-content">
 			<view class="text-content">
+				<!-- 仓库卡片展示简历总量，并引导用户进入统一管理页。 -->
 				<text class="title">简历仓库</text>
 				<text class="subtitle">统一管理已制作/上传的简历</text>
 				<view class="stats">
@@ -68,26 +69,32 @@
 		},
 		data() {
 			return {
+				// 当前卡片仅展示本地仓库中的简历数量。
 				resumeCount: 0
 			}
 		},
 		computed: {
+			// 暗色状态供模板和样式类切换复用。
 		isDarkTheme() {
 			return this.theme === 'dark' || this.theme === 'theme-dark'
 		},
 			themeClass() {
+				// 输出根节点主题类名，统一控制整张卡片的外观。
 			return this.isDarkTheme ? 'theme-dark' : ''
 			}
 		},
 		mounted() {
+			// 卡片只展示当前仓库中的简历数量，初始化时读取一次本地列表。
 			this.resumeCount = getResumeRepoList().length
 // >>>>>>> Stashed changes
 		},
 		methods: {
 			syncStats() {
+				// 预留给旧版统计方案的同步入口。
 				this.stats = getResumeRepoStats()
 			},
 			handleManage() {
+				// 跳转到简历仓库管理页查看和维护已有简历。
 				uni.navigateTo({
 					url: '/subPages/resumeRepoPage/resumeRepoPage'
 				})

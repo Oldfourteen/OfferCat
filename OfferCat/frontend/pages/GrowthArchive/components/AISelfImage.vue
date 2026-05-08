@@ -1,6 +1,7 @@
 <template>
 	<view class="ai-image-container" :class="themeClass">
 		<view class="header-area">
+			<!-- 模块说明区：介绍 AI 形象照的用途和上传要求。 -->
 			<text class="title">AI 职业形象</text>
 			<text class="subtitle">上传你的照片，AI为你生成专业的职业形象照，让你的简历更出众。</text>
 		</view>
@@ -51,6 +52,7 @@
 
 				<!-- Controls -->
 				<view class="controls-area" v-if="!generatedImage">
+					<!-- 风格选择与自定义提示词用于拼接后端生成参数。 -->
 					<view class="style-selector">
 						<text class="section-label">选择生成风格</text>
 						<view class="style-list">
@@ -92,6 +94,7 @@
 
 				<!-- Result Actions -->
 				<view class="result-actions" v-if="generatedImage">
+					<!-- 生成成功后可以重新制作，或将结果保存到系统相册。 -->
 					<button class="action-btn outline" @click="resetAll">重新制作</button>
 					<button class="action-btn primary" @click="saveImage">保存到相册</button>
 				</view>
@@ -113,6 +116,7 @@ export default {
 	},
 	data() {
 		return {
+			// 原图、生成图和生成状态共同驱动整个交互流程。
 			originalImage: '',
 			generatedImage: '',
 			isGenerating: false,
@@ -124,7 +128,7 @@ export default {
 				{ id: 'tech', name: '科技极客' },
 				{ id: 'art', name: '艺术创意' }
 			],
-			// 与后端表结构保持一致的数据
+			// 与后端表结构保持一致的数据，便于后续接入持久化保存。
 			careerPortrait: {
 				portrait_id: null,
 				user_id: null,
@@ -135,11 +139,13 @@ export default {
 	},
 	computed: {
 		themeClass() {
+			// 根节点主题类用于统一切换整套配色与输入区样式。
 			return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 		}
 	},
 	methods: {
 		chooseImage() {
+			// 每次重新选图时，顺带清空旧结果与自定义提示词。
 			uni.chooseImage({
 				count: 1,
 				sizeType: ['compressed'],
@@ -152,11 +158,13 @@ export default {
 			});
 		},
 		clearImage() {
+			// 删除原图时同步清理生成结果，回到初始上传态。
 			this.originalImage = '';
 			this.generatedImage = '';
 			this.customPrompt = '';
 		},
 		previewImg(url) {
+			// 任意预览图都复用系统图片预览能力放大查看细节。
 			if (!url) return;
 			uni.previewImage({
 				urls: [url],
@@ -164,6 +172,7 @@ export default {
 			});
 		},
 		async generateImage() {
+			// 核心流程：压缩原图 -> 上传生成 -> 解析返回结果 -> 更新展示态。
 			if (!this.originalImage || this.isGenerating) return;
 			
 			this.isGenerating = true;
@@ -172,7 +181,7 @@ export default {
 				const prompt = this.customPrompt.trim();
 				console.log('Selected Style:', this.selectedStyle, 'Custom Prompt:', prompt);
 				
-				// 压缩图片以提升上传速度
+				// 先压缩图片，降低上传体积并减少生成等待时间。
 				const compressRes = await new Promise((resolve) => {
 					uni.compressImage({
 						src: this.originalImage,
@@ -209,7 +218,7 @@ export default {
 					});
 				});
 				
-				// 处理后端统一的 ResponseResult 格式或直接返回的数据格式
+				// 同时兼容统一响应壳与直接返回结果两种接口格式。
 				const res = resData.code !== undefined ? resData.data : resData;
 				
 				if (!res || res.error) {
@@ -249,6 +258,7 @@ export default {
 			}
 		},
 		saveToDatabase(data) {
+			// 预留数据库持久化入口，当前仅保留调试说明。
 			// 模拟发送数据到后端 career_portrait 表的 API 请求
 			console.log('保存到数据库的数据：', data);
 			// uni.request({
@@ -261,6 +271,7 @@ export default {
 			// })
 		},
 		resetAll() {
+			// 重新制作会清空本次上传和生成过程中的全部中间状态。
 			this.originalImage = '';
 			this.generatedImage = '';
 			this.isGenerating = false;
@@ -269,7 +280,7 @@ export default {
 		saveImage() {
 			if (!this.generatedImage) return;
 			
-			// 如果是网络图片，需要先下载
+			// 网络地址需先下载到本地临时目录，才能调用系统相册保存能力。
 			if (this.generatedImage.startsWith('http')) {
 				uni.showLoading({ title: '保存中...' });
 				uni.downloadFile({
@@ -292,6 +303,7 @@ export default {
 			}
 		},
 		doSave(filePath) {
+			// 实际保存动作统一封装，兼容本地路径和下载后的临时路径。
 			uni.saveImageToPhotosAlbum({
 				filePath: filePath,
 				success: () => {

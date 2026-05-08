@@ -2,17 +2,20 @@
 	<view class="section-card" :class="themeClass" v-if="roleProfile && roleProfile.name">
 		<view class="gap-head">
 			<view>
+				<!-- 标题区说明当前模块用于分析目标岗位竞争力。 -->
 				<text class="gap-title">AI 岗位竞争力分析</text>
 				<text class="gap-subtitle">基于你的档案和技能，分析与目标岗位的差距</text>
 			</view>
 		</view>
 
 		<view class="role-row">
+			<!-- 当前岗位标签展示本次分析的目标对象。 -->
 			<text class="role-label">目标岗位</text>
 			<text class="role-value">当前选择：{{ roleProfile.name }}</text>
 		</view>
 
 		<view class="chart-card radar-box">
+			<!-- 雷达图聚焦当前最有代表性的能力维度。 -->
 			<qiun-data-charts
 				v-if="isRadarVisible"
 				type="radar"
@@ -23,6 +26,7 @@
 		</view>
 
 		<view class="dimension-card">
+			<!-- 维度列表补充每个能力项的原始分值和取值区间。 -->
 			<text class="panel-title">维度区间说明</text>
 			<view class="dimension-list">
 				<view v-for="item in roleProfile.dimensions" :key="item.key" class="dimension-item">
@@ -36,6 +40,7 @@
 		</view>
 
 		<view class="info-panel">
+			<!-- 差距点由 AI 接口返回，未完成时显示骨架屏。 -->
 			<text class="panel-title">差距点 <text v-if="isAnalyzing" class="analyzing-text">(AI分析中...)</text></text>
 			<view v-if="!isAnalyzing" v-for="item in roleProfile.gaps" :key="item" class="panel-item">
 				<text class="panel-dot"></text>
@@ -45,6 +50,7 @@
 		</view>
 
 		<view class="info-panel suggestion-panel">
+			<!-- 提升建议与差距点对应，帮助用户明确后续改进方向。 -->
 			<text class="panel-title">提升建议 <text v-if="isAnalyzing" class="analyzing-text">(AI分析中...)</text></text>
 			<view v-if="!isAnalyzing" v-for="item in roleProfile.suggestions" :key="item" class="panel-item">
 				<text class="panel-dot"></text>
@@ -73,6 +79,7 @@
 			watch: {
 				radarData: {
 					handler(newVal) {
+						// 外部测评结果一旦变化，立即重新构建岗位画像与分析内容。
 						this.updateRoleProfile(newVal);
 					},
 					immediate: true,
@@ -81,14 +88,18 @@
 			},
 			data() {
 			return {
+				// 雷达图滚入视口后再挂载，降低首屏渲染压力。
 				isRadarVisible: false,
+				// AI 差距分析中的加载态，用于控制骨架屏与提示文案。
 				isAnalyzing: false,
+				// 统一承载岗位名称、维度、差距点和建议结果。
 				roleProfile: {
 					name: '',
 					dimensions: [],
 					gaps: [],
 					suggestions: []
 				},
+				// 雷达图配置由主题色和公共坐标样式组成。
 				chartOpts: {
 					animation: true,
 					color: ['#3165D7'],
@@ -118,6 +129,7 @@
 		},
 		mounted() {
 			this.$nextTick(() => {
+				// 雷达图进入视口后再渲染，减少首屏 canvas 开销。
 				this.observer = uni.createIntersectionObserver(this)
 				this.observer.relativeToViewport().observe('.radar-box', (res) => {
 					if (res.intersectionRatio > 0) {
@@ -133,25 +145,27 @@
 			})
 		},
 		beforeDestroy() {
+			// 兼容 Vue2 生命周期，销毁可视区域监听器。
 			if (this.observer) {
 				this.observer.disconnect()
 			}
 		},
 		beforeUnmount() {
+			// 兼容 Vue3 生命周期，销毁可视区域监听器。
 			if (this.observer) {
 				this.observer.disconnect()
 			}
 		},
 		methods: {
 			updateRoleProfile(data) {
-      // 检查数据是否有效（至少有一个维度分数不为0）
+				// 至少命中一个非零维度时，才认为问卷结果有效。
       const hasValidData = data && (
         data.professionalAbility || data.projectExperience || data.competitionResults ||
         data.academicBackground || data.softSkills || data.industryCognition || data.stressExecution
       );
 
-      if (!hasValidData) {
-        // 只有在当前没有显示数据时才显示默认提示
+				if (!hasValidData) {
+					// 没有评估结果时保留默认引导文案，避免反复覆盖已有分析。
         if (this.roleProfile.dimensions.length === 0) {
           this.roleProfile = {
             name: '综合能力评估',
@@ -173,7 +187,7 @@
         { key: 'D7', label: '抗压执行', min: 0, max: 100, value: data.stressExecution !== undefined && data.stressExecution !== null ? data.stressExecution : 0 }
       ];
       
-      // 降序排序并截取前五个
+				// 仅保留最有代表性的五个维度用于展示与 AI 分析。
       allDimensions.sort((a, b) => b.value - a.value);
       let top5Dimensions = allDimensions.slice(0, 5);
 
@@ -187,6 +201,7 @@
       this.fetchAiAnalysis(top5Dimensions);
 			},
 			async fetchAiAnalysis(dimensions) {
+				// 后端分析使用当前用户与维度得分生成差距点和改进建议。
 				const user = uni.getStorageSync('user_v2') || {}
 				const userId = user.userId || user.id
 				if (!userId) {
@@ -236,9 +251,11 @@
 		},
 		computed: {
 			themeClass() {
+				// 根据主题切换整张 AI 分析卡片的视觉风格。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			resolvedChartOpts() {
+				// 在公共雷达图配置基础上按主题覆写颜色相关参数。
 				const isDark = this.theme === 'dark'
 				return {
 					...this.chartOpts,
@@ -257,6 +274,7 @@
 				}
 			},
 			normalizedRadarData() {
+				// 将不同维度区间统一映射到 0~100，便于雷达图共用一套坐标轴。
 				return this.roleProfile.dimensions.map(item => {
 					const min = Number(item.min)
 					const max = Number(item.max)
@@ -271,6 +289,7 @@
 				})
 			},
 			currentChartData() {
+				// 图表数据由当前维度列表与归一化得分共同拼装。
 				return {
 					categories: this.roleProfile.dimensions.map(item => item.label),
 					series: [

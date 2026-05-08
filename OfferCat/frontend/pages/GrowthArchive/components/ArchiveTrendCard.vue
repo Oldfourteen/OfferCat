@@ -1,6 +1,7 @@
 <template>
 	<view class="section-card" :class="themeClass">
 		<view class="section-head">
+			<!-- 标题区配合时间范围切换，控制趋势图展示粒度。 -->
 			<text class="section-title">能力成长轨迹</text>
 			<view class="range-tabs">
 				<text
@@ -15,6 +16,7 @@
 
 		<qiun-data-charts
 			v-if="showChart"
+			<!-- 折线图统一读取当前选中区间的数据源。 -->
 			type="line"
 			:opts="chartOpts"
 			:chartData="currentChartData"
@@ -40,6 +42,7 @@
 		watch: {
 			radarData: {
 				handler(newVal) {
+					// 只在总分存在时刷新趋势图，避免空数据触发无意义重绘。
 					if (newVal && newVal.totalScore !== undefined && newVal.totalScore !== null) {
 						this.updateChartData(newVal.totalScore);
 					}
@@ -50,6 +53,7 @@
 		},
 		data() {
 			return {
+				// 通过显隐控制图表重建，避免 canvas 在切换时出现残影或串台。
 				showChart: true,
 				activeRange: 'week',
 				canvasKey: 1,
@@ -78,6 +82,7 @@
 						]
 					}
 				},
+				// 图表基础配置在不同时间粒度下复用。
 				chartOpts: {
 					color: ['#3165D7', '#68C7FF'],
 					padding: [12, 12, 10, 34],
@@ -141,9 +146,11 @@
 		},
 		computed: {
 			themeClass() {
+				// 趋势卡片按主题切换根节点类名。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			currentChartData() {
+				// 返回当前时间范围的独立副本，避免图表组件内部修改源数据。
 				return JSON.parse(JSON.stringify(this.dynamicChartDataMap[this.activeRange]))
 			}
 		},

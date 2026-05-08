@@ -5,6 +5,7 @@
 		</view>
 
 		<view class="entry-grid">
+			<!-- 四类档案入口展示类型说明和已录入数量。 -->
 			<view v-for="item in entries" :key="item.type" class="entry-item" @click="openEntry(item)">
 				<view class="entry-icon">
 					<image v-if="item.iconSrc" :src="item.iconSrc" mode="aspectFit" style="width: 56rpx; height: 56rpx;" />
@@ -32,28 +33,33 @@
 				}
 			},
 			created() {
+				// 进入页面先拉取四类档案数量，并监听档案更新事件。
 				this.fetchEntryCounts()
 				if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 					uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
 				}
 			},
 			beforeDestroy() {
+				// 兼容 Vue2 生命周期，离开时移除事件监听。
 				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 					uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
 				}
 			},
 			beforeUnmount() {
+				// 兼容 Vue3 生命周期，离开时移除事件监听。
 				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 					uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
 				}
 			},
 			computed: {
 				themeClass() {
+					// 根据主题切换档案管理模块的整体视觉风格。
 					return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 				}
 			},
 			data() {
 			return {
+				// 档案入口的静态配置，数量字段会在运行时覆盖。
 				entries: [
 				{
 					type: 'awards',
@@ -92,6 +98,7 @@
 		},
 		methods: {
 			applyLocalCounts() {
+				// 本地汇总作为兜底，避免接口异常时计数全部为空。
 				const summary = getArchiveSummary()
 				const countMap = {
 					awards: summary.awardsCount,
@@ -105,6 +112,7 @@
 				}))
 			},
 			fetchEntryCounts() {
+				// 四类档案分开请求，全部返回后再一次性更新卡片数量。
 				const user = getUser()
 				const studentId = user && user.studentId ? user.studentId : null
 				if (!studentId || !BASE_URL) {
@@ -142,6 +150,7 @@
 				})
 			},
 			openEntry(item) {
+				// 根据档案类型跳转到对应管理页。
 				uni.navigateTo({
 					url: `/subPages/archive/manage?type=${item.type}`
 				})

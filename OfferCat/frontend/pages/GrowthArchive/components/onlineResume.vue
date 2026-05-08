@@ -2,6 +2,7 @@
 	<view class="resume-card online-resume" :class="themeClass" @click="handleEdit">
 		<view class="card-content">
 			<view class="text-content">
+				<!-- 在线简历卡片展示入口说明，进度区当前预留给完善度能力。 -->
 				<text class="title">在线简历</text>
 				<text class="subtitle">丰富在线经历，提高匹配率</text>
 				<view class="progress-wrap">
@@ -35,20 +36,24 @@
 // <<<<<<< Updated upstream
 		data() {
 			return {
+				// 完善度来源于档案统计，便于未来恢复进度展示。
 				completion: getResumeRepoStats().completion
 			}
 		},
 		created() {
+			// 监听档案更新事件，保证在线简历信息与最新资料保持同步。
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.syncCompletion)
 			}
 		},
 		beforeDestroy() {
+			// 兼容 Vue2 生命周期，避免事件监听残留。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.syncCompletion)
 			}
 		},
 		beforeUnmount() {
+			// 兼容 Vue3 生命周期，离开组件时移除监听。
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.syncCompletion)
 // =======
@@ -61,19 +66,23 @@
 			}
 		},
 		computed: {
+			// 暗色状态供模板和样式类切换复用。
 		isDarkTheme() {
 			return this.theme === 'dark' || this.theme === 'theme-dark'
 		},
 			themeClass() {
+				// 输出根节点主题类名，统一控制整张卡片的外观。
 			return this.isDarkTheme ? 'theme-dark' : ''
 // >>>>>>> Stashed changes
 			}
 		},
 		methods: {
 			syncCompletion() {
+				// 在线简历完善度依赖档案事件同步刷新。
 				this.completion = getResumeRepoStats().completion
 			},
 			handleEdit() {
+				// 进入在线简历编辑器继续完善内容。
 				uni.navigateTo({
 					url: '/subPages/onlineResumeMake/onlineResumeMake'
 				})

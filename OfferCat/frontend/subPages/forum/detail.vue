@@ -273,14 +273,14 @@
 					if (res.code === 200) {
 						uni.showToast({ title: originalIsLiked ? '取消点赞' : '点赞成功', icon: 'none' });
 						uni.setStorageSync('currentPost_' + this.postId, this.post);
-						uni.$emit('refreshForumList'); // Notify list page
+						uni.$emit('refreshForumList'); 
 					} else {
-						// Revert on failure
+						
 						this.post = originalPost;
 						uni.showToast({ title: res.msg || '操作失败', icon: 'none' });
 					}
 				}).catch((err) => {
-				// Revert on error
+			
 				this.post = originalPost;
 				uni.showToast({ title: err.message || '网络错误', icon: 'none' });
 			});
@@ -314,13 +314,13 @@
 					}
 				})
 			},
-			sendComment() {
+			async sendComment() {
 				if (!this.commentText.trim()) return
 				
-				const sensitiveResult = checkContent(this.commentText)
+				const sensitiveResult = await checkContent(this.commentText)
 				if (sensitiveResult.hasSensitive) {
 					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
-					this.commentText = getRandomPoemPair()
+					this.commentText = sensitiveResult.replacement || getRandomPoemPair()
 				}
 				
 				const user = uni.getStorageSync('user') || {}

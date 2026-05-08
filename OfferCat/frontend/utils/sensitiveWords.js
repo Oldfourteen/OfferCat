@@ -1,4 +1,6 @@
-const SENSITIVE_WORDS = [
+import { request } from '@/api/request.js'
+
+const LOCAL_SENSITIVE_WORDS = [
     '福音会', '中国教徒', '统一教', '观音法门', '清海无上师',
     '李洪志', '志洪李', '李宏志', '轮功', '法轮', '轮子功', '法轮功',
     '大法弟子', '大纪元', '明慧网', '明慧周报', '正见网', '新唐人',
@@ -15,7 +17,15 @@ const SENSITIVE_WORDS = [
     '饭圈', '应援', '控评', '撕逼', '粉头', '偶像', '明星',
     '中南海', '天安门', '人民大会堂', '钓鱼岛', '台湾', '香港', '澳门',
     '共产党', '国民党', '民进党', '邪教',
-    '敏感词', '屏蔽词', '违禁词', '政治敏感', '不良信息'
+    '敏感词', '屏蔽词', '违禁词', '政治敏感', '不良信息',
+    '打人', '杀人', '砍人', '打架', '暴力', '斗殴', '行凶', '伤害',
+    '法lun', 'falun', 'flg', '法轮大法', '法论功', '法仑功',
+    '反动', '颠覆', '分裂', '破坏', '恐怖', '极端',
+    '操', '艹', '肏', '日', '屌', '屄', '逼', '屎', '尿', '屁',
+    '傻逼', '傻屌', '蠢货', '笨蛋', '垃圾', '废物', '脑残', '智障',
+    '去死吧', '滚远点', '操你大爷', '他妈的', '你妈逼', '王八蛋', '狗东西',
+    '攻击', '侮辱', '威胁', '恐吓', '挑衅', '骚扰', '侵犯', '欺压',
+    'fa lun', 'fa-lun', 'falungong'
 ]
 
 const ANCIENT_POEMS = [
@@ -55,15 +65,21 @@ function normalizeText(text) {
     normalized = normalized.replace(/[\uFF10-\uFF19]/g, function(char) {
         return String.fromCharCode(char.charCodeAt(0) - 0xFEE0)
     })
+    normalized = normalized.replace(/[\uFF01-\uFF5E]/g, function(char) {
+        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0)
+    })
     
+    normalized = normalized.replace(/[\u3000]/g, ' ')
     normalized = normalized.replace(/[\u200B\u200C\u200D\uFEFF]/g, '')
     normalized = normalized.replace(/[\s\t\n\r]/g, '')
-    normalized = normalized.replace(/[`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+|{}【】'；：""''。，、？]/g, '')
+    
+    const punctuation = /[`~!@#$%^&*()+=|{}':;',\\.<>/?~！@#￥%……&*（）——+|{}【】'；：""''。，、？·•·]/g
+    normalized = normalized.replace(punctuation, '')
     
     return normalized
 }
 
-function checkContent(text) {
+function localCheckContent(text) {
     if (!text || typeof text !== 'string') {
         return { hasSensitive: false, foundWords: [], category: null }
     }
@@ -71,7 +87,7 @@ function checkContent(text) {
     const normalizedText = normalizeText(text)
     const foundWords = []
 
-    for (const word of SENSITIVE_WORDS) {
+    for (const word of LOCAL_SENSITIVE_WORDS) {
         const normalizedWord = normalizeText(word)
         
         if (normalizedWord && normalizedText.includes(normalizedWord)) {
@@ -92,13 +108,77 @@ function checkContent(text) {
     }
 }
 
-function containsAnySensitiveWord(text) {
+async function checkContent(text) {
+    if (!text || typeof text !== 'string') {
+        return { hasSensitive: false, foundWords: [], category: null, replacement: '' }
+    }
+
+    try {
+        const response = await request({
+            url: '/api/sensitive/check',
+            method: 'POST',
+            data: { text },
+            timeout: 3000
+        })
+
+        if (response && response.code === 200 && response.data) {
+            const data = response.data
+            return {
+                hasSensitive: data.hasSensitive || false,
+                foundWords: data.foundWords || [],
+                category: data.hasSensitive ? 'sensitive' : null,
+                replacement: data.replacement || getRandomPoemPair()
+            }
+        }
+    } catch (error) {
+        console.warn('后端敏感词检测失败，使用本地词库:', error.message)
+    }
+
+    const localResult = localCheckContent(text)
+    return {
+        ...localResult,
+        replacement: localResult.hasSensitive ? getRandomPoemPair() : ''
+    }
+}
+
+async function containsAnySensitiveWord(text) {
     if (!text || typeof text !== 'string') {
         return false
     }
     
-    const result = checkContent(text)
+    const result = await checkContent(text)
     return result.hasSensitive
+}
+
+async function filterText(text) {
+    if (!text || typeof text !== 'string') {
+        return { hasSensitive: false, filteredText: text }
+    }
+
+    try {
+        const response = await request({
+            url: '/api/sensitive/filter',
+            method: 'POST',
+            data: { text },
+            timeout: 3000
+        })
+
+        if (response && response.code === 200 && response.data) {
+            const data = response.data
+            return {
+                hasSensitive: data.hasSensitive || false,
+                filteredText: data.filteredText || text
+            }
+        }
+    } catch (error) {
+        console.warn('后端文本过滤失败，使用本地词库:', error.message)
+    }
+
+    const localResult = localCheckContent(text)
+    return {
+        hasSensitive: localResult.hasSensitive,
+        filteredText: localResult.hasSensitive ? getRandomPoemPair() : text
+    }
 }
 
 function replaceWithPoem(text) {
@@ -116,10 +196,11 @@ function getRandomPoemPair() {
 }
 
 export {
-    SENSITIVE_WORDS,
     ANCIENT_POEMS,
+    LOCAL_SENSITIVE_WORDS,
     checkContent,
     containsAnySensitiveWord,
+    filterText,
     replaceWithPoem,
     getRandomPoemPair,
     normalizeText

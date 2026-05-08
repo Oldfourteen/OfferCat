@@ -260,7 +260,7 @@
 					}
 				})
 			},
-			publishPost() {
+			async publishPost() {
 				const len = this.content.trim().length;
 				if (len < 5) {
 					uni.showToast({ title: '帖子内容最少需要5个字哦', icon: 'none' })
@@ -271,17 +271,19 @@
 					return
 				}
 				
-				const sensitiveResult = checkContent(this.content)
-				if (sensitiveResult.hasSensitive) {
-					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
-					this.content = getRandomPoemPair()
-				}
-				
-				// 检查是否还有正在上传的图片
 				const isUploading = this.images.some(img => img.uploading)
 				if (isUploading) {
 					uni.showToast({ title: '图片正在上传中，请稍候', icon: 'none' })
 					return
+				}
+				
+				uni.showLoading({ title: '检测中...' })
+				
+				const sensitiveResult = await checkContent(this.content)
+				if (sensitiveResult.hasSensitive) {
+					uni.hideLoading()
+					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
+					this.content = sensitiveResult.replacement || getRandomPoemPair()
 				}
 				
 				const title = this.content.substring(0, 20) + (this.content.length > 20 ? '...' : '')

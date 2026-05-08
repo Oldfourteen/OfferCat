@@ -11,12 +11,9 @@
 				<QuestionBankModules :theme="theme" :refresh-seed="refreshSeed" />
 			</view>
 			<view class="animate-item" style="animation-delay: 0.4s;">
-				<Interview :theme="theme" />
-			</view>
-			<view class="animate-item" style="animation-delay: 0.5s;">
 				<ChatFooter :theme="theme" />
 			</view>
-			<view class="animate-item" style="animation-delay: 0.6s;">
+			<view class="animate-item" style="animation-delay: 0.5s;">
 				<ForumList :theme="theme" />
 			</view>
 		</view>
@@ -27,7 +24,6 @@
 	import NoticeBar from './NoticeBar.vue'
 	import Activity from './Activity.vue'
 	import QuestionBankModules from './QuestionBankModules.vue'
-	import Interview from './Interview.vue'
 	import ChatFooter from './ChatFooter.vue'
 	import ForumList from './ForumList.vue'
 
@@ -47,7 +43,6 @@
 			NoticeBar,
 			Activity,
 			QuestionBankModules,
-			Interview,
 			ChatFooter,
 			ForumList
 		},

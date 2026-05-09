@@ -1,13 +1,17 @@
 <template>
+	<!-- 答题评分结果页面 -->
 	<view class="result-page" :class="themeClass" v-if="result">
+		<!-- 顶部导航栏 -->
 		<view class="result-topbar">
 			<text class="back-btn" @click="goBack">‹</text>
 			<text class="topbar-title">评分结果</text>
 			<text class="placeholder"></text>
 		</view>
 
+		<!-- 页面滚动区域 -->
 		<scroll-view class="result-scroll" scroll-y :show-scrollbar="false">
 			<view class="result-content">
+				<!-- 头部结果卡片 -->
 				<view class="hero-card">
 					<view class="hero-copy">
 						<text class="hero-title">练习完成</text>
@@ -15,6 +19,7 @@
 						<view class="hero-date">本次练习已生成成长评分</view>
 					</view>
 
+					<!-- 核心统计数据 -->
 					<view class="stats-grid">
 						<view class="stat-item">
 							<text class="stat-value">{{ result.score }}</text>
@@ -30,6 +35,7 @@
 						</view>
 					</view>
 
+					<!-- 综合能力评估 -->
 					<view class="ability-row">
 						<view class="ability-ring">
 							<view class="ring-inner">{{ result.accuracy }}%</view>
@@ -44,6 +50,7 @@
 					</view>
 				</view>
 
+				<!-- 答题概览面板 -->
 				<view class="panel-card">
 					<text class="panel-title">本次答题概览</text>
 					<view class="summary-grid">
@@ -62,6 +69,7 @@
 					</view>
 				</view>
 
+				<!-- 操作按钮组 -->
 				<view class="action-row">
 					<view class="ghost-btn" @click="retryPractice">再练一次</view>
 					<view class="ghost-btn secondary-btn" @click="openHistory">查看历史</view>
@@ -71,10 +79,12 @@
 		</scroll-view>
 	</view>
 
+	<!-- 无结果时的空状态 -->
 	<view v-else class="empty-state">未找到评分结果，请返回重新提交。</view>
 </template>
 
 <script>
+	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
 
 	export default {
@@ -86,6 +96,7 @@
 			}
 		},
 		computed: {
+			// 能力进度条宽度样式
 			abilityFillStyle() {
 				return {
 					width: `${this.result ? this.result.accuracy : 0}%`
@@ -93,13 +104,16 @@
 			}
 		},
 		onLoad(options) {
+			// 页面加载：从缓存获取本次练习结果
 			this.session = options.session || ''
 			this.result = uni.getStorageSync(`question_result_${this.session}`) || null
 		},
 		methods: {
+			// 返回上一页
 			goBack() {
 				uni.navigateBack()
 			},
+			// 重新练习当前题单
 			retryPractice() {
 				if (!this.result) {
 					return
@@ -108,11 +122,13 @@
 					url: `/subPages/questionBank/exercise?id=${this.result.paperId}&type=${this.result.type}`
 				})
 			},
+			// 跳转到成长档案（tabBar页面）
 			goArchive() {
 				uni.switchTab({
 					url: '/pages/GrowthArchive/GrowthArchive'
 				})
 			},
+			// 查看该类型的做题历史
 			openHistory() {
 				if (!this.result) {
 					return

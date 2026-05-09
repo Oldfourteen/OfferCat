@@ -1,5 +1,7 @@
 <template>
+	<!-- 简历编辑统一容器页 - 动态渲染不同表单组件 -->
 	<view class="edit-container-page" :class="themeClass">
+		<!-- 顶部导航栏 -->
 		<topNavBar :title="pageTitle" :titleStyle="{ color: isDarkTheme ? '#f4f7fb' : '#000', fontSize: '18px' }" :customStyle="{ backgroundColor: isDarkTheme ? '#1a1c22' : '#fff' }" />
 		
 		<view class="page-content">
@@ -7,6 +9,7 @@
 			<component :is="currentComponent" ref="formRef" v-bind="componentProps"></component>
 		</view>
 
+		<!-- 底部操作栏：取消 / 删除 / 保存 / 另存为 -->
 		<view class="bottom-actions-wrap">
 			<view class="bottom-actions">
 				<view class="action-btn cancel-btn" @click="handleCancel">取消</view>
@@ -21,7 +24,10 @@
 </template>
 
 <script>
+	// 顶部导航组件
 	import topNavBar from '../onlineResumeMake/components/topNavBar.vue'
+	
+	// 各类表单组件
 	import basicInfoForm from './components/basicInfoForm.vue'
 	import selfEvaluationForm from './components/selfEvaluationForm.vue'
 	import educationForm from './components/educationForm.vue'
@@ -29,8 +35,11 @@
 	import workExperienceForm from './components/workExperienceForm.vue'
 	import projectExperienceForm from './components/projectExperienceForm.vue'
 	import skillForm from './components/skillForm.vue'
+	
+	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
 
+	// 页面标题映射表
 	const titleMap = {
 		basicInfo: '编辑基本信息',
 		selfEvaluation: '编辑自我评价',
@@ -41,6 +50,7 @@
 		skill: '编辑技能熟练度'
 	}
 
+	// 组件映射表
 	const componentMap = {
 		basicInfo: basicInfoForm,
 		selfEvaluation: selfEvaluationForm,
@@ -71,15 +81,19 @@
 			}
 		},
 		computed: {
+			// 是否为编辑已有数据（非新增）
 			isEditingEntry() {
 				return !!this.entryId
 			},
+			// 动态页面标题
 			pageTitle() {
 				return titleMap[this.type] || '编辑简历'
 			},
+			// 动态渲染的表单组件
 			currentComponent() {
 				return componentMap[this.type] || null
 			},
+			// 动态传递给子组件的 props
 			componentProps() {
 				if (this.type === 'basicInfo') {
 					return { initialData: this.initialPayload || {} }
@@ -97,6 +111,7 @@
 			}
 		},
 		onLoad(options) {
+			// 页面加载：接收路由参数
 			if (options.type) {
 				this.type = options.type
 			}
@@ -112,9 +127,11 @@
 			}
 		},
 		methods: {
+			// 判断是否为可多条目类型
 			isMultiAppendType(type) {
 				return ['education', 'schoolExperience', 'workExperience', 'projectExperience'].includes(type)
 			},
+			// 从子组件提取原始数据
 			extractRawData(formComponent) {
 				if (!formComponent) return null
 				if (this.type === 'selfEvaluation') {
@@ -131,9 +148,11 @@
 				}
 				return null
 			},
+			// 取消编辑，返回上一页
 			handleCancel() {
 				uni.navigateBack()
 			},
+			// 删除当前编辑条目
 			handleDelete() {
 				if (!this.entryId) return
 				uni.showModal({
@@ -153,6 +172,7 @@
 					}
 				})
 			},
+			// 保存数据（支持覆盖保存 / 另存为）
 			handleSave(mode = 'default') {
 				// 获取当前表单组件实例
 				const formComponent = this.$refs.formRef
@@ -174,6 +194,7 @@
 							return this.isMultiAppendType(this.type) ? 'create' : 'set'
 						})()
 
+						// 发送事件更新简历数据
 						uni.$emit('refreshResume', {
 							type: this.type,
 							action,

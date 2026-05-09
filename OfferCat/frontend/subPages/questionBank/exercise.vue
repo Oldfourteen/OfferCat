@@ -1,19 +1,25 @@
 <template>
+	<!-- 笔试/面试题在线练习页面 -->
 	<view class="exercise-page" :class="themeClass">
+		<!-- 顶部导航栏：返回 + 标题 + 答题进度 -->
 		<view class="exercise-topbar">
 			<text class="back-btn" @click="goBack">‹</text>
 			<text class="topbar-title">在线练习</text>
 			<view class="progress-btn">已答 {{ answeredCount }}/{{ totalCount }}</view>
 		</view>
 
+		<!-- 页面滚动区域 -->
 		<scroll-view class="exercise-scroll" scroll-y :show-scrollbar="false">
+			<!-- 题目内容区域 -->
 			<view class="exercise-content" v-if="currentQuestion">
+				<!-- 头部信息卡片 -->
 				<view class="hero-card">
 					<text class="hero-type">{{ pageTitle }}</text>
 					<text class="hero-title">{{ detail ? detail.title : '题单练习' }}</text>
 					<text class="hero-subtitle">第 {{ currentIndex + 1 }} / {{ totalCount }} 题</text>
 				</view>
 
+				<!-- 题目与选项卡片 -->
 				<view class="question-card">
 					<view class="question-box">
 						<text class="question-title">{{ currentQuestion.title }}</text>
@@ -32,6 +38,7 @@
 					</view>
 				</view>
 
+				<!-- 操作按钮：上一题 / 下一题 / 提交 -->
 				<view class="action-row">
 					<view class="ghost-btn" :class="{ disabled: currentIndex === 0 }" @click="prevQuestion">上一题</view>
 					<view v-if="!isLastQuestion" class="primary-btn" @click="nextQuestion">下一题</view>
@@ -39,14 +46,18 @@
 				</view>
 			</view>
 
+			<!-- 无题目时显示 -->
 			<view v-else class="empty-state">当前题单暂无可练习题目。</view>
 		</scroll-view>
 	</view>
 </template>
 
 	<script>
+		// 题目数据获取
 		import { getQuestionDetail, getQuestionPaper } from './data'
+		// 答题历史记录工具
 		import { saveQuestionHistory } from '@/utils/questionHistory.js'
+		// 主题切换混入
 		import themeMixin from '@/utils/themeMixin.js'
 
 	export default {
@@ -63,54 +74,72 @@
 			}
 		},
 		computed: {
+			// 页面标题（根据题型切换）
 			pageTitle() {
 				return this.type === 'interview' ? '面试真题练习' : '笔试真题练习'
 			},
+			// 当前题目
 			currentQuestion() {
 				return this.questions[this.currentIndex] || null
 			},
+			// 总题目数量
 			totalCount() {
 				return this.questions.length
 			},
+			// 已答题目数量
 			answeredCount() {
 				return this.answers.filter(item => item !== -1).length
 			},
+			// 是否是最后一题
 			isLastQuestion() {
 				return this.currentIndex === this.totalCount - 1
 			}
 		},
 		onLoad(options) {
+			// 页面加载：获取题单ID和类型
 			this.paperId = options.id || ''
 			this.type = options.type || 'written'
+			// 加载题单详情和题目列表
 			this.detail = getQuestionDetail(this.paperId)
 			this.questions = getQuestionPaper(this.paperId)
+			// 初始化答案数组（全部未作答）
 			this.answers = this.questions.map(() => -1)
 		},
 		methods: {
+			// 返回上一页
 			goBack() {
 				uni.navigateBack()
 			},
+			// 选择选项
 			selectOption(index) {
 				this.answers.splice(this.currentIndex, 1, index)
 			},
+			// 上一题
 			prevQuestion() {
 				if (this.currentIndex === 0) {
 					return
 				}
 				this.currentIndex -= 1
 			},
+			// 下一题
 			nextQuestion() {
 				if (this.currentIndex < this.totalCount - 1) {
 					this.currentIndex += 1
 				}
 			},
+			// 提交试卷并计算分数
 			submitPaper() {
+				// 计算答对题数
 				const correctCount = this.questions.filter((item, index) => this.answers[index] === item.answer).length
+				// 计算正确率
 				const accuracy = this.totalCount ? Math.round((correctCount / this.totalCount) * 100) : 0
 				const timestamp = Date.now()
 				const date = new Date(timestamp)
+				// 格式化提交时间
 				const submittedAt = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')} ${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 				const sessionId = `${this.paperId}_${timestamp}`
+				
+				// 组装成绩结果
 				const result = {
 					sessionId,
 					paperId: this.paperId,
@@ -129,8 +158,12 @@
 					submittedAt
 				}
 
+				// 本地缓存成绩记录
 				uni.setStorageSync(`question_result_${sessionId}`, result)
+				// 保存到答题历史
 				saveQuestionHistory(result)
+				
+				// 跳转到结果页
 				const resultUrl = `/subPages/questionBank/result?session=${sessionId}`
 				uni.redirectTo({
 					url: resultUrl,

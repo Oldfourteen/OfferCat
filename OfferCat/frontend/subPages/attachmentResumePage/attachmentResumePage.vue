@@ -1,8 +1,11 @@
 <template>
+	<!-- 附件简历主页面容器 -->
 	<view class="container" :class="themeClass">
+		<!-- 自定义导航栏：状态栏 + 标题栏 -->
 		<view class="nav-header">
 			<view class="status-bar"></view>
 			<view class="nav-bar">
+				<!-- 返回按钮 -->
 				<view class="back-btn" @click="goBack">
 					<text class="back-icon">←</text>
 				</view>
@@ -11,11 +14,14 @@
 			</view>
 		</view>
 
+		<!-- 页面主体内容区 -->
 		<view class="content-body">
+			<!-- 页面说明文字 -->
 			<view class="header-desc">
 				<text class="desc-text">支持PDF/Word格式，一键上传投递</text>
 			</view>
 
+			<!-- 功能卡片：制作附件简历 -->
 			<view class="action-card make-card">
 				<view class="icon-wrap">
 					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEyNTY4NTEzIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjE3OTc2MCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMTc5NzYxIj48L3BhdGg+PC9zdmc+" class="icon-img" mode="aspectFit" />
@@ -27,6 +33,7 @@
 				<button class="action-btn" @click="handleMake">去制作</button>
 			</view>
 
+			<!-- 功能卡片：上传附件简历 + AI润色 -->
 			<view class="action-card upload-card">
 				<view class="icon-wrap">
 					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEyNTY4NTEzIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjE3OTc2MCIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMTc5NzYxIj48L3BhdGg+PC9zdmc+" class="icon-img" mode="aspectFit" />
@@ -38,6 +45,7 @@
 				<button class="action-btn" @click="handleUpload">去上传</button>
 			</view>
 			
+			<!-- AI润色结果展示卡片：有内容时显示 -->
 			<view v-if="polishedText" class="result-card">
 				<view class="result-header">
 					<text class="result-title">AI 一键润色结果</text>
@@ -52,25 +60,33 @@
 </template>
 
 <script>
+// 主题样式混入
 import themeMixin from '@/utils/themeMixin.js'
+// 接口基础地址配置
 import { BASE_URL } from '@/api/config'
+// 用户登录令牌工具
 import { getToken } from '@/utils/token'
 
 export default {
 	mixins: [themeMixin],
 	data() {
 		return {
+			// AI润色后的简历文本
 			polishedText: ''
 		}
 	},
 	methods: {
+		// 返回上一页
 		goBack() {
 			uni.navigateBack()
 		},
+		// 点击：制作附件简历
 		handleMake() {
 			uni.showToast({ title: '前往制作附件简历', icon: 'none' })
 		},
+		// 点击：上传附件简历（区分微信小程序/其他端）
 		handleUpload() {
+			// 微信小程序：选择聊天文件
 			// #ifdef MP-WEIXIN
 			uni.chooseMessageFile({
 				count: 1,
@@ -85,6 +101,7 @@ export default {
 			})
 			// #endif
 			
+			// 非微信小程序：直接选择文件
 			// #ifndef MP-WEIXIN
 			uni.chooseFile({
 				count: 1,
@@ -98,6 +115,7 @@ export default {
 			})
 			// #endif
 		},
+		// 上传PDF文件并调用AI润色接口
 		uploadPdfForPolish(filePath) {
 			uni.showLoading({ title: 'AI 润色中...', mask: true })
 			uni.uploadFile({
@@ -115,20 +133,24 @@ export default {
 						
 						if (resData.startsWith('{')) {
 							const jsonObj = JSON.parse(resData)
+							// 接口返回错误码判断
 							if (jsonObj.code !== undefined && jsonObj.code !== 200) {
 								uni.showToast({ title: jsonObj.message || '润色失败', icon: 'none' })
 								return
 							}
 							this.polishedText = jsonObj.data || jsonObj
 						} else {
+							// 直接返回文本格式
 							this.polishedText = resData
 						}
 						uni.showToast({ title: '润色成功', icon: 'success' })
 					} catch (e) {
+						// 解析异常兜底处理
 						this.polishedText = typeof uploadRes.data === 'string' ? uploadRes.data : JSON.stringify(uploadRes.data)
 						uni.showToast({ title: '润色成功', icon: 'success' })
 					}
 				},
+				// 上传失败回调
 				fail: (err) => {
 					uni.hideLoading()
 					uni.showToast({ title: '上传失败', icon: 'none' })
@@ -136,6 +158,7 @@ export default {
 				}
 			})
 		},
+		// 复制AI润色后的文本到剪贴板
 		copyPolishedText() {
 			uni.setClipboardData({
 				data: this.polishedText,

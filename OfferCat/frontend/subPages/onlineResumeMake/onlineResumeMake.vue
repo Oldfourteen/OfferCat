@@ -1,7 +1,11 @@
 <template>
+	<!-- 在线简历编辑主页面 -->
 	<view class="online-resume-page" :class="themeClass">
+		<!-- 顶部导航栏：标题 + 保存按钮 -->
 		<topNavBar title="在线简历" rightText="保存" :titleStyle="topNavBarTitleStyle" :customStyle="topNavBarCustomStyle" @rightClick="handleSaveResume" />
+		<!-- 简历内容主体：所有模块子组件 -->
 		<view class="page-content">
+			<!-- 简历头部：头像 + 简历名称 -->
 			<resumeHeader 
 				:resumeName="resumeData.resumeName"
 				:photoUrl="resumeData.photo"
@@ -10,6 +14,7 @@
 				@updateResumeName="handleUpdateResumeName"
 				:theme="theme"
 			/>
+			<!-- 基本信息：姓名、性别、电话、邮箱 -->
 			<basicInfo 
 				:name="resumeData.name"
 				:gender="resumeData.gender"
@@ -17,11 +22,17 @@
 				:email="resumeData.email"
 				:theme="theme"
 			/>
+			<!-- 自我评价模块 -->
 			<selfEvaluationSection :htmlContent="resumeData.selfEvaluation" :theme="theme" />
+			<!-- 教育经历模块 -->
 			<educationSection :htmlContent="resumeData.education" :entries="resumeData.educationEntries" :theme="theme" />
+			<!-- 在校经历模块 -->
 			<schoolExperienceSection :htmlContent="resumeData.schoolExperience" :entries="resumeData.schoolExperienceEntries" :theme="theme" />
+			<!-- 工作经历模块 -->
 			<workExperienceSection :htmlContent="resumeData.workExperience" :entries="resumeData.workExperienceEntries" :theme="theme" />
+			<!-- 项目经历模块 -->
 			<projectExperienceSection :htmlContent="resumeData.projectExperience" :entries="resumeData.projectExperienceEntries" :theme="theme" />
+			<!-- 技能特长模块 -->
 			<skillSection :htmlContent="resumeData.skill" :skillItems="resumeData.skillItems" :theme="theme" />
 		</view>
 		<bottomActions :theme="theme" @preview="handlePreviewResume" @exportPdf="handleExportPdf" />
@@ -29,6 +40,7 @@
 </template>
 
 <script>
+// 导入页面组件
 	import topNavBar from './components/topNavBar.vue'
 	import resumeHeader from './components/resumeHeader.vue'
 	import basicInfo from './components/basicInfo.vue'
@@ -39,6 +51,7 @@
 	import projectExperienceSection from './components/projectExperienceSection.vue'
 	import skillSection from './components/skillSection.vue'
 	import bottomActions from './components/bottomActions.vue'
+	// 工具类导入
 	import { getResumeById, saveResumeRecord } from '../../utils/resumeRepo.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { request } from '@/api/request.js'
@@ -61,6 +74,7 @@
 		},
 		data() {
 			return {
+				// 简历渲染全量数据（页面展示用）
 				resumeData: {
 					resumeName: '在线简历',
 					name: '',
@@ -86,9 +100,11 @@
 			}
 		},
 		computed: {
+			// 顶部导航标题样式（适配深色/浅色模式
 			topNavBarTitleStyle() {
 				return { color: this.theme === 'dark' ? '#f4f7fb' : '#000', fontSize: '18px' }
 			},
+			// 顶部导航栏背景样式
 			topNavBarCustomStyle() {
 				return { backgroundColor: this.theme === 'dark' ? '#1a1c22' : '#fff' }
 			}
@@ -97,6 +113,7 @@
 			// 监听子页面（编辑页）保存后触发的事件
 			uni.$on('refreshResume', this.updateResumeData)
 
+			// 从简历仓库加载（携带 resume_id）
 			if (options.resume_id) {
 				const resume = getResumeById(options.resume_id)
 				if (resume) {
@@ -107,6 +124,7 @@
 				}
 			}
 
+			// 直接携带简历数据跳转
 			if (options.resume_data) {
 				try {
 					const resume = JSON.parse(decodeURIComponent(options.resume_data))
@@ -119,13 +137,15 @@
 			}
 		},
 		onUnload() {
-			// 移除监听
+			// 页面卸载时移除全局事件监听
 			uni.$off('refreshResume', this.updateResumeData)
 		},
 		methods: {
+			// 判断是否为多条目模块（教育/在校/工作/项目）
 			isMultiAppendType(type) {
 				return ['education', 'schoolExperience', 'workExperience', 'projectExperience'].includes(type)
 			},
+			// 创建单条条目结构（带ID、原始数据、HTML、时间）
 			makeEntry(rawData, html) {
 				return {
 					id: `${Date.now()}_${Math.floor(Math.random() * 100000)}`,
@@ -135,6 +155,7 @@
 					updatedAt: Date.now()
 				}
 			},
+			// 根据类型获取对应的 entries 数组键名
 			getEntriesKeyByType(type) {
 				const map = {
 					education: 'educationEntries',
@@ -144,12 +165,14 @@
 				}
 				return map[type] || ''
 			},
+			// 从条目数组重新拼接 HTML（用于删除/更新后刷新）
 			rebuildHtmlFromEntries(type) {
 				const key = this.getEntriesKeyByType(type)
 				if (!key) return
 				const entries = Array.isArray(this.resumeData[key]) ? this.resumeData[key] : []
 				this.resumeData[type] = entries.map(e => e && e.html ? e.html : '').join('')
 			},
+			// 标准化技能数组（兼容字符串/对象/JSON 多种格式）
 			normalizeSkillItems(input) {
 				if (!input) return []
 				let raw = input
@@ -173,6 +196,7 @@
 					}))
 					.filter(item => item.skill_name)
 			},
+			// 根据技能数组自动生成带样式的 HTML
 			buildSkillsHtml(skillItems = []) {
 				if (!Array.isArray(skillItems) || skillItems.length === 0) return ''
 				const colorMap = {
@@ -205,6 +229,7 @@
 				if (!oldHtml) return newHtml
 				return `${oldHtml}${newHtml}`
 			},
+			// 接收子编辑页面的更新事件，统一更新简历数据
 			updateResumeData(payload) {
 				if (payload && payload.type) {
 					const action = payload.action || ''
@@ -232,17 +257,20 @@
 							}
 							return
 						}
+						// 多条目模块：教育/在校/工作/项目（增删改）
 						if (this.isMultiAppendType(payload.type)) {
 							const entriesKey = this.getEntriesKeyByType(payload.type)
 							if (!entriesKey) return
 							if (!Array.isArray(this.resumeData[entriesKey])) {
 								this.resumeData[entriesKey] = []
 							}
+							// 删除条目
 							if (action === 'delete' && entryId) {
 								this.resumeData[entriesKey] = this.resumeData[entriesKey].filter(e => String(e && e.id) !== entryId)
 								this.rebuildHtmlFromEntries(payload.type)
 								return
 							}
+							// 更新条目
 							if (action === 'update' && entryId) {
 								const idx = this.resumeData[entriesKey].findIndex(e => String(e && e.id) === entryId)
 								if (idx !== -1) {
@@ -257,6 +285,7 @@
 									return
 								}
 							}
+							// 新增条目
 							if (action === 'create' || !action) {
 								const entry = this.makeEntry(payload.rawData, payload.htmlContent)
 								this.resumeData[entriesKey].push(entry)
@@ -265,16 +294,20 @@
 							}
 							return
 						}
+						// 普通单文本模块直接赋值
 						this.resumeData[payload.type] = payload.htmlContent
 					}
 				}
 			},
+			// 更新头像
 			handleUpdatePhoto(newPhotoUrl) {
 				this.resumeData.photo = newPhotoUrl;
 			},
+			// 更新简历名称
 			handleUpdateResumeName(newName) {
 				this.resumeData.resumeName = newName || '在线简历'
 			},
+			// 保存简历到本地仓库
 			handleSaveResume() {
 				const resumeName = (this.resumeData.resumeName || '').trim() || '未命名简历'
 				const now = Date.now()
@@ -311,6 +344,7 @@
 				uni.showToast({ title: '已保存到简历仓库', icon: 'success' })
 				return record
 			},
+			// 预览简历
 			handlePreviewResume() {
 				// 先执行一次自动保存，保证预览的是最新内容
 				const record = this.handleSaveResume()
@@ -319,6 +353,7 @@
 					url: `/subPages/onlineResumeMake/previewResume?resume_data=${dataStr}`
 				})
 			},
+			// 导出PDF（调用后端接口）
 			async handleExportPdf() {
 				// 导出前先保存
 				const record = this.handleSaveResume()
@@ -326,6 +361,7 @@
 				uni.showLoading({ title: '正在生成PDF...' })
 				
 				try {
+					// 去除 HTML 标签，纯文本传给接口
 					const stripHtml = (html) => {
 						if (!html) return '';
 						let text = String(html).replace(/<br\s*\/?>/gi, '\n');
@@ -338,6 +374,7 @@
 					const storedUser = getUser() || {}
 					const userId = storedUser.userId || null
 
+					// 请求生成简历
 					const res = await request({
 						url: '/api/resume/create',
 						method: 'POST',
@@ -362,6 +399,7 @@
 					uni.hideLoading()
 					uni.showToast({ title: 'PDF导出成功', icon: 'success' })
 					
+					// 生成下载链接
 					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/${res.resumeId}`
 					
 					uni.showModal({
@@ -386,6 +424,7 @@
 					uni.showToast({ title: 'PDF导出失败', icon: 'none' })
 				}
 			},
+			// 标准化条目结构（兼容旧版数据）
 			normalizeEntries(input) {
 				if (!Array.isArray(input)) return []
 				return input
@@ -397,10 +436,10 @@
 					})
 					.filter(e => e.html)
 			},
+			// 数据库结构 → 页面渲染结构
 			mapDatabaseToView(resume) {
-				// 注意：这里需要根据你之前的各个 Section 组件所期望的 HTML 格式进行拼装
-				// 目前先做简单的文本/段落映射，后续如果组件有特定的类名要求可以再完善
 				
+				// 姓名解析
 				if (resume.resume_name) {
 					this.resumeData.resumeName = resume.resume_name
 				}
@@ -413,11 +452,12 @@
 					this.resumeData.name = nameParts.length > 1 ? nameParts[1] : resume.resume_name;
 				}
 				
+				// 自我评价
 				if (resume.self_evaluation) {
 					this.resumeData.selfEvaluation = resume.self_evaluation.includes('<') ? resume.self_evaluation : `<p>${resume.self_evaluation.replace(/\n/g, '<br>')}</p>`;
 				}
 				
-				// 2. 在校经历 -> schoolExperience
+				// 在校经历
 				if (Array.isArray(resume.campus_experience_entries)) {
 					this.resumeData.schoolExperienceEntries = this.normalizeEntries(resume.campus_experience_entries)
 					this.rebuildHtmlFromEntries('schoolExperience')
@@ -427,7 +467,7 @@
 					this.rebuildHtmlFromEntries('schoolExperience')
 				}
 				
-				// 3. 工作经历 -> workExperience
+				// 工作经历
 				if (Array.isArray(resume.work_experience_entries)) {
 					this.resumeData.workExperienceEntries = this.normalizeEntries(resume.work_experience_entries)
 					this.rebuildHtmlFromEntries('workExperience')
@@ -437,7 +477,7 @@
 					this.rebuildHtmlFromEntries('workExperience')
 				}
 				
-				// 4. 项目经验 -> projectExperience
+				// 项目经验
 				if (Array.isArray(resume.project_experience_entries)) {
 					this.resumeData.projectExperienceEntries = this.normalizeEntries(resume.project_experience_entries)
 					this.rebuildHtmlFromEntries('projectExperience')
@@ -447,7 +487,7 @@
 					this.rebuildHtmlFromEntries('projectExperience')
 				}
 				
-				// 5. 技能特长 -> skill
+				// 技能特长
 				const skillsItems = this.normalizeSkillItems(resume.skills_items || resume.skillsItems || resume.skills)
 				if (skillsItems.length > 0) {
 					this.resumeData.skillItems = skillsItems
@@ -457,7 +497,7 @@
 					this.resumeData.skill = resume.skills.includes('<') ? resume.skills : `<p>${resume.skills.replace(/\n/g, '<br>')}</p>`;
 				}
 				
-				// 6. 教育经历 -> education
+				// 教育经历
 				if (Array.isArray(resume.education_entries)) {
 					this.resumeData.educationEntries = this.normalizeEntries(resume.education_entries)
 					this.rebuildHtmlFromEntries('education')

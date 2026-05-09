@@ -1,12 +1,16 @@
 <template>
-  <view class="container" :class="themeClass">
+  <!-- 简历仓库 - 管理所有保存的简历 -->
+  <view class="container" :class="themeClass">、
+    <!-- 顶部导航栏 -->
     <view class="nav-header">
       <view class="status-bar"></view>
       <view class="nav-bar">
+         <!-- 返回按钮 -->
         <view class="back-btn" @click="goBack">
           <text class="back-icon">←</text>
         </view>
         <text class="nav-title">简历仓库</text>
+        <!-- 右侧管理按钮 -->
         <view class="nav-right">
           <text v-if="resumeList.length > 0" class="manage-btn" @click="toggleManageMode">
             {{ isManageMode ? '完成' : '管理' }}
@@ -15,11 +19,13 @@
       </view>
     </view>
 
+    <!-- 页面主体内容 -->
     <view class="content-body" :class="{ 'has-bottom-bar': isManageMode }">
       <view class="header-desc">
         <text class="desc-text">这里保存了你制作的全部简历</text>
       </view>
 
+      <!-- 简历列表 -->
       <view class="resume-list" v-if="resumeList.length > 0">
         <resume-card 
           v-for="item in resumeList" 
@@ -32,6 +38,7 @@
         />
       </view>
       
+      <!-- 空状态 -->
       <view class="empty-state" v-else>
         <text class="empty-text">暂无保存的简历</text>
         <button class="create-btn" @click="createResume">去制作简历</button>
@@ -54,8 +61,11 @@
 </template>
 
 <script>
+// 简历卡片组件
 import ResumeCard from './components/ResumeCard.vue'
+// 简历仓库数据工具
 import { getResumeRepoList, deleteResumes } from '../../utils/resumeRepo.js'
+// 主题混入
 import themeMixin from '@/utils/themeMixin.js'
 
 export default {
@@ -71,6 +81,7 @@ export default {
     }
   },
   computed: {
+    // 是否全选
     isAllSelected() {
       return this.resumeList.length > 0 && this.selectedResumes.length === this.resumeList.length;
     }
@@ -79,30 +90,38 @@ export default {
     this.fetchResumeList();
   },
   onShow() {
+    // 页面显示时刷新列表
     this.fetchResumeList();
   },
   methods: {
+    // 返回上一页
     goBack() {
       uni.navigateBack();
     },
+    // 获取简历仓库列表
     fetchResumeList() {
       this.resumeList = getResumeRepoList()
       // 清理不再存在的选中项
       this.selectedResumes = this.selectedResumes.filter(id => 
         this.resumeList.some(r => r.resume_id === id)
       );
+      // 无数据时自动退出管理模式
       if (this.resumeList.length === 0) {
         this.isManageMode = false;
       }
     },
+    // 切换管理模式
     toggleManageMode() {
       this.isManageMode = !this.isManageMode;
+      // 退出管理时清空选中
       if (!this.isManageMode) {
         this.selectedResumes = [];
       }
     },
+    // 卡片点击事件
     handleCardClick(resume) {
       if (this.isManageMode) {
+        // 管理模式：切换选中状态
         const id = resume.resume_id;
         const index = this.selectedResumes.indexOf(id);
         if (index > -1) {
@@ -111,9 +130,11 @@ export default {
           this.selectedResumes.push(id);
         }
       } else {
+        // 普通模式：编辑简历
         this.goToResumeMake(resume);
       }
     },
+    // 全选/取消全选
     toggleSelectAll() {
       if (this.isAllSelected) {
         this.selectedResumes = [];
@@ -121,6 +142,7 @@ export default {
         this.selectedResumes = this.resumeList.map(r => r.resume_id);
       }
     },
+    // 删除选中简历
     handleDelete() {
       if (this.selectedResumes.length === 0) return;
       
@@ -137,11 +159,13 @@ export default {
         }
       });
     },
+    // 跳转到简历编辑页
     goToResumeMake(resume) {
       uni.navigateTo({
         url: `/subPages/onlineResumeMake/onlineResumeMake?resume_id=${resume.resume_id}`
       });
     },
+    // 新建简历
     createResume() {
       uni.navigateTo({
         url: '/subPages/onlineResumeMake/onlineResumeMake'

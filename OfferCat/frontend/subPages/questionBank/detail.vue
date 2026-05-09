@@ -1,13 +1,18 @@
 <template>
+	<!-- 题单详情页面 -->
 	<view class="detail-page" :class="themeClass">
+		<!-- 顶部导航栏：返回 + 标题 + 收藏 -->
 		<view class="detail-topbar">
 			<text class="back-btn" @click="goBack">‹</text>
 			<text class="detail-topbar-title">题单详情</text>
 			<text class="favorite-btn" :class="{ active: isFavorite }" @click="toggleFavorite">{{ isFavorite ? '已藏' : '收藏' }}</text>
 		</view>
 
+		<!-- 页面滚动区域 -->
 		<scroll-view class="detail-scroll" scroll-y :show-scrollbar="false">
+			<!-- 题单详情内容 -->
 			<view class="detail-content" v-if="detail">
+				<!-- 头部信息卡片 -->
 				<view class="hero-card">
 					<text class="hero-type">{{ pageTitle }}</text>
 					<text class="hero-title">{{ detail.title }}</text>
@@ -17,10 +22,6 @@
 							<text class="hero-stat-value">{{ detail.total }}</text>
 							<text class="hero-stat-label">题目数量</text>
 						</view>
-<!-- 						<view class="hero-stat">
-							<text class="hero-stat-value">{{ detail.heat || detail.completed }}</text>
-							<text class="hero-stat-label">{{ type === 'practice' ? '已完成' : '热度' }}</text>
-						</view> -->
 						<view class="hero-stat">
 							<text class="hero-stat-value">{{ detail.difficulty || detail.category || detail.company }}</text>
 							<text class="hero-stat-label">定位标签</text>
@@ -28,6 +29,7 @@
 					</view>
 				</view>
 
+				<!-- 适合人群/亮点卡片 -->
 				<view class="panel-card">
 					<text class="panel-title">本套题单适合你</text>
 					<view class="highlight-list">
@@ -38,6 +40,7 @@
 					</view>
 				</view>
 
+				<!-- 操作卡片：练习建议 + 收藏 + 开始练习 -->
 				<view class="panel-card action-card">
 					<text class="panel-title">练习建议</text>
 					<text class="action-copy">建议你先完整做一轮题目，再结合 AI 页做错题复盘，训练表达与知识点串联。</text>
@@ -46,14 +49,18 @@
 				</view>
 			</view>
 
+			<!-- 无数据时展示 -->
 			<view v-else class="empty-state">未找到对应题单内容。</view>
 		</scroll-view>
 	</view>
 </template>
 
 <script>
+	// 题单数据获取
 	import { getQuestionDetail } from './data'
+	// 收藏工具类
 	import { isQuestionFavorited, saveQuestionFavorite, removeQuestionFavorite } from '@/utils/questionFavorites.js'
+	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
 
 	export default {
@@ -66,6 +73,7 @@
 				}
 			},
 		computed: {
+			// 根据类型动态设置页面标题
 			pageTitle() {
 				const map = {
 					written: '笔试真题',
@@ -75,20 +83,25 @@
 			}
 		},
 			onLoad(options) {
+				// 页面加载：获取类型与题单ID，加载详情
 				this.type = options.type || 'written'
 				this.detail = getQuestionDetail(options.id)
 				this.syncFavoriteState()
 			},
 			onShow() {
+				// 页面显示时同步收藏状态
 				this.syncFavoriteState()
 			},
 		methods: {
+			// 同步收藏状态
 			syncFavoriteState() {
 				this.isFavorite = this.detail ? isQuestionFavorited(this.detail.id) : false
 			},
+			// 返回上一页
 			goBack() {
 				uni.navigateBack()
 			},
+			// 切换收藏/取消收藏
 			toggleFavorite() {
 				if (!this.detail) {
 					return
@@ -101,6 +114,7 @@
 					return
 				}
 
+				// 保存收藏
 				saveQuestionFavorite({
 					paperId: this.detail.id,
 					type: this.type,
@@ -115,6 +129,7 @@
 				this.isFavorite = true
 				uni.showToast({ title: '已加入收藏', icon: 'none' })
 			},
+			// 开始练习，跳转到刷题页面
 			startPractice() {
 				if (!this.detail) {
 					return

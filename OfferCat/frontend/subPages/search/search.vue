@@ -1,5 +1,7 @@
 <template>
+	<!-- 全局搜索页面：支持搜索题库 + 论坛帖子 -->
 	<view class="search-page" :class="themeClass">
+		<!-- 顶部搜索栏 -->
 		<view class="search-topbar">
 			<text class="back-icon" @click="goBack">‹</text>
 
@@ -20,8 +22,10 @@
 			<text class="search-action" @click="handleSearch">搜索</text>
 		</view>
 
+		<!-- 页面滚动主体 -->
 		<scroll-view class="search-scroll" scroll-y :show-scrollbar="false">
 			<view class="search-content">
+				<!-- 历史搜索记录 -->
 				<view v-if="historyList.length" class="history-section card-panel">
 					<view class="section-head">
 						<text class="section-title">历史搜索</text>
@@ -35,17 +39,20 @@
 					</view>
 				</view>
 
+				<!-- 搜索结果区域 -->
 				<view class="result-section card-panel">
 					<view class="section-head">
 						<text class="section-title">搜索结果</text>
 						<text class="section-tip">{{ resultSummary }}</text>
 					</view>
 
+					<!-- 未搜索时的初始状态 -->
 					<view v-if="!hasSearched" class="empty-state">
 						<text class="empty-title">输入关键词开始搜索</text>
 						<text class="empty-desc">可搜索公司、题单、岗位方向以及论坛帖子。</text>
 					</view>
 
+					<!-- 有搜索结果 -->
 					<view v-else-if="searchResults.length" class="result-list">
 						<view v-for="item in searchResults" :key="`${item.type}-${item.id}`" class="result-card" @click="openResult(item)">
 							<view class="result-main">
@@ -65,6 +72,7 @@
 						</view>
 					</view>
 
+					<!-- 无搜索结果 -->
 					<view v-else class="empty-state">
 						<text class="empty-title">没有找到相关内容</text>
 						<text class="empty-desc">试试换个公司名、方向关键词，或者搜索帖子内容。</text>
@@ -76,12 +84,17 @@
 </template>
 
 <script>
+	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
+	// 题库数据源
 	import { interviewSets, writtenSets } from '@/subPages/questionBank/data.js'
+	// 网络请求
 	import { request } from '@/api/request.js'
 
+	// 搜索历史存储配置
 	const SEARCH_HISTORY_KEY = 'home_search_history'
 	const MAX_HISTORY_COUNT = 10
+	// 合并本地搜索源：笔试 + 面试
 	const SEARCH_SOURCE = [...writtenSets, ...interviewSets]
 
 	export default {
@@ -95,6 +108,7 @@
 			}
 		},
 		computed: {
+			// 搜索结果统计文案
 			resultSummary() {
 				if (!this.hasSearched) {
 					return '支持题单、公司、方向、帖子搜索'
@@ -103,6 +117,7 @@
 				return `共找到 ${this.searchResults.length} 条相关内容`
 			}
 		},
+		// 加载历史记录
 		onLoad(options) {
 			this.loadHistory()
 			const initialKeyword = decodeURIComponent(options.keyword || '')
@@ -112,13 +127,16 @@
 			}
 		},
 		methods: {
+			// 返回上一页
 			goBack() {
 				uni.navigateBack()
 			},
+			// 加载本地搜索历史
 			loadHistory() {
 				const history = uni.getStorageSync(SEARCH_HISTORY_KEY)
 				this.historyList = Array.isArray(history) ? history : []
 			},
+			// 保存搜索历史（去重 + 最多10条）
 			saveHistory(keyword) {
 				const nextKeyword = keyword.trim()
 				if (!nextKeyword) {
@@ -129,14 +147,17 @@
 				this.historyList = nextHistory
 				uni.setStorageSync(SEARCH_HISTORY_KEY, nextHistory)
 			},
+			// 清空搜索历史
 			clearHistory() {
 				this.historyList = []
 				uni.removeStorageSync(SEARCH_HISTORY_KEY)
 			},
+			// 点击历史记录快速搜索
 			searchByHistory(keyword) {
 				this.keyword = keyword
 				this.handleSearch()
 			},
+			// 执行搜索（本地题库 + 远程论坛）
 			async handleSearch() {
 				const normalizedKeyword = this.keyword.trim().toLowerCase()
 				this.hasSearched = true
@@ -148,6 +169,7 @@
 
 				uni.showLoading({ title: '搜索中...' })
 
+				// 1. 本地题库搜索（公司/题单/分类）
 				const localResults = SEARCH_SOURCE.filter(item => {
 					const searchableText = [
 						item.title,
@@ -162,6 +184,7 @@
 					type: item.id.startsWith('i') ? 'interview' : 'written'
 				}))
 
+				// 2. 远程论坛帖子搜索
 				let forumResults = []
 				try {
 					const res = await request({
@@ -194,10 +217,13 @@
 					uni.hideLoading()
 				}
 
+				// 合并结果：本地题库 + 论坛帖子
 				this.searchResults = [...localResults, ...forumResults]
 
+				// 保存到历史
 				this.saveHistory(this.keyword)
 			},
+			// 打开搜索结果
 			openResult(item) {
 				if (item.type === 'forum') {
 					if (item.rawPost) {

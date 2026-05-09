@@ -1,13 +1,17 @@
 <template>
+	<!-- 做题历史页面 - 展示所有练习记录 -->
 	<view class="history-page" :class="themeClass">
+		<!-- 顶部导航栏 -->
 		<view class="history-topbar">
 			<text class="back-btn" @click="goBack">‹</text>
 			<text class="topbar-title">做题历史</text>
 			<text class="placeholder"></text>
 		</view>
 
+		<!-- 顶部导航栏 -->
 		<scroll-view class="history-scroll" scroll-y :show-scrollbar="false">
 			<view class="history-content">
+				<!-- 统计概览卡片 -->
 				<view class="summary-card">
 					<text class="summary-title">练习沉淀</text>
 					<text class="summary-desc">自动保存最近 50 次题库练习结果，方便你回看分数变化与复盘节奏。</text>
@@ -27,6 +31,7 @@
 					</view>
 				</view>
 
+				<!-- 筛选标签栏 -->
 				<view class="filter-row">
 					<view
 						v-for="item in filterTabs"
@@ -39,6 +44,7 @@
 					</view>
 				</view>
 
+				<!-- 历史记录列表 -->
 				<view v-if="filteredHistory.length" class="history-list">
 					<view v-for="item in filteredHistory" :key="item.sessionId" class="history-item">
 						<view class="item-head">
@@ -60,6 +66,7 @@
 							<text class="meta-text">正确率 {{ item.accuracy }}%</text>
 						</view>
 
+						<!-- 操作按钮 -->
 						<view class="item-actions">
 							<view class="ghost-btn" @click="openResult(item)">查看结果</view>
 							<view class="primary-btn" @click="retryPractice(item)">再练一次</view>
@@ -67,6 +74,7 @@
 					</view>
 				</view>
 
+				<!-- 空状态 -->
 				<view v-else class="empty-state">
 					<text class="empty-title">还没有做题历史</text>
 					<text class="empty-desc">完成一套{{ activeType === 'interview' ? '面试真题' : activeType === 'written' ? '笔试真题' : '题库练习' }}后，这里会自动记录你的成绩与时间。</text>
@@ -77,7 +85,9 @@
 </template>
 
 <script>
+	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
+	// 做题历史工具类
 	import { getQuestionHistory } from '@/utils/questionHistory.js'
 
 	export default {
@@ -86,6 +96,7 @@
 			return {
 				activeType: 'all',
 				historyList: [],
+				// 筛选标签配置
 				filterTabs: [
 					{ key: 'all', label: '全部' },
 					{ key: 'written', label: '笔试真题' },
@@ -94,12 +105,14 @@
 			}
 		},
 		computed: {
+			// 根据类型筛选历史记录
 			filteredHistory() {
 				if (this.activeType === 'all') {
 					return this.historyList
 				}
 				return this.historyList.filter(item => item.type === this.activeType)
 			},
+			// 计算平均分数
 			averageScore() {
 				if (!this.filteredHistory.length) {
 					return 0
@@ -107,6 +120,7 @@
 				const total = this.filteredHistory.reduce((sum, item) => sum + Number(item.score || 0), 0)
 				return Math.round(total / this.filteredHistory.length)
 			},
+			// 计算最高分数
 			bestScore() {
 				if (!this.filteredHistory.length) {
 					return 0
@@ -115,16 +129,20 @@
 			}
 		},
 		onLoad(options) {
+			// 初始化筛选类型
 			const type = options.type || 'all'
 			this.activeType = ['all', 'written', 'interview'].includes(type) ? type : 'all'
 		},
 		onShow() {
+			// 页面显示时加载历史记录
 			this.loadHistory()
 		},
 		methods: {
+			// 加载做题历史
 			loadHistory() {
 				this.historyList = getQuestionHistory()
 			},
+			// 返回上一页（智能路由处理）
 			goBack() {
 				const pages = getCurrentPages()
 				if (pages.length > 1) {
@@ -135,12 +153,14 @@
 					url: `/subPages/questionBank/${this.activeType === 'interview' ? 'interview' : 'written'}`
 				})
 			},
+			// 查看答题结果详情
 			openResult(item) {
 				uni.setStorageSync(`question_result_${item.sessionId}`, item)
 				uni.navigateTo({
 					url: `/subPages/questionBank/result?session=${item.sessionId}`
 				})
 			},
+			// 重新练习此题单
 			retryPractice(item) {
 				uni.navigateTo({
 					url: `/subPages/questionBank/exercise?id=${item.paperId}&type=${item.type}`

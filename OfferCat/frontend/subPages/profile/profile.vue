@@ -1,5 +1,7 @@
 <template>
+	<!-- 个人信息编辑主页面 -->
 	<view class="profile-page" :class="themeClass">
+		<!-- 顶部导航栏：返回 + 标题 + 保存 -->
 		<view class="header">
 			<view class="back-btn" @click="goBack">
 				<text class="back-icon">←</text>
@@ -10,8 +12,10 @@
 			</view>
 		</view>
 		
+		<!-- 导航栏占位，避免内容被遮挡 -->
 		<view class="header-placeholder"></view>
 		
+		<!-- 头像区域：点击更换头像 -->
 		<view class="avatar-section">
 			<view class="avatar-wrapper" @click="chooseAvatar">
 				<CommonAvatar :src="avatarUrl" image-class="avatar-img" :sync-profile="false" />
@@ -22,6 +26,7 @@
 			</view>
 		</view>
 		
+		<!-- 表单区域：所有个人信息项 -->
 		<view class="form-section">
 			<view class="form-item">
 				<view class="form-label">昵称</view>
@@ -111,6 +116,8 @@
 <script setup>
 import { computed, ref, onMounted } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
+
+// 工具导入
 import { getUserProfile, saveUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
 import { applyTheme } from '@/utils/theme.js'
 import CommonAvatar from '@/components/CommonAvatar.vue'
@@ -119,6 +126,7 @@ import { BASE_URL } from '@/api/config'
 import { getToken } from '@/utils/token'
 import { getUser } from '@/utils/user'
 
+//响应式数据
 const avatarUrl = ref(DEFAULT_AVATAR)
 const nickname = ref('王小桃同学')
 const major = ref('计算机科学与技术')
@@ -136,16 +144,20 @@ const theme = ref('light')
 const gradeOptions = ['大一', '大二', '大三', '大四', '大五']
 const jobStatusOptions = ['求职中', '未求职', '已就业']
 
+// 选择器选项
 const themeClass = computed(() => (theme.value === 'dark' ? 'theme-dark' : 'theme-light'))
+// 年级选择器索引
 const gradeIndex = computed(() => {
 	const idx = gradeOptions.indexOf(graduationYear.value || '')
 	return idx >= 0 ? idx : 0
 })
+// 求职状态选择器索引
 const jobStatusIndex = computed(() => {
 	const idx = jobStatusOptions.indexOf(jobStatus.value || '')
 	return idx >= 0 ? idx : 0
 })
 
+// 加载用户本地资料
 const loadUserInfo = () => {
 	const user = getUserProfile()
 	avatarUrl.value = user.avatar || DEFAULT_AVATAR
@@ -163,7 +175,9 @@ const loadUserInfo = () => {
 	expectedSalary.value = user.expectedSalary || ''
 }
 
+// 保存个人信息（校验 + 上传服务器 + 本地存储）
 const saveProfile = async () => {
+	// 前端表单校验
 	if (String(nickname.value || '').length > 10) {
 		uni.showToast({ title: '昵称最多10个字', icon: 'none' })
 		return
@@ -208,6 +222,7 @@ const saveProfile = async () => {
 	uni.showLoading({ title: '保存中', mask: true })
 	try {
 		const storedUser = getUser()
+		// 组装提交给后端的数据
 		const user = {
 			userId: storedUser && storedUser.userId ? storedUser.userId : null,
 			avatar: avatarUrl.value,
@@ -258,16 +273,19 @@ const saveProfile = async () => {
 	}
 }
 
+// 年级选择
 const onGradeChange = (event) => {
 	const idx = Number(event.detail.value)
 	graduationYear.value = gradeOptions[idx] || gradeOptions[0]
 }
 
+// 求职状态选择
 const onJobStatusChange = (event) => {
 	const idx = Number(event.detail.value)
 	jobStatus.value = jobStatusOptions[idx] || jobStatusOptions[0]
 }
 
+// 手机号输入过滤（只允许数字）
 const onPhoneInput = (event) => {
 	const next = String(event.detail.value || '').replace(/\D/g, '').slice(0, 11)
 	phone.value = next
@@ -277,6 +295,7 @@ const goBack = () => {
 	uni.navigateBack()
 }
 
+// 上传头像文件到服务器
 const persistAvatarFile = (tempFilePath) => new Promise((resolve) => {
 	if (!tempFilePath) {
 		resolve(DEFAULT_AVATAR)
@@ -315,6 +334,7 @@ const persistAvatarFile = (tempFilePath) => new Promise((resolve) => {
 	})
 })
 
+// 选择头像（拍照 / 相册）
 const chooseAvatar = () => {
 	uni.showActionSheet({
 		itemList: ['从相册选择', '拍照'],

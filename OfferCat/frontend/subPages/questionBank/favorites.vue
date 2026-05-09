@@ -1,13 +1,17 @@
 <template>
+	<!-- 我的收藏 - 题单收藏列表页面 -->
 	<view class="favorites-page" :class="themeClass">
+		<!-- 顶部导航栏 -->
 		<view class="favorites-topbar">
 			<text class="back-btn" @click="goBack">‹</text>
 			<text class="topbar-title">我的收藏</text>
 			<text class="placeholder"></text>
 		</view>
 
+		<!-- 页面滚动主体 -->
 		<scroll-view class="favorites-scroll" scroll-y :show-scrollbar="false">
 			<view class="favorites-content">
+				<!-- 收藏统计卡片 -->
 				<view class="summary-card">
 					<text class="summary-title">收藏题单</text>
 					<text class="summary-desc">把想反复练习的题单先收起来，后面可以直接回到这里继续刷题。</text>
@@ -27,6 +31,7 @@
 					</view>
 				</view>
 
+				<!-- 筛选标签栏 -->
 				<view class="filter-row">
 					<view
 						v-for="item in filterTabs"
@@ -39,6 +44,7 @@
 					</view>
 				</view>
 
+				<!-- 收藏列表 -->
 				<view v-if="filteredFavorites.length" class="favorite-list">
 					<view v-for="item in filteredFavorites" :key="item.paperId" class="favorite-item">
 						<view class="item-head">
@@ -58,6 +64,7 @@
 						<text v-if="item.summary" class="item-summary">{{ item.summary }}</text>
 						<text class="meta-text">收藏时间 {{ item.favoritedAt }}</text>
 
+						<!-- 操作按钮组 -->
 						<view class="item-actions">
 							<view class="ghost-btn" @click="removeFavorite(item)">取消收藏</view>
 							<view class="ghost-btn secondary-btn" @click="openDetail(item)">查看详情</view>
@@ -66,6 +73,7 @@
 					</view>
 				</view>
 
+				<!-- 空状态 -->
 				<view v-else class="empty-state">
 					<text class="empty-title">还没有收藏题单</text>
 					<text class="empty-desc">去题库详情页点一下收藏，喜欢的题单就会自动收纳到这里。</text>
@@ -76,7 +84,9 @@
 </template>
 
 <script>
+	// 主题切换
 	import themeMixin from '@/utils/themeMixin.js'
+	// 收藏工具类
 	import { getQuestionFavorites, removeQuestionFavorite } from '@/utils/questionFavorites.js'
 
 	export default {
@@ -85,6 +95,7 @@
 			return {
 				activeType: 'all',
 				favorites: [],
+				// 筛选标签配置
 				filterTabs: [
 					{ key: 'all', label: '全部' },
 					{ key: 'written', label: '笔试真题' },
@@ -93,30 +104,37 @@
 			}
 		},
 		computed: {
+			// 根据类型筛选收藏列表
 			filteredFavorites() {
 				if (this.activeType === 'all') {
 					return this.favorites
 				}
 				return this.favorites.filter(item => item.type === this.activeType)
 			},
+			// 笔试收藏数量
 			writtenCount() {
 				return this.favorites.filter(item => item.type === 'written').length
 			},
+			// 面试收藏数量
 			interviewCount() {
 				return this.favorites.filter(item => item.type === 'interview').length
 			}
 		},
 		onLoad(options) {
+			// 页面加载：初始化筛选类型
 			const type = options.type || 'all'
 			this.activeType = ['all', 'written', 'interview'].includes(type) ? type : 'all'
 		},
 		onShow() {
+			// 页面显示：重新加载收藏数据
 			this.loadFavorites()
 		},
 		methods: {
+			// 加载收藏列表
 			loadFavorites() {
 				this.favorites = getQuestionFavorites()
 			},
+			// 返回上一页（智能判断路由）
 			goBack() {
 				const pages = getCurrentPages()
 				if (pages.length > 1) {
@@ -127,16 +145,19 @@
 					url: `/subPages/questionBank/${this.activeType === 'interview' ? 'interview' : 'written'}`
 				})
 			},
+			// 取消收藏
 			removeFavorite(item) {
 				removeQuestionFavorite(item.paperId)
 				this.loadFavorites()
 				uni.showToast({ title: '已取消收藏', icon: 'none' })
 			},
+			// 打开题单详情
 			openDetail(item) {
 				uni.navigateTo({
 					url: `/subPages/questionBank/detail?id=${item.paperId}&type=${item.type}`
 				})
 			},
+			// 开始练习
 			startPractice(item) {
 				uni.navigateTo({
 					url: `/subPages/questionBank/exercise?id=${item.paperId}&type=${item.type}`

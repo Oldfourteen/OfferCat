@@ -1,10 +1,14 @@
 <template>
+	<!-- 简历预览主页面 -->
 	<view class="preview-page" :class="themeClass">
+		<!-- 顶部导航栏 -->
 		<topNavBar title="简历预览" :titleStyle="topNavBarTitleStyle" :customStyle="topNavBarCustomStyle" />
 		
+		<!-- 页面内容区 -->
 		<view class="page-content">
-			<!-- 类似一张纸的容器 -->
+			<!-- 简历纸张容器（模拟A4纸） -->
 			<view class="resume-paper" id="resume-paper-view">
+				<!-- 头部区域：姓名 + 基本信息 + 头像 -->
 				<view class="header-section">
 					<view class="header-left">
 						<view class="name">{{ resume.real_name || resume.resume_name || '未命名' }}</view>
@@ -59,6 +63,7 @@
 			</view>
 		</view>
 
+		<!-- 底部操作栏：继续编辑 + 导出PDF -->
 		<view class="bottom-actions-wrap">
 			<view class="bottom-actions">
 				<view class="action-btn cancel-btn" @click="handleBack">继续编辑</view>
@@ -70,10 +75,15 @@
 </template>
 
 <script>
+	// 顶部导航组件
 	import topNavBar from './components/topNavBar.vue'
+	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
+	// 网络请求工具
 	import { request } from '@/api/request.js'
+	// 接口基础地址
 	import { BASE_URL } from '@/api/config.js'
+	// 获取用户信息
 	import { getUser } from '@/utils/user.js'
 
 	export default {
@@ -83,18 +93,22 @@
 		},
 		data() {
 			return {
+				// 简历完整数据
 				resume: {}
 			}
 		},
 		computed: {
+			// 导航栏标题样式（适配深色/浅色模式）
 			topNavBarTitleStyle() {
 				return { color: this.theme === 'dark' ? '#f4f7fb' : '#000', fontSize: '18px' }
 			},
+			// 导航栏背景样式
 			topNavBarCustomStyle() {
 				return { backgroundColor: this.theme === 'dark' ? '#1a1c22' : '#fff' }
 			}
 		},
 		onLoad(options) {
+			// 页面加载：解析传入的简历数据
 			if (options.resume_data) {
 				try {
 					this.resume = JSON.parse(decodeURIComponent(options.resume_data))
@@ -104,18 +118,22 @@
 			}
 		},
 		methods: {
+			// 性别编码转文字：1=男 2=女
 			getGenderText(genderCode) {
 				if (Number(genderCode) === 1) return '男'
 				if (Number(genderCode) === 2) return '女'
 				return ''
 			},
+			// 返回编辑页面
 			handleBack() {
 				uni.navigateBack()
 			},
+			// 调用后端接口导出PDF
 			async handleExportPdf() {
 				uni.showLoading({ title: '正在生成PDF...' })
 				
 				try {
+					// 去除 HTML 标签，提取纯文本
 					const stripHtml = (html) => {
 						if (!html) return '';
 						let text = String(html).replace(/<br\s*\/?>/gi, '\n');
@@ -125,9 +143,11 @@
 						return text.replace(/\n\s*\n/g, '\n').trim();
 					};
 
+					// 获取当前用户ID
 					const storedUser = getUser() || {}
 					const userId = storedUser.userId || null
 
+					// 请求后端生成简历PDF
 					const res = await request({
 						url: '/api/resume/create',
 						method: 'POST',
@@ -152,8 +172,10 @@
 					uni.hideLoading()
 					uni.showToast({ title: 'PDF导出成功', icon: 'success' })
 					
+					// 拼接PDF下载链接
 					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/${res.resumeId}`
 					
+					// 弹出复制链接确认框
 					uni.showModal({
 						title: '导出成功',
 						content: 'PDF 已生成，是否复制下载链接？\n\n' + realPdfUrl,

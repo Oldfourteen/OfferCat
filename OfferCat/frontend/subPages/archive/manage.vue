@@ -1,5 +1,7 @@
 <template>
+	<!-- 档案管理主页面 -->
 	<view class="manage-page" :class="themeClass">
+		<!-- 顶部导航栏：返回 + 标题 -->
 		<view class="manage-topbar">
 			<text class="back-icon" @click="goBack">‹</text>
 			<view class="topbar-copy">
@@ -8,12 +10,14 @@
 			</view>
 		</view>
 
+		<!-- 数据统计卡片：显示当前录入总数 -->
 		<view class="summary-card">
 			<text class="summary-label">当前已录入</text>
 			<text class="summary-value">{{ itemCount }} 项</text>
 			<text class="summary-desc">{{ pageHint }}</text>
 		</view>
 
+		<!-- 编辑区域：新增 / 编辑档案表单 -->
 		<view class="section-card editor-card">
 			<view class="section-head">
 				<text class="section-title">{{ isEditing ? '编辑档案' : '新增档案' }}</text>
@@ -21,6 +25,7 @@
 			</view>
 
 			<view v-if="editorVisible" class="editor-form">
+				<!-- 动态渲染表单字段 -->
 				<view v-for="field in fields" :key="field.key" class="form-item">
 					<text class="form-label">{{ field.label }}</text>
 					<textarea
@@ -45,6 +50,7 @@
 					/>
 				</view>
 
+				<!-- 表单操作按钮：取消 / 保存 -->
 				<view class="form-actions">
 					<view class="ghost-btn" @click="cancelEdit">取消</view>
 					<view class="primary-btn" @click="saveRecord">保存</view>
@@ -52,6 +58,7 @@
 			</view>
 		</view>
 
+		<!-- 历史记录列表：展示所有已保存档案 -->
 		<view class="section-card">
 			<view class="section-head">
 				<text class="section-title">历史记录</text>
@@ -59,6 +66,7 @@
 			</view>
 
 			<view v-if="records.length">
+				<!-- 列表项循环渲染 -->
 				<view v-for="(item, index) in records" :key="item.id" class="record-item">
 					<view class="record-copy">
 						<text class="record-title">{{ item.title }}</text>
@@ -71,6 +79,7 @@
 				</view>
 			</view>
 
+			<!-- 空数据状态 -->
 			<view v-else class="empty-state">
 				<text class="empty-title">还没有档案记录</text>
 				<text class="empty-desc">先新增一条内容，后续 AI 会基于这些资料做更准确的分析。</text>
@@ -80,10 +89,18 @@
 </template>
 
 	<script>
+		// 主题样式混入
 		import themeMixin from '@/utils/themeMixin.js'
+		// 档案数据本地存储工具方法
 		import { getArchiveRecords, saveArchiveRecords } from '@/utils/archiveData.js'
 
+	/*
+	页面类型配置映射表
+	包含：竞赛奖项、证书资质、项目经历、实习经历 4 种档案类型
+	每个类型独立配置：标题、字段、格式化方法、默认数据
+	*/
 	const PAGE_MAP = {
+		// 竞赛奖项
 		awards: {
 			title: '竞赛奖项',
 			subtitle: '管理比赛经历与国家级、省级奖项信息',
@@ -94,6 +111,7 @@
 				{ key: 'period', label: '获奖时间', placeholder: '例如：2023-09' },
 				{ key: 'detail', label: '成果说明', type: 'textarea', placeholder: '补充赛事方向、个人分工、成绩亮点' }
 			],
+			// 表单数据 => 列表展示数据
 			toRecord(form, id) {
 				return {
 					id,
@@ -101,6 +119,7 @@
 					desc: `${form.level || '待补充等级'} · ${form.period || '待补充时间'}${form.detail ? ' · ' + form.detail : ''}`
 				}
 			},
+			// 列表数据 => 编辑表单回填数据
 			toForm(record) {
 				const parts = (record.desc || '').split(' · ')
 				return {
@@ -110,11 +129,13 @@
 					detail: parts.slice(2).join(' · ') || ''
 				}
 			},
+			// 默认示例数据
 			initialRecords: [
 				{ id: 1, title: '全国大学生数学建模竞赛', desc: '省一等奖 · 2023-09 · 负责数据建模与报告撰写' },
 				{ id: 2, title: '蓝桥杯软件赛', desc: '省二等奖 · 2023-04 · Java 方向' }
 			]
 		},
+		// 证书资质
 		certificates: {
 			title: '证书资质',
 			subtitle: '管理四六级、职业技能和资格证书',
@@ -146,6 +167,7 @@
 				{ id: 2, title: '计算机二级', desc: 'Python · 2022-03 · 已通过' }
 			]
 		},
+		// 项目经历
 		projects: {
 			title: '项目经历',
 			subtitle: '管理课程项目、个人项目和开源项目',
@@ -177,6 +199,7 @@
 				{ id: 2, title: '开源组件库重构', desc: 'Vue3 + TypeScript · 个人项目 · 优化组件结构与文档体验' }
 			]
 		},
+		// 实习经历
 		internships: {
 			title: '实习经历',
 			subtitle: '管理实习、实训和兼职工作经历',
@@ -210,6 +233,11 @@
 		}
 	}
 
+	/*
+	根据字段配置生成空表单对象
+	@param {Array} fields - 字段数组
+	@returns {Object} 空表单数据
+	*/
 	function createEmptyForm(fields) {
 		return fields.reduce((result, field) => {
 			result[field.key] = ''
@@ -221,81 +249,100 @@
 		mixins: [themeMixin],
 		data() {
 			return {
-				type: 'awards',
-				recordsState: [],
-				editorVisible: false,
-				editingIndex: -1,
-				formData: {}
+				type: 'awards', // 当前档案类型，默认奖项
+				recordsState: [], // 档案列表数据
+				editorVisible: false, // 编辑面板显隐
+				editingIndex: -1, // 正在编辑的索引，-1=新增
+				formData: {} // 表单数据
 			}
 		},
 		computed: {
+			// 当前页面配置（根据type自动匹配PAGE_MAP）
 			pageConfig() {
 				return PAGE_MAP[this.type] || PAGE_MAP.awards
 			},
+			// 页面主标题
 			pageTitle() {
 				return this.pageConfig.title
 			},
+			// 页面副标题
 			pageSubtitle() {
 				return this.pageConfig.subtitle
 			},
+			// 页面提示语
 			pageHint() {
 				return this.pageConfig.hint
 			},
+			// 档案总数
 			itemCount() {
 				return this.records.length
 			},
+			// 表单字段配置
 			fields() {
 				return this.pageConfig.fields
 			},
+			// 档案列表（别名）
 			records() {
 				return this.recordsState
 			},
+			// 是否处于编辑状态
 			isEditing() {
 				return this.editingIndex > -1
 			}
 		},
 		onLoad(query) {
+			// 页面加载时获取路由参数中的类型
 			if (query && query.type) {
 				this.type = query.type
 			}
 
+			// 初始化数据
 			this.resetRecords()
 			this.resetForm()
 		},
 		methods: {
+			// 返回上一页
 			goBack() {
 				uni.navigateBack()
 			},
+			// 重置档案列表（从本地存储读取）
 			resetRecords() {
 				this.recordsState = getArchiveRecords(this.type).map(item => ({ ...item }))
 			},
+			// 重置表单为空
 			resetForm() {
 				this.formData = createEmptyForm(this.fields)
 				this.editingIndex = -1
 			},
+			// 切换编辑面板显隐
 			toggleEditor() {
 				this.editorVisible = !this.editorVisible
 				if (!this.editorVisible) {
 					this.resetForm()
 				}
 			},
+			// 更新表单字段值
 			updateField(key, value) {
 				this.formData = {
 					...this.formData,
 					[key]: value
 				}
 			},
+			// 开始编辑某条记录
 			startEdit(index) {
 				const record = this.records[index]
 				this.editingIndex = index
 				this.editorVisible = true
 				this.formData = this.pageConfig.toForm(record)
 			},
+			// 取消编辑
 			cancelEdit() {
 				this.resetForm()
 				this.editorVisible = false
 			},
+			// 保存档案（新增/编辑）
 			saveRecord() {
+				// 校验第一个必填字段
 				const primaryField = this.fields[0]
 				const primaryValue = (this.formData[primaryField.key] || '').trim()
 
@@ -307,14 +354,18 @@
 					return
 				}
 
+				// 生成记录ID
 				const nextId = this.isEditing ? this.records[this.editingIndex].id : Date.now()
+				// 格式化数据
 				const nextRecord = this.pageConfig.toRecord(this.formData, nextId)
 
+				// 编辑 / 新增逻辑
 				if (this.isEditing) {
 					this.recordsState.splice(this.editingIndex, 1, nextRecord)
 				} else {
 					this.recordsState.unshift(nextRecord)
 				}
+				// 保存到本地存储
 				saveArchiveRecords(this.type, this.recordsState)
 
 				uni.showToast({
@@ -322,12 +373,15 @@
 					icon: 'success'
 				})
 
+				// 重置表单并收起面板
 				this.resetForm()
 				this.editorVisible = false
 			},
+			// 删除单条记录
 			removeRecord(index) {
 				this.recordsState.splice(index, 1)
 				saveArchiveRecords(this.type, this.recordsState)
+				// 如果删除的是正在编辑的项，取消编辑
 				if (this.editingIndex === index) {
 					this.cancelEdit()
 				}

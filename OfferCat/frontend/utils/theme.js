@@ -1,3 +1,4 @@
+// 主题模式缓存键、可选主题模式和全局主题变更事件名。
 const THEME_KEY = 'app_theme_mode'
 
 export const THEME_LIGHT = 'light'
@@ -8,10 +9,12 @@ export const THEME_CHANGE_EVENT = 'app-theme-updated'
 let hasThemeObserver = false
 let currentActiveTheme = null
 
+// 校验主题模式是否合法。
 function isValidThemeMode(theme) {
 	return [THEME_LIGHT, THEME_DARK, THEME_SYSTEM].includes(theme)
 }
 
+// 广播主题变化，通知页面重新同步主题样式。
 function emitThemeChange(theme, mode) {
 	if (typeof uni === 'undefined' || typeof uni.$emit !== 'function') {
 		return
@@ -23,11 +26,13 @@ function emitThemeChange(theme, mode) {
 	})
 }
 
+// 获取用户当前保存的主题模式。
 export function getThemeMode() {
 	const theme = uni.getStorageSync(THEME_KEY)
 	return isValidThemeMode(theme) ? theme : THEME_LIGHT
 }
 
+// 获取系统当前生效的明暗主题。
 export function getSystemTheme() {
 	let systemTheme = ''
 
@@ -49,6 +54,7 @@ export function getSystemTheme() {
 	return systemTheme === THEME_DARK ? THEME_DARK : THEME_LIGHT
 }
 
+// 将主题模式解析为最终实际应用的主题值。
 export function resolveTheme(themeMode = getThemeMode()) {
 	if (themeMode === THEME_SYSTEM) {
 		return getSystemTheme()
@@ -57,6 +63,7 @@ export function resolveTheme(themeMode = getThemeMode()) {
 	return themeMode === THEME_DARK ? THEME_DARK : THEME_LIGHT
 }
 
+// 根据明暗主题返回底部 tabBar 的配色方案。
 function getTabBarTheme(theme) {
 	if (theme === THEME_DARK) {
 		return {
@@ -75,6 +82,7 @@ function getTabBarTheme(theme) {
 	}
 }
 
+// 将主题配色应用到底部 tabBar。
 function applyTabBarTheme(theme) {
 	if (typeof uni === 'undefined' || typeof uni.setTabBarStyle !== 'function') {
 		return
@@ -89,16 +97,19 @@ function applyTabBarTheme(theme) {
 	}
 }
 
+// 获取当前最终生效的主题值。
 export function getTheme() {
 	return resolveTheme(getThemeMode())
 }
 
+// 保存主题模式并立即应用。
 export function setTheme(theme) {
 	const nextMode = isValidThemeMode(theme) ? theme : THEME_LIGHT
 	uni.setStorageSync(THEME_KEY, nextMode)
 	return applyTheme(nextMode)
 }
 
+// 应用主题到页面根节点和 tabBar，并广播变更事件。
 export function applyTheme(theme = getThemeMode()) {
 	const nextMode = isValidThemeMode(theme) ? theme : getThemeMode()
 	const nextTheme = resolveTheme(nextMode)
@@ -115,6 +126,7 @@ export function applyTheme(theme = getThemeMode()) {
 	return nextTheme
 }
 
+// 初始化系统主题监听，在跟随系统模式下自动同步。
 export function initThemeObserver() {
 	if (hasThemeObserver || typeof uni === 'undefined' || typeof uni.onThemeChange !== 'function') {
 		return

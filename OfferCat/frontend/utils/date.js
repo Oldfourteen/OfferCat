@@ -4,7 +4,8 @@
  * @returns {string} - “春招” 或 “秋招”
  */
 export function getRecruitmentSeason(date = new Date()) {
-  const month = date.getMonth() + 1; // getMonth() 返回 0-11
+  // `getMonth` 返回 0-11，这里转成自然月份后判断春招/秋招。
+  const month = date.getMonth() + 1;
   if (month >= 2 && month <= 8) {
     return '春招';
   }

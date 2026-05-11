@@ -1,10 +1,13 @@
+// 简历仓库本地缓存键与最大保留数量。
 const RESUME_REPO_KEY = 'resume_repo_records'
 const MAX_RESUME_COUNT = 50
 
+// 补零格式化时间片段。
 function padNumber(value) {
 	return String(value).padStart(2, '0')
 }
 
+// 将时间戳格式化为简历记录展示时间。
 function formatDateTime(timestamp) {
 	const date = new Date(Number(timestamp) || Date.now())
 	const year = date.getFullYear()
@@ -15,6 +18,7 @@ function formatDateTime(timestamp) {
 	return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
+// 统一简历记录结构，并兼容技能字段的字符串/数组格式。
 function normalizeResumeRecord(record = {}) {
 	const timestamp = Number(record.timestamp || Date.now())
 	const resumeId = Number(record.resume_id || record.resumeId || timestamp)
@@ -59,6 +63,7 @@ function normalizeResumeRecord(record = {}) {
 	}
 }
 
+// 获取简历仓库列表，并按最近更新时间倒序返回。
 export function getResumeRepoList() {
 	const records = uni.getStorageSync(RESUME_REPO_KEY)
 	if (!Array.isArray(records)) {
@@ -67,12 +72,14 @@ export function getResumeRepoList() {
 	return records.map(normalizeResumeRecord).sort((a, b) => b.timestamp - a.timestamp)
 }
 
+// 根据简历 id 获取单份简历详情。
 export function getResumeById(resumeId) {
 	const id = Number(resumeId)
 	if (!id) return null
 	return getResumeRepoList().find(item => Number(item.resume_id) === id) || null
 }
 
+// 保存或更新一份简历记录，并控制本地缓存数量上限。
 export function saveResumeRecord(record) {
 	const nextItem = normalizeResumeRecord(record)
 	const repo = getResumeRepoList().filter(item => Number(item.resume_id) !== Number(nextItem.resume_id))
@@ -85,6 +92,7 @@ export function saveResumeRecord(record) {
 	return nextItem
 }
 
+// 删除一个或多个简历记录。
 export function deleteResumes(resumeIds) {
 	if (!Array.isArray(resumeIds)) {
 		resumeIds = [resumeIds];

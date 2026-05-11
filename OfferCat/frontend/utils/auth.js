@@ -2,10 +2,12 @@ import { setToken } from './token'
 import { setUser } from './user'
 import { login } from '../api/auth'
 
+// 判断当前是否为开发环境。
 export function isDevEnv() {
 	return process.env.NODE_ENV !== 'production'
 }
 
+// 一键登录占位实现：调用登录接口并落地 token、用户信息与资料完整状态。
 export async function oneClickLogin() {
 	// TODO(后端)：这里需要接运营商一键登录（本机号码认证）或你的后端一键登录接口
 	// 当前仅做“把手机号发给后端登录并记录”的占位实现

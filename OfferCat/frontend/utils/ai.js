@@ -1,5 +1,6 @@
 import { BASE_URL } from '@/api/config'
 
+// 获取当前缓存中的用户信息，用于补齐 AI 接口的上下文参数。
 function getStoredUser() {
 	try {
 		return uni.getStorageSync('user') || null
@@ -8,6 +9,7 @@ function getStoredUser() {
 	}
 }
 
+// 将最近的对话记录整理成后端可直接消费的上下文提问文本。
 function buildContextQuestion(messages) {
 	if (!messages || messages.length === 0) return ''
 
@@ -29,6 +31,7 @@ function buildContextQuestion(messages) {
 	return `[对话记录]\n${ctx}\n\n[当前问题]\n${question}`
 }
 
+// 上传聊天中附带的图片，返回后端可访问的图片地址。
 export function uploadAiChatImage(filePath) {
 	if (!BASE_URL) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
@@ -63,6 +66,7 @@ export function uploadAiChatImage(filePath) {
 	})
 }
 
+// 请求 AI 流式对话接口，并通过回调持续返回增量内容。
 export function requestAiChatStream(messages = [], options = {}, onChunk, onComplete, onError) {
 	if (!BASE_URL) {
 		onError(new Error('未配置后端地址，请检查 api/config.js'))
@@ -84,8 +88,8 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 
 	const valid = messages.filter(m => m && (m.text || m.content) && !m.loading)
 	const lastUser = [...valid].reverse().find(m => m.role === 'user')
-	let userImages = []
 	
+	// 发起真正的流式请求，图片已在进入这里前完成上传。
 	const doRequest = (uploadedImages) => {
 		const requestTask = uni.request({
 			url: `${BASE_URL}/api/ai/chat-stream`,
@@ -132,6 +136,7 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 		})
 
 		if (requestTask && typeof requestTask.onChunkReceived === 'function') {
+			// 监听后端 SSE 分块数据，并持续拼接为完整回答。
 			requestTask.onChunkReceived((res) => {
 				try {
 					const uint8Array = new Uint8Array(res.data)
@@ -166,6 +171,7 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 		return requestTask
 	}
 
+	// 如果最后一条用户消息带有图片，先上传图片再发起问答请求。
 	if (lastUser && lastUser.filePaths && lastUser.filePaths.length > 0) {
 		const uploadPromises = lastUser.filePaths.map(path => {
 			if (path.startsWith('http') && !path.startsWith('http://localhost') && !path.startsWith('http://127.0.0.1')) {
@@ -184,6 +190,8 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 		return doRequest([])
 	}
 }
+
+// 获取当前用户的 AI 历史对话记录。
 export function requestAiHistory() {
 	if (!BASE_URL) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
@@ -216,6 +224,7 @@ export function requestAiHistory() {
 	})
 }
 
+// 请求非流式 AI 对话接口，一次性返回完整答案。
 export function requestAiChat(messages = [], options = {}) {
 	if (!BASE_URL) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
@@ -234,6 +243,7 @@ export function requestAiChat(messages = [], options = {}) {
 	const valid = messages.filter(m => m && (m.text || m.content) && !m.loading)
 	const lastUser = [...valid].reverse().find(m => m.role === 'user')
 	
+	// 发起普通问答请求，返回完整文本和原始响应数据。
 	const doRequest = (uploadedImages) => {
 		return new Promise((resolve, reject) => {
 			uni.request({
@@ -261,6 +271,7 @@ export function requestAiChat(messages = [], options = {}) {
 		})
 	}
 
+	// 非流式问答同样支持先上传本地图片，再携带图片地址请求后端。
 	if (lastUser && lastUser.filePaths && lastUser.filePaths.length > 0) {
 		const uploadPromises = lastUser.filePaths.map(path => {
 			if (path.startsWith('http') && !path.startsWith('http://localhost') && !path.startsWith('http://127.0.0.1')) {
@@ -276,8 +287,10 @@ export function requestAiChat(messages = [], options = {}) {
 	}
 }
 
+// 缓存当前的音频播放实例，便于重复播放前先停止上一次语音。
 let innerAudioContext = null;
 
+// 停止并销毁当前 AI 语音播放实例。
 export function stopAiVoice() {
 	if (innerAudioContext) {
 		innerAudioContext.stop();
@@ -286,6 +299,7 @@ export function stopAiVoice() {
 	}
 }
 
+// 调用 TTS 接口并播放 AI 生成的语音结果。
 export function playAiVoice(text, onPlay) {
 	if (!BASE_URL) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
@@ -306,6 +320,7 @@ export function playAiVoice(text, onPlay) {
 					try {
 						stopAiVoice();
 						let src = '';
+						// H5 通过 Blob URL 直接播放返回的音频二进制。
 						// #ifdef H5
 						const blob = new Blob([res.data], { type: 'audio/mpeg' });
 						src = URL.createObjectURL(blob);
@@ -324,6 +339,7 @@ export function playAiVoice(text, onPlay) {
 						}
 						// #endif
 
+						// 创建新的音频上下文并绑定播放事件。
 						innerAudioContext = uni.createInnerAudioContext();
 						
 						// #ifdef APP-PLUS
@@ -382,6 +398,7 @@ export function playAiVoice(text, onPlay) {
 	})
 }
 
+// 上传录音文件并调用语音识别接口返回文本结果。
 export function uploadVoiceAndTranscribe(filePath) {
 	if (!BASE_URL) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))

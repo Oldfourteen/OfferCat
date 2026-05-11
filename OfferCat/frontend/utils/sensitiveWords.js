@@ -1,5 +1,6 @@
 import { request } from '@/api/request.js'
 
+// 本地兜底敏感词词库，供后端检测不可用时使用。
 const LOCAL_SENSITIVE_WORDS = [
     '福音会', '中国教徒', '统一教', '观音法门', '清海无上师',
     '李洪志', '志洪李', '李宏志', '轮功', '法轮', '轮子功', '法轮功',
@@ -28,6 +29,7 @@ const LOCAL_SENSITIVE_WORDS = [
     'fa lun', 'fa-lun', 'falungong'
 ]
 
+// 替换文本时使用的古诗句素材。
 const ANCIENT_POEMS = [
     '春风得意马蹄疾，一日看尽长安花。',
     '白日依山尽，黄河入海流。',
@@ -51,6 +53,7 @@ const ANCIENT_POEMS = [
     '沉舟侧畔千帆过，病树前头万木春。'
 ]
 
+// 统一文本格式，移除空白、全角字符和常见符号，提升本地匹配命中率。
 function normalizeText(text) {
     if (!text) return ''
     
@@ -79,6 +82,7 @@ function normalizeText(text) {
     return normalized
 }
 
+// 使用本地敏感词词库检测文本内容。
 function localCheckContent(text) {
     if (!text || typeof text !== 'string') {
         return { hasSensitive: false, foundWords: [], category: null }
@@ -108,6 +112,7 @@ function localCheckContent(text) {
     }
 }
 
+// 优先请求后端敏感词检测接口，失败时回退到本地检测。
 async function checkContent(text) {
     if (!text || typeof text !== 'string') {
         return { hasSensitive: false, foundWords: [], category: null, replacement: '' }
@@ -141,6 +146,7 @@ async function checkContent(text) {
     }
 }
 
+// 判断文本是否命中任意敏感词。
 async function containsAnySensitiveWord(text) {
     if (!text || typeof text !== 'string') {
         return false
@@ -150,6 +156,7 @@ async function containsAnySensitiveWord(text) {
     return result.hasSensitive
 }
 
+// 过滤文本中的敏感内容，优先走后端过滤策略。
 async function filterText(text) {
     if (!text || typeof text !== 'string') {
         return { hasSensitive: false, filteredText: text }
@@ -181,11 +188,13 @@ async function filterText(text) {
     }
 }
 
+// 随机返回一句古诗，用于替换敏感内容。
 function replaceWithPoem(text) {
     const index = Math.floor(Math.random() * ANCIENT_POEMS.length)
     return ANCIENT_POEMS[index]
 }
 
+// 随机返回两句不同古诗，作为替换文案兜底。
 function getRandomPoemPair() {
     const index1 = Math.floor(Math.random() * ANCIENT_POEMS.length)
     let index2 = Math.floor(Math.random() * ANCIENT_POEMS.length)

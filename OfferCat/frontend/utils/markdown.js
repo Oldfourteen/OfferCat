@@ -1,3 +1,4 @@
+// 转义 HTML 特殊字符，避免渲染后的内容被当作标签执行。
 function escapeHtml(text = '') {
 	return String(text)
 		.replace(/&/g, '&amp;')
@@ -7,6 +8,7 @@ function escapeHtml(text = '') {
 		.replace(/'/g, '&#39;')
 }
 
+// 解析行内 markdown 语法，输出基础 HTML 片段。
 function parseInline(text = '') {
 	let html = escapeHtml(text)
 	html = html.replace(/`([^`]+)`/g, '<code>$1</code>')
@@ -18,6 +20,7 @@ function parseInline(text = '') {
 	return html
 }
 
+// 将暂存的多行文本包装成一个段落块。
 function wrapParagraph(buffer) {
 	if (!buffer.length) {
 		return ''
@@ -27,6 +30,7 @@ function wrapParagraph(buffer) {
 	return `<p>${text}</p>`
 }
 
+// 将简化版 markdown 文本渲染为 HTML 字符串。
 export function renderMarkdown(markdown = '') {
 	const lines = String(markdown || '').replace(/\r\n/g, '\n').split('\n')
 	const blocks = []
@@ -36,6 +40,7 @@ export function renderMarkdown(markdown = '') {
 	let listType = ''
 	let listItems = []
 
+	// 输出当前累积的有序/无序列表块。
 	function flushList() {
 		if (!listItems.length) {
 			return
@@ -46,6 +51,7 @@ export function renderMarkdown(markdown = '') {
 		listType = ''
 	}
 
+	// 输出当前累积的普通段落块。
 	function flushParagraph() {
 		const html = wrapParagraph(paragraphBuffer)
 		if (html) {
@@ -53,6 +59,7 @@ export function renderMarkdown(markdown = '') {
 		}
 	}
 
+	// 按行识别代码块、标题、引用、列表和普通段落。
 	for (const line of lines) {
 		if (line.trim().startsWith('```')) {
 			flushParagraph()
@@ -134,6 +141,7 @@ export function renderMarkdown(markdown = '') {
 	return blocks.join('')
 }
 
+// 按纯文本模式逐行包装为段落，供不需要 markdown 解析的场景使用。
 export function renderPlainText(text = '') {
 	return String(text || '').split('\n').map(line => `<p>${escapeHtml(line)}</p>`).join('')
 }

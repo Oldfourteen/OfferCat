@@ -1,6 +1,7 @@
 import { getUser, setUser } from './user.js'
 import defaultAvatar from '@/asset/image/avatar.png'
 
+// 默认头像、资料变更事件以及用户资料默认结构。
 export const DEFAULT_AVATAR = defaultAvatar
 export const USER_PROFILE_UPDATED_EVENT = 'user-profile-updated'
 
@@ -21,6 +22,7 @@ export const DEFAULT_USER_PROFILE = {
 	gender: ''
 }
 
+// 统一用户资料字段，兼容接口字段与本地字段命名差异。
 function normalizeProfile(source = {}) {
 	const grade = source.grade || source.graduationYear || DEFAULT_USER_PROFILE.grade
 	return {
@@ -43,12 +45,14 @@ function normalizeProfile(source = {}) {
 	}
 }
 
+// 获取当前用户资料，并优先兼容嵌套的 profile 字段结构。
 export function getUserProfile() {
 	const user = getUser() || {}
 	const source = user.profile ? { ...user, ...user.profile } : user
 	return normalizeProfile(source)
 }
 
+// 保存用户资料并同步更新到用户缓存中。
 export function saveUserProfile(profile = {}) {
 	const currentUser = getUser() || {}
 	const nextProfile = normalizeProfile({ ...currentUser, ...profile })

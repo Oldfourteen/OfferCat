@@ -52,7 +52,8 @@
 			this.savedScrollTop = parseInt(saved) || 0
 		},
 		onShow() {
-			// 每次回到我的页都重播卡片动画，并在需要时恢复滚动位置。
+			// 每次回到我的页先同步最新主题，再重播卡片动画并恢复滚动位置。
+			this.currentTheme = applyTheme(getTheme())
 			this.animationKey += 1
 			
 			if (this.savedScrollTop > 0) {

@@ -62,7 +62,7 @@
 			handleMake() {
 				// 先完成 PDF 润色，再允许用户导出新的附件简历。
 				if (!this.polishedText) {
-					uni.showToast({ title: '请先在右侧上传简历进行润色', icon: 'none' })
+					uni.showToast({ title: '请先在下方上传简历进行润色', icon: 'none' })
 					return
 				}
 				uni.showLoading({ title: '正在生成 PDF...', mask: true })

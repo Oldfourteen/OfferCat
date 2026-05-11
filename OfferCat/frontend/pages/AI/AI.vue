@@ -1,5 +1,5 @@
 <template>
-	<view class="ai-page" :class="themeClass" :key="refreshSeed">
+	<view class="ai-page" :class="themeClass">
 		<!-- 会话抽屉：管理历史对话、切换会话、重命名和删除 -->
 		<AiSessionDrawer
 			:visible="drawerVisible"
@@ -138,6 +138,7 @@
 				// 抽屉与输入状态
 				drawerVisible: false,
 				draft: '',
+				draftImages: [],
 				sending: false,
 				// 布局与滚动状态
 				bottomPanelHeight: 0,
@@ -161,7 +162,6 @@
 				hasRecordedInterview: false,
 				showGiveUpModal: false,
 				// 页面刷新与自动滚动控制
-				refreshSeed: 0,
 				isUserScrolling: false,
 				userHasScrolled: false,
 				scrollClientHeight: 0,
@@ -240,7 +240,7 @@
 				this.skipNextOnShow = false
 				return
 			}
-			this.refreshSeed += 1
+			this.handleBottomLayoutChange(true)
 		},
 		onLoad() {
 			const lockState = uni.getStorageSync('interview_lock_state')

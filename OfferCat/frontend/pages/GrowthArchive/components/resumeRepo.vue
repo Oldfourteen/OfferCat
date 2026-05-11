@@ -6,7 +6,6 @@
 				<text class="subtitle">统一管理已制作/上传的简历</text>
 				<view class="stats">
 					<text class="stat-item">总简历数 <text class="stat-num">{{ resumeCount }}</text></text>
-					<text class="stat-item">近30天投递 <text class="stat-num">5</text></text>
 				</view>
 			</view>
 			<view class="icon-wrap">

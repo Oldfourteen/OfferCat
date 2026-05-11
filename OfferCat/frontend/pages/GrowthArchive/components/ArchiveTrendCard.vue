@@ -14,9 +14,9 @@
 			</view>
 		</view>
 
+		<!-- 折线图统一读取当前选中区间的数据源。 -->
 		<qiun-data-charts
 			v-if="showChart"
-			<!-- 折线图统一读取当前选中区间的数据源。 -->
 			type="line"
 			:opts="chartOpts"
 			:chartData="currentChartData"

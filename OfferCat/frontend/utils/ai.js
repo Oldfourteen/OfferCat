@@ -88,6 +88,7 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 
 	const valid = messages.filter(m => m && (m.text || m.content) && !m.loading)
 	const lastUser = [...valid].reverse().find(m => m.role === 'user')
+	let userImages = []
 	
 	// 发起真正的流式请求，图片已在进入这里前完成上传。
 	const doRequest = (uploadedImages) => {

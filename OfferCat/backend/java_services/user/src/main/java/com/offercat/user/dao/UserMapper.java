@@ -4,11 +4,15 @@ import com.offercat.user.entity.User;
 import org.apache.ibatis.annotations.*;
 
 /**
-@author: blue
-@date: 2026/4/17 - 20:06
-@mail: 3590038173@qq.com
-@info: 用户Mapper
-*/
+ * @author: blue
+ * @date: 2026/4/17 - 20:06
+ * @mail: 3590038173@qq.com
+ * @info: 用户Mapper
+ *
+ * 【安全规范】防 SQL 注入方案：
+ * 1. 所有 SQL 均使用 MyBatis 的 #{} 参数化预编译绑定
+ * 2. 严禁使用 ${} 直接拼接用户输入，防止 SQL 注入攻击
+ */
 @Mapper
 public interface UserMapper {
     @Select("SELECT * FROM `user` WHERE phone = #{phone}")

@@ -7,6 +7,7 @@ import java.util.stream.Collectors;
 
 /**
  * 全局异常处理，确保所有校验错误返回给前端的格式都是 ResponseResult
+ * 【安全规范】隐藏原生 SQL 异常信息，避免将数据库结构/字段/SQL 细节暴露给前端
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
@@ -29,10 +30,18 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 处理其他异常
+     * 【安全规范】处理数据库异常，隐藏原生 SQL 错误信息
+     */
+    @ExceptionHandler({java.sql.SQLException.class, org.springframework.dao.DataAccessException.class})
+    public ResponseResult<Void> handleDatabaseException(Exception ex) {
+        return ResponseResult.internalError("服务器繁忙，请稍后再试");
+    }
+
+    /**
+     * 【安全规范】处理其他异常，避免把系统内部信息暴露给客户端
      */ 
     @ExceptionHandler(Exception.class)
     public ResponseResult<Void> handleException(Exception ex) {
-        return ResponseResult.internalError("服务器异常：" + (ex.getMessage() != null ? ex.getMessage() : ex.getClass().getSimpleName()));
+        return ResponseResult.internalError("服务器繁忙，请稍后再试");
     }
 }

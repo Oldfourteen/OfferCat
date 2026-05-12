@@ -46,9 +46,8 @@ public class SmsServiceImplement implements SmsService {
     @Override
     public boolean sendSms(String phone, String code) {
         try {
-            // 1. 准备短信内容 (使用配置文件中已备案的签名)
-            // 注意：签名必须与短信宝平台备案的签名完全一致，否则短信会被拦截
-            String content = sign + "亲爱的用户，您的验证码是" + code + "。有效期为5分钟，请尽快验证";
+            // 1. 准备短信内容 (签名无需备案即可发送，报备后速度更快)
+            String content = sign + "您的验证码是" + code + "，30秒内有效。如非本人操作请忽略此消息";
 
             log.info("正在向短信宝请求发送短信: target={}, content={}", phone, content);
 

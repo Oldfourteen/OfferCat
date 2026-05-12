@@ -2,7 +2,7 @@
 
 <div align="center">
 
-![Logo](OfferCat/frontend/static/logo.png)
+![Logo](OfferCat/app\.png)
 
 [![License](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![Java](https://img.shields.io/badge/Java-21-green.svg)](https://www.oracle.com/java/)

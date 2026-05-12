@@ -11,6 +11,7 @@ import com.offercat.user.service.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.redis.core.StringRedisTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -41,6 +42,9 @@ public class AuthServiceImplement implements AuthService {
     /** 邮箱服务 */
     @Autowired
     private EmailService emailService;
+
+    /** BCrypt 密码加密器 */
+    private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
     /** Redis 中验证码的前缀和过期时间 */
     private static final String CODE_PREFIX = "auth:code:";
@@ -115,7 +119,7 @@ public class AuthServiceImplement implements AuthService {
 
         /** 创建新用户 */
         user = new User();
-        user.setPassword(getMD5(request.getPassword())); // 使用 MD5 加密存储
+        user.setPassword(passwordEncoder.encode(request.getPassword())); // 【安全规范】使用 BCrypt 哈希存储密码
         user.setPhone(request.getPhone());
         user.setEmail(request.getEmail());
         user.setUserRole(1); // 默认角色设为1(学生)
@@ -162,7 +166,7 @@ public class AuthServiceImplement implements AuthService {
         // 根据登录类型执行不同的校验逻辑
         /**  模式1：密码登录 */
         if ("password".equals(request.getLoginType())) {
-            if (!getMD5(request.getPassword()).equals(user.getPassword())) {
+            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
                 return ResponseResult.error("密码错误");
             }
         } else if ("code".equals(request.getLoginType())) {
@@ -257,26 +261,6 @@ public class AuthServiceImplement implements AuthService {
         studentMapper.insert(student);
 
         return ResponseResult.success();
-    }
-
-    /**
-     * MD5 加密方法
-     * @param password 原始密码
-     * @return 加密后的密码
-     */
-    private String getMD5(String password) {
-        try {
-            java.security.MessageDigest md = java.security.MessageDigest.getInstance("MD5");
-            byte[] array = md.digest(password.getBytes());
-            StringBuilder sb = new StringBuilder();
-            for (byte b : array) {
-                sb.append(String.format("%02x", b));
-            }
-            return sb.toString();
-        } catch (Exception e) {
-            log.error("MD5 加密失败", e);
-            return password; // 加密失败时返回原始密码
-        }
     }
 
     // 教师与企业完善接口已移除

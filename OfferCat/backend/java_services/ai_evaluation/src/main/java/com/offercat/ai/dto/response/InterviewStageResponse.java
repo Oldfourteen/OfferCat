@@ -17,6 +17,7 @@ public class InterviewStageResponse {
     // 当前面试阶段
     private String currentStage;
     
+    
     // 下一面试阶段
     private String nextStage;
     

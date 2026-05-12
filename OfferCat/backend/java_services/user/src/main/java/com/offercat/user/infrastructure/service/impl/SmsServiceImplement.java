@@ -11,11 +11,19 @@ import com.offercat.user.infrastructure.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
+import org.springframework.util.LinkedMultiValueMap;
+import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.URLEncoder;
 import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
+
 @Service
 @Slf4j
 public class SmsServiceImplement implements SmsService {
@@ -38,22 +46,35 @@ public class SmsServiceImplement implements SmsService {
     @Override
     public boolean sendSms(String phone, String code) {
         try {
-            // 1. 准备短信内容 (替换为在短信宝后台申请的模板)
-            // 模板：【Offer猫服务】亲爱的{user_name}，您的验证码是{code}。有效期为{time}，请尽快验证
-            String content = "【Offer猫服务】亲爱的用户，您的验证码是" + code + "。有效期为5分钟，请尽快验证";
-
-            // 2. 拼接请求 URL
-            // 注意：使用 RestTemplate 的 getForObject() 传带占位符的 URL 和可变参数时，
-            // Spring 会自动对可变参数进行正规的 URL 编码。
-            // 因此，这里绝不能再手动使用 URLEncoder.encode，否则会导致短信宝收到二次编码的乱码。
-            String url = apiUrl + "?u={username}&p={apikey}&m={phone}&c={content}";
+            // 1. 准备短信内容 (使用配置文件中已备案的签名)
+            // 注意：签名必须与短信宝平台备案的签名完全一致，否则短信会被拦截
+            String content = sign + "亲爱的用户，您的验证码是" + code + "。有效期为5分钟，请尽快验证";
 
             log.info("正在向短信宝请求发送短信: target={}, content={}", phone, content);
 
-            // 3. 执行请求
-            String result = restTemplate.getForObject(url, String.class, username, apiKey, phone, content);
+            // 2. 构建 POST 请求参数
+            // 短信宝 API 参数说明：
+            // u: 用户名（短信宝账号）
+            // p: 密码的 MD5 值（32位小写）
+            // m: 目标手机号（多个手机号用英文逗号分隔）
+            // c: 短信内容（需要 URL 编码）
+            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
+            params.add("u", username);
+            params.add("p", md5(apiKey)); // 短信宝密码需要 MD5 加密
+            params.add("m", phone);
+            params.add("c", URLEncoder.encode(content, StandardCharsets.UTF_8));
 
-            // 5. 解析响应结果
+            // 3. 设置请求头
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+
+            // 4. 构建请求实体
+            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
+
+            // 5. 执行 POST 请求
+            String result = restTemplate.postForObject(apiUrl, request, String.class);
+
+            // 6. 解析响应结果
             // 0: 成功, 其他均为失败
             // 注意：短信宝返回的成功状态可能是带回车的 "0\n" 或者其他空格，所以用 trim().equals("0") 更稳妥
             if (result != null && "0".equals(result.trim())) {
@@ -68,6 +89,33 @@ public class SmsServiceImplement implements SmsService {
         } catch (Exception e) {
             log.error("调用短信宝接口发生异常", e);
             return false;
+        }
+    }
+
+    /**
+     * MD5 加密方法
+     * @param input 输入字符串
+     * @return MD5 加密后的 32 位小写字符串
+     */
+    private String md5(String input) {
+        if (input == null) {
+            return null;
+        }
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] messageDigest = md.digest(input.getBytes(StandardCharsets.UTF_8));
+            StringBuilder hexString = new StringBuilder();
+            for (byte b : messageDigest) {
+                String hex = Integer.toHexString(0xff & b);
+                if (hex.length() == 1) {
+                    hexString.append('0');
+                }
+                hexString.append(hex);
+            }
+            return hexString.toString();
+        } catch (NoSuchAlgorithmException e) {
+            log.error("MD5 加密失败", e);
+            return null;
         }
     }
 

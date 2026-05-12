@@ -10,7 +10,7 @@
 			</view>
 			<view class="right" @click="handleRightClick">
 				<text v-if="rightText" class="right-text">{{ rightText }}</text>
-				<uni-icons v-else type="more-filled" size="24" color="#000"></uni-icons>
+				<view v-else class="right-spacer"></view>
 			</view>
 		</view>
 	</view>
@@ -48,7 +48,11 @@
 		},
 		methods: {
 			handleClose() {
-				uni.navigateBack()
+				uni.navigateBack({
+					fail: () => {
+						uni.reLaunch({ url: '/pages/index/index' })
+					}
+				})
 			},
 			handleRightClick() {
 				if (this.rightText) {
@@ -80,6 +84,9 @@
 				width: 40px;
 				display: flex;
 				align-items: center;
+				position: relative;
+				z-index: 2;
+				flex-shrink: 0;
 			}
 
 			.left {
@@ -96,11 +103,17 @@
 				display: flex;
 				justify-content: center;
 				align-items: center;
+				z-index: 1;
+				max-width: calc(100% - 100px);
+				pointer-events: none;
 
 				.title {
 					font-size: 18px;
 					font-weight: bold;
 					color: #000;
+					overflow: hidden;
+					text-overflow: ellipsis;
+					white-space: nowrap;
 				}
 			}
 
@@ -111,6 +124,11 @@
 					font-size: 15px;
 					font-weight: 600;
 					color: #1677ff;
+				}
+
+				.right-spacer {
+					width: 1px;
+					height: 1px;
 				}
 			}
 		}

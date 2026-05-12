@@ -1,13 +1,15 @@
 package com.offercat.ai.controller.deepseek;
 
+import com.offercat.ai._service.AiConsultRetentionService;
 import com.offercat.ai._service.deepseek.DeepSeekChatServices;
 import com.offercat.ai.dto.request.AiChatModeRequest;
+import com.offercat.ai.dto.request.AiConsultRetainRequest;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.method.annotation.SseEmitter;
 import org.springframework.web.multipart.MultipartFile;
-import org.springframework.http.ResponseEntity;
 import java.io.File;
 import java.io.IOException;
 import java.util.UUID;
@@ -25,6 +27,9 @@ import java.util.Map;
 public class DeepSeekChatController {
     @Autowired
     private DeepSeekChatServices deepSeekChatServices;
+
+    @Autowired
+    private AiConsultRetentionService aiConsultRetentionService;
     
     /**
      * 与AI HR咨询
@@ -76,6 +81,21 @@ public class DeepSeekChatController {
     @GetMapping("/history")
     public Object getHistory(@RequestParam Long userId) {
         return deepSeekChatServices.getHistoryByUserId(userId);
+    }
+
+    /**
+     * 标记某条云端 AI 对话是否保留。保留的记录不参与每月 15 日的自动清理；每位用户最多保留 10 条。
+     */
+    @PutMapping("/history/retain")
+    public ResponseEntity<?> setHistoryRetain(@Valid @RequestBody AiConsultRetainRequest req) {
+        try {
+            aiConsultRetentionService.setRetained(req.getUserId(), req.getConsultId(), Boolean.TRUE.equals(req.getRetained()));
+            return ResponseEntity.ok().build();
+        } catch (IllegalArgumentException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        } catch (IllegalStateException e) {
+            return ResponseEntity.badRequest().body(Map.of("message", e.getMessage()));
+        }
     }
 
     /**

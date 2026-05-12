@@ -37,4 +37,9 @@ public class AiConsult {
     
     // 创建时间
     private LocalDateTime createTime;
+
+    /**
+     * 用户标记保留：1 表示不参与每月 15 日的批量清理；0 或未设置表示可被清理
+     */
+    private Integer retained;
 }

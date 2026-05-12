@@ -1,4 +1,4 @@
-import { BASE_URL } from '@/api/config'
+import { BASE_URL, getApiBase } from '@/api/config'
 
 // 获取当前缓存中的用户信息，用于补齐 AI 接口的上下文参数。
 function getStoredUser() {
@@ -33,7 +33,7 @@ function buildContextQuestion(messages) {
 
 // 上传聊天中附带的图片，返回后端可访问的图片地址。
 export function uploadAiChatImage(filePath) {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
 	}
 
@@ -68,7 +68,7 @@ export function uploadAiChatImage(filePath) {
 
 // 请求 AI 流式对话接口，并通过回调持续返回增量内容。
 export function requestAiChatStream(messages = [], options = {}, onChunk, onComplete, onError) {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		onError(new Error('未配置后端地址，请检查 api/config.js'))
 		return null
 	}
@@ -194,7 +194,7 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 
 // 获取当前用户的 AI 历史对话记录。
 export function requestAiHistory() {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
 	}
 
@@ -225,9 +225,49 @@ export function requestAiHistory() {
 	})
 }
 
+/**
+ * 设置单条云端 AI 咨询是否保留（不参与每月 15 日清理）。每位用户最多保留 10 条。
+ */
+export function setAiConsultRetain(consultId, retained) {
+	if (!getApiBase()) {
+		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
+	}
+
+	const user = getStoredUser()
+	const userId = (user && user.userId) ? Number(user.userId) : 0
+	if (!userId) {
+		return Promise.reject(new Error('请先登录'))
+	}
+
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${BASE_URL}/api/ai/history/retain`,
+			method: 'PUT',
+			header: { 'Content-Type': 'application/json' },
+			data: { userId, consultId: Number(consultId), retained: !!retained },
+			timeout: 15000,
+			success: res => {
+				if (res.statusCode < 200 || res.statusCode >= 300) {
+					let msg = `操作失败（${res.statusCode}）`
+					try {
+						const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
+						if (body && body.message) msg = body.message
+					} catch (e) {}
+					reject(new Error(msg))
+					return
+				}
+				resolve()
+			},
+			fail: error => {
+				reject(new Error(error?.errMsg || '网络错误'))
+			}
+		})
+	})
+}
+
 // 请求非流式 AI 对话接口，一次性返回完整答案。
 export function requestAiChat(messages = [], options = {}) {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
 	}
 
@@ -302,7 +342,7 @@ export function stopAiVoice() {
 
 // 调用 TTS 接口并播放 AI 生成的语音结果。
 export function playAiVoice(text, onPlay) {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
 	}
 
@@ -310,6 +350,7 @@ export function playAiVoice(text, onPlay) {
 		uni.request({
 			url: `${BASE_URL}/api/ai/tts/speak`,
 			method: 'POST',
+			header: { 'Content-Type': 'application/json' },
 			responseType: 'arraybuffer',
 			timeout: 60000,
 			data: {
@@ -401,7 +442,7 @@ export function playAiVoice(text, onPlay) {
 
 // 上传录音文件并调用语音识别接口返回文本结果。
 export function uploadVoiceAndTranscribe(filePath) {
-	if (!BASE_URL) {
+	if (!getApiBase()) {
 		return Promise.reject(new Error('未配置后端地址，请检查 api/config.js'))
 	}
 

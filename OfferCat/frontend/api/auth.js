@@ -24,15 +24,30 @@ export function register(payload) {
 
 export function login(payload) {
 	// 后端 LoginRequest 用 target 字段统一接收手机号或邮箱
+	const targetRaw = payload.target || payload.phone || payload.email || ''
+	const pwdRaw = payload.password
 	const data = {
 		loginType: payload.loginType,
-		target: payload.target || payload.phone || payload.email || '',
-		password: payload.password,
-		code: payload.code
+		target: typeof targetRaw === 'string' ? targetRaw.trim() : targetRaw,
+		password: pwdRaw == null ? '' : String(pwdRaw).trim(),
+		code: payload.code == null ? '' : String(payload.code).trim()
 	}
 	return request({
 		url: '/auth/login',
 		method: 'POST',
 		data
+	})
+}
+
+export function findPassword(payload) {
+	return request({
+		url: '/auth/find-password',
+		method: 'POST',
+		data: {
+			phone: payload.phone,
+			code: payload.code,
+			password: payload.password,
+			confirmPassword: payload.confirmPassword
+		}
 	})
 }

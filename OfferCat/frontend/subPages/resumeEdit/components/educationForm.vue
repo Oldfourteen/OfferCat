@@ -11,11 +11,13 @@
 			<view class="form-item">
 				<view class="item-label"><text class="required">*</text>学历/学位</view>
 				<view class="item-content">
-					<picker class="form-picker" @change="bindDegreeChange" :range="degreeRange">
-						<view :class="{'placeholder': !formData.degree}">
-							{{ formData.degree || '请选择学历/学位' }}
+					<picker @change="bindDegreeChange" :range="degreeRange">
+						<view class="form-picker">
+							<view :class="{'placeholder': !formData.degree}">
+								{{ formData.degree || '请选择学历/学位' }}
+							</view>
+							<text class="form-chevron">›</text>
 						</view>
-						<uni-icons type="right" size="16" color="#9ca3af"></uni-icons>
 					</picker>
 				</view>
 			</view>
@@ -203,6 +205,13 @@
 						.placeholder {
 							color: #9ca3af;
 						}
+
+						.form-chevron {
+							font-size: 22px;
+							line-height: 1;
+							color: #9ca3af;
+							flex-shrink: 0;
+						}
 					}
 				}
 
@@ -245,6 +254,10 @@
 						}
 
 						.form-picker .placeholder {
+							color: rgba(255, 255, 255, 0.38);
+						}
+
+						.form-picker .form-chevron {
 							color: rgba(255, 255, 255, 0.38);
 						}
 

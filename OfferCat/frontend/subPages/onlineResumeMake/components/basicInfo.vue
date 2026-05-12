@@ -10,7 +10,7 @@
 					<text class="btn-text">编辑</text>
 				</view>
 			</view>
-			
+
 			<view class="user-details">
 				<view class="info-row">
 					<text class="info-item">{{ gender || '性别未选' }}</text>
@@ -18,6 +18,19 @@
 					<text class="info-item">{{ phone || '手机号未填写' }}</text>
 				</view>
 			</view>
+
+			<view v-if="jobIntention" class="job-intention-row">
+				<text class="job-intention-label">求职意向：</text>
+				<text class="job-intention-value">{{ jobIntention }}</text>
+			</view>
+
+			<view v-if="certificateLines.length > 0" class="certificates-section">
+				<text class="certificates-label">证书：</text>
+				<view class="certificates-list">
+					<text v-for="(line, index) in certificateLines" :key="index" class="cert-line">{{ line }}</text>
+				</view>
+			</view>
+
 			<view class="divider"></view>
 		</view>
 	</view>
@@ -42,6 +55,20 @@
 			email: {
 				type: String,
 				default: '未填写邮箱'
+			},
+			jobIntention: {
+				type: String,
+				default: ''
+			},
+			certificates: {
+				type: Array,
+				default: () => []
+			}
+		},
+		computed: {
+			certificateLines() {
+				const list = Array.isArray(this.certificates) ? this.certificates : []
+				return list.map(c => (c && String(c.name || '').trim()) || '').filter(Boolean)
 			}
 		},
 		methods: {
@@ -50,7 +77,9 @@
 					name: this.name,
 					gender: this.gender,
 					phone: this.phone,
-					email: this.email
+					email: this.email,
+					jobIntention: this.jobIntention,
+					certificates: this.certificates
 				}))
 				uni.navigateTo({
 					url: `/subPages/resumeEdit/editContainer?type=basicInfo&initial=${initial}`
@@ -118,6 +147,46 @@
 						color: #ccc;
 						font-size: 12px;
 					}
+				}
+			}
+
+			.job-intention-row {
+				margin-bottom: 12px;
+				display: flex;
+				align-items: center;
+
+				.job-intention-label {
+					font-size: 14px;
+					color: #666;
+				}
+
+				.job-intention-value {
+					font-size: 14px;
+					color: #1677ff;
+					font-weight: 500;
+				}
+			}
+
+			.certificates-section {
+				margin-bottom: 12px;
+
+				.certificates-label {
+					font-size: 14px;
+					color: #666;
+					display: block;
+					margin-bottom: 8px;
+				}
+
+				.certificates-list {
+					display: flex;
+					flex-direction: column;
+					gap: 4px;
+				}
+
+				.cert-line {
+					font-size: 14px;
+					color: #374151;
+					line-height: 1.5;
 				}
 			}
 

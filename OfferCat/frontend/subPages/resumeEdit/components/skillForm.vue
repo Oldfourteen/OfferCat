@@ -26,7 +26,7 @@
 				<view class="skill-item" v-for="(item, index) in skills" :key="item.id">
 					<!-- 最左侧：删除按钮（透明背景，独立） -->
 					<view class="delete-btn" @click="removeSkill(index)">
-						<uni-icons type="minus" size="18" color="#6b7280"></uni-icons>
+						<text class="icon-minus">−</text>
 					</view>
 					
 					<!-- 中间统一的带阴影胶囊容器 -->
@@ -42,7 +42,7 @@
 						<!-- 熟练度区块 -->
 						<view class="proficiency-wrap" @click="openProficiencyPopup(index)">
 							<text :style="getProficiencyTextStyle(item.proficiency)">{{ getProficiencyText(item.proficiency) }}</text>
-							<uni-icons type="right" size="14" color="#9ca3af"></uni-icons>
+							<text class="chevron-sm">›</text>
 						</view>
 					</view>
 
@@ -67,13 +67,10 @@
 						:class="{ active: skills[editingIndex] && skills[editingIndex].proficiency === opt.value }"
 					>
 						<text>{{ opt.text }}</text>
-						<uni-icons 
-							v-if="skills[editingIndex] && skills[editingIndex].proficiency === opt.value" 
-							type="checkmarkempty" 
-							size="18" 
-							color="#1677ff" 
-							class="check-icon"
-						></uni-icons>
+						<text
+							v-if="skills[editingIndex] && skills[editingIndex].proficiency === opt.value"
+							class="check-icon check-mark"
+						>✓</text>
 					</view>
 				</view>
 			</view>
@@ -330,6 +327,13 @@
 						margin-right: 12px;
 						background: transparent;
 						flex-shrink: 0;
+
+						.icon-minus {
+							font-size: 18px;
+							line-height: 1;
+							color: #6b7280;
+							font-weight: 400;
+						}
 						
 						&:active {
 							background: #f3f4f6;
@@ -379,6 +383,13 @@
 							text {
 								font-size: 15px;
 								color: #374151;
+							}
+
+							.chevron-sm {
+								font-size: 16px;
+								line-height: 1;
+								color: #9ca3af;
+								flex-shrink: 0;
 							}
 							
 							&:active {
@@ -444,11 +455,15 @@
 							font-weight: bold;
 						}
 						
-						.check-icon {
+						.check-icon.check-mark {
 							position: absolute;
 							right: 24px;
 							top: 50%;
 							transform: translateY(-50%);
+							font-size: 18px;
+							line-height: 1;
+							color: #1677ff;
+							font-weight: 700;
 						}
 					}
 				}
@@ -507,6 +522,10 @@
 							.proficiency-wrap {
 								text {
 									color: #f4f7fb;
+								}
+
+								.chevron-sm {
+									color: rgba(255, 255, 255, 0.38);
 								}
 								
 								&:active {

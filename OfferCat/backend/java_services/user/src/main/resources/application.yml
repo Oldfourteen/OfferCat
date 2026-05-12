@@ -21,6 +21,9 @@ spring:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.offercat.user.entity
+  configuration:
+    # 确保 user_id -> userId 等字段映射正确，避免查出的实体主键/密码为空导致登录异常
+    map-underscore-to-camel-case: true
 
 seata:
   enabled: true
@@ -36,12 +39,17 @@ seata:
   registry:
     type: file
 
-# 短信宝配置
+# 短信宝配置（文档：GET /sms，p=MD5「登录密码」）
 smsbao:
-  username: ofteen  # 填写您的短信宝账号
-  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
+  username: ofteen  # 短信宝注册用户名（u）
+  # 以下为登录密码明文；代码中会 MD5 一次作为 p（若填的是控制台里已有的 32 位 MD5，会被二次 MD5 导致报错 30）
+  api-key: 18ff51b7ba4f49babab617382aec8b66
   api-url: http://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
-  sign: "【求职猫】"
+  # 须与后台「已通过审核」的验证码模版签名部分一致（你当前截图模版为【Offer猫服务】，且状态为已驳回时需改签名并重新过审）
+  sign: "【Offer猫服务】"
+  # 对应模版变量 {user_name} / {time}；time 请与下面 CODE_EXPIRE 一致（当前验证码缓存为 5 分钟）
+  verification-user-default: "用户"
+  verification-validity: "5分钟"
 
 # Eureka Client 配置
 eureka:

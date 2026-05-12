@@ -11,15 +11,11 @@ import com.offercat.user.infrastructure.service.SmsService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
-import org.springframework.util.LinkedMultiValueMap;
-import org.springframework.util.MultiValueMap;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
-import java.net.URLEncoder;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
@@ -43,37 +39,39 @@ public class SmsServiceImplement implements SmsService {
     @Value("${smsbao.sign}")
     private String sign;
 
+    /** 对应短信宝模版中的 {user_name}；验证码场景暂无昵称时使用默认称呼 */
+    @Value("${smsbao.verification-user-default:用户}")
+    private String verificationUserDefault;
+
+    /** 对应模版中的 {time}，应与 AuthServiceImplement 验证码 Redis TTL 文案一致 */
+    @Value("${smsbao.verification-validity:5分钟}")
+    private String verificationValidity;
+
     @Override
     public boolean sendSms(String phone, String code) {
         try {
-            // 1. 准备短信内容 (签名无需备案即可发送，报备后速度更快)
-            String content = sign + "您的验证码是" + code + "，30秒内有效。如非本人操作请忽略此消息";
+            // 与报备模版一致：【签名】亲爱的{user_name}，您的验证码是{code}。有效期为{time}，请尽快验证
+            String content = sign + "亲爱的" + verificationUserDefault + "，您的验证码是" + code
+                    + "。有效期为" + verificationValidity + "，请尽快验证";
 
             log.info("正在向短信宝请求发送短信: target={}, content={}", phone, content);
 
-            // 2. 构建 POST 请求参数
-            // 短信宝 API 参数说明：
-            // u: 用户名（短信宝账号）
-            // p: 密码的 MD5 值（32位小写）
-            // m: 目标手机号（多个手机号用英文逗号分隔）
-            // c: 短信内容（需要 URL 编码）
-            MultiValueMap<String, String> params = new LinkedMultiValueMap<>();
-            params.add("u", username);
-            params.add("p", md5(apiKey)); // 短信宝密码需要 MD5 加密
-            params.add("m", phone);
-            params.add("c", URLEncoder.encode(content, StandardCharsets.UTF_8));
+            // 2. 官方文档示例为 GET（非 POST）：http://api.smsbao.com/sms?u=...&p=...&m=...&c=...(urlencode)
+            // URL 仅用 queryParam 编码一次即可，避免出现「手动 encode + Form 编码器」的双重编码。
+            String passMd5 = md5(apiKey);
+            URI uri = UriComponentsBuilder.fromHttpUrl(apiUrl)
+                    .queryParam("u", username)
+                    .queryParam("p", passMd5)
+                    .queryParam("m", phone)
+                    .queryParam("c", content)
+                    .encode(StandardCharsets.UTF_8)
+                    .build()
+                    .toUri();
 
-            // 3. 设置请求头
-            HttpHeaders headers = new HttpHeaders();
-            headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+            // 3. 执行 GET
+            String result = restTemplate.getForObject(uri, String.class);
 
-            // 4. 构建请求实体
-            HttpEntity<MultiValueMap<String, String>> request = new HttpEntity<>(params, headers);
-
-            // 5. 执行 POST 请求
-            String result = restTemplate.postForObject(apiUrl, request, String.class);
-
-            // 6. 解析响应结果
+            // 4. 解析响应结果
             // 0: 成功, 其他均为失败
             // 注意：短信宝返回的成功状态可能是带回车的 "0\n" 或者其他空格，所以用 trim().equals("0") 更稳妥
             if (result != null && "0".equals(result.trim())) {
@@ -123,7 +121,9 @@ public class SmsServiceImplement implements SmsService {
      */
     private String getSmsBaoError(String code) {
         return switch (code) {
-            case "30" -> "密码错误 (API Key 填写有误)";
+            case "-1" -> "参数不全或未按 GET 拼接 URL（常见原因是旧版用 POST）";
+            case "-2" -> "服务器不支持或网络不可用";
+            case "30" -> "密码错误：p 应为「登录密码」一次 MD5，勿将已是 MD5 的串再哈希";
             case "40" -> "账号不存在";
             case "41" -> "余额不足";
             case "42" -> "帐号过期";

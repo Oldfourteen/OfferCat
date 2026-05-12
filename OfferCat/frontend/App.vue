@@ -2,6 +2,10 @@
 	import { applyTheme, initThemeObserver } from '@/utils/theme.js'
 
 	export default {
+		globalData: {
+			// 留空则使用 api/config.js 中的默认网关。真机连本机后端时请填电脑局域网 IP + 网关端口，勿用 127.0.0.1。
+			apiBase: '',
+		},
 		onLaunch: function() {
 			initThemeObserver()
 			applyTheme()

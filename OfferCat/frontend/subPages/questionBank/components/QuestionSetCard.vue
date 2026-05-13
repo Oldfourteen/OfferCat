@@ -1,5 +1,5 @@
 <template>
-	<view class="set-card" :class="themeClass" @click="$emit('select', item)">
+	<view class="set-card" :class="[themeClass, cardTypeClass]" @click="$emit('select', item)">
 		<view class="company-badge">{{ item.companyShort }}</view>
 		<view class="set-main">
 			<view class="set-title-row">
@@ -29,6 +29,9 @@
 		computed: {
 			themeClass() {
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			cardTypeClass() {
+				return this.item && this.item.type === 'interview' ? 'type-interview' : 'type-written'
 			}
 		}
 	}
@@ -56,6 +59,12 @@
 		font-size: 28rpx;
 		font-weight: 800;
 		color: #2a5fc2;
+	}
+
+	.set-card.type-interview .company-badge {
+		background: linear-gradient(135deg, #ffffff, rgba(100, 232, 208, 0.16));
+		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		color: #157e70;
 	}
 
 	.set-main {
@@ -112,6 +121,12 @@
 		background: linear-gradient(135deg, #23252b, #2c2f37);
 		box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.06);
 		color: #8ab7ff;
+	}
+
+	.set-card.theme-dark.type-interview .company-badge {
+		background: linear-gradient(135deg, rgba(35, 37, 43, 0.96), rgba(100, 232, 208, 0.16));
+		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		color: #45f9de;
 	}
 
 	.set-card.theme-dark .set-title {

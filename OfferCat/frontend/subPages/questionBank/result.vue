@@ -3,7 +3,9 @@
 	<view class="result-page" :class="themeClass" v-if="result">
 		<!-- 顶部导航栏 -->
 		<view class="result-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<text class="back-btn" @click="goBack">
+				<view class="svg-icon back-icon"></view>
+			</text>
 			<text class="topbar-title">评分结果</text>
 			<text class="placeholder"></text>
 		</view>
@@ -157,6 +159,14 @@
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
 		background: rgba(255, 255, 255, 0.86);
 		backdrop-filter: blur(10rpx);
+	}
+
+	.back-icon {
+		width: 44rpx;
+		height: 44rpx;
+		background-color: #314658;
+		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
+		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
 	}
 
 	.back-btn,

@@ -1,5 +1,5 @@
 <template>
-	<view class="bank-page" :class="themeClass">
+	<view class="bank-page" :class="[themeClass, pageTypeClass]">
 		<BankTopBar
 			:theme="theme"
 			:tabs="tabs"
@@ -124,6 +124,9 @@
 			themeClass() {
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
+			pageTypeClass() {
+				return this.pageType === 'interview' ? 'page-interview' : 'page-written'
+			},
 			historyDescription() {
 				const count = this.historySummary.count || 0
 				const latest = this.historySummary.latest
@@ -163,6 +166,7 @@
 			formatSetItem(item) {
 				return {
 					...item,
+					type: this.pageType,
 					isFavorite: this.favoriteSummary.ids.includes(item.id)
 				}
 			},
@@ -203,6 +207,10 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
+		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 16%, #f7f8fb 100%);
+	}
+
+	.bank-page.page-interview {
 		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 16%, #f7f8fb 100%);
 	}
 

@@ -3,7 +3,9 @@
 	<view class="exercise-page" :class="themeClass">
 		<!-- 顶部导航栏：返回 + 标题 + 答题进度 -->
 		<view class="exercise-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<text class="back-btn" @click="goBack">
+				<view class="svg-icon back-icon"></view>
+			</text>
 			<text class="topbar-title">在线练习</text>
 			<view class="progress-btn">已答 {{ answeredCount }}/{{ totalCount }}</view>
 		</view>
@@ -201,6 +203,14 @@
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
 		background: rgba(252, 252, 252, 0.8);
 		backdrop-filter: blur(10rpx);
+	}
+	
+	.back-icon {
+		width: 44rpx;
+		height: 44rpx;
+		background-color: #314658;
+		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
+		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
 	}
 
 	.back-btn,
@@ -437,4 +447,5 @@
 		background: rgba(255, 255, 255, 0.08);
 		color: #8ab7ff;
 	}
+
 </style>

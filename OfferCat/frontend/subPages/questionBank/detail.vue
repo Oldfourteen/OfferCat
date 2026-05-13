@@ -3,7 +3,9 @@
 	<view class="detail-page" :class="themeClass">
 		<!-- 顶部导航栏：返回 + 标题 + 收藏 -->
 		<view class="detail-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<text class="back-btn" @click="goBack">
+				<view class="svg-icon back-icon"></view>
+			</text>
 			<text class="detail-topbar-title">题单详情</text>
 			<text class="favorite-btn" :class="{ active: isFavorite }" @click="toggleFavorite">{{ isFavorite ? '已藏' : '收藏' }}</text>
 		</view>
@@ -148,6 +150,14 @@
 		display: flex;
 		flex-direction: column;
 		background: linear-gradient(180deg, #3165D7 0%, #f6fbff 18%, #f7f8fb 100%);
+	}
+
+	.back-icon {
+		width: 44rpx;
+		height: 44rpx;
+		background-color: #314658;
+		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
+		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
 	}
 
 	.detail-topbar {

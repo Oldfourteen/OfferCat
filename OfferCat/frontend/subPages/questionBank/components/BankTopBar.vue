@@ -14,11 +14,11 @@
 					:value="modelValue"
 					@input="onInput"
 				/>
-			</view>
-			<view class="search-actions">
-				<view class="action-btn" @click="$emit('clear')">
+				<view class="action-btn1" @click="$emit('clear')">
 					<view class="svg-icon clear-icon"></view>
 				</view>
+			</view>
+			<view class="search-actions">
 				<view class="action-btn" @click="$emit('refresh')">
 					<view class="svg-icon refresh-icon"></view>
 				</view>
@@ -31,7 +31,7 @@
 					v-for="item in tabs"
 					:key="item.key"
 					class="bank-tab"
-					:class="{ active: item.key === active }"
+					:class="[{ active: item.key === active }, item.key === 'interview' ? 'interview-tab' : 'written-tab']"
 					@click="$emit('change-tab', item.key)"
 				>
 					<view class="svg-icon tab-icon" :class="item.icon"></view>
@@ -76,7 +76,29 @@
 		},
 		methods: {
 			goBack() {
-				uni.navigateBack()
+				const fallbackToHome = () => {
+					uni.switchTab({
+						url: '/pages/index/index',
+						fail: () => {
+							uni.reLaunch({
+								url: '/pages/index/index'
+							})
+						}
+					})
+				}
+
+				const pages = getCurrentPages()
+				if (pages.length > 1) {
+					uni.navigateBack({
+						delta: 1,
+						fail: () => {
+							fallbackToHome()
+						}
+					})
+					return
+				}
+
+				fallbackToHome()
 			},
 			onInput(event) {
 				this.$emit('update:modelValue', event.detail.value)
@@ -148,6 +170,15 @@
 		justify-content: center;
 		box-shadow: 0 12rpx 24rpx rgba(20, 120, 115, 0.08);
 	}
+	
+	.action-btn1 {
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 22rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
 
 	.tab-scroll {
 		margin-top: 18rpx;
@@ -173,6 +204,10 @@
 		box-shadow: inset 0 0 0 2rpx rgba(49, 101, 215, 0.5);
 	}
 
+	.bank-tab.interview-tab.active {
+		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+	}
+
 	.tab-label {
 		margin-left: 10rpx;
 		font-size: 26rpx;
@@ -182,6 +217,10 @@
 
 	.bank-tab.active .tab-label {
 		color: rgba(0, 122, 252, 0.7);
+	}
+
+	.bank-tab.interview-tab.active .tab-label {
+		color: #18bca6;
 	}
 
 	/* SVG Icon Styles */
@@ -237,6 +276,10 @@
 		background-color: rgba(0, 122, 252, 0.7);
 	}
 
+	.bank-tab.interview-tab.active .tab-icon {
+		background-color: #18bca6;
+	}
+
 	.written-icon {
 		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAyMGg5Ij48L3BhdGg+PHBhdGggZD0iTTE2LjUgMy41YTIuMTIxIDIuMTIxIDAgMCAxIDMgM0w3IDE5bC00IDEgMS00TDE2LjUgMy41eiI+PC9wYXRoPjwvc3ZnPg==");
 		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciPjxwYXRoIGQ9Ik0xMiAyMGg5Ij48L3BhdGg+PHBhdGggZD0iTTE2LjUgMy41YTIuMTIxIDIuMTIxIDAgMCAxIDMgM0w3IDE5bC00IDEgMS00TDE2LjUgMy41eiI+PC9wYXRoPjwvc3ZnPg==");
@@ -284,11 +327,23 @@
 		box-shadow: inset 0 0 0 2rpx rgba(138, 183, 255, 0.5);
 	}
 
+	.bank-topbar.theme-dark .bank-tab.interview-tab.active {
+		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+	}
+
 	.bank-topbar.theme-dark .bank-tab.active .tab-label {
 		color: #8ab7ff;
 	}
 
+	.bank-topbar.theme-dark .bank-tab.interview-tab.active .tab-label {
+		color: #45f9de;
+	}
+
 	.bank-topbar.theme-dark .bank-tab.active .tab-icon {
 		background-color: #8ab7ff;
+	}
+
+	.bank-topbar.theme-dark .bank-tab.interview-tab.active .tab-icon {
+		background-color: #45f9de;
 	}
 </style>

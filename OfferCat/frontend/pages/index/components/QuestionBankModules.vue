@@ -19,7 +19,7 @@
 			>
 				<view class="module-copy">
 					<view class="module-icon" :class="item.iconClass">
-					<image v-if="item.svgIcon" :src="item.svgIcon" class="module-svg-icon" mode="aspectFit" />
+					<image v-if="item.svgIcon" :src="item.svgIcon" class="module-svg-icon" :class="{ 'module-svg-icon-interview': item.key === 'interview' }" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
 				</view>
 					<text class="module-title">{{ item.title }}</text>
@@ -142,7 +142,7 @@
 	}
 
 	.module-card.is-interview {
-		background: linear-gradient(135deg, rgba(255, 172, 77, 0.16) 0%, rgba(255, 255, 255, 0.96) 70%);
+		background: linear-gradient(135deg, rgba(100, 232, 208, 0.18) 0%, rgba(255, 255, 255, 0.96) 70%);
 	}
 
 	.module-copy {
@@ -167,14 +167,18 @@
 			height: 44rpx;
 		}
 
+		.module-svg-icon-interview {
+			filter: hue-rotate(128deg) saturate(1.15) brightness(0.88);
+		}
+
 	.icon-written {
 		background: rgba(34, 153, 232, 0.14);
 		color: #1d83d2;
 	}
 
 	.icon-interview {
-		background: rgba(255, 172, 77, 0.18);
-		color: #d2822a;
+		background: rgba(100, 232, 208, 0.18);
+		color: rgba(95, 220, 197, 1.0);
 	}
 
 	.module-title,

@@ -76,10 +76,8 @@ public class AuthServiceImplement implements AuthService {
             return ResponseResult.error("两次输入的密码不一致");
         }
 
-        // 校验验证码
-        String key = CODE_PREFIX + request.getPhone();
-        String cachedCode = redisTemplate.opsForValue().get(key);
-        if (cachedCode == null || !cachedCode.equals(request.getCode())) {
+        // 校验验证码（与注册、验证码登录一致：阿里云 CheckSmsVerifyCode）
+        if (!smsVerificationService.verifyCode(request.getPhone(), request.getCode())) {
             return ResponseResult.error("验证码错误或已过期");
         }
 
@@ -91,9 +89,6 @@ public class AuthServiceImplement implements AuthService {
 
         // 更新密码
         userMapper.updatePassword(user.getUserId(), passwordEncoder.encode(request.getNewPassword()));
-
-        // 修改成功后清理验证码
-        redisTemplate.delete(key);
 
         return ResponseResult.success();
     }

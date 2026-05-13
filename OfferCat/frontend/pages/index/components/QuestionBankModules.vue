@@ -8,6 +8,23 @@
 			</view>
 		</view>
 
+		<!-- 二类题库方块入口（与下方长条对应，均在题库专区内） -->
+		<view class="type-tile-row">
+			<view
+				v-for="item in modules"
+				:key="'tile-' + item.key"
+				class="type-tile-wrap"
+				@click.stop="goModule(item)"
+			>
+				<QuestionBankTypeGauge
+					:theme="theme"
+					:tone="item.key === 'interview' ? 'interview' : 'written'"
+					:accuracy-percent="item.key === 'interview' ? interviewAccuracy : writtenAccuracy"
+					:category-label="item.shortLabel"
+				/>
+			</view>
+		</view>
+
 		<view class="module-list">
 			<!-- 模块列表根据配置项渲染题库入口卡片。 -->
 			<view
@@ -19,9 +36,15 @@
 			>
 				<view class="module-copy">
 					<view class="module-icon" :class="item.iconClass">
-					<image v-if="item.svgIcon" :src="item.svgIcon" class="module-svg-icon" :class="{ 'module-svg-icon-interview': item.key === 'interview' }" mode="aspectFit" />
-					<text v-else>{{ item.icon }}</text>
-				</view>
+						<image
+							v-if="item.svgIcon"
+							:src="item.svgIcon"
+							class="module-svg-icon"
+							:class="{ 'module-svg-icon-interview': item.key === 'interview' }"
+							mode="aspectFit"
+						/>
+						<text v-else>{{ item.icon }}</text>
+					</view>
 					<text class="module-title">{{ item.title }}</text>
 					<text class="module-desc">{{ item.desc }}</text>
 					<view class="module-meta-chip">
@@ -36,12 +59,23 @@
 </template>
 
 <script>
+	import QuestionBankTypeGauge from './QuestionBankTypeGauge.vue'
+	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
+	import { cumulativeAccuracyPercentForKind } from '@/utils/growthTrendScore.js'
+
 	export default {
 		name: 'QuestionBankModules',
+		components: {
+			QuestionBankTypeGauge
+		},
 		props: {
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			refreshSeed: {
+				type: Number,
+				default: 0
 			}
 		},
 		computed: {
@@ -50,12 +84,37 @@
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
+		watch: {
+			refreshSeed() {
+				this.refreshPracticeScores()
+			}
+		},
+		mounted() {
+			this.refreshPracticeScores()
+			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+				uni.$on(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+			}
+		},
+		beforeDestroy() {
+			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+			}
+		},
+		beforeUnmount() {
+			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+			}
+		},
 		data() {
 			return {
+				writtenAccuracy: null,
+				interviewAccuracy: null,
 				// 两类题库入口的静态配置，包含标题、文案和跳转地址。
 				modules: [
 					{
 						key: 'written',
+						shortLabel: '笔试题',
+						shortIcon: '笔',
 						title: '笔试真题',
 						desc: '聚合近年校招与实习笔试套题，按公司筛选',
 						meta: '36 套真题 · 热门公司持续更新',
@@ -66,6 +125,8 @@
 					},
 					{
 						key: 'interview',
+						shortLabel: '面试题',
+						shortIcon: '面',
 						title: '面试真题',
 						desc: '高频岗位问法拆解，边练边复盘表达逻辑',
 						meta: '28 组题单 · 含技术与综合面',
@@ -79,6 +140,11 @@
 			}
 		},
 		methods: {
+			refreshPracticeScores() {
+				const history = getQuestionHistory()
+				this.writtenAccuracy = cumulativeAccuracyPercentForKind(history, 'written')
+				this.interviewAccuracy = cumulativeAccuracyPercentForKind(history, 'interview')
+			},
 			goModule(item) {
 				// 按配置跳转到对应题库子页面。
 				uni.navigateTo({
@@ -123,8 +189,25 @@
 		color: #7b88a3;
 	}
 
+	.type-tile-row {
+		display: flex;
+		flex-direction: row;
+		gap: 16rpx;
+		margin-top: 22rpx;
+	}
+
+	.type-tile-wrap {
+		flex: 1;
+		min-width: 0;
+		transition: opacity 0.15s ease;
+	}
+
+	.type-tile-wrap:active {
+		opacity: 0.93;
+	}
+
 	.module-list {
-		margin-top: 24rpx;
+		margin-top: 18rpx;
 		display: flex;
 		flex-direction: column;
 		gap: 18rpx;

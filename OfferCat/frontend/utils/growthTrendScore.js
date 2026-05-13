@@ -33,14 +33,16 @@ export function getRadarTop5Average(radarData) {
 
 /**
  * 聚合时间窗 [startMs, endMs] 内做题记录（按作答题目数加权，而非按场次）。
+ * @param practiceType 可选：`written` | `interview`，与 questionHistory 归一化后的 type 一致。
  */
-export function aggregateQuestionAttempts(history, startMs, endMs) {
+export function aggregateQuestionAttempts(history, startMs, endMs, practiceType = null) {
 	let correct = 0
 	let attempted = 0
 	if (!Array.isArray(history)) return { correct, attempted }
 	const lo = Number(startMs)
 	const hi = Number(endMs)
 	for (const item of history) {
+		if (practiceType && item.type !== practiceType) continue
 		const ts = Number(item.timestamp)
 		if (!Number.isFinite(ts) || ts < lo || ts > hi) continue
 		const ac = Number(item.correctCount) || 0
@@ -66,6 +68,13 @@ export function comprehensiveAbility(basis1, basis2) {
 	const raw = 0.5 * basis1 + 0.5 * b2
 	const clamped = Math.min(100, Math.max(50, raw))
 	return Math.round(clamped * 10) / 10
+}
+
+/** 单类题库累加正确率（0～100%，保留一位小数），无作答返回 null */
+export function cumulativeAccuracyPercentForKind(history, practiceType) {
+	const { correct, attempted } = aggregateQuestionAttempts(history, 0, Date.now(), practiceType)
+	if (!attempted) return null
+	return Math.round((correct / attempted) * 1000) / 10
 }
 
 function startOfDayMs(d) {

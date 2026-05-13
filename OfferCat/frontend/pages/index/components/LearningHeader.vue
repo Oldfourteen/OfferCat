@@ -37,13 +37,15 @@
 				<text class="learning-grade">{{ profile.grade }}</text>
 				<text class="learning-major">{{ profile.major }}</text>
 			</view>
-			<text class="header-subtitle">记录每一次练习、复盘和能力增长，持续看到自己的进步轨迹。</text>
+			<text class="header-subtitle">{{ headerSubtitleQuote }}</text>
 		</view>
 	</view>
 </template>
 
 <script>
 	import { getUserProfile, USER_PROFILE_UPDATED_EVENT, DEFAULT_AVATAR } from '@/utils/userProfile.js'
+	import { getUser } from '@/utils/user.js'
+	import { getHeaderInspirationalQuote } from '@/utils/headerInspirationalQuotes.js'
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 	import { setTheme } from '@/utils/theme.js'
 
@@ -78,7 +80,8 @@
 				// 主题切换 toast 的显示状态、文案和定时器句柄。
 				toastVisible: false,
 				toastMessage: '',
-				toastTimer: null
+				toastTimer: null,
+				quoteUserKey: 'guest'
 			}
 		},
 		created() {
@@ -127,6 +130,9 @@
 					maxHeight: `${160 - progress * 160}rpx`,
 					marginTop: `${26 - progress * 26}rpx`
 				}
+			},
+			headerSubtitleQuote() {
+				return getHeaderInspirationalQuote(this.quoteUserKey)
 			}
 		},
 		methods: {
@@ -156,6 +162,8 @@
 					grade: profile.grade,
 					major: profile.major
 				}
+				const u = getUser() || {}
+				this.quoteUserKey = String(u.userId || u.id || u.phone || profile.nickname || 'guest')
 			},
 			goMy() {
 				// 头像入口跳转到底部 tab 的“我的”页面。
@@ -187,7 +195,12 @@
 		right: 0;
 		z-index: 20;
 		padding: calc(var(--status-bar-height) + 20rpx) 30rpx 22rpx;
-		background: linear-gradient(180deg, rgba(0, 122, 252, 0.85) 0%, rgba(0, 122, 252, 0) 100%);
+		background: linear-gradient(
+			180deg,
+			rgba(100, 118, 193, 0.8) 0%,
+			rgba(42, 128, 255, 0.4) 40%,
+			rgba(56, 189, 248, 0) 100%
+		);
 		backdrop-filter: blur(10rpx);
 	}
 

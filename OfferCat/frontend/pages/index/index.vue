@@ -47,11 +47,23 @@
 		methods: {
 			handleZoneScroll(event) {
 				// 根据滚动距离计算折叠进度，驱动头部透明度和高度变化。
-				const scrollTop = event && event.detail && event.detail.scrollTop ? event.detail.scrollTop : 0
+				const detail = event && event.detail ? event.detail : {}
+				const scrollTop = typeof detail.scrollTop === 'number' ? detail.scrollTop : 0
 				const start = 24
 				const distance = 120
-				const progress = (scrollTop - start) / distance
-				this.headerCollapseProgress = Math.max(0, Math.min(progress, 1))
+				let progress = (scrollTop - start) / distance
+				progress = Math.max(0, Math.min(progress, 1))
+
+				const prev = this.headerCollapseProgress
+				// 临近完全收起时拉住进度，避免触底弹性让 scrollTop 小幅回落导致头部与占位块来回抽动。
+				if (prev >= 0.92 && progress >= 0.55) {
+					progress = 1
+				}
+				if (prev <= 0.08 && progress <= 0.45) {
+					progress = 0
+				}
+
+				this.headerCollapseProgress = progress
 			}
 		}
 	}
@@ -85,7 +97,7 @@
 
 	.header-spacer {
 		flex-shrink: 0;
-		transition: height 0.22s ease;
+		/* 高度必须与滚动进度同步变化：若加 transition，会与 scroll-view 布局争抢并在触底回弹时出现整块内容上抖。 */
 	}
 
 	.job-page.theme-dark {

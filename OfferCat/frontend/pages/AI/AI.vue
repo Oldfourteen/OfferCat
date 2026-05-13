@@ -194,6 +194,7 @@
 			isLocked() {
 				return this.isInterviewMode && !this.interviewEnded
 			},
+			// 当前会话是否为从服务端拉取的「云端历史记录」（仅此会话展示「保留对话」开关）
 			isCloudHistoryConversation() {
 				return this.currentConversation && this.currentConversation.title === '云端历史记录'
 			}
@@ -315,6 +316,7 @@
 						}
 
 						const messages = []
+						// 每条 ai_consult 拆成用户气泡与 AI 气泡，并挂上 consultId、retained 供「保留对话」使用
 						// 后端返回是 create_time DESC，我们需要 ASC
 						const reversed = [...historyData].reverse()
 						reversed.forEach((item, index) => {
@@ -377,6 +379,7 @@
 					console.error('拉取云端历史失败', e)
 				}
 			},
+			// 用户切换「保留对话」：先乐观更新本地消息，再调用后端；失败则回滚并 Toast
 			async onConsultRetainChange({ consultId, retained }) {
 				if (consultId == null) return
 				const prev = !retained
@@ -392,6 +395,7 @@
 					})
 				}
 			},
+			// 将指定 consultId 在用户/助手成对消息上的 retained 标记同步为同一布尔值（仅改云端历史会话）
 			applyConsultRetainedFlag(consultId, retained) {
 				const cloud = this.conversations.find(c => c.title === '云端历史记录')
 				if (!cloud || !cloud.messages) return

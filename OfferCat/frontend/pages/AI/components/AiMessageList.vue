@@ -120,6 +120,7 @@
 			}
 		},
 		methods: {
+			// 开关切换仅上报 consultId 与目标 retained，由父页面调用接口并处理失败回滚
 			onRetainSwitch(item, e) {
 				const retained = !!(e.detail && e.detail.value)
 				this.$emit('retain-change', { consultId: item.consultId, retained })

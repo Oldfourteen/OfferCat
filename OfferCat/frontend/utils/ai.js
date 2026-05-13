@@ -1,4 +1,5 @@
 import { BASE_URL, getApiBase } from '@/api/config'
+import { formatHttpErrorMessage } from '@/api/request'
 
 // 获取当前缓存中的用户信息，用于补齐 AI 接口的上下文参数。
 function getStoredUser() {
@@ -45,7 +46,11 @@ export function uploadAiChatImage(filePath) {
 			timeout: 60000,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
-					reject(new Error(`图片上传失败（${res.statusCode}）`))
+					reject(
+						new Error(
+							formatHttpErrorMessage(res.statusCode, `图片上传失败（HTTP ${res.statusCode}）`),
+						),
+					)
 					return
 				}
 				try {
@@ -100,7 +105,11 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 			enableChunked: true,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
-					onError(new Error(`AI 接口请求失败（${res.statusCode}）`))
+					onError(
+						new Error(
+							formatHttpErrorMessage(res.statusCode, `AI 接口请求失败（HTTP ${res.statusCode}）`),
+						),
+					)
 					return
 				}
 				if (fullText.length === 0 && res.data) {
@@ -213,7 +222,11 @@ export function requestAiHistory() {
 			timeout: 15000,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
-					reject(new Error(`获取历史失败（${res.statusCode}）`))
+					reject(
+						new Error(
+							formatHttpErrorMessage(res.statusCode, `获取历史失败（HTTP ${res.statusCode}）`),
+						),
+					)
 					return
 				}
 				resolve(res.data)
@@ -248,12 +261,12 @@ export function setAiConsultRetain(consultId, retained) {
 			timeout: 15000,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
-					let msg = `操作失败（${res.statusCode}）`
+					let msg = `操作失败（HTTP ${res.statusCode}）`
 					try {
 						const body = typeof res.data === 'string' ? JSON.parse(res.data) : res.data
 						if (body && body.message) msg = body.message
 					} catch (e) {}
-					reject(new Error(msg))
+					reject(new Error(formatHttpErrorMessage(res.statusCode, msg)))
 					return
 				}
 				resolve()
@@ -295,7 +308,11 @@ export function requestAiChat(messages = [], options = {}) {
 				timeout: 30000,
 				success: res => {
 					if (res.statusCode < 200 || res.statusCode >= 300) {
-						reject(new Error(`AI 接口请求失败（${res.statusCode}）`))
+						reject(
+							new Error(
+								formatHttpErrorMessage(res.statusCode, `AI 接口请求失败（HTTP ${res.statusCode}）`),
+							),
+						)
 						return
 					}
 					const text = typeof res.data === 'string' ? res.data : (res.data && res.data.data) ? String(res.data.data) : JSON.stringify(res.data)
@@ -420,7 +437,7 @@ export function playAiVoice(text, onPlay) {
 						reject(new Error('处理音频异常: ' + e.message));
 					}
 				} else {
-					let errMsg = `请求TTS失败 (${res.statusCode})`;
+					let errMsg = `请求TTS失败（HTTP ${res.statusCode}）`;
 					try {
 						const uint8Array = new Uint8Array(res.data);
 						let errText = '';
@@ -432,7 +449,7 @@ export function playAiVoice(text, onPlay) {
 						if (errData.error) errMsg = errData.error;
 						else if (errData.message) errMsg = errData.message;
 					} catch (e) {}
-					reject(new Error(errMsg));
+					reject(new Error(formatHttpErrorMessage(res.statusCode, errMsg)));
 				}
 			},
 			fail: (err) => reject(new Error(err.errMsg || '请求TTS失败'))
@@ -454,7 +471,11 @@ export function uploadVoiceAndTranscribe(filePath) {
 			timeout: 60000,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {
-					reject(new Error(`语音识别失败（${res.statusCode}）`))
+					reject(
+						new Error(
+							formatHttpErrorMessage(res.statusCode, `语音识别失败（HTTP ${res.statusCode}）`),
+						),
+					)
 					return
 				}
 				try {

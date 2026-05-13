@@ -46,7 +46,7 @@ public class User {
     // 所属学校
     private String school;
     
-    // 用户角色 1-学生 2-教师 3-企业 4-管理员
+    // 用户角色：1-学生（默认） 4-管理员（须库表单独授权，应用内注册不会赋予） 2/3 已废弃时由登录归一为 1
     private Integer userRole;
     
     // 账号状态 1-正常 0-禁用 2-待审核

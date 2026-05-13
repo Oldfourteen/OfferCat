@@ -33,6 +33,9 @@ public interface UserMapper {
         /** 更新用户密码 */
     @Update("UPDATE `user` SET password = #{password}, update_time = NOW() WHERE user_id = #{userId}")
     int updatePassword(@Param("userId") Long userId, @Param("password") String password);
+        /** 根据用户ID归一为非管理员为学生：仅管理员(4)保持，其余/null/其它→1 */
+    @Update("UPDATE `user` SET user_role = 1, update_time = NOW() WHERE user_id = #{userId} AND COALESCE(user_role, -1) != 4")
+    int normalizeToStudentUnlessAdmin(@Param("userId") Long userId);
         /** 根据用户ID查询用户信息 */
     @Select("SELECT * FROM `user` WHERE user_id = #{userId}")
     User selectById(Long userId);

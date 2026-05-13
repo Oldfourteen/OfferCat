@@ -27,7 +27,12 @@
 			<view v-if="editorVisible" class="editor-form">
 				<!-- 动态渲染表单字段 -->
 				<view v-for="field in fields" :key="field.key" class="form-item">
-					<text class="form-label">{{ field.label }}</text>
+					<view class="form-label-row">
+						<text class="form-label">{{ field.label }}</text>
+						<text v-if="field.maxlength" class="form-word-count">
+							{{ (formData[field.key] || '').length }}/{{ field.maxlength }}
+						</text>
+					</view>
 					<textarea
 						v-if="field.type === 'textarea'"
 						class="form-textarea"
@@ -45,6 +50,7 @@
 						:type="field.type || 'text'"
 						:placeholder="field.placeholder"
 						placeholder-class="form-placeholder"
+						:maxlength="field.maxlength || -1"
 						:value="formData[field.key]"
 						@input="updateField(field.key, $event.detail.value)"
 					/>
@@ -106,10 +112,10 @@
 			subtitle: '管理比赛经历与国家级、省级奖项信息',
 			hint: '把竞赛名称、等级、获奖时间补充完整，简历更有说服力。',
 			fields: [
-				{ key: 'name', label: '竞赛名称', placeholder: '例如：全国大学生数学建模竞赛' },
+				{ key: 'name', label: '竞赛名称', placeholder: '例如：全国大学生数学建模竞赛', maxlength: 15 },
 				{ key: 'level', label: '获奖等级', placeholder: '例如：省一等奖' },
 				{ key: 'period', label: '获奖时间', placeholder: '例如：2023-09' },
-				{ key: 'detail', label: '成果说明', type: 'textarea', placeholder: '补充赛事方向、个人分工、成绩亮点' }
+				{ key: 'detail', label: '成果说明', type: 'textarea', placeholder: '补充赛事方向、个人分工、成绩亮点', maxlength: 200 }
 			],
 			// 表单数据 => 列表展示数据
 			toRecord(form, id) {
@@ -323,9 +329,16 @@
 			},
 			// 更新表单字段值
 			updateField(key, value) {
+				let finalValue = value
+				
+				// 对竞赛名称进行特殊字符过滤（仅允许中英文和数字）
+				if (this.type === 'awards' && key === 'name') {
+					finalValue = finalValue.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '')
+				}
+				
 				this.formData = {
 					...this.formData,
-					[key]: value
+					[key]: finalValue
 				}
 			},
 			// 开始编辑某条记录
@@ -514,11 +527,22 @@
 		margin-top: 18rpx;
 	}
 
-	.form-label {
+	.form-label-row {
+		display: flex;
+		justify-content: space-between;
+		align-items: center;
 		margin-bottom: 10rpx;
+	}
+
+	.form-label {
 		font-size: 24rpx;
 		font-weight: 700;
 		color: #42526d;
+	}
+
+	.form-word-count {
+		font-size: 22rpx;
+		color: #a1aec4;
 	}
 
 	.form-input,
@@ -661,6 +685,7 @@
 	.manage-page.theme-dark .summary-label,
 	.manage-page.theme-dark .summary-desc,
 	.manage-page.theme-dark .form-label,
+	.manage-page.theme-dark .form-word-count,
 	.manage-page.theme-dark .record-desc,
 	.manage-page.theme-dark .empty-title,
 	.manage-page.theme-dark .empty-desc {

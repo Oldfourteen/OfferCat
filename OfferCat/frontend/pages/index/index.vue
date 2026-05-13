@@ -27,7 +27,8 @@
 		components: {
 			LearningHeader,
 			LearningZone,
-			AppLiquidTabBar,
+			AppLiquidTabBar
+			LearningZone,
 			AnnouncementPopup
 		},
 		data() {

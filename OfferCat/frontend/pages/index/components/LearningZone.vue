@@ -17,10 +17,6 @@
 			<view class="animate-item" style="animation-delay: 0.4s;">
 				<ChatFooter :theme="theme" />
 			</view>
-			<!-- 论坛区展示分页帖子列表，承接社区内容浏览。 -->
-			<view class="animate-item" style="animation-delay: 0.5s;">
-				<ForumList :theme="theme" />
-			</view>
 		</view>
 	</scroll-view>
 </template>
@@ -30,7 +26,6 @@
 	import Activity from './Activity.vue'
 	import QuestionBankModules from './QuestionBankModules.vue'
 	import ChatFooter from './ChatFooter.vue'
-	import ForumList from './ForumList.vue'
 
 	export default {
 		name: 'LearningZone',
@@ -49,8 +44,7 @@
 			NoticeBar,
 			Activity,
 			QuestionBankModules,
-			ChatFooter,
-			ForumList
+			ChatFooter
 		},
 		methods: {
 			emitScroll(event) {

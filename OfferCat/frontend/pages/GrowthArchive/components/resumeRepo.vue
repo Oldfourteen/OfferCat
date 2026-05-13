@@ -4,6 +4,7 @@
 			<view class="text-content">
 				<text class="title">简历仓库</text>
 				<text class="subtitle">统一管理已制作/上传的简历</text>
+				<text class="desc">在线编辑保存的简历与上传附件都会集中在此，便于区分版本。支持查看详情、重命名、删除或再次打开编辑，避免文件散落在各处。</text>
 				<view class="stats">
 					<text class="stat-item">总简历数 <text class="stat-num">{{ resumeCount }}</text></text>
 				</view>
@@ -99,7 +100,14 @@
 	.subtitle {
 		font-size: 24rpx;
 		color: #6b7280;
-		margin-bottom: 24rpx;
+		margin-bottom: 10rpx;
+	}
+
+	.desc {
+		font-size: 22rpx;
+		line-height: 1.55;
+		color: #9ca3af;
+		margin-bottom: 16rpx;
 	}
 
 	.stats {
@@ -148,6 +156,10 @@
 
 		.subtitle, .stat-item {
 			color: rgba(255, 255, 255, 0.58);
+		}
+
+		.desc {
+			color: rgba(255, 255, 255, 0.45);
 		}
 
 		.icon-wrap {

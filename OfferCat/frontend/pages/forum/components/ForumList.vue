@@ -1,9 +1,16 @@
 <template>
 	<view class="forum-section" :class="themeClass">
-		<view class="forum-header">
-			<!-- 标题区承接论坛内容列表和分页浏览。 -->
-			<text class="forum-title">论坛专区</text>
-		</view>
+		<!-- 标签栏 -->
+		<scroll-view scroll-x class="tabs-scroll" :show-scrollbar="false">
+			<view class="tabs-container">
+				<view class="tab-item" v-for="(item, index) in tabs" :key="index" :class="{ active: currentTab === index }" @click="switchTab(index)">
+					<text class="tab-text">{{ item }}</text>
+				</view>
+				<!-- 滑动指示器 -->
+				<view class="sliding-indicator" :style="{ transform: 'translateX(' + (currentTab * 120) + 'rpx)' }"></view>
+			</view>
+		</scroll-view>
+
 		<view class="forum-list-container">
 			<view class="forum-list">
 				<!-- 帖子列表 -->
@@ -80,6 +87,8 @@
 		},
 		data() {
 			return {
+				tabs: ['全部', '热点', '好友'],
+				currentTab: 0,
 				// 帖子列表与分页状态一起维护当前论坛卡片展示结果。
 				postList: [],
 				pageNum: 1,
@@ -115,6 +124,21 @@
 			this.fetchPosts()
 		},
 		methods: {
+			switchTab(index) {
+				if (this.currentTab === index) return;
+				
+				if (index === 2) {
+					uni.showToast({
+						title: '敬请期待',
+						icon: 'none'
+					});
+					return;
+				}
+
+				this.currentTab = index;
+				this.pageNum = 1;
+				this.fetchPosts();
+			},
 			fetchPosts() {
 				// 按当前页码和页大小请求论坛帖子，并补齐点赞响应字段。
 				request({
@@ -123,18 +147,25 @@
 					data: {
 						keyword: '',
 						pageNum: this.pageNum,
-						pageSize: this.pageSize
+						pageSize: this.currentTab === 1 ? 20 : this.pageSize, // 热点多拉一些用于本地排序
+						sort: this.currentTab === 1 ? 'hot' : 'latest'
 					}
 				}).then(res => {
 					if (res.code === 200 && res.data) {
-						this.postList = (res.data.records || []).map(item => {
+						let records = res.data.records || [];
+						if (this.currentTab === 1) {
+							// 热点：前端按热度排序并取前3
+							records.sort((a, b) => ((b.likeCount || 0) + (b.commentCount || 0)) - ((a.likeCount || 0) + (a.commentCount || 0)));
+							records = records.slice(0, 3);
+						}
+						this.postList = records.map(item => {
 							return {
 								...item,
 								isLiked: item.isLiked || false // 确保属性是响应式的
 							}
 						})
-						this.total = res.data.total || 0
-						this.totalPages = res.data.pages || Math.ceil(this.total / this.pageSize)
+						this.total = this.currentTab === 1 ? records.length : (res.data.total || 0);
+						this.totalPages = this.currentTab === 1 ? 1 : (res.data.pages || Math.ceil(this.total / this.pageSize));
 					}
 				}).catch(err => {
 					console.error('获取帖子列表失败', err)
@@ -301,14 +332,57 @@
 
 <style lang="scss">
 	.forum-section {
-		margin-top: 40rpx;
-		background: rgba(255, 255, 255, 0.45);
-		backdrop-filter: blur(20px);
-		-webkit-backdrop-filter: blur(20px);
-		border-radius: 40rpx;
-		padding: 30rpx;
-		box-shadow: 0 8rpx 32rpx 0 rgba(31, 38, 135, 0.05);
-		border: 2rpx solid rgba(255, 255, 255, 0.8);
+		margin-top: 20rpx;
+	}
+
+	.tabs-scroll {
+		width: 100%;
+		height: 88rpx;
+		white-space: nowrap;
+		border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
+		margin-bottom: 24rpx;
+	}
+
+	.tabs-container {
+		display: flex;
+		align-items: center;
+		height: 100%;
+		padding: 0 5rpx;
+		position: relative;
+	}
+
+	.tab-item {
+		position: relative;
+		display: inline-flex;
+		align-items: center;
+		justify-content: center;
+		height: 100%;
+		width: 120rpx;
+		padding: 0;
+		
+		.tab-text {
+			font-size: 28rpx;
+			color: #666;
+			transition: all 0.3s;
+		}
+
+		&.active {
+			.tab-text {
+				font-weight: bold;
+				color: #333;
+			}
+		}
+	}
+
+	.sliding-indicator {
+		position: absolute;
+		bottom: 12rpx;
+		left: 50rpx; /* 10rpx(container padding) + 60rpx(half tab) - 20rpx(half indicator) */
+		width: 40rpx;
+		height: 8rpx;
+		background-color: #333;
+		border-radius: 4rpx;
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.forum-list-container {
@@ -317,8 +391,8 @@
 	}
 
 	.forum-list {
-		height: 1512rpx; /* 3个卡片的高度: 3 * (480 + 24) = 1512 */
-		overflow: hidden;
+		min-height: 480rpx;
+		overflow: visible;
 	}
 
 	.empty-state {
@@ -330,15 +404,6 @@
 		.empty-text {
 			font-size: 26rpx;
 			color: #999;
-		}
-	}
-
-	.forum-header {
-		margin-bottom: 24rpx;
-		.forum-title {
-			font-size: 34rpx;
-			font-weight: bold;
-			color: #15305e;
 		}
 	}
 
@@ -518,12 +583,22 @@
 
 	/* Dark Theme */
 	.theme-dark {
-		&.forum-section {
-			background: rgba(30, 32, 36, 0.45);
-			border-color: rgba(255, 255, 255, 0.08);
-			box-shadow: 0 8rpx 32rpx 0 rgba(0, 0, 0, 0.2);
+		.tabs-scroll {
+			border-bottom-color: rgba(255, 255, 255, 0.05);
 		}
-		.forum-title { color: #f4f7fb; }
+		.tab-item {
+			.tab-text {
+				color: rgba(255, 255, 255, 0.6);
+			}
+			&.active {
+				.tab-text {
+					color: #f4f7fb;
+				}
+			}
+		}
+		.sliding-indicator {
+			background-color: #f4f7fb;
+		}
 		.forum-card {
 			background: rgba(255, 255, 255, 0.03);
 			border-color: rgba(255, 255, 255, 0.05);

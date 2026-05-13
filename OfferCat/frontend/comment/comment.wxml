@@ -1,0 +1,186 @@
+<!--pages/comment/comment.wxml-->
+<view class="container-comment">
+    <!-- 顶部 Header -->
+    <view class="header" style="height: {{totalHeaderHeight}}px;">
+        <view class="header-content" style="padding-top: {{statusBarHeight}}px;">
+            <view class="header-top" style="height: {{navBarHeight}}px;">
+                <view class="back-btn" bindtap="goBack">
+                    <image src="/image/chevron-left-solid.svg" style="width: 24px; height: 24px;" mode="aspectFit">
+                    </image>
+                </view>
+                <view class="header-info">
+                    <view class="header-title-row">
+                        <text class="header-title">小程序论坛区</text>
+                    </view>
+                    <text class="header-subtitle">欢迎参与讨论~ 在这里留下你的美好瞬间吧！ 0W0</text>
+                </view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 搜索栏 -->
+    <view class="search-bar-container">
+        <view class="search-bar">
+            <icon type="search" size="16" color="#999" class="search-icon"></icon>
+            <input class="search-input" placeholder="搜索帖子内容..." placeholder-class="search-placeholder"
+                bindinput="onSearchInput" value="{{searchQuery}}" confirm-type="search" />
+        </view>
+    </view>
+
+    <!-- 标签栏 -->
+    <scroll-view scroll-x class="tabs-scroll" enable-flex>
+        <view class="tabs-container">
+            <block wx:for="{{tabs}}" wx:key="*this">
+                <view class="tab-item {{currentTab === index ? 'active' : ''}}" bindtap="switchTab"
+                    data-index="{{index}}">
+                    <text>{{item}}</text>
+                    <view class="tab-indicator" wx:if="{{currentTab === index}}"></view>
+                </view>
+            </block>
+        </view>
+    </scroll-view>
+
+    <!-- 帖子列表 -->
+    <scroll-view scroll-y class="post-list" scroll-top="{{scrollTop}}" bindscroll="onScroll"
+        bindscrolltolower="loadMorePosts" lower-threshold="100" scroll-with-animation enable-back-to-top>
+        <block wx:for="{{posts}}" wx:key="id">
+            <view class="post-item" bindtap="goToPostDetail" data-id="{{item.id}}">
+                <!-- 用户信息 -->
+                <view class="user-info">
+                    <view class="avatar-wrapper">
+                        <image class="user-avatar" src="{{item.avatar}}" mode="aspectFill" catchtap="goToUserPostPrivate"
+                            data-userid="{{item.user_id}}" data-name="{{item.name}}" data-avatar="{{item.avatar}}"></image>
+                        <image wx:if="{{item.frame_url}}" class="user-avatar-frame" src="{{item.frame_url}}" mode="aspectFill" style="{{item.frame_style}}"></image>
+                    </view>
+                    <view class="user-meta">
+                        <view class="name-row">
+                            <text class="user-name">{{item.name}}</text>
+                            <view class="private-badge" wx:if="{{item.is_private}}">仅自己可见</view>
+                            <view wx:if="{{item.role === 'admin'}}" class="role-tag admin">管理员</view>
+                            <view wx:elif="{{item.role === 'developer'}}" class="role-tag developer">开发者</view>
+                            <image class="rank-image" src="/images/{{item.level || 1}}.png" mode="aspectFit"></image>
+                        </view>
+                        <text class="post-time">{{item.time}}</text>
+                    </view>
+                    <view class="post-more" catchtap="showMoreActions" data-index="{{index}}">···</view>
+                </view>
+
+                <!-- 帖子内容 -->
+                <view class="post-content">
+                    <rich-text class="content-text" nodes="{{item.isExpanded ? item.displayContent : item.collapsedContent}}"></rich-text>
+                    <text wx:if="{{item.isLong}}" class="expand-btn" catchtap="toggleContent" data-index="{{index}}">
+                        {{item.isExpanded ? '收起' : '全部'}}</text>
+
+                    <!-- 多图展示逻辑 -->
+                    <block wx:if="{{item.images && item.images.length > 0}}">
+                        <!-- 1张图：按比例显示 -->
+                        <view wx:if="{{item.images.length === 1}}" class="image-list single-mode">
+                            <view class="image-item" catchtap="previewImage" data-src="{{item.images[0]}}"
+                                data-index="{{index}}">
+                                <image src="{{item.images[0]}}" mode="widthFix" lazy-load binderror="onImageError"
+                                    data-post-index="{{index}}" data-img-index="{{0}}"></image>
+                            </view>
+                        </view>
+
+                        <!-- 2张及以上：统一使用3列布局，只显示前3张 -->
+                        <view wx:else class="image-list grid-3">
+                            <block wx:for="{{item.images}}" wx:for-item="imgSrc" wx:for-index="imgIdx" wx:key="imgIdx">
+                                <!-- 只渲染前3个 -->
+                                <view wx:if="{{imgIdx < 3}}" class="image-item" catchtap="previewImage"
+                                    data-src="{{imgSrc}}" data-index="{{index}}">
+                                    <image src="{{imgSrc}}" mode="aspectFill" lazy-load binderror="onImageError"
+                                        data-post-index="{{index}}" data-img-index="{{imgIdx}}"></image>
+                                    <!-- 第3个且总数大于3时，显示遮罩 -->
+                                    <view wx:if="{{imgIdx === 2 && item.images.length > 3}}" class="more-count-mask">
+                                        <text>+{{item.images.length - 3}}</text>
+                                    </view>
+                                </view>
+                            </block>
+                        </view>
+                    </block>
+                </view>
+
+                <!-- 底部操作栏 -->
+                <view class="post-footer">
+                    <view class="view-count">浏览{{item.views}}</view>
+                    <view class="action-icons">
+                        <view class="icon-btn" catchtap="toggleLike" data-index="{{index}}">
+                            <text wx:if="{{item.like_count > 0}}"
+                                class="like-count-tag">{{item.like_count > 99 ? '99+' : item.like_count}}</text>
+                            <image class="{{item.isLiked ? 'like-active' : ''}}"
+                                src="{{item.isLiked ? '/image/heart-solid-full-red.svg' : '/image/heart-regular-full.svg'}}"
+                                mode="aspectFit"></image>
+                        </view>
+                        <view class="icon-btn" catchtap="toggleCollect" data-index="{{index}}">
+                            <image class="{{item.isCollected ? 'collect-active' : ''}}"
+                                src="{{item.isCollected ? '/image/star-solid-full.svg' : '/image/star-regular-full.svg'}}"
+                                mode="aspectFit"></image>
+                        </view>
+                        <view class="icon-btn">
+                            <image src="/image/comment-regular-full.svg" mode="aspectFit"></image>
+                            <text wx:if="{{item.comment_count > 0}}"
+                                style="font-size: 24rpx; color: #999; margin-left: 8rpx;">{{item.comment_count}}</text>
+                        </view>
+                        <view class="icon-btn" catchtap="generateShareCard" data-item="{{item}}">
+                            <image src="/image/share-nodes-solid-full.svg" mode="aspectFit"></image>
+                        </view>
+                    </view>
+                </view>
+            </view>
+        </block>
+
+        <!-- 加载状态提示 -->
+        <view class="loading-status" wx:if="{{posts.length > 0}}">
+            <view wx:if="{{isLoading}}" class="loading-text">正在加载中...</view>
+            <view wx:elif="{{!hasMore && currentTab !== 1}}" class="loading-text">— 到底啦 —</view>
+        </view>
+
+        <!-- 底部占位 -->
+        <view style="height: 50rpx;"></view>
+    </scroll-view>
+
+    <!-- 返回顶部按钮 -->
+    <view class="back-to-top" bindtap="scrollToTop" wx:if="{{showBackToTop}}">
+        <image src="/image/arrow-up-solid-full.svg" mode="aspectFit"></image>
+    </view>
+
+    <!-- 侧边悬浮菜单 -->
+    <view class="side-menu-container {{isFabExpanded ? 'expanded' : ''}}">
+        <!-- 提示气泡 -->
+        <view class="menu-hint" bindtap="toggleFab" wx:if="{{!isFabExpanded}}"><text>点击\n查看\n详细</text></view>
+
+        <!-- 触发按钮 -->
+        <view class="menu-toggle" bindtap="toggleFab">
+            <image src="/image/angle-right-solid-full.svg" class="toggle-icon {{isFabExpanded ? 'rotate' : ''}}"
+                mode="aspectFit"></image>
+        </view>
+
+        <!-- 菜单内容 -->
+        <view class="menu-content">
+            <view class="menu-item circle-btn private-btn" bindtap="goToPostPrivate">
+                <image src="/image/id-card-regular-full.svg" mode="aspectFit"></image>
+                <view class="menu-label">个人</view>
+            </view>
+            <view class="menu-item circle-btn friend-btn" bindtap="goToFriendPage">
+                <image src="/image/user-group-solid-full.svg" mode="aspectFit"></image>
+                <view class="menu-label">好友</view>
+            </view>
+            <view class="menu-item circle-btn publish-btn" bindtap="goToPublish">
+                <image src="/image/plus-solid-full-white.svg" mode="aspectFit"></image>
+                <view class="menu-label">发布</view>
+            </view>
+        </view>
+    </view>
+
+    <!-- 评论输入框弹窗 -->
+    <view class="comment-input-mask" wx:if="{{showCommentInput}}" bindtap="hideCommentInput"></view>
+    <view class="comment-input-box" wx:if="{{showCommentInput}}">
+        <textarea class="comment-textarea" placeholder="写下你的评论..." focus="{{commentFocus}}" cursor-spacing="20"
+            bindinput="onCommentInput" value="{{commentContent}}"></textarea>
+        <view class="comment-send-btn" bindtap="submitComment">发送</view>
+    </view>
+
+    <!-- 分享卡片画布 -->
+    <canvas type="2d" id="shareCanvas"
+        style="width: 600px; height: 1365px; position: fixed; left: 100%; top: 0;"></canvas>
+</view>

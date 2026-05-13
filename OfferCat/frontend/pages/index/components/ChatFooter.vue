@@ -95,7 +95,7 @@
 			width: 56rpx;
 			height: 56rpx;
 			border-radius: 50%;
-			background: #f3f6f2;
+			// background: #f3f6f2;
 			display: flex;
 			align-items: center;
 			justify-content: center;

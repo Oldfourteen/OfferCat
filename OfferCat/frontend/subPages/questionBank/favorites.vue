@@ -198,6 +198,7 @@
 
 	.back-btn {
 		font-size: 42rpx;
+		line-height: 1;
 		color: #30435a;
 	}
 

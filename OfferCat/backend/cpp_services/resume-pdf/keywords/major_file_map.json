@@ -1,0 +1,16 @@
+{
+  "description": "前端 JSON 专业名字段（与 key 完全一致）→ keywords 目录下 txt 文件名。仅使用 ASCII 文件名，避免 Windows 下窄路径打开中文名失败。",
+  "field_hint": "建议前端与后端约定字段名如 majorName 或 major，值为下列 key 之一。",
+  "map": {
+    "电气工程及其自动化": "electrical_engineering_automation.txt",
+    "法学": "law.txt",
+    "会计学": "accounting.txt",
+    "计算机科学与技术": "computer_science_and_technology.txt",
+    "金融学": "finance.txt",
+    "临床医学": "clinical_medicine.txt",
+    "软件工程": "software_engineering.txt",
+    "市场营销": "marketing.txt",
+    "数据科学与大数据技术": "data_science_and_big_data.txt",
+    "英语": "english.txt"
+  }
+}

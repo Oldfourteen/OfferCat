@@ -1,0 +1,48 @@
+{
+  "highlightEngine": "naive",
+  "userId": 1,
+  "resume": {
+    "majorName": "计算机科学与技术",
+    "real_name": "张三",
+    "gender": 1,
+    "phone": "13800000000",
+    "email": "zhangsan@example.com",
+    "title_line": "求职意向：后端开发实习生",
+    "certificate": "CET-6、计算机二级",
+    "self_evaluation": "<p>学习主动性强，乐于<strong>协作</strong>，对工程化与接口设计有兴趣。</p>",
+    "education": {
+      "school": "某某大学",
+      "major": "计算机科学与技术 · 本科",
+      "date": "2022.09 - 2026.06"
+    },
+    "campus": [
+      {
+        "title": "学生会技术部部长",
+        "description": "负责活动报名系统开发与维护，推动团队协作。",
+        "date": "2023.09 - 2024.06"
+      }
+    ],
+    "work_experience_entries": [
+      {
+        "html": "<p>在某公司实习，参与 REST 接口与 MySQL 表结构设计。</p>",
+        "rawData": {
+          "company": "示例科技",
+          "position": "后端实习生",
+          "startDate": "2024.06",
+          "endDate": "2024.09"
+        }
+      }
+    ],
+    "projects": [
+      {
+        "name": "OfferCat 简历模块",
+        "date": "2025.03 - 2025.05",
+        "description": "参与前后端联调与 REST API 设计，熟悉深度学习相关文档。",
+        "tech_stack": ["Spring Boot", "Vue", "MySQL"],
+        "highlights": ["完成接口联调", "编写接口文档"]
+      }
+    ],
+    "skills": ["C++", "Python", "MySQL", "Git"]
+  },
+  "keywords": ["协作", "深度学习", "REST", "人工智能"]
+}

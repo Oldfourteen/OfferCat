@@ -82,9 +82,42 @@ public class UserController {
             studentMapper.update(existing);
             studentId = existing.getStudentId();
         }
-        /** 返回更新后的学生ID */
-               Map<String, Object> result = new HashMap<>();
+        /** 返回更新后的最新用户信息 */
+        Map<String, Object> result = new HashMap<>();
         result.put("studentId", studentId);
+        
+        // 重新查询最新的用户和学生信息返回给前端
+        User updatedUser = userMapper.selectById(request.getUserId());
+        Student updatedStudent = studentMapper.selectByUserId(request.getUserId());
+        updatedUser.setProfile(updatedStudent);
+        // 抹除密码安全信息
+        updatedUser.setPassword(null);
+        
+        result.put("userInfo", updatedUser);
+        
         return ResponseResult.success(result);
+    }
+
+    /** 
+     * 获取用户个人信息 
+     * 前端每次进入个人页面时调用此接口获取数据库最新数据
+     */
+    @GetMapping("/profile")
+    public ResponseResult<User> getProfile(@RequestParam("userId") Long userId) {
+        User user = userMapper.selectById(userId);
+        if (user == null) {
+            return ResponseResult.error("用户不存在");
+        }
+        
+        // 如果是学生角色，查询并挂载学生详细档案
+        if (user.getUserRole() != null && user.getUserRole() == 1) {
+            Student student = studentMapper.selectByUserId(userId);
+            user.setProfile(student);
+        }
+        
+        // 抹除敏感信息
+        user.setPassword(null);
+        
+        return ResponseResult.success(user);
     }
 }

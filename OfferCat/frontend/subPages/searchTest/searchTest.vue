@@ -6,7 +6,7 @@
       <view class="status-bar"></view>
       <view class="nav-bar">
         <view class="back-btn" @click="goBack">
-          <text class="back-icon">←</text>
+          <text class="back-icon">‹</text>
         </view>
         <text class="nav-title">题库测试</text>
         <view class="nav-right"></view>
@@ -282,7 +282,7 @@ export default {
 
 <style scoped>
 .container {
-  background: linear-gradient(180deg, #4AA9FE 0%, #f7f7f7 28%, #f3f3f3 100%);
+  background: linear-gradient(180deg, #3165D7 0%, #f7f7f7 75%, #f3f3f3 100%);
   min-height: 100vh;
   display: flex;
   flex-direction: column;
@@ -299,7 +299,7 @@ export default {
   left: 0;
   right: 0;
   z-index: 100;
-  background: linear-gradient(180deg, #4AA9FE 0%, rgba(74, 169, 254, 0) 100%);
+  background: linear-gradient(180deg, #3165D7 0%, rgba(49, 101, 215, 0) 100%);
   backdrop-filter: blur(10px);
   color: #ffffff;
 }
@@ -320,9 +320,16 @@ export default {
   padding: 0 15px;
 }
 .back-btn {
-  padding: 5px 10px 5px 0;
+  height: 72rpx;
+  width: 72rpx;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.92);
   display: flex;
   align-items: center;
+  justify-content: center;
+  font-size: 42rpx;
+  line-height: 1;
+  color: #30435a;
 }
 .back-icon {
   font-size: 24px;
@@ -395,12 +402,12 @@ export default {
   color: #f5f7fb;
 }
 .count-text {
-  color: #4AA9FE;
+  color: #3165D7;
   font-size: 18px;
 }
 .toggle-text {
   font-size: 14px;
-  color: #4AA9FE;
+  color: #3165D7;
   font-weight: normal;
 }
 .unanswered-section {
@@ -444,12 +451,12 @@ export default {
 }
 .answered-item {
   background-color: #e6f7ff;
-  color: #4AA9FE;
+  color: #3165D7;
   border: 1px solid #91d5ff;
 }
 .theme-dark .answered-item {
-  background-color: rgba(74, 169, 254, 0.1);
-  border-color: rgba(74, 169, 254, 0.3);
+  background-color: rgba(49, 101, 215, 0.1);
+  border-color: rgba(49, 101, 215, 0.3);
 }
 .all-done {
   color: #52c41a;
@@ -467,17 +474,17 @@ export default {
   padding-bottom: 40px;
 }
 .submit-btn {
-  background-color: #4AA9FE;
+  background-color: #3165D7;
   color: #fff;
   border-radius: 24px;
   font-size: 16px;
   height: 48px;
   line-height: 48px;
-  box-shadow: 0 4px 12px rgba(74, 169, 254, 0.3);
+  box-shadow: 0 4px 12px rgba(49, 101, 215, 0.3);
 }
 .theme-dark .submit-btn {
-  background-color: #3d8be0;
-  box-shadow: 0 4px 12px rgba(61, 139, 224, 0.3);
+  background-color: #3165D7;
+  box-shadow: 0 4px 12px rgba(49, 101, 215, 0.3);
 }
 .submit-btn:active {
   opacity: 0.8;

@@ -229,8 +229,8 @@
 		height: 64rpx;
 		margin-left: 18rpx;
 		border-radius: 20rpx;
-		background: rgba(255, 255, 255, 0.84);
-		box-shadow: 0 10rpx 24rpx rgba(49, 101, 215, 0.08);
+		// background: rgba(255, 255, 255, 0.84);
+		// box-shadow: 0 10rpx 24rpx rgba(49, 101, 215, 0.08);
 		display: flex;
 		align-items: center;
 		justify-content: center;

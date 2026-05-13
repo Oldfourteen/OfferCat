@@ -1,21 +1,21 @@
 <template>
 	<view class="component-wrapper">
-		<view class="form-area">
+		<view class="form-area animate-item" :style="{ animationDelay: '0s' }">
 			<!-- 短信登录表单复用手机号+验证码输入组件。 -->
 			<phoneCode v-model:phone="phone" v-model:code="code" scene="login" />
 		</view>
 		
 		<!-- 登录前需要先通过人机验证。 -->
-		<humanVerify @verify="onHumanVerify"></humanVerify>
+		<humanVerify class="animate-item" :style="{ animationDelay: '0.15s' }" @verify="onHumanVerify"></humanVerify>
 		
-		<view class="agreement-wrapper">
+		<view class="agreement-wrapper animate-item" :style="{ animationDelay: '0.3s' }">
 			<!-- 协议勾选与弹窗确认逻辑复用公共协议组件。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doLogin"></confirmAgreement>
 		</view>
 		
-		<view class="submit-btn" @click="handleSubmit">登录</view>
+		<view class="submit-btn animate-item" :style="{ animationDelay: '0.45s' }" @click="handleSubmit">登录</view>
 		
-		<view class="switch-mode">
+		<view class="switch-mode animate-item" :style="{ animationDelay: '0.6s' }">
 			<!-- 底部切换入口支持返回密码登录或进入注册。 -->
 			<view class="side left">
 				<text class="link" @click="switchToPassword">密码登录</text>
@@ -133,6 +133,13 @@
 </script>
 
 <style lang="scss" scoped>
+	.component-wrapper {
+		.animate-item {
+			opacity: 0;
+			animation: fadeInUp 0.6s ease-out both;
+		}
+	}
+	
 	.form-area {
 		margin-bottom: 20px;
 	}
@@ -191,6 +198,19 @@
 		
 		.link {
 			color: #5d76bd;
+		}
+	}
+	
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(40px);
+			filter: blur(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
 		}
 	}
 </style>

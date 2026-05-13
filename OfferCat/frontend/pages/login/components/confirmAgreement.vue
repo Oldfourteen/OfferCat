@@ -56,9 +56,10 @@
 				this.showAgreementModal = true;
 			},
 			handleAgree() {
-				// 用户在弹窗中同意后，既更新勾选状态，也通知父组件继续执行登录。
+				// 用户在弹窗中同意后，既更新勾选状态，也通知父组件保存同意记录并继续执行登录。
 				this.showAgreementModal = false;
 				this.$emit('change', true);
+				this.$emit('save-agreement'); // 通知父组件保存协议同意记录
 				this.$emit('agreed-login'); // 通知父组件继续执行登录
 			},
 			handleDisagree() {
@@ -146,10 +147,11 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		z-index: 999;
+		z-index: 9999;
 		display: flex;
 		justify-content: center;
 		align-items: center;
+		pointer-events: auto;
 
 		.modal-mask {
 			position: absolute;
@@ -159,6 +161,7 @@
 			bottom: 0;
 			background-color: rgba(0, 0, 0, 0.5);
 			animation: fadeIn 0.2s ease;
+			pointer-events: auto;
 		}
 
 		.modal-content {

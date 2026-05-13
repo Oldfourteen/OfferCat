@@ -1,7 +1,7 @@
 <template>
 	<view class="other-login-container">
 		<!-- 顶部导航栏 / 返回按钮 -->
-		<view class="nav-bar">
+		<view class="nav-bar animate-item" :style="{ animationDelay: '0.1s' }">
 			<view class="back-btn" @click="goBack">
 				<image class="back-icon" src="/static/close.png" mode="aspectFit"></image>
 			</view>
@@ -10,12 +10,14 @@
 		<!-- 页面内容区 -->
 		<view class="content-box">
 			<!-- 标题随当前模式变化，明确用户正在使用的登录或注册流程。 -->
-			<view class="title">{{ title }}</view>
+			<view class="title animate-item" :style="{ animationDelay: '0.25s' }">{{ title }}</view>
 			
 			<!-- 组件切换 -->
-			<account-login v-if="mode === 'password'" @switchMode="switchToRegister" @switchSms="switchToSms"></account-login>
-			<sms-login v-else-if="mode === 'sms'" @switchPassword="switchToPassword" @switchRegister="switchToRegister"></sms-login>
-			<account-register v-else @switchMode="switchToPassword"></account-register>
+			<view class="form-wrapper animate-item" :style="{ animationDelay: '0.4s' }">
+				<account-login v-if="mode === 'password'" @switchMode="switchToRegister" @switchSms="switchToSms"></account-login>
+				<sms-login v-else-if="mode === 'sms'" @switchPassword="switchToPassword" @switchRegister="switchToRegister"></sms-login>
+				<account-register v-else @switchMode="switchToPassword"></account-register>
+			</view>
 		</view>
 	</view>
 </template>
@@ -74,9 +76,14 @@
 		display: flex;
 		flex-direction: column;
 		
+		.animate-item {
+			opacity: 0;
+			animation: fadeInUp 0.6s ease-out both;
+		}
+		
 		.nav-bar {
 			width: 100%;
-			height: 88px; /* 包含状态栏的高度预留 */
+			height: 88px;
 			padding-top: 40px;
 			box-sizing: border-box;
 			display: flex;
@@ -88,10 +95,16 @@
 				height: 40px;
 				display: flex;
 				align-items: center;
+				justify-content: center;
 				
 				.back-icon {
-					width: 20px;
-					height: 20px;
+					width: 22px;
+					height: 22px;
+					transition: transform 0.2s ease;
+				}
+				
+				&:active .back-icon {
+					transform: scale(0.9);
 				}
 			}
 		}
@@ -100,11 +113,29 @@
 			padding: 40px 30px;
 			
 			.title {
-				font-size: 28px;
-				font-weight: bold;
-				color: #333;
+				font-size: 30px;
+				font-weight: 700;
+				color: #24345b;
 				margin-bottom: 40px;
+				letter-spacing: 1px;
 			}
+			
+			.form-wrapper {
+				width: 100%;
+			}
+		}
+	}
+
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(40px);
+			filter: blur(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
 		}
 	}
 </style>

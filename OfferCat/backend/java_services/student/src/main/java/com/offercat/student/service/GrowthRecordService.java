@@ -1,6 +1,7 @@
 package com.offercat.student.service;
 
 import com.offercat.student.vo.GrowthRecordVO;
+import com.offercat.student.vo.CheckinResultVO;
 /**
  * 学生成长档案服务接口
  * 功能：提供学生成长档案的增删改查操作
@@ -19,9 +20,9 @@ public interface GrowthRecordService {
      * 学生打卡
      *
      * @param studentId 学生ID
-     * @return 最新的打卡天数
+     * @return 打卡结果（包含连续天数和累计天数）
      */
-    int checkIn(Long studentId);
+    CheckinResultVO checkIn(Long studentId);
 
     /**
      * 收藏题库

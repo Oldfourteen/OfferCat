@@ -10,6 +10,7 @@
         <result column="practice_count" property="practiceCount"/>
         <result column="collection_count" property="collectionCount"/>
         <result column="continuous_checkin_days" property="continuousCheckinDays"/>
+        <result column="total_checkin_days" property="totalCheckinDays"/>
         <result column="last_checkin_date" property="lastCheckinDate"/>
         <result column="create_time" property="createTime"/>
         <result column="update_time" property="updateTime"/>
@@ -82,6 +83,10 @@
         WHERE student_id = #{studentId} 
           AND checkin_date BETWEEN #{startDate} AND #{endDate}
         ORDER BY checkin_date ASC
+    </select>
+
+    <select id="countTotalCheckins" resultType="int">
+        SELECT COUNT(*) FROM growth_checkin_record WHERE student_id = #{studentId}
     </select>
 
 </mapper>

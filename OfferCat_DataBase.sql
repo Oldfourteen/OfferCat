@@ -176,6 +176,9 @@ CREATE TABLE `ai_consult` (
   `ai_content` TEXT NOT NULL COMMENT 'AI回复内容', 
   `ai_avatar` VARCHAR(255) DEFAULT NULL COMMENT 'AI头像URL', 
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '对话时间', 
+  `user_images` JSON DEFAULT NULL COMMENT '用户发送的图片列表',
+  `ai_images` JSON DEFAULT NULL COMMENT 'AI生成的图片列表',
+  `retained` TINYINT NOT NULL DEFAULT 0 COMMENT '1=用户保留不参与每月15日清理',
   INDEX `idx_user_id` (`user_id`), 
   FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI顾问对话表'; 
@@ -881,7 +884,8 @@ INSERT INTO `role` VALUES
 -- ---------------------------- 
 -- 初始化测试数据 
 -- ---------------------------- 
-INSERT INTO `user` (user_id, nickname, password, user_role, user_status) VALUES (1, '测试用户', '123456', 1, 1);
+-- 测试账号：手机号 13800000000，密码 123456（明文仅便于本地初始化；首次密码登录成功后会由后端自动升级为 BCrypt）
+INSERT INTO `user` (user_id, nickname, password, phone, user_role, user_status) VALUES (1, '测试用户', '123456', '13800000000', 1, 1);
 INSERT INTO `forum_post` (post_id, user_id, title, content) VALUES (1, 1, '这是一个测试帖子', '这是帖子的内容');
  
  
@@ -915,6 +919,9 @@ USE offercat;
 ALTER TABLE ai_consult 
 ADD COLUMN user_images JSON DEFAULT NULL COMMENT '用户发送的图片列表',
 ADD COLUMN ai_images JSON DEFAULT NULL COMMENT 'AI生成的图片列表';
+
+ALTER TABLE ai_consult 
+ADD COLUMN retained TINYINT NOT NULL DEFAULT 0 COMMENT '1=用户保留不参与每月15日清理';
 
 
 USE offercat;

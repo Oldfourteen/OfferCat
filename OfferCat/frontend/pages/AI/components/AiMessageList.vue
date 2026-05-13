@@ -38,6 +38,10 @@
 				<!-- 底部信息：显示发送时间，以及 AI 语音播报按钮 -->
 				<view class="message-footer">
 					<text class="time">{{ item.time }}</text>
+					<view v-if="item.role === 'user' && retainEnabled && item.consultId" class="retain-wrap" @tap.stop>
+						<text class="retain-label">保留对话</text>
+						<switch :checked="!!item.retained" color="#3165d7" @change="e => onRetainSwitch(item, e)" />
+					</view>
 					<view v-if="item.role === 'assistant' && item.text && !item.loading" class="voice-btn" @tap="handlePlayVoice(item)">
 						<text class="voice-icon">🎤</text>
 						<text class="voice-text">{{ playingId === item.id ? '播放中...' : (loadingId === item.id ? '生成中...' : '语音播报') }}</text>
@@ -72,6 +76,11 @@
 				default() {
 					return []
 				}
+			},
+			// 是否展示「保留对话」（仅云端历史会话）
+			retainEnabled: {
+				type: Boolean,
+				default: false
 			}
 		},
 		data() {
@@ -111,6 +120,10 @@
 			}
 		},
 		methods: {
+			onRetainSwitch(item, e) {
+				const retained = !!(e.detail && e.detail.value)
+				this.$emit('retain-change', { consultId: item.consultId, retained })
+			},
 			// 同步用户头像，保证聊天页头像与个人资料保持一致。
 			updateProfile() {
 				const user = getUserProfile()
@@ -376,6 +389,17 @@
 		color: #3165d7;
 	}
 
+	.retain-wrap {
+		display: flex;
+		align-items: center;
+		gap: 10rpx;
+	}
+
+	.retain-label {
+		font-size: 20rpx;
+		color: #95a0b5;
+	}
+
 	.message-list.theme-dark .bubble {
 		background: #23252b;
 		color: #eef2f8;
@@ -400,6 +424,10 @@
 	}
 
 	.message-list.theme-dark .time {
+		color: rgba(255, 255, 255, 0.42);
+	}
+
+	.message-list.theme-dark .retain-label {
 		color: rgba(255, 255, 255, 0.42);
 	}
 

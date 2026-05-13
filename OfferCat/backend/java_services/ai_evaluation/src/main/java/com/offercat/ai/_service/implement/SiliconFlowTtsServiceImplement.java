@@ -64,7 +64,8 @@ public class SiliconFlowTtsServiceImplement {
         Map<String, Object> body = new HashMap<>();
         body.put("model", defaultModel);
         body.put("input", req.getText());
-        body.put("voice", (req.getVoice() == null || req.getVoice().isBlank()) ? defaultVoice : req.getVoice());
+        // 硅基流动要求 voice 为「模型名:音色」枚举值，不能单独传 alex（见官方 /v1/audio/speech）
+        body.put("voice", resolveVoice(req.getVoice()));
         body.put("response_format", (req.getResponseFormat() == null || req.getResponseFormat().isBlank()) ? defaultResponseFormat : req.getResponseFormat());
         body.put("stream", req.getStream() == null ? defaultStream : req.getStream());
         body.put("speed", req.getSpeed() == null ? defaultSpeed : req.getSpeed());
@@ -77,5 +78,17 @@ public class SiliconFlowTtsServiceImplement {
 
         //音频二进制
         return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+    }
+
+    /**
+     * 配置里可写短音色名（如 alex），自动补全为 defaultModel + ":" + voice；
+     * 若已是「模型:音色」格式则原样使用。
+     */
+    private String resolveVoice(String requestedVoice) {
+        String v = (requestedVoice == null || requestedVoice.isBlank()) ? defaultVoice : requestedVoice.trim();
+        if (v.contains(":")) {
+            return v;
+        }
+        return defaultModel + ":" + v;
     }
 }

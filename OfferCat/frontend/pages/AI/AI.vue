@@ -39,7 +39,13 @@
 					<!-- 空会话欢迎区：当前没有消息时给用户一个功能入口提示 -->
 					<AiWelcomeHero v-if="!hasMessages" :theme="theme" />
 					<!-- 消息列表：统一渲染用户消息、AI 回复、图片和语音播报入口 -->
-					<AiMessageList :messages="currentConversation.messages" :theme="theme" @preview="skipNextOnShow = true" />
+					<AiMessageList
+						:messages="currentConversation.messages"
+						:theme="theme"
+						:retain-enabled="isCloudHistoryConversation"
+						@preview="skipNextOnShow = true"
+						@retain-change="onConsultRetainChange"
+					/>
 					<!-- 底部锚点：用于自动滚动到最新消息 -->
 					<view id="ai-scroll-anchor" class="ai-scroll-anchor"></view>
 					<!-- 底部占位：避免输入面板遮挡最后一条消息 -->
@@ -92,7 +98,7 @@
 	import AiBottomPanel from './components/AiBottomPanel.vue'
 	import AiMessageList from './components/AiMessageList.vue'
 	import themeMixin from '@/utils/themeMixin.js'
-	import { requestAiChat, requestAiChatStream, requestAiHistory, uploadVoiceAndTranscribe } from '@/utils/ai.js'
+	import { requestAiChat, requestAiChatStream, requestAiHistory, setAiConsultRetain, uploadVoiceAndTranscribe } from '@/utils/ai.js'
 	import { BASE_URL } from '@/api/config.js'
 	import { saveQuestionHistory } from '@/utils/questionHistory.js'
 
@@ -187,6 +193,9 @@
 			},
 			isLocked() {
 				return this.isInterviewMode && !this.interviewEnded
+			},
+			isCloudHistoryConversation() {
+				return this.currentConversation && this.currentConversation.title === '云端历史记录'
 			}
 		},
 		watch: {
@@ -311,6 +320,8 @@
 						reversed.forEach((item, index) => {
 							const timeStr = item.createTime ? item.createTime.replace('T', ' ') : '历史'
 							const isHidden = ['帮我润色简历经历', '开启HR模拟面试', '开启AI模拟面试', '模拟大厂群面场景', '分析岗位匹配度'].includes(item.userContent)
+							const consultId = item.id != null ? Number(item.id) : null
+							const retained = item.retained === 1 || item.retained === true
 
 							let filePaths = undefined;
 							if (item.userImages) {
@@ -329,7 +340,9 @@
 								time: timeStr,
 								hidden: isHidden,
 								filePaths: filePaths && filePaths.length > 0 ? filePaths : undefined,
-								type: filePaths && filePaths.length > 0 ? 'images' : 'text'
+								type: filePaths && filePaths.length > 0 ? 'images' : 'text',
+								consultId,
+								retained
 							})
 							
 							let aiFilePaths = undefined;
@@ -349,7 +362,9 @@
 								time: timeStr,
 								loading: false,
 								filePaths: aiFilePaths && aiFilePaths.length > 0 ? aiFilePaths : undefined,
-								type: aiFilePaths && aiFilePaths.length > 0 ? 'images' : 'text'
+								type: aiFilePaths && aiFilePaths.length > 0 ? 'images' : 'text',
+								consultId,
+								retained
 							})
 						})
 
@@ -361,6 +376,29 @@
 				} catch (e) {
 					console.error('拉取云端历史失败', e)
 				}
+			},
+			async onConsultRetainChange({ consultId, retained }) {
+				if (consultId == null) return
+				const prev = !retained
+				this.applyConsultRetainedFlag(consultId, retained)
+				try {
+					await setAiConsultRetain(consultId, retained)
+					this.saveLocalConversations()
+				} catch (e) {
+					this.applyConsultRetainedFlag(consultId, prev)
+					uni.showToast({
+						title: e.message || '设置失败',
+						icon: 'none'
+					})
+				}
+			},
+			applyConsultRetainedFlag(consultId, retained) {
+				const cloud = this.conversations.find(c => c.title === '云端历史记录')
+				if (!cloud || !cloud.messages) return
+				cloud.messages = cloud.messages.map(m => {
+					if (m.consultId !== consultId) return m
+					return { ...m, retained: !!retained }
+				})
 			},
 			showInterviewLockedToast() {
 				// 将原本简单的 Toast 提示改为直接弹窗确认

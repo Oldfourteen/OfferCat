@@ -41,7 +41,7 @@ smsbao:
   username: ofteen  # 填写您的短信宝账号
   api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
   api-url: http://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
-  sign: "【求职猫】"
+  sign: "【Offer猫服务】"
 
 # Eureka Client 配置
 eureka:

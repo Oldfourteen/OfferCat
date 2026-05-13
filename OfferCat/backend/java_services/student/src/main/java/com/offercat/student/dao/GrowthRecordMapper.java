@@ -61,4 +61,9 @@ public interface GrowthRecordMapper {
      * 获取指定时间范围内的打卡日期列表
      */
     java.util.List<java.time.LocalDate> getCheckinDatesBetween(@Param("studentId") Long studentId, @Param("startDate") java.time.LocalDate startDate, @Param("endDate") java.time.LocalDate endDate);
+
+    /**
+     * 统计累计打卡天数
+     */
+    int countTotalCheckins(@Param("studentId") Long studentId);
 }

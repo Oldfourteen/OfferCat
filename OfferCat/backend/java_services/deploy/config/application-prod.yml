@@ -6,12 +6,15 @@
 seata:
   enabled: false
 
-# 短信宝配置
+# 短信宝配置（文档：GET /sms，p=MD5「登录密码」）
 smsbao:
-  username: ofteen  # 填写您的短信宝账号
-  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
+  username: ofteen  # 短信宝注册用户名（u）
+  # 以下为登录密码明文；代码中会 MD5 一次作为 p（若填控制台里已有的 32 位 MD5 会被二次哈希导致报错 30）
+  api-key: 18ff51b7ba4f49babab617382aec8b66
   api-url: https://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
-  sign: "【求职猫】"
+  sign: "【Offer猫服务】"
+  verification-user-default: "用户"
+  verification-validity: "5分钟"
 spring:
   data:
     redis:

@@ -15,10 +15,15 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
+import java.security.MessageDigest;
+import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
+import java.util.Base64;
 import java.util.Random;
 import java.util.UUID;
 import java.util.concurrent.TimeUnit;
+import java.util.regex.Pattern;
 
 /**
  * 认证服务实现类
@@ -49,6 +54,11 @@ public class AuthServiceImplement implements AuthService {
     /** Redis 中验证码的前缀和过期时间 */
     private static final String CODE_PREFIX = "auth:code:";
     private static final long CODE_EXPIRE = 5; // 5分钟过期
+
+    /** 32 位十六进制 MD5，用于兼容历史库中的 MD5 密码 */
+    private static final Pattern MD5_HEX = Pattern.compile("^[a-fA-F0-9]{32}$");
+    /** 64 位十六进制 SHA-256，用于兼容部分历史/第三方存储 */
+    private static final Pattern SHA256_HEX = Pattern.compile("^[a-fA-F0-9]{64}$");
 
     /**
      * 发送验证码逻辑
@@ -143,10 +153,11 @@ public class AuthServiceImplement implements AuthService {
      */
     @Override
     public ResponseResult<AuthResponse> login(LoginRequest request) {
+        String target = request.getTarget() != null ? request.getTarget().trim() : "";
         // 多维度查找用户
-        User user = userMapper.selectByPhone(request.getTarget());
+        User user = userMapper.selectByPhone(target);
         if (user == null) {
-            user = userMapper.selectByEmail(request.getTarget());
+            user = userMapper.selectByEmail(target);
         }
 
         if (user == null) {
@@ -166,15 +177,15 @@ public class AuthServiceImplement implements AuthService {
         // 根据登录类型执行不同的校验逻辑
         /**  模式1：密码登录 */
         if ("password".equals(request.getLoginType())) {
-            if (!passwordEncoder.matches(request.getPassword(), user.getPassword())) {
+            if (!verifyPassword(user, request.getPassword())) {
                 return ResponseResult.error("密码错误");
             }
         } else if ("code".equals(request.getLoginType())) {
             /**  模式2：验证码登录 (仅支持手机号) */
-            if (user.getPhone() == null || !user.getPhone().equals(request.getTarget())) {
+            if (user.getPhone() == null || !user.getPhone().equals(target)) {
                 return ResponseResult.error("验证码登录仅支持使用手机号");
             }
-            String key = CODE_PREFIX + request.getTarget();
+            String key = CODE_PREFIX + target;
             String cachedCode = redisTemplate.opsForValue().get(key);
             if (cachedCode == null || !cachedCode.equals(request.getCode())) {
                 return ResponseResult.error("验证码错误或已过期");
@@ -190,13 +201,183 @@ public class AuthServiceImplement implements AuthService {
     }
 
     /**
+     * 校验密码（BCrypt 为单向哈希，没有「解密」步骤，只能用 matches 验证明文与哈希是否匹配）。
+     * 兼容：Spring 委派前缀、首尾空白、旧版 $2$ 前缀、Base64/Hex 包装的 bcrypt 串、MD5/SHA-256 十六进制、明文。
+     */
+    private boolean verifyPassword(User user, String rawPassword) {
+        String raw = rawPassword == null ? "" : rawPassword.strip();
+        String stored = user.getPassword();
+        if (raw.isEmpty() || stored == null || stored.isEmpty()) {
+            return false;
+        }
+        stored = stripDelegatingPasswordPrefix(stored.strip());
+        if (stored.isEmpty()) {
+            return false;
+        }
+        stored = normalizeLegacyBcryptPrefix(stored);
+        stored = tryDecodeHexWrappedBcrypt(stored);
+        stored = tryDecodeBase64WrappedBcrypt(stored);
+
+        if (isBcryptHash(stored)) {
+            try {
+                boolean ok = passwordEncoder.matches(raw, stored);
+                if (!ok && stored.length() < 59) {
+                    log.warn("userId={} bcrypt 哈希长度过短(len={})，请检查库表 password 字段长度是否截断(建议≥60)",
+                            user.getUserId(), stored.length());
+                }
+                return ok;
+            } catch (IllegalArgumentException ex) {
+                log.warn("userId={} bcrypt 校验异常: {}", user.getUserId(), ex.getMessage());
+                return false;
+            }
+        }
+        if (MD5_HEX.matcher(stored).matches()) {
+            if (md5Hex(raw).equalsIgnoreCase(stored)) {
+                return persistBcryptPassword(user, raw);
+            }
+            return false;
+        }
+        if (SHA256_HEX.matcher(stored).matches()) {
+            if (sha256Hex(raw).equalsIgnoreCase(stored)) {
+                return persistBcryptPassword(user, raw);
+            }
+            return false;
+        }
+        if (raw.equals(stored)) {
+            return persistBcryptPassword(user, raw);
+        }
+        return false;
+    }
+
+    private boolean persistBcryptPassword(User user, String rawPlain) {
+        String encoded = passwordEncoder.encode(rawPlain);
+        userMapper.updatePassword(user.getUserId(), encoded);
+        user.setPassword(encoded);
+        return true;
+    }
+
+    private static String stripDelegatingPasswordPrefix(String stored) {
+        if (stored == null || !stored.startsWith("{")) {
+            return stored;
+        }
+        int end = stored.indexOf('}');
+        if (end > 0 && end < stored.length() - 1) {
+            return stored.substring(end + 1);
+        }
+        return stored;
+    }
+
+    private static boolean isBcryptHash(String stored) {
+        return stored.startsWith("$2a$")
+                || stored.startsWith("$2b$")
+                || stored.startsWith("$2y$");
+    }
+
+    /** 极旧 bcrypt 使用 $2$，Spring 的 BCrypt 实现按 $2a$ 处理 */
+    private static String normalizeLegacyBcryptPrefix(String stored) {
+        if (stored != null && stored.startsWith("$2$") && stored.length() > 3) {
+            return "$2a$" + stored.substring(3);
+        }
+        return stored;
+    }
+
+    /** 部分系统将 bcrypt 原文再做十六进制存储（长度通常≥120） */
+    private static String tryDecodeHexWrappedBcrypt(String stored) {
+        if (stored == null || isBcryptHash(stored) || (stored.length() % 2) != 0) {
+            return stored;
+        }
+        if (stored.length() < 100 || !stored.matches("^[0-9a-fA-F]+$")) {
+            return stored;
+        }
+        try {
+            int n = stored.length() / 2;
+            byte[] out = new byte[n];
+            for (int i = 0; i < n; i++) {
+                int hi = Character.digit(stored.charAt(i * 2), 16);
+                int lo = Character.digit(stored.charAt(i * 2 + 1), 16);
+                if (hi < 0 || lo < 0) {
+                    return stored;
+                }
+                out[i] = (byte) ((hi << 4) | lo);
+            }
+            String decoded = new String(out, StandardCharsets.UTF_8).strip();
+            return isBcryptHash(decoded) ? decoded : stored;
+        } catch (Exception ex) {
+            return stored;
+        }
+    }
+
+    /** 部分系统将 bcrypt 原文再做 Base64 存储 */
+    private static String tryDecodeBase64WrappedBcrypt(String stored) {
+        if (stored == null || isBcryptHash(stored) || stored.length() < 50) {
+            return stored;
+        }
+        String compact = stored.replaceAll("\\s+", "");
+        try {
+            byte[] bin = tryBase64Decode(compact);
+            if (bin == null || bin.length < 20) {
+                return stored;
+            }
+            String decoded = new String(bin, StandardCharsets.UTF_8).strip();
+            return isBcryptHash(decoded) ? decoded : stored;
+        } catch (Exception ex) {
+            return stored;
+        }
+    }
+
+    private static byte[] tryBase64Decode(String compact) {
+        try {
+            return Base64.getDecoder().decode(compact);
+        } catch (IllegalArgumentException ignored) {
+            // ignore
+        }
+        try {
+            return Base64.getMimeDecoder().decode(compact);
+        } catch (IllegalArgumentException ignored) {
+            // ignore
+        }
+        return null;
+    }
+
+    private static String md5Hex(String plain) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("MD5");
+            byte[] dig = md.digest(plain.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(32);
+            for (byte b : dig) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("MD5 not available", e);
+        }
+    }
+
+    private static String sha256Hex(String plain) {
+        try {
+            MessageDigest md = MessageDigest.getInstance("SHA-256");
+            byte[] dig = md.digest(plain.getBytes(StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder(64);
+            for (byte b : dig) {
+                sb.append(String.format("%02x", b));
+            }
+            return sb.toString();
+        } catch (NoSuchAlgorithmException e) {
+            throw new IllegalStateException("SHA-256 not available", e);
+        }
+    }
+
+    /**
      * 统一处理登录/注册成功后的业务
      * 1. 检查用户的身份信息(学生/教师/企业)是否已完善
      * 2. 生成模拟 Token (UUID)
      */
     private ResponseResult<AuthResponse> loginAfterAuth(User user) {
         boolean isComplete = checkInfoComplete(user);
-        
+
+        // 不在接口响应中返回密码哈希（BCrypt 也绝不应「解密」回传）
+        user.setPassword(null);
+
         // 查询并附带完整的学生档案信息给前端
         if (user.getUserRole() != null && user.getUserRole() == 1) {
             Student student = studentMapper.selectByUserId(user.getUserId());

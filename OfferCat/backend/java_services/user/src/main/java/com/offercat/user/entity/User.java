@@ -1,5 +1,6 @@
 package com.offercat.user.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 import lombok.AllArgsConstructor;
@@ -18,6 +19,7 @@ public class User {
     private Long userId;
     
     // 用户密码(加密存储)
+    @JsonIgnore
     private String password;
     
     // 用户姓名/昵称

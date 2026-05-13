@@ -3,8 +3,11 @@ package com.offercat.student.controller;
 import com.offercat.student.common.ResponseResult;
 import com.offercat.student.service.GrowthRecordService;
 import com.offercat.student.vo.GrowthRecordVO;
+import com.offercat.student.vo.CheckinResultVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.List;
 
 /**
  * 成长档案控制器
@@ -37,12 +40,24 @@ public class GrowthRecordController {
      * 连续打卡，从零开始，一旦中间遗漏一天就会归零
      * 
      * @param studentId 学生ID
-     * @return 当前连续打卡天数
+     * @return 打卡结果（包含连续天数和累计天数）
      */
     @PostMapping("/checkin")
-    public ResponseResult<Integer> checkIn(@RequestParam("studentId") Long studentId) {
-        int days = growthRecordService.checkIn(studentId);
-        return ResponseResult.success(days);
+    public ResponseResult<CheckinResultVO> checkIn(@RequestParam("studentId") Long studentId) {
+        CheckinResultVO result = growthRecordService.checkIn(studentId);
+        return ResponseResult.success(result);
+    }
+
+    /**
+     * 获取本周打卡状态
+     * 
+     * @param studentId 学生ID
+     * @return 长度为7的Boolean数组，代表周一到周日
+     */
+    @GetMapping("/checkin/weekly")
+    public ResponseResult<List<Boolean>> getWeeklyCheckinStatus(@RequestParam("studentId") Long studentId) {
+        List<Boolean> status = growthRecordService.getWeeklyCheckinStatus(studentId);
+        return ResponseResult.success(status);
     }
 
     /**

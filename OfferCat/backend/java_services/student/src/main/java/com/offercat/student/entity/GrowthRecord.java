@@ -25,6 +25,8 @@ public class GrowthRecord {
     private Integer collectionCount;
     // 连续签到天数
     private Integer continuousCheckinDays;
+    // 累计签到天数
+    private Integer totalCheckinDays;
     // 最后签到日期
     private LocalDate lastCheckinDate;
     // 创建时间

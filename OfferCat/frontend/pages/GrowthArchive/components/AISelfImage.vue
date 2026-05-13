@@ -10,7 +10,7 @@
 			<!-- Upload Section -->
 			<view class="upload-section" v-if="!originalImage" @click="chooseImage">
 				<view class="upload-placeholder">
-					<uni-icons type="camera" size="48" color="#9CA3AF"></uni-icons>
+					<text class="upload-camera-icon">📷</text>
 					<text class="upload-text">点击上传正面照片</text>
 					<text class="upload-tip">支持 JPG、PNG 格式，清晰的面部有助于生成更好的效果</text>
 				</view>
@@ -24,16 +24,16 @@
 						<image :src="originalImage" mode="aspectFit" class="preview-img"></image>
 						<view class="tag">原图</view>
 						<view class="delete-btn" @click.stop="clearImage" v-if="!isGenerating && !generatedImage">
-							<uni-icons type="closeempty" size="16" color="#fff"></uni-icons>
+							<text class="delete-icon-x">×</text>
 						</view>
 						<view class="zoom-hint">
-							<uni-icons type="search" size="16" color="#fff"></uni-icons>
+							<text class="zoom-hint-glyph">⌕</text>
 						</view>
 					</view>
 
 					<!-- Arrow -->
 					<view class="arrow-icon" v-if="generatedImage || isGenerating">
-						<uni-icons type="arrowright" size="24" color="#9CA3AF"></uni-icons>
+						<text class="arrow-between">→</text>
 					</view>
 
 					<!-- Generated Image -->
@@ -45,7 +45,7 @@
 						<image v-if="generatedImage" :src="generatedImage" mode="aspectFit" class="preview-img"></image>
 						<view class="tag result-tag" v-if="generatedImage">AI 生成图</view>
 						<view class="zoom-hint" v-if="generatedImage">
-							<uni-icons type="search" size="16" color="#fff"></uni-icons>
+							<text class="zoom-hint-glyph">⌕</text>
 						</view>
 					</view>
 				</view>
@@ -87,7 +87,7 @@
 					</view>
 
 					<button class="generate-btn" @click="generateImage" :disabled="isGenerating">
-						<uni-icons v-if="!isGenerating" type="settings" size="18" color="#fff" class="btn-icon"></uni-icons>
+						<text v-if="!isGenerating" class="btn-icon generate-gear">⚙</text>
 						{{ isGenerating ? '正在生成...' : '开始生成职业形象' }}
 					</button>
 				</view>
@@ -378,6 +378,11 @@ export default {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
+
+		.upload-camera-icon {
+			font-size: 96rpx;
+			line-height: 1;
+		}
 		
 		.upload-text {
 			margin-top: 20rpx;
@@ -464,6 +469,13 @@ export default {
 		&:active {
 			background: rgba(0, 0, 0, 0.7);
 		}
+
+		.delete-icon-x {
+			color: #fff;
+			font-size: 40rpx;
+			line-height: 1;
+			font-weight: 300;
+		}
 	}
 	
 	.zoom-hint {
@@ -479,6 +491,12 @@ export default {
 		justify-content: center;
 		backdrop-filter: blur(4px);
 		pointer-events: none;
+
+		.zoom-hint-glyph {
+			color: #fff;
+			font-size: 28rpx;
+			line-height: 1;
+		}
 	}
 }
 
@@ -487,6 +505,12 @@ export default {
 	align-items: center;
 	justify-content: center;
 	flex-shrink: 0;
+
+	.arrow-between {
+		font-size: 48rpx;
+		line-height: 1;
+		color: #9CA3AF;
+	}
 }
 
 .generating-mask {
@@ -618,6 +642,12 @@ export default {
 	
 	.btn-icon {
 		margin-right: 12rpx;
+	}
+
+	.generate-gear {
+		font-size: 36rpx;
+		line-height: 1;
+		color: #fff;
 	}
 }
 

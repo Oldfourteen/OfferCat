@@ -42,6 +42,7 @@
 		components: {
 			editResumeNamePopup
 		},
+		emits: ['updatePhoto', 'updateResumeName'],
 		props: {
 			resumeName: {
 				type: String,
@@ -54,6 +55,10 @@
 			resumeData: {
 				type: Object,
 				default: () => ({})
+			},
+			theme: {
+				type: String,
+				default: 'light'
 			}
 		},
 		computed: {

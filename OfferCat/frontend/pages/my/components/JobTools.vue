@@ -84,6 +84,7 @@
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import { getCheckInKey } from '@/utils/user.js'
+	import { getGrowthRecordStats, checkIn, getWeeklyCheckinStatus } from '@/api/growth.js'
 
 	export default {
 		name: "JobTools",
@@ -152,14 +153,14 @@
 					url: '/subPages/questionBank/written'
 				})
 			},
-			initCheckInData() {
+			async initCheckInData() {
 				// 生成本周七天的打卡视图，并同步今日状态与累计天数。
 				const now = new Date()
 				this.currentDate = `${now.getMonth() + 1}月${now.getDate()}日`
 				
 				// 生成一周的日期数据
-				this.weekDays = []
 				const weekNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+				this.weekDays = []
 				
 				for (let i = 0; i < 7; i++) {
 					const date = new Date(now)
@@ -168,23 +169,41 @@
 					const todayStr = now.toISOString().split('T')[0]
 					const isToday = dateStr === todayStr
 					const isPast = dateStr < todayStr
-					const checked = this.isChecked(dateStr)
 					
 					this.weekDays.push({
 						name: weekNames[i],
 						date: date.getDate(),
 						isToday,
 						isPast,
-						checked
+						checked: false
 					})
-					
-					if (isToday) {
-						this.todayChecked = checked
-					}
 				}
 				
-				// 计算累计打卡天数
-				this.calculateTotalCheckIns()
+				// 从后端获取打卡状态
+				await this.fetchCheckInData()
+			},
+			async fetchCheckInData() {
+				try {
+					const [statsRes, weeklyRes] = await Promise.all([
+						getGrowthRecordStats(),
+						getWeeklyCheckinStatus()
+					])
+					
+					if (statsRes && statsRes.data) {
+						this.totalCheckIns = statsRes.data.totalCheckinDays || 0
+						this.todayChecked = statsRes.data.checkedInToday || false
+					}
+					
+					if (weeklyRes && weeklyRes.data) {
+						const weeklyStatus = weeklyRes.data
+						this.weekDays = this.weekDays.map((day, index) => ({
+							...day,
+							checked: weeklyStatus[index] || false
+						}))
+					}
+				} catch (error) {
+					console.error('获取打卡数据失败:', error)
+				}
 			},
 			isChecked(dateStr) {
 				// 从用户维度的本地签到缓存中读取某天是否已打卡。
@@ -198,34 +217,36 @@
 				const checkIns = uni.getStorageSync(checkInKey) || {}
 				this.totalCheckIns = Object.values(checkIns).filter(Boolean).length
 			},
-			checkIn() {
-				// 今日未打卡时写入本地签到记录，并更新周视图与累计天数。
+			async checkIn() {
 				if (this.todayChecked) return
 				
-				const today = new Date().toISOString().split('T')[0]
-				const checkInKey = getCheckInKey()
-				const checkIns = uni.getStorageSync(checkInKey) || {}
-				checkIns[today] = true
-				uni.setStorageSync(checkInKey, checkIns)
-				
-				this.todayChecked = true
-				this.calculateTotalCheckIns()
-				
-				// 更新本周打卡状态
-				this.weekDays = this.weekDays.map(day => {
-					if (day.isToday) {
-						return { ...day, checked: true }
+				try {
+					const res = await checkIn()
+					if (res && res.data) {
+						this.todayChecked = true
+						this.totalCheckIns = res.data.totalCheckinDays || this.totalCheckIns + 1
+						
+						this.weekDays = this.weekDays.map(day => {
+							if (day.isToday) {
+								return { ...day, checked: true }
+							}
+							return day
+						})
+						
+						uni.showToast({
+							title: '打卡成功！',
+							icon: 'success'
+						})
+						if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+							uni.$emit(ARCHIVE_DATA_UPDATED_EVENT)
+						}
 					}
-					return day
-				})
-				
-				// 显示提示
-				uni.showToast({
-					title: '打卡成功！',
-					icon: 'success'
-				})
-				if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
-					uni.$emit(ARCHIVE_DATA_UPDATED_EVENT)
+				} catch (error) {
+					console.error('打卡失败:', error)
+					uni.showToast({
+						title: '打卡失败',
+						icon: 'error'
+					})
 				}
 			},
 			navigateToGrowth() {

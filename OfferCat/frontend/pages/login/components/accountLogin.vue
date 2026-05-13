@@ -13,7 +13,7 @@
 				/>
 			</view>
 			<!-- 密码输入框支持明文/密文切换。 -->
-			<view class="input-item" :class="{'input-active': currentFocus === 'password'}">
+			<view class="input-item password-row" :class="{'input-active': currentFocus === 'password'}">
 				<input 
 					type="text" 
 					:password="!showPassword"
@@ -24,6 +24,7 @@
 				/>
 				<view class="toggle-btn" @click="togglePasswordVisible">{{ showPassword ? '隐藏' : '显示' }}</view>
 			</view>
+			<view class="forgot-password" @click="goFindPassword">忘记密码？</view>
 		</view>
 		
 		<!-- 登录前要求通过人机验证。 -->
@@ -94,6 +95,13 @@
 				// 切换到验证码登录模式。
 				this.$emit('switchSms')
 			},
+			goFindPassword() {
+				uni.navigateTo({
+					url: '/pages/login/findPassword',
+					animationType: 'slide-in-right',
+					animationDuration: 300
+				});
+			},
 			onAgreementChange(val) {
 				// 同步协议勾选状态。
 				this.isAgreed = val;
@@ -124,8 +132,8 @@
 				try {
 					const result = await login({
 						loginType: 'password',
-						target: this.account,
-						password: this.password
+						target: (this.account || '').trim(),
+						password: (this.password || '').trim()
 					})
 
 					const token = (result && result.token) || (result && result.data && result.data.token) || ''
@@ -205,6 +213,30 @@
 				flex-shrink: 0;
 			}
 		}
+		
+		.password-row {
+			position: relative;
+			height: 50px;
+			
+			input {
+				height: 100%;
+			}
+			
+			.toggle-btn {
+				position: absolute;
+				right: 0;
+				top: 50%;
+				transform: translateY(-50%);
+			}
+		}
+	}
+	
+	.forgot-password {
+		display: flex;
+		justify-content: flex-end;
+		font-size: 12px;
+		color: #999;
+		margin-bottom: 20px;
 	}
 
 	.agreement-wrapper {

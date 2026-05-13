@@ -34,3 +34,7 @@ ENV/
 
 # Maven local repository
 .java_services/.m2-build/
+
+# 阿里云 AccessKey（外部配置）
+**/secrets/application-dypns.yml
+**/config/application-dypns.yml

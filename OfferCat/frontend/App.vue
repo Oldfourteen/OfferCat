@@ -42,8 +42,6 @@
 
 <style lang="scss">
 	/*每个页面公共css */
-	@import url("https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css");
-	
 	page {
 		// 取消了背景和文字的 transition 以保证与底部栏瞬间换色同步
 	}

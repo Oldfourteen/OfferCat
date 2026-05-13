@@ -7,35 +7,44 @@
 					<text class="tab-text">{{ item }}</text>
 				</view>
 				<!-- 滑动指示器 -->
-				<view class="sliding-indicator" :style="{ transform: 'translateX(' + (currentTab * 120) + 'rpx)' }"></view>
+				<view class="indicator-wrapper" :style="{ transform: 'translateX(' + (currentTab * 100) + '%)' }">
+					<view class="sliding-indicator"></view>
+				</view>
 			</view>
 		</scroll-view>
 
 		<view class="forum-list-container">
 			<view class="forum-list">
 				<!-- 帖子列表 -->
-				<view class="forum-card card shadow-soft" v-for="item in postList" :key="item.postId || item.id" @click="goToDetail(item)">
+				<view class="forum-card" v-for="(item, index) in postList" :key="item.postId || item.id" @click="goToDetail(item)">
 					<view class="forum-card-content">
 						<!-- 上方信息 -->
 						<view class="card-user-info">
 							<image class="user-avatar" :src="getAvatar(item.authorAvatar, item.userId)" mode="aspectFill"></image>
 							<view class="user-meta">
 								<text class="user-name">{{ getAuthorName(item.authorName, item.userId) }}</text>
-								<text class="post-time">{{ formatTime(item.createTime) }}</text>
+								<view class="user-tag-row">
+									<image class="tag-icon" src="/static/icons/tag.svg" mode="aspectFit" v-if="item.tag"></image>
+									<text class="user-tag">{{ item.tag || '默认分区' }}</text>
+								</view>
 							</view>
-							<text class="post-tag">讨论</text>
 						</view>
 						
-						<!-- 内容区域 - 固定高度产生留白 -->
+						<!-- 内容区域 - 超出字数截断并把 ...全部 固定在同一行 -->
 						<view class="card-main">
-							<text class="post-desc text-wrap-safe">{{ item.content || '' }}</text>
+							<view class="post-desc-container">
+								<text class="post-desc" v-if="item.content && item.content.length > 75">
+									{{ getPreviewContent(item.content) }}<text class="suffix-inline">...<text class="expand-btn-inline" @click.stop="goToDetail(item)">全部</text></text>
+								</text>
+								<text class="post-desc" v-else>{{ item.content || '' }}</text>
+							</view>
 						</view>
 
-						<!-- 图片展示区 (最多显示3张) - 固定高度 -->
-						<view class="post-images">
-							<view class="image-wrapper" v-for="(img, index) in getImagesList(item.images).slice(0, 3)" :key="index">
-								<image class="post-img" :src="getFullUrl(img)" mode="aspectFill"></image>
-								<view class="more-images-badge" v-if="index === 2 && getImagesList(item.images).length > 3">
+						<!-- 图片展示区 -->
+						<view class="post-images" :class="getImageLayoutClass(getImagesList(item.images))" v-if="getImagesList(item.images).length > 0">
+							<view class="image-wrapper" v-for="(img, imgIndex) in getImagesList(item.images).slice(0, 3)" :key="imgIndex" @click.stop="previewImage(img, getImagesList(item.images))">
+								<image class="post-img" :src="getFullUrl(img)" :mode="getImagesList(item.images).length === 1 ? 'widthFix' : 'aspectFill'"></image>
+								<view class="more-images-badge" v-if="imgIndex === 2 && getImagesList(item.images).length > 3">
 									<text class="more-text">+{{ getImagesList(item.images).length - 3 }}</text>
 								</view>
 							</view>
@@ -43,13 +52,19 @@
 
 						<!-- 底部操作区 -->
 						<view class="card-actions">
-							<view class="action-item">
-								<image class="icon-svg" src="/static/icons/comment.svg"></image>
-								<text class="count">{{ item.commentCount || 0 }}</text>
-							</view>
-							<view class="action-item" @click.stop="likePost(item)">
-								<image class="icon-svg" :src="item.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
-								<text class="count" :style="{ color: item.isLiked ? 'rgb(250, 81, 81)' : '' }">{{ item.likeCount || 0 }}</text>
+							<text class="view-count">浏览 {{ item.views || Math.floor(Math.random() * 10000) }}</text>
+							<view class="action-right">
+								<view class="action-item" @click.stop="likePost(item)">
+									<image class="icon-svg" :src="item.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+									<text class="count" :class="{ 'active-color': item.isLiked }">{{ item.likeCount || 0 }}</text>
+								</view>
+								<view class="action-item">
+									<image class="icon-svg" src="/static/icons/comment.svg"></image>
+									<text class="count">{{ item.commentCount || 0 }}</text>
+								</view>
+								<view class="action-item collect-hint" @click.stop="toggleCollect(item, index)">
+									<image class="icon-svg" :src="item.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
+								</view>
 							</view>
 						</view>
 					</view>
@@ -121,12 +136,85 @@
 		},
 		mounted() {
 			// 首次进入首页时拉取第一页帖子数据。
-			this.fetchPosts()
+			// this.fetchPosts()
+			// 临时注入静态帖子数据
+			this.postList = [
+				{
+					postId: 'mock_1',
+					id: 'mock_1',
+					userId: 'user_001',
+					authorName: 'Wind',
+					tag: '腾讯游戏筛选',
+					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix',
+					createTime: '2026-05-13 10:30',
+					content: '又麻烦大家帮我做选择了，这次的疑问是，我想抽扣扣酱，但是又看到这次传说级手办制作很棒，导致我很犹豫，从今天到15号我算了下大概能攒多少资源，大家觉得哪个更划算一点呢？求建议！',
+					images: '["https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80", "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80"]',
+					views: 7640,
+					commentCount: 48,
+					likeCount: 3,
+					isLiked: false,
+					isCollected: false
+				},
+				{
+					postId: 'mock_2',
+					id: 'mock_2',
+					userId: 'user_002',
+					authorName: '(ฅωฅ)',
+					tag: '三角洲行动',
+					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Mia',
+					createTime: '2026-05-12 18:45',
+					content: '雷霆*忧郁小猫不让我睡觉，还不让我发游戏，我要曝光你。每天晚上都在我键盘上跑酷，真的是太调皮了！哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈',
+					images: '["https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80"]',
+					views: 3201,
+					commentCount: 15,
+					likeCount: 102,
+					isLiked: true,
+					isCollected: true
+				}
+			];
 		},
 		methods: {
+			getPreviewContent(content) {
+				if (!content) return ''
+				// 预留尾部“...全部”的宽度，避免末尾按钮换行。
+				return content.length > 68 ? content.substring(0, 68) : content
+			},
+			toggleCollect(item, index) {
+				const originalIsCollected = item.isCollected;
+				// 乐观更新
+				this.$set(this.postList, index, { ...item, isCollected: !originalIsCollected });
+				
+				uni.showToast({
+					title: originalIsCollected ? '已取消收藏' : '收藏成功',
+					icon: 'success'
+				});
+				
+				// 同步到本地缓存，参考旧版 comment 功能
+				let favorites = uni.getStorageSync('favorites') || [];
+				if (originalIsCollected) {
+					favorites = favorites.filter(fav => !(fav.isForumPost && String(fav.id) === String(item.postId)));
+				} else {
+					let plainText = item.content ? item.content.replace(/<[^>]+>/g, "") : '分享内容';
+					let title = plainText.length > 12 ? plainText.substring(0, 12) + '...' : plainText;
+					
+					favorites.unshift({
+						id: item.postId,
+						isForumPost: true,
+						type: '论坛',
+						title: title,
+						image: this.getCoverImage(item),
+						user_avatar: item.authorAvatar,
+						user_name: item.authorName,
+						time: item.createTime,
+						place: '小程序论坛',
+						desc: item.content,
+						create_time: new Date().getTime()
+					});
+				}
+				uni.setStorageSync('favorites', favorites);
+			},
 			switchTab(index) {
 				if (this.currentTab === index) return;
-				
 				if (index === 2) {
 					uni.showToast({
 						title: '敬请期待',
@@ -134,10 +222,9 @@
 					});
 					return;
 				}
-
 				this.currentTab = index;
 				this.pageNum = 1;
-				this.fetchPosts();
+				// this.fetchPosts();
 			},
 			fetchPosts() {
 				// 按当前页码和页大小请求论坛帖子，并补齐点赞响应字段。
@@ -235,6 +322,11 @@
 				}
 				return name || '匿名用户'
 			},
+			getImageLayoutClass(images) {
+				if (!images || images.length === 0) return '';
+				if (images.length === 1) return 'layout-1';
+				return 'layout-multi';
+			},
 			getImagesList(imagesStr) {
 				// 同时兼容 JSON 数组和逗号分隔字符串两种图片字段格式。
 				if (!imagesStr) return []
@@ -245,6 +337,13 @@
 					return imagesStr.split(',').filter(s => s.trim())
 				}
 				return []
+			},
+			previewImage(currentImg, allImages) {
+				const urls = allImages.map(img => this.getFullUrl(img));
+				uni.previewImage({
+					current: this.getFullUrl(currentImg),
+					urls: urls
+				});
 			},
 			getCoverImage(item) {
 				// 兜底封面优先取首图，没有图片时退回作者头像。
@@ -332,22 +431,22 @@
 
 <style lang="scss">
 	.forum-section {
-		margin-top: 20rpx;
+		background: transparent;
 	}
 
 	.tabs-scroll {
 		width: 100%;
 		height: 88rpx;
 		white-space: nowrap;
-		border-bottom: 2rpx solid rgba(0, 0, 0, 0.05);
-		margin-bottom: 24rpx;
+		background: #fff;
+		border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
 	}
 
 	.tabs-container {
 		display: flex;
 		align-items: center;
 		height: 100%;
-		padding: 0 5rpx;
+		padding: 0 20rpx;
 		position: relative;
 	}
 
@@ -357,12 +456,12 @@
 		align-items: center;
 		justify-content: center;
 		height: 100%;
-		width: 120rpx;
+		width: 140rpx;
 		padding: 0;
 		
 		.tab-text {
-			font-size: 28rpx;
-			color: #666;
+			font-size: 30rpx;
+			color: #999;
 			transition: all 0.3s;
 		}
 
@@ -374,15 +473,22 @@
 		}
 	}
 
-	.sliding-indicator {
+	.indicator-wrapper {
 		position: absolute;
 		bottom: 12rpx;
-		left: 50rpx; /* 10rpx(container padding) + 60rpx(half tab) - 20rpx(half indicator) */
+		left: 20rpx;
+		width: 140rpx;
+		height: 8rpx;
+		display: flex;
+		justify-content: center;
+		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+	}
+
+	.sliding-indicator {
 		width: 40rpx;
 		height: 8rpx;
 		background-color: #333;
 		border-radius: 4rpx;
-		transition: transform 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 	}
 
 	.forum-list-container {
@@ -408,17 +514,35 @@
 	}
 
 	.forum-card {
-		padding: 24rpx;
-		margin-bottom: 24rpx;
-		background: rgba(255, 255, 255, 0.7);
-		border: 2rpx solid rgba(255, 255, 255, 1);
-		border-radius: 32rpx;
-		overflow: hidden;
-		height: 480rpx; /* 极简高度: 头像+文字+图片+底部 */
+		padding: 30rpx 30rpx;
+		background: #fff;
+		border: 1rpx solid rgba(15, 23, 42, 0.05);
+		border-radius: 24rpx;
+		margin-bottom: 16rpx;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.02);
+		box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+		position: relative;
+		overflow: hidden;
+
+		&::after {
+			content: '';
+			position: absolute;
+			bottom: 0;
+			left: 30rpx;
+			right: 30rpx;
+			height: 2rpx;
+			background: linear-gradient(90deg, rgba(93, 118, 189, 0), rgba(93, 118, 189, 0.22), rgba(93, 118, 189, 0));
+		}
+
+		&:last-child::after {
+			display: none;
+		}
+
+		&:last-child {
+			margin-bottom: 0;
+		}
 	}
 
 	.forum-card-content {
@@ -449,59 +573,78 @@
 				flex-direction: column;
 				
 				.user-name {
-					font-size: 28rpx;
-					font-weight: 600;
-					color: #15305e;
+					font-size: 30rpx;
+					font-weight: bold;
+					color: #333;
 				}
 				
-				.post-time {
-					font-size: 22rpx;
-					color: #999;
+				.user-tag-row {
+					display: flex;
+					align-items: center;
 					margin-top: 4rpx;
+
+					.tag-icon {
+						width: 20rpx;
+						height: 20rpx;
+						margin-right: 6rpx;
+						opacity: 0.5;
+					}
+
+					.user-tag {
+						font-size: 22rpx;
+						color: #999;
+					}
 				}
-			}
-			
-			.post-tag {
-				font-size: 22rpx;
-				color: #4AA9FE;
-				background: rgba(74, 169, 254, 0.1);
-				padding: 6rpx 16rpx;
-				border-radius: 30rpx;
 			}
 		}
 		
 		.card-main {
-			height: 42rpx; /* 仅保留一行文字高度 (28rpx * 1.5 = 42rpx) */
-			margin: 16rpx 0;
+			margin: 20rpx 0;
 			flex-shrink: 0;
-			.post-desc {
-				font-size: 28rpx;
-				color: #555;
-				line-height: 1.5;
-				display: -webkit-box;
-				-webkit-box-orient: vertical;
-				-webkit-line-clamp: 1; /* 强制只显示一行 */
-				overflow: hidden;
+			
+			.post-desc-container {
+				font-size: 30rpx;
+				color: #333;
+				line-height: 1.6;
 			}
+		}
+
+		.post-desc {
+			font-size: 32rpx;
+			color: #333;
+			line-height: 1.6;
+			word-break: break-all;
+		}
+
+		.suffix-inline {
+			display: inline-block;
+			white-space: nowrap;
+		}
+
+		.expand-btn-inline {
+			color: #5d76bd;
+			font-size: 32rpx;
+			font-weight: 500;
+			margin-left: 8rpx;
 		}
 		
 		.post-images {
 			display: flex;
-			gap: 12rpx;
-			height: 210rpx; /* 固定图片区域高度 */
+			flex-wrap: wrap;
+			gap: 10rpx;
+			margin-bottom: 20rpx;
 			flex-shrink: 0;
 			
 			.image-wrapper {
 				position: relative;
-				width: 210rpx;
-				height: 210rpx;
-				border-radius: 16rpx;
+				border-radius: 12rpx;
 				overflow: hidden;
 				background: #f8f8f8;
 				
 				.post-img {
 					width: 100%;
 					height: 100%;
+					display: block;
 				}
 				
 				.more-images-badge {
@@ -522,30 +665,72 @@
 					}
 				}
 			}
+
+			&.layout-1 {
+				.image-wrapper {
+					width: 60%;
+					height: auto;
+				}
+			}
+
+			&.layout-multi {
+				.image-wrapper {
+					width: calc((100% - 20rpx) / 3);
+					height: 0;
+					padding-bottom: calc((100% - 20rpx) / 3);
+
+					.post-img {
+						position: absolute;
+						top: 0;
+						left: 0;
+					}
+				}
+			}
 		}
 		
 		.card-actions {
 			display: flex;
 			align-items: center;
-			gap: 30rpx;
-			margin-top: auto; /* 自动推到容器底部 */
-			padding-top: 20rpx;
-			border-top: 1rpx solid rgba(0, 0, 0, 0.05);
+			justify-content: space-between;
+			padding-top: 10rpx;
 			flex-shrink: 0;
 			
-			.action-item {
+			.view-count {
+				font-size: 24rpx;
+				color: #999;
+			}
+
+			.action-right {
 				display: flex;
 				align-items: center;
-				gap: 10rpx;
-				
-				.icon-svg {
-					width: 32rpx;
-					height: 32rpx;
-				}
-				
-				.count {
-					font-size: 26rpx;
-					color: #999;
+				gap: 36rpx;
+
+				.action-item {
+					display: flex;
+					align-items: center;
+					gap: 8rpx;
+
+					&.collect-hint {
+						/* TODO: 临时背景色提示，后期可在此处修改或删除 */
+						background-color: rgba(255, 193, 7, 0.3);
+						padding: 4rpx 20rpx;
+						border-radius: 30rpx;
+					}
+					
+					.icon-svg {
+						width: 36rpx;
+						height: 36rpx;
+						opacity: 0.6;
+					}
+					
+					.count {
+						font-size: 26rpx;
+						color: #999;
+
+						&.active-color {
+							color: rgb(250, 81, 81);
+						}
+					}
 				}
 			}
 		}
@@ -583,8 +768,11 @@
 
 	/* Dark Theme */
 	.theme-dark {
+		background: transparent;
+		
 		.tabs-scroll {
 			border-bottom-color: rgba(255, 255, 255, 0.05);
+			background: #111216;
 		}
 		.tab-item {
 			.tab-text {
@@ -600,14 +788,17 @@
 			background-color: #f4f7fb;
 		}
 		.forum-card {
-			background: rgba(255, 255, 255, 0.03);
-			border-color: rgba(255, 255, 255, 0.05);
+			background: #111216;
+			border-color: rgba(255, 255, 255, 0.06);
+			box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.24);
+			&::after {
+				background: linear-gradient(90deg, rgba(141, 164, 230, 0), rgba(141, 164, 230, 0.28), rgba(141, 164, 230, 0));
+			}
 		}
 		.forum-card-content {
 			.card-user-info .user-meta .user-name { color: #f4f7fb; }
-			.card-user-info .user-meta .post-time { color: rgba(255, 255, 255, 0.4); }
-			.card-main .post-desc { color: rgba(255, 255, 255, 0.7); }
-			.card-actions { border-top-color: rgba(255, 255, 255, 0.05); }
+			.card-user-info .user-meta .user-tag-row .user-tag { color: rgba(255, 255, 255, 0.4); }
+			.card-main .post-desc-container { color: rgba(255, 255, 255, 0.8); }
 		}
 		.empty-text { color: rgba(255, 255, 255, 0.4); }
 		.pagination-controls {

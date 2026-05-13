@@ -67,7 +67,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background-color: #f8fafd;
+		background-color: #fff;
 		
 		&.theme-dark {
 			background-color: #111216;

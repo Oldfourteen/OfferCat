@@ -67,7 +67,7 @@ public class DeepSeekChatController {
      */
     @PostMapping(value = "/chat-stream", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chatStream(@Valid @RequestBody AiChatModeRequest req) {
-        SseEmitter emitter = new SseEmitter(120000L); // 2分钟超时
+        SseEmitter emitter = new SseEmitter(120000L); 
         deepSeekChatServices.streamChatWithAI(
                 req.getUserId(),
                 req.getMajorCode(),

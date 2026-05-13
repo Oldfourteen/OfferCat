@@ -7,19 +7,23 @@
 
 		<!-- 主内容区交给滚动容器承载，并向外透传滚动事件。 -->
 		<LearningZone :theme="theme" :refresh-seed="refreshSeed" @scroll="handleZoneScroll" />
+		<AppLiquidTabBar tab-page-path="pages/index/index" :theme="theme" />
 	</view>
 </template>
 
 <script>
 	import LearningHeader from './components/LearningHeader.vue'
 	import LearningZone from './components/LearningZone.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import themeMixin from '@/utils/themeMixin.js'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 
 	export default {
-		mixins: [themeMixin],
+		mixins: [themeMixin, liquidTabBarPageMixin],
 		components: {
 			LearningHeader,
-			LearningZone
+			LearningZone,
+			AppLiquidTabBar
 		},
 		data() {
 			return {
@@ -76,6 +80,8 @@
 
 	.job-page {
 		height: 100vh;
+		box-sizing: border-box;
+		padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 		display: flex;
 		flex-direction: column;
 		background-color: #f8fafd;

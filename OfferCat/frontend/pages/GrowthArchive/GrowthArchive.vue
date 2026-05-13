@@ -46,6 +46,7 @@
 				</view>
 			</view>
 		</view>
+		<AppLiquidTabBar tab-page-path="pages/GrowthArchive/GrowthArchive" :theme="theme" />
 	</view>
 </template>
 
@@ -57,12 +58,15 @@
 	import AIJobGapCard from './components/AIJobGapCard.vue'
 	import ResumeWorkshop from './components/ResumeWorkshop.vue'
 	import AISelfImage from './components/AISelfImage.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import themeMixin from '@/utils/themeMixin.js'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 	import { request } from '@/api/request.js'
 
 	export default {
-		mixins: [themeMixin],
+		mixins: [themeMixin, liquidTabBarPageMixin],
 		components: {
+			AppLiquidTabBar,
 			GrowthTopBar,
 			ArchiveHeroCard,
 			ArchiveTrendCard,
@@ -236,7 +240,7 @@
 	}
 
 	.page {
-		padding: 20rpx 18rpx calc(40rpx + env(safe-area-inset-bottom));
+		padding: 20rpx 18rpx calc(40rpx + 116rpx + env(safe-area-inset-bottom));
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;

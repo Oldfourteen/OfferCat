@@ -23,16 +23,20 @@
 				<ForumList :theme="theme" />
 			</view>
 		</scroll-view>
+		<AppLiquidTabBar tab-page-path="pages/forum/index" :theme="theme" />
 	</view>
 </template>
 
 <script>
 	import ForumList from '@/pages/forum/components/ForumList.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import themeMixin from '@/utils/themeMixin.js'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 
 	export default {
-		mixins: [themeMixin],
+		mixins: [themeMixin, liquidTabBarPageMixin],
 		components: {
+			AppLiquidTabBar,
 			ForumList
 		},
 		data() {
@@ -121,6 +125,6 @@
 	}
 
 	.forum-container {
-		padding: 5rpx 30rpx calc(40rpx + env(safe-area-inset-bottom));
+		padding: 5rpx 30rpx calc(40rpx + 116rpx + env(safe-area-inset-bottom));
 	}
 </style>

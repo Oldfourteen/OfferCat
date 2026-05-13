@@ -8,6 +8,7 @@
 		<GrowthHub :theme="currentTheme" :animationKey="animationKey" />
 		<!-- 设置区统一收纳帮助、资料编辑和系统设置入口。 -->
 		<SecuritySettings :theme="currentTheme" :animationKey="animationKey" />
+		<AppLiquidTabBar tab-page-path="pages/my/my" :theme="currentTheme" />
 	</view>
 </template>
 <script>
@@ -15,12 +16,16 @@
 	import JobTools from './components/JobTools.vue'
 	import GrowthHub from './components/GrowthHub.vue'
 	import SecuritySettings from './components/SecuritySettings.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 	import { applyTheme, getTheme } from '@/utils/theme.js'
 	
 	const SCROLL_KEY = 'MY_PAGE_SCROLL_TOP'
 	
 	export default {
+		mixins: [liquidTabBarPageMixin],
 		components: {
+			AppLiquidTabBar,
 			// 我的页由四个功能卡片自上而下拼装组成。
 			UserInfoCard,
 			JobTools,
@@ -87,7 +92,7 @@
 .my-page {
 	min-height: 100vh;
 	background: #F8FAFD;
-	padding: 0rpx 0rpx 1rpx;
+	padding: 0rpx 0rpx calc(1rpx + 116rpx + env(safe-area-inset-bottom));
 	box-sizing: border-box;
 }
 

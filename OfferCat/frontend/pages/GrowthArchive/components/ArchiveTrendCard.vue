@@ -23,10 +23,28 @@
 			canvas2d
 			:canvasId="'growthTrend_' + canvasKey"
 		/>
+
+		<view class="trend-intro" :class="{ 'trend-intro--no-chart': !showChart }">
+			<text class="trend-intro-title">数据说明</text>
+			<text class="trend-intro-line">综合能力（50～100）由两项各半加权：档案侧能力分与题库练习表现。</text>
+			<text class="trend-intro-line">档案侧：测评七个维度中取分数最高的五个维度，计算平均分。</text>
+			<text class="trend-intro-line">题库侧：根据本机保存的练习记录，按答题数量加权汇总正确率，映射到 50～100；若某一时间段尚未做题，该项取中性值 50。</text>
+			<text class="trend-intro-line">周视图按周一至周日统计，仅绘制到今天为止；未到日期暂无数据故不连线。月、季视图同理按分段累积统计。</text>
+			<text class="trend-intro-line muted">重新测评或提交新的题单练习后，曲线会随之更新。</text>
+		</view>
 	</view>
 </template>
 
 <script>
+	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
+	import {
+		buildWeekTrend,
+		buildMonthTrend,
+		buildQuarterTrend,
+		collectNumericPoints,
+		getRadarTop5Average
+	} from '@/utils/growthTrendScore.js'
+
 	export default {
 		name: 'ArchiveTrendCard',
 		props: {
@@ -41,14 +59,26 @@
 		},
 		watch: {
 			radarData: {
-				handler(newVal) {
-					// 只在总分存在时刷新趋势图，避免空数据触发无意义重绘。
-					if (newVal && newVal.totalScore !== undefined && newVal.totalScore !== null) {
-						this.updateChartData(newVal.totalScore);
-					}
+				handler() {
+					this.refreshTrendChart()
 				},
 				immediate: true,
 				deep: true
+			}
+		},
+		created() {
+			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+				uni.$on(QUESTION_HISTORY_UPDATED_EVENT, this.refreshTrendChart)
+			}
+		},
+		beforeDestroy() {
+			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshTrendChart)
+			}
+		},
+		beforeUnmount() {
+			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshTrendChart)
 			}
 		},
 		data() {
@@ -155,40 +185,42 @@
 			}
 		},
 		methods: {
-			updateChartData(score) {
-				// 生成模拟趋势数据，最新值为当前得分，前面的逐渐降低
-				const genTrend = (len, currentScore) => {
-					let arr = [];
-					// 基础分不再强制最低50，如果当前分很低，前面也应该低
-					let base = Math.max(0, currentScore - 15);
-					for (let i = 0; i < len - 1; i++) {
-						arr.push(base + Math.random() * 10);
-					}
-					arr.push(currentScore);
-					return arr.map(v => Number(v.toFixed(1)));
-				};
+			refreshTrendChart() {
+				const radar = this.radarData
+				const basis1 = getRadarTop5Average(radar)
+				if (basis1 == null) {
+					this.showChart = false
+					return
+				}
 
-				this.dynamicChartDataMap.week.series[0].data = genTrend(7, score);
-				this.dynamicChartDataMap.month.series[0].data = genTrend(4, score);
-				this.dynamicChartDataMap.quarter.series[0].data = genTrend(3, score);
+				const history = getQuestionHistory()
+				const now = new Date()
+				const weekPayload = buildWeekTrend(radar, history, now)
+				const monthPayload = buildMonthTrend(radar, history, now)
+				const quarterPayload = buildQuarterTrend(radar, history, now)
 
-				// 动态计算 Y 轴 min，防止最后数值太低导致折线掉出图表
-				const allData = [
-					...this.dynamicChartDataMap.week.series[0].data,
-					...this.dynamicChartDataMap.month.series[0].data,
-					...this.dynamicChartDataMap.quarter.series[0].data
-				];
-				let minVal = Math.min(...allData);
-				// 如果最小数值低于50，就将Y轴min设为更低（以10为跨度向下取整，最小为0）
-				let newMin = Math.max(0, Math.floor(minVal / 10) * 10);
-				// 如果最小数值大于等于50，默认还是50起步，比较好看
-				this.chartOpts.yAxis.data[0].min = newMin < 50 ? newMin : 50;
+				this.dynamicChartDataMap.week = weekPayload
+				this.dynamicChartDataMap.month = monthPayload
+				this.dynamicChartDataMap.quarter = quarterPayload
 
-				// 触发图表重新渲染
-				this.showChart = false;
+				const numericPoints = collectNumericPoints([weekPayload, monthPayload, quarterPayload])
+				if (!numericPoints.length) {
+					this.chartOpts.yAxis.data[0].min = 50
+					this.chartOpts.yAxis.data[0].max = 100
+				} else {
+					let minVal = Math.min(...numericPoints)
+					let maxVal = Math.max(...numericPoints)
+					let newMin = Math.max(0, Math.floor(minVal / 10) * 10)
+					let newMax = Math.min(100, Math.ceil(maxVal / 10) * 10)
+					if (newMax <= newMin) newMax = Math.min(100, newMin + 10)
+					this.chartOpts.yAxis.data[0].min = newMin < 50 ? newMin : 50
+					this.chartOpts.yAxis.data[0].max = newMax >= 100 ? 100 : newMax
+				}
+
+				this.showChart = false
 				this.$nextTick(() => {
-					this.showChart = true;
-				});
+					this.showChart = true
+				})
 			},
 			handleRangeChange(range) {
 				if (this.activeRange === range) return
@@ -259,8 +291,63 @@
 		color: #f4f7fb;
 	}
 
+	.trend-intro--no-chart {
+		margin-top: 8rpx;
+		padding-top: 0;
+		border-top: none;
+	}
+
+	.section-card.theme-dark .trend-intro--no-chart {
+		border-top: none;
+	}
+
 	.section-card.theme-dark .range-tab {
 		background: rgba(255, 255, 255, 0.08);
 		color: rgba(255, 255, 255, 0.58);
+	}
+
+	.trend-intro {
+		margin-top: 18rpx;
+		padding-top: 18rpx;
+		border-top: 1rpx solid rgba(148, 163, 184, 0.25);
+		display: flex;
+		flex-direction: column;
+		gap: 10rpx;
+	}
+
+	.trend-intro-title {
+		font-size: 24rpx;
+		font-weight: 700;
+		color: #475467;
+		margin-bottom: 4rpx;
+	}
+
+	.trend-intro-line {
+		font-size: 22rpx;
+		line-height: 1.55;
+		color: #667085;
+		display: block;
+	}
+
+	.trend-intro-line.muted {
+		color: #98a2b3;
+		font-size: 21rpx;
+		margin-top: 4rpx;
+	}
+
+	.section-card.theme-dark .trend-intro {
+		border-top-color: rgba(255, 255, 255, 0.08);
+	}
+
+	.section-card.theme-dark .trend-intro-title {
+		color: rgba(244, 247, 251, 0.85);
+	}
+
+	.section-card.theme-dark .trend-intro-line {
+		color: rgba(255, 255, 255, 0.58);
+	}
+
+	.section-card.theme-dark .trend-intro-line.muted {
+		color: rgba(255, 255, 255, 0.42);
 	}
 </style>

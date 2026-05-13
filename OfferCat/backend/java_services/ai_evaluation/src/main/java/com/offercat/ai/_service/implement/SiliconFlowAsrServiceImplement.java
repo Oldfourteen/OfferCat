@@ -9,7 +9,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.util.Map;
-import java.util.concurrent.TimeUnit;
 
 /**
  * @author: Ofteen
@@ -23,6 +22,7 @@ import java.util.concurrent.TimeUnit;
 public class SiliconFlowAsrServiceImplement {
     //硅基流动里的ASR语音转文字技术 服务实现
     private final ObjectMapper objectMapper;
+    private final OkHttpClient okHttpClient;
 
     //需要调用的API密钥
     @Value("${siliconFlow.api-key}")
@@ -36,12 +36,6 @@ public class SiliconFlowAsrServiceImplement {
 
     @Value("${siliconFlow.asr.model:FunAudioLLM/SenseVoiceSmall}")
     private String model;
-
-    private final OkHttpClient okHttpClient = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .writeTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(60, TimeUnit.SECONDS)
-            .build();
 
     public AsrTranscribeResponse transcribe(MultipartFile file){
         if (file == null || file.isEmpty()){

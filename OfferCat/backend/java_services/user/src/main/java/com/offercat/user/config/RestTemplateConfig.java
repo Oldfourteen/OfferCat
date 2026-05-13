@@ -1,26 +1,45 @@
 package com.offercat.user.config;
 
+import org.apache.hc.client5.http.classic.HttpClient;
+import org.apache.hc.client5.http.config.RequestConfig;
+import org.apache.hc.client5.http.impl.classic.CloseableHttpClient;
+import org.apache.hc.client5.http.impl.classic.HttpClients;
+import org.apache.hc.client5.http.impl.io.PoolingHttpClientConnectionManager;
+import org.apache.hc.core5.util.Timeout;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.http.client.HttpComponentsClientHttpRequestFactory;
 import org.springframework.web.client.RestTemplate;
 
 /**
- * RestTemplate 配置类
- * 配置 RestTemplate 实例
+ * RestTemplate：连接池化，复用与认证服务等外部 HTTP 通信。
  */
 @Configuration
 public class RestTemplateConfig {
-    
+
+    private static final int POOL_MAX_TOTAL = 80;
+    private static final int POOL_MAX_PER_ROUTE = 32;
+
+    @Bean(destroyMethod = "close")
+    public CloseableHttpClient pooledHttpClient() {
+        PoolingHttpClientConnectionManager connectionManager = new PoolingHttpClientConnectionManager();
+        connectionManager.setMaxTotal(POOL_MAX_TOTAL);
+        connectionManager.setDefaultMaxPerRoute(POOL_MAX_PER_ROUTE);
+
+        RequestConfig requestConfig = RequestConfig.custom()
+                .setConnectTimeout(Timeout.ofMilliseconds(5000))
+                .setResponseTimeout(Timeout.ofMilliseconds(10000))
+                .build();
+
+        return HttpClients.custom()
+                .setConnectionManager(connectionManager)
+                .setDefaultRequestConfig(requestConfig)
+                .build();
+    }
+
     @Bean
-    public RestTemplate restTemplate() {
-        /** 创建 SimpleClientHttpRequestFactory */
-        SimpleClientHttpRequestFactory factory = new SimpleClientHttpRequestFactory();
-        /** 设置连接超时时间 */
-        factory.setConnectTimeout(5000);
-        /** 设置读取超时时间 */
-        factory.setReadTimeout(10000);
-        /** 创建并返回 RestTemplate */
+    public RestTemplate restTemplate(HttpClient httpClient) {
+        HttpComponentsClientHttpRequestFactory factory = new HttpComponentsClientHttpRequestFactory(httpClient);
         return new RestTemplate(factory);
     }
 }

@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.InputStreamReader;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.TimeUnit;
+
 
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -54,12 +54,11 @@ public class DeepSeekChatServices {
     @Autowired
     private OcrSpaceServiceImplement ocrService;
 
+    @Autowired
+    private OkHttpClient okHttpClient;
+
     private final ExecutorService executor = Executors.newCachedThreadPool();
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final OkHttpClient okHttpClient = new OkHttpClient.Builder()
-            .connectTimeout(30, TimeUnit.SECONDS)
-            .readTimeout(120, TimeUnit.SECONDS)
-            .build();
 
     // 从 resources/skills 目录下读取 Markdown prompt
     private String loadSkillPrompt(String skillFileName) {

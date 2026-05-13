@@ -1,11 +1,13 @@
+import { getUser } from '@/utils/user.js'
+
 // 题库练习历史的最大保留条数与更新事件名。
 const MAX_HISTORY_COUNT = 50
 export const QUESTION_HISTORY_UPDATED_EVENT = 'question-history-updated'
 
-// 根据当前用户生成独立的做题历史缓存键。
+// 根据当前用户生成独立的做题历史缓存键（与登录缓存 user_v2 对齐）。
 function getQuestionHistoryKey() {
-	const user = uni.getStorageSync('user')
-	const userId = user && user.userId ? user.userId : 'guest'
+	const user = getUser() || {}
+	const userId = user.userId || user.id || 'guest'
 	return `question_bank_history_${userId}`
 }
 

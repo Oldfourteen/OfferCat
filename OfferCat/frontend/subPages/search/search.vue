@@ -1,5 +1,5 @@
 <template>
-	<!-- 全局搜索页面：支持搜索题库 + 论坛帖子 -->
+	<!-- 全局搜索页面：仅搜索本项目论坛发布贴 -->
 	<view class="search-page" :class="themeClass">
 		<!-- 顶部搜索栏 -->
 		<view class="search-topbar">
@@ -13,7 +13,7 @@
 					v-model="keyword"
 					focus
 					confirm-type="search"
-					placeholder="搜索题单、公司、方向或帖子"
+					placeholder="搜索论坛帖子"
 					placeholder-class="search-placeholder"
 					@confirm="handleSearch"
 				/>
@@ -49,7 +49,7 @@
 					<!-- 未搜索时的初始状态 -->
 					<view v-if="!hasSearched" class="empty-state">
 						<text class="empty-title">输入关键词开始搜索</text>
-						<text class="empty-desc">可搜索公司、题单、岗位方向以及论坛帖子。</text>
+						<text class="empty-desc">可搜索项目中的论坛发布贴。</text>
 					</view>
 
 					<!-- 有搜索结果 -->
@@ -57,15 +57,14 @@
 						<view v-for="item in searchResults" :key="`${item.type}-${item.id}`" class="result-card" @click="openResult(item)">
 							<view class="result-main">
 								<view class="result-top">
-									<text class="result-type">{{ item.type === 'interview' ? '面试真题' : item.type === 'written' ? '笔试真题' : '论坛帖子' }}</text>
+									<text class="result-type">论坛帖子</text>
 									<text class="result-company">{{ item.company }}</text>
 								</view>
 								<text class="result-title">{{ item.title }}</text>
 								<text class="result-desc">{{ item.summary }}</text>
 								<view class="result-tags">
 									<text class="tag-chip">{{ item.category }}</text>
-									<text class="tag-chip" v-if="item.type !== 'forum'">共 {{ item.total }} 题</text>
-									<text class="tag-chip" v-else>{{ item.total }} 评论</text>
+									<text class="tag-chip">{{ item.total }} 评论</text>
 								</view>
 							</view>
 							<text class="result-arrow">›</text>
@@ -75,7 +74,7 @@
 					<!-- 无搜索结果 -->
 					<view v-else class="empty-state">
 						<text class="empty-title">没有找到相关内容</text>
-						<text class="empty-desc">试试换个公司名、方向关键词，或者搜索帖子内容。</text>
+						<text class="empty-desc">试试换个关键词，或搜索帖子标题与正文。</text>
 					</view>
 				</view>
 			</view>
@@ -86,16 +85,12 @@
 <script>
 	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
-	// 题库数据源
-	import { interviewSets, writtenSets } from '@/subPages/questionBank/data.js'
 	// 网络请求
 	import { request } from '@/api/request.js'
 
 	// 搜索历史存储配置
 	const SEARCH_HISTORY_KEY = 'home_search_history'
 	const MAX_HISTORY_COUNT = 10
-	// 合并本地搜索源：笔试 + 面试
-	const SEARCH_SOURCE = [...writtenSets, ...interviewSets]
 
 	export default {
 		mixins: [themeMixin],
@@ -111,10 +106,10 @@
 			// 搜索结果统计文案
 			resultSummary() {
 				if (!this.hasSearched) {
-					return '支持题单、公司、方向、帖子搜索'
+					return '支持论坛帖子搜索'
 				}
 
-				return `共找到 ${this.searchResults.length} 条相关内容`
+				return `共找到 ${this.searchResults.length} 条论坛帖子`
 			}
 		},
 		// 加载历史记录
@@ -157,7 +152,7 @@
 				this.keyword = keyword
 				this.handleSearch()
 			},
-			// 执行搜索（本地题库 + 远程论坛）
+			// 执行搜索（仅远程论坛发布贴）
 			async handleSearch() {
 				const normalizedKeyword = this.keyword.trim().toLowerCase()
 				this.hasSearched = true
@@ -169,22 +164,6 @@
 
 				uni.showLoading({ title: '搜索中...' })
 
-				// 1. 本地题库搜索（公司/题单/分类）
-				const localResults = SEARCH_SOURCE.filter(item => {
-					const searchableText = [
-						item.title,
-						item.company,
-						item.category,
-						item.summary,
-						...(item.highlights || [])
-					].join(' ').toLowerCase()
-					return searchableText.includes(normalizedKeyword)
-				}).map(item => ({
-					...item,
-					type: item.id.startsWith('i') ? 'interview' : 'written'
-				}))
-
-				// 2. 远程论坛帖子搜索
 				let forumResults = []
 				try {
 					const res = await request({
@@ -217,26 +196,19 @@
 					uni.hideLoading()
 				}
 
-				// 合并结果：本地题库 + 论坛帖子
-				this.searchResults = [...localResults, ...forumResults]
+				this.searchResults = forumResults
 
 				// 保存到历史
 				this.saveHistory(this.keyword)
 			},
 			// 打开搜索结果
 			openResult(item) {
-				if (item.type === 'forum') {
-					if (item.rawPost) {
-						uni.setStorageSync('currentPost_' + item.id, item.rawPost);
-					}
-					uni.navigateTo({
-						url: `/subPages/forum/detail?id=${item.id}`
-					})
-				} else {
-					uni.navigateTo({
-						url: `/subPages/questionBank/detail?id=${item.id}&type=${item.type}`
-					})
+				if (item.rawPost) {
+					uni.setStorageSync('currentPost_' + item.id, item.rawPost)
 				}
+				uni.navigateTo({
+					url: `/subPages/forum/detail?id=${item.id}`
+				})
 			}
 		}
 	}

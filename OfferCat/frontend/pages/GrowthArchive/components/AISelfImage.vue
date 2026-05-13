@@ -2,7 +2,7 @@
 	<view class="ai-image-container" :class="themeClass">
 		<view class="header-area">
 			<!-- 模块说明区：介绍 AI 形象照的用途和上传要求。 -->
-			<text class="title">AI 职业形象</text>
+			<text class="title">AI职业形象——简历照一键式生成</text>
 			<text class="subtitle">上传你的照片，AI为你生成专业的职业形象照，让你的简历更出众。</text>
 		</view>
 
@@ -27,7 +27,7 @@
 							<text class="delete-icon-x">×</text>
 						</view>
 						<view class="zoom-hint">
-							<text class="zoom-hint-glyph">⌕</text>
+							<view class="zoom-hint-icon"></view>
 						</view>
 					</view>
 
@@ -45,7 +45,7 @@
 						<image v-if="generatedImage" :src="generatedImage" mode="aspectFit" class="preview-img"></image>
 						<view class="tag result-tag" v-if="generatedImage">AI 生成图</view>
 						<view class="zoom-hint" v-if="generatedImage">
-							<text class="zoom-hint-glyph">⌕</text>
+							<view class="zoom-hint-icon"></view>
 						</view>
 					</view>
 				</view>
@@ -90,6 +90,9 @@
 						<text v-if="!isGenerating" class="btn-icon generate-gear">⚙</text>
 						{{ isGenerating ? '正在生成...' : '开始生成职业形象' }}
 					</button>
+					<text class="generate-disclaimer">
+						请慎重使用AI生图，AI生图可能会对个人面部出现失真的问题
+					</text>
 				</view>
 
 				<!-- Result Actions -->
@@ -99,6 +102,12 @@
 					<button class="action-btn primary" @click="saveImage">保存到相册</button>
 				</view>
 			</view>
+		</view>
+
+		<view class="page-footer-note">
+			<text class="footer-note-text">
+				该项目更推荐作为预设方案，以及美术参考，真实的面试证件照更推荐使用真实的照片，本项目可以参考个人形象美化，如何以更适合自己的形象去参与到面试中
+			</text>
 		</view>
 	</view>
 </template>
@@ -359,6 +368,19 @@ export default {
 	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
 }
 
+.page-footer-note {
+	margin-top: 28rpx;
+	padding: 0 10rpx 8rpx;
+}
+
+.footer-note-text {
+	display: block;
+	font-size: 22rpx;
+	line-height: 1.55;
+	color: #9CA3AF;
+	text-align: justify;
+}
+
 .upload-section {
 	width: 100%;
 	height: 400rpx;
@@ -480,22 +502,30 @@ export default {
 	
 	.zoom-hint {
 		position: absolute;
-		bottom: 16rpx;
-		right: 16rpx;
-		width: 48rpx;
-		height: 48rpx;
-		background: rgba(0, 0, 0, 0.4);
+		bottom: 14rpx;
+		right: 14rpx;
+		width: 52rpx;
+		height: 52rpx;
+		background: rgba(30, 30, 30, 0.55);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		backdrop-filter: blur(4px);
+		backdrop-filter: blur(8px);
+		-webkit-backdrop-filter: blur(8px);
+		border: 1rpx solid rgba(255, 255, 255, 0.14);
+		box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.22);
 		pointer-events: none;
 
-		.zoom-hint-glyph {
-			color: #fff;
-			font-size: 28rpx;
-			line-height: 1;
+		/* SVG 放大镜：避免 text + 字符宽度在各端基线偏移导致视觉不居中 */
+		.zoom-hint-icon {
+			width: 28rpx;
+			height: 28rpx;
+			flex-shrink: 0;
+			background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.65 16.65 21 21'/%3E%3C/svg%3E");
+			background-repeat: no-repeat;
+			background-position: center center;
+			background-size: 26rpx 26rpx;
 		}
 	}
 }
@@ -617,7 +647,7 @@ export default {
 }
 
 .generate-btn {
-	background: linear-gradient(135deg, #3B82F6 0%, #2563EB 100%);
+	background: #6479C1;
 	color: #FFF;
 	border-radius: 100rpx;
 	font-size: 32rpx;
@@ -627,7 +657,7 @@ export default {
 	align-items: center;
 	justify-content: center;
 	border: none;
-	box-shadow: 0 8rpx 20rpx rgba(59, 130, 246, 0.3);
+	box-shadow: 0 8rpx 20rpx rgba(100, 121, 193, 0.35);
 	margin-top: 8rpx;
 	
 	&::after {
@@ -649,6 +679,16 @@ export default {
 		line-height: 1;
 		color: #fff;
 	}
+}
+
+.generate-disclaimer {
+	display: block;
+	margin-top: 20rpx;
+	padding: 0 8rpx;
+	font-size: 20rpx;
+	line-height: 1.55;
+	color: #9CA3AF;
+	text-align: center;
 }
 
 .result-actions {
@@ -756,6 +796,10 @@ export default {
 		background: #374151;
 		color: #E5E7EB;
 		border-color: #4B5563;
+	}
+
+	.footer-note-text {
+		color: #9CA3AF;
 	}
 }
 </style>

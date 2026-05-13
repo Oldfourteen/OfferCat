@@ -1,7 +1,7 @@
 <template>
 	<view class="component-wrapper">
 		<!-- 表单区 -->
-		<view class="form-area">
+		<view class="form-area animate-item" :style="{ animationDelay: '0s' }">
 			<!-- 账号输入框兼容手机号或邮箱两种登录目标。 -->
 			<view class="input-item" :class="{'input-active': currentFocus === 'account'}">
 				<input 
@@ -22,24 +22,33 @@
 					@focus="handleFocus('password')" 
 					@blur="handleBlur" 
 				/>
-				<view class="toggle-btn" @click="togglePasswordVisible">{{ showPassword ? '隐藏' : '显示' }}</view>
+				<view class="toggle-btn" @click="togglePasswordVisible">
+				<svg v-if="showPassword" class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+					<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+					<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+				</svg>
+				<svg v-else class="eye-icon" viewBox="0 0 1024 1024" fill="currentColor">
+					<path d="M928 268.8c-137.6 169.6-272 252.8-409.6 252.8-134.4-3.2-278.4-86.4-422.4-256-19.2-19.2-51.2-22.4-70.4-3.2S0 310.4 19.2 329.6c163.2 188.8 329.6 288 499.2 288 169.6 0 332.8-99.2 486.4-288 16-22.4 12.8-54.4-9.6-70.4-19.2-16-51.2-12.8-67.2 9.6z"/>
+					<path d="M163.2 470.4l-96 108.8c-12.8 16-12.8 38.4 3.2 51.2s38.4 12.8 51.2-3.2l96-108.8c12.8-16 12.8-38.4-3.2-51.2s-38.4-12.8-51.2 3.2z m192 128l-38.4 150.4c-3.2 19.2 6.4 38.4 25.6 41.6s38.4-6.4 41.6-25.6l38.4-150.4c3.2-19.2-6.4-38.4-25.6-41.6s-38.4 6.4-41.6 25.6z m275.2 6.4l54.4 150.4c6.4 19.2 28.8 28.8 44.8 22.4 19.2-6.4 28.8-25.6 22.4-44.8l-54.4-150.4c-6.4-19.2-28.8-28.8-44.8-22.4-19.2 6.4-28.8 25.6-22.4 44.8z m192-131.2l108.8 108.8c12.8 12.8 35.2 12.8 51.2 0s12.8-35.2 0-51.2l-108.8-108.8c-12.8-12.8-35.2-12.8-51.2 0s-12.8 38.4 0 51.2z"/>
+				</svg>
+			</view>
 			</view>
 			<view class="forgot-password" @click="goFindPassword">忘记密码？</view>
 		</view>
 		
 		<!-- 登录前要求通过人机验证。 -->
-		<humanVerify @verify="onHumanVerify"></humanVerify>
+		<humanVerify class="animate-item" :style="{ animationDelay: '0.15s' }" @verify="onHumanVerify"></humanVerify>
 		
-		<view class="agreement-wrapper">
+		<view class="agreement-wrapper animate-item" :style="{ animationDelay: '0.3s' }">
 			<!-- 协议组件统一处理勾选和未勾选时的二次确认。 -->
 			<confirmAgreement ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @agreed-login="doLogin"></confirmAgreement>
 		</view>
 		
 		<!-- 操作按钮 -->
-		<view class="submit-btn" @click="handleSubmit">登录</view>
+		<view class="submit-btn animate-item" :style="{ animationDelay: '0.45s' }" @click="handleSubmit">登录</view>
 		
 		<!-- 切换登录/注册状态 -->
-		<view class="switch-mode">
+		<view class="switch-mode animate-item" :style="{ animationDelay: '0.6s' }">
 			<!-- 底部切换入口支持验证码登录与立即注册。 -->
 			<view class="side left">
 				<text class="link" @click="switchSms">验证码登录</text>
@@ -175,6 +184,13 @@
 </script>
 
 <style lang="scss" scoped>
+	.component-wrapper {
+		.animate-item {
+			opacity: 0;
+			animation: fadeInUp 0.6s ease-out both;
+		}
+	}
+	
 	.form-area {
 		margin-bottom: 20px;
 		
@@ -200,17 +216,23 @@
 			}
 			
 			.toggle-btn {
+				width: 28px;
 				height: 28px;
-				padding: 0 10px;
-				margin-left: 10px;
-				border-radius: 14px;
-				border: 1px solid #eee;
-				color: #666;
-				font-size: 12px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				flex-shrink: 0;
+				color: #999;
+				transition: color 0.2s;
+				
+				&:active {
+					color: #5d76bd;
+				}
+				
+				.eye-icon {
+					width: 20px;
+					height: 20px;
+				}
 			}
 		}
 		
@@ -293,6 +315,19 @@
 		
 		.link {
 			color: #5d76bd;
+		}
+	}
+	
+	@keyframes fadeInUp {
+		from {
+			opacity: 0;
+			transform: translateY(40px);
+			filter: blur(4px);
+		}
+		to {
+			opacity: 1;
+			transform: translateY(0);
+			filter: blur(0);
 		}
 	}
 </style>

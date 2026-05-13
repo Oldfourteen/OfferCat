@@ -1,5 +1,6 @@
-  <script>
+<script>
 	import { applyTheme, initThemeObserver } from '@/utils/theme.js'
+	import { getToken } from '@/utils/token.js'
 
 	export default {
 		globalData: {
@@ -10,6 +11,8 @@
 			initThemeObserver()
 			applyTheme()
 			console.log('App Launch')
+			// 检查是否已有有效的登录态，自动跳转首页
+			this.checkAutoLogin()
 		},
 		onShow: function() {
 			applyTheme()
@@ -17,6 +20,22 @@
 		},
 		onHide: function() {
 			console.log('App Hide')
+		},
+		methods: {
+			checkAutoLogin() {
+				// 检查本地存储中是否有有效的 token
+				const token = getToken()
+				if (token) {
+					// 已有登录态，自动跳转到首页
+					console.log('已检测到登录态，自动跳转首页')
+					uni.switchTab({
+						url: '/pages/index/index',
+						fail: (err) => {
+							console.log('跳转失败', err)
+						}
+					})
+				}
+			}
 		}
 	}
 </script>
@@ -35,4 +54,3 @@
 		word-wrap: break-word !important;
 	}
 </style>
-

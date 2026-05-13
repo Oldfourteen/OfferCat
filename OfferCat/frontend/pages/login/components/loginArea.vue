@@ -19,8 +19,51 @@
 		},
 		methods: {
 			onLoginClick() {
-				// 将一键登录点击事件抛给父页面处理协议校验和登录逻辑。
-				this.$emit('login');
+			  // 预登录（提升速度）
+			  uni.preLogin({
+			    provider: 'univerify',
+			    success: () => {
+			      console.log("预登录成功");
+			
+			      // 调用一键登录
+			      uni.getUniverifyManager().login({
+			        success: async (res) => {
+			          console.log("授权成功", res);
+			          
+			          // 调用云函数换取真实手机号
+			          const result = await uniCloud.callFunction({
+			            name: "phoneLogin",
+			            data: {
+			              access_token: res.access_token
+			            }
+			          });
+			
+			          // 拿到手机号！
+			          const phone = result.result.phone;
+			          console.log("本机号码 =", phone);
+			
+			          // 成功后你想干嘛就写这里
+			          uni.showToast({
+			            title: "登录成功：" + phone,
+			            icon: "none"
+			          });
+			
+			          // 跳首页示例
+			          // uni.switchTab({ url: "/pages/index/index" });
+			        },
+			        fail: (err) => {
+			          console.error("登录失败", err);
+			          uni.showToast({
+			            title: "登录失败，请重试",
+			            icon: "none"
+			          });
+			        }
+			      });
+			    },
+			    fail: (err) => {
+			      console.error("预登录失败", err);
+			    }
+			  });
 			},
 			onOtherLoginClick() {
 				// 将其他登录方式入口点击事件抛给父页面做页面跳转。

@@ -189,7 +189,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 18%, #f7f8fb 100%);
+		background: linear-gradient(180deg, #3165D7 0%, #f6fbff 18%, #f7f8fb 100%);
 	}
 
 	.exercise-topbar {
@@ -199,7 +199,7 @@
 		justify-content: space-between;
 		gap: 16rpx;
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
-		background: rgba(236, 252, 250, 0.94);
+		background: rgba(252, 252, 252, 0.8);
 		backdrop-filter: blur(10rpx);
 	}
 
@@ -216,7 +216,9 @@
 	}
 
 	.back-btn {
-		min-width: 72rpx;
+		border-radius: 50%;
+		padding: 0;
+		width: 72rpx;
 		font-size: 42rpx;
 		color: #30435a;
 	}

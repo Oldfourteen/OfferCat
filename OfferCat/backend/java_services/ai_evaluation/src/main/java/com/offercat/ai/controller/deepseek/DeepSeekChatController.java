@@ -25,9 +25,15 @@ import java.util.Map;
 @RequestMapping("/api/ai")
 @CrossOrigin(origins = "*")
 public class DeepSeekChatController {
+    /**
+     * DeepSeek 对话业务服务
+     */
     @Autowired
     private DeepSeekChatServices deepSeekChatServices;
 
+    /**
+     * 云端咨询保留标记与按月清理策略
+     */
     @Autowired
     private AiConsultRetentionService aiConsultRetentionService;
     
@@ -85,6 +91,8 @@ public class DeepSeekChatController {
 
     /**
      * 标记某条云端 AI 对话是否保留。保留的记录不参与每月 15 日的自动清理；每位用户最多保留 10 条。
+     * 输入：用户ID、咨询记录ID、是否保留（JSON 请求体）
+     * 输出：成功时 200 无正文；失败时 400 与 JSON message
      */
     @PutMapping("/history/retain")
     public ResponseEntity<?> setHistoryRetain(@Valid @RequestBody AiConsultRetainRequest req) {
@@ -100,8 +108,8 @@ public class DeepSeekChatController {
 
     /**
      * 上传聊天图片
-     * 输入：聊天图片URL
-     * 输出：图片URL
+     * 输入：multipart 表单字段 file（本地图片文件）
+     * 输出：JSON，含可供后续问答引用的 url
      */
     @PostMapping("/upload-image")
     public ResponseEntity<?> uploadChatImage(@RequestParam("file") MultipartFile file) {

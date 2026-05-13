@@ -1,6 +1,8 @@
 package com.offercat.ai.controller.asr;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 
 import java.util.Map;
@@ -20,6 +22,13 @@ public class GlobalExceptionHandler {
         String msg = e.getMessage();
         return ResponseEntity.badRequest().body(Map.of(
                 "error", msg != null ? msg : "参数错误"
+        ));
+    }
+
+    @ExceptionHandler(CannotGetJdbcConnectionException.class)
+    public ResponseEntity<Map<String,Object>> handleJdbcUnavailable(CannotGetJdbcConnectionException e) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).body(Map.of(
+                "error", "数据服务暂时不可用，请稍后重试。（常见原因：数据库未启动、网络不通、连接池占满）"
         ));
     }
 

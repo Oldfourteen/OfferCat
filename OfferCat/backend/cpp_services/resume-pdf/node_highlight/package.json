@@ -1,0 +1,16 @@
+{
+  "name": "resume-pdf-highlight",
+  "private": true,
+  "version": "1.0.0",
+  "type": "module",
+  "description": "REST: UTF-8 byte spans → HTML with <strong> for resume highlight pipeline",
+  "scripts": {
+    "start": "node server.mjs"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "puppeteer": "^24.0.0"
+  }
+}

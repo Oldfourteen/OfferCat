@@ -147,7 +147,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 18%, #f7f8fb 100%);
+		background: linear-gradient(180deg, #3165D7 0%, #f6fbff 18%, #f7f8fb 100%);
 	}
 
 	.detail-topbar {
@@ -156,7 +156,7 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
-		background: rgba(236, 252, 250, 0.94);
+		background: rgba(252, 252, 252, 0.8);
 		backdrop-filter: blur(10rpx);
 	}
 
@@ -168,12 +168,13 @@
 
 	.back-btn {
 		height: 72rpx;
-		border-radius: 22rpx;
+		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.92);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 42rpx;
+		line-height: 1;
 		color: #30435a;
 	}
 

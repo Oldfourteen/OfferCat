@@ -27,6 +27,11 @@ public class AiConsultRetentionService {
         this.aiMessageMapper = aiMessageMapper;
     }
 
+    /**
+     * 设置单条云端咨询是否保留
+     * 输入：用户ID、咨询记录ID、是否保留
+     * 输出：无；记录不存在或非法操作时抛出 IllegalArgumentException，超过每人保留上限时抛出 IllegalStateException
+     */
     @Transactional
     public void setRetained(long userId, long consultId, boolean retained) {
         AiConsult row = aiMessageMapper.selectByIdAndUserId(consultId, userId);

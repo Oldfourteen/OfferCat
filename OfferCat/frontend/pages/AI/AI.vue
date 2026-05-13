@@ -19,8 +19,10 @@
 				<AiTopBar
 					:title="currentConversation.title"
 					:theme="theme"
+					:auto-voice-broadcast="autoVoiceBroadcast"
 					@menu="toggleDrawer"
 					@create="createConversation"
+					@auto-voice-change="setAutoVoiceBroadcast"
 				/>
 			</view>
 
@@ -40,11 +42,14 @@
 					<AiWelcomeHero v-if="!hasMessages" :theme="theme" />
 					<!-- 消息列表：统一渲染用户消息、AI 回复、图片和语音播报入口 -->
 					<AiMessageList
+						ref="messageList"
 						:messages="currentConversation.messages"
 						:theme="theme"
 						:retain-enabled="isCloudHistoryConversation"
 						@preview="skipNextOnShow = true"
 						@retain-change="onConsultRetainChange"
+						@regenerate="onRegenerateAssistant"
+						@user-message-edit="onUserMessageEdit"
 					/>
 					<!-- 底部锚点：用于自动滚动到最新消息 -->
 					<view id="ai-scroll-anchor" class="ai-scroll-anchor"></view>
@@ -54,7 +59,7 @@
 			</scroll-view>
 
 			<!-- 底部输入面板：快捷模式、图文输入、录音输入都在这里完成 -->
-			<view class="ai-bottom animate-slide-up" style="animation-delay: 0.3s;" @tap.stop>
+			<view class="ai-bottom animate-slide-up" style="animation-delay: 0.3s;" :style="aiBottomLiftStyle" @tap.stop>
 				<AiBottomPanel
 					ref="bottomPanel"
 					v-model="draft"
@@ -88,6 +93,7 @@
 				</view>
 			</view>
 		</view>
+		<AppLiquidTabBar tab-page-path="pages/AI/AI" :theme="theme" />
 	</view>
 </template>
 
@@ -97,7 +103,10 @@
 	import AiWelcomeHero from './components/AiWelcomeHero.vue'
 	import AiBottomPanel from './components/AiBottomPanel.vue'
 	import AiMessageList from './components/AiMessageList.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import themeMixin from '@/utils/themeMixin.js'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
+	import { getLiquidTabBarOverlapPx } from '@/utils/appLiquidTabBar.js'
 	import { requestAiChat, requestAiChatStream, requestAiHistory, setAiConsultRetain, uploadVoiceAndTranscribe } from '@/utils/ai.js'
 	import { BASE_URL } from '@/api/config.js'
 	import { saveQuestionHistory } from '@/utils/questionHistory.js'
@@ -130,17 +139,20 @@
 	}
 
 	export default {
-		mixins: [themeMixin],
+		mixins: [themeMixin, liquidTabBarPageMixin],
 		components: {
 			AiTopBar,
 			AiSessionDrawer,
 			AiWelcomeHero,
 			AiBottomPanel,
-			AiMessageList
+			AiMessageList,
+			AppLiquidTabBar
 		},
 		data() {
 			const firstConversation = createConversationItem(1)
 			return {
+				// 自定义底栏占位（隐藏原生 tab 后输入区整体上移）
+				tabBarOverlapPx: typeof uni !== 'undefined' && typeof uni.upx2px === 'function' ? uni.upx2px(116) : 58,
 				// 抽屉与输入状态
 				drawerVisible: false,
 				draft: '',
@@ -171,7 +183,8 @@
 				isUserScrolling: false,
 				userHasScrolled: false,
 				scrollClientHeight: 0,
-				skipNextOnShow: false
+				skipNextOnShow: false,
+				autoVoiceBroadcast: false
 			}
 		},
 		computed: {
@@ -188,12 +201,18 @@
 			aiBottomSpaceStyle() {
 				const panelHeight = this.bottomPanelHeight || 220
 				return {
-					height: `${panelHeight + 24}px`
+					height: `${panelHeight + 24 + this.tabBarOverlapPx}px`
+				}
+			},
+			aiBottomLiftStyle() {
+				return {
+					bottom: `${this.tabBarOverlapPx}px`
 				}
 			},
 			isLocked() {
 				return this.isInterviewMode && !this.interviewEnded
 			},
+			// 当前会话是否为从服务端拉取的「云端历史记录」（仅此会话展示「保留对话」开关）
 			isCloudHistoryConversation() {
 				return this.currentConversation && this.currentConversation.title === '云端历史记录'
 			}
@@ -252,6 +271,11 @@
 			this.handleBottomLayoutChange(true)
 		},
 		onLoad() {
+			this.tabBarOverlapPx = getLiquidTabBarOverlapPx()
+			try {
+				const saved = uni.getStorageSync('ai_auto_voice_broadcast')
+				this.autoVoiceBroadcast = saved === true || saved === 'true' || saved === 1
+			} catch (e) {}
 			const lockState = uni.getStorageSync('interview_lock_state')
 			if (lockState) {
 				uni.removeStorageSync('interview_lock_state')
@@ -315,6 +339,7 @@
 						}
 
 						const messages = []
+						// 每条 ai_consult 拆成用户气泡与 AI 气泡，并挂上 consultId、retained 供「保留对话」使用
 						// 后端返回是 create_time DESC，我们需要 ASC
 						const reversed = [...historyData].reverse()
 						reversed.forEach((item, index) => {
@@ -377,6 +402,7 @@
 					console.error('拉取云端历史失败', e)
 				}
 			},
+			// 用户切换「保留对话」：先乐观更新本地消息，再调用后端；失败则回滚并 Toast
 			async onConsultRetainChange({ consultId, retained }) {
 				if (consultId == null) return
 				const prev = !retained
@@ -392,6 +418,7 @@
 					})
 				}
 			},
+			// 将指定 consultId 在用户/助手成对消息上的 retained 标记同步为同一布尔值（仅改云端历史会话）
 			applyConsultRetainedFlag(consultId, retained) {
 				const cloud = this.conversations.find(c => c.title === '云端历史记录')
 				if (!cloud || !cloud.messages) return
@@ -400,9 +427,199 @@
 					return { ...m, retained: !!retained }
 				})
 			},
+			// 将 prefix 转成请求体中的消息列表，保证「仅图」用户对模型仍有问题文案
+			buildAiMessagesPrefix(rawSlice) {
+				const aiMessages = rawSlice.map(m => ({ ...m }))
+				const last = aiMessages[aiMessages.length - 1]
+				if (
+					last &&
+					last.role === 'user' &&
+					!(last.loading) &&
+					!(String(last.text || '').trim()) &&
+					last.filePaths &&
+					last.filePaths.length > 0
+				) {
+					last.text = '[图片]'
+				}
+				return aiMessages
+			},
+			// 对已有一条 AI 气泡重新拉流（沿用紧前一条用户消息）
+			onRegenerateAssistant({ assistantMessageId }) {
+				if (this.isLocked) {
+					this.showGiveUpModal = true
+					return
+				}
+				if (this.sending) {
+					uni.showToast({ title: '请等待当前回复完成', icon: 'none' })
+					return
+				}
+				const current = this.currentConversation
+				const raw = current.messages || []
+				const idx = raw.findIndex(m => m.id === assistantMessageId && m.role === 'assistant')
+				if (idx <= 0) return
+				const prev = raw[idx - 1]
+				if (!prev || prev.role !== 'user') {
+					uni.showToast({ title: '无法重新生成', icon: 'none' })
+					return
+				}
+				const userText = String(prev.text || '').trim()
+				const hasImages = prev.filePaths && prev.filePaths.length > 0
+				if (!userText && !hasImages) {
+					uni.showToast({ title: '上一条用户消息为空', icon: 'none' })
+					return
+				}
+
+				const aiMessages = this.buildAiMessagesPrefix(raw.slice(0, idx))
+				const convId = current.id
+
+				this.sending = true
+				this.conversations = this.conversations.map(item => {
+					if (item.id !== convId) return item
+					const messages = item.messages.map(m => {
+						if (m.id !== assistantMessageId) return m
+						return {
+							...m,
+							text: 'AI 正在思考中，请稍等...',
+							loading: true,
+							time: getTimestamp()
+						}
+					})
+					return { ...item, messages }
+				})
+				this.handleBottomLayoutChange(true)
+				this.userHasScrolled = false
+
+				requestAiChatStream(
+					aiMessages,
+					{ mode: this.currentMode },
+					chunkText => {
+						this.replaceAssistantReply(convId, assistantMessageId, chunkText)
+					},
+					fullText => {
+						this.sending = false
+						this.replaceAssistantReply(convId, assistantMessageId, fullText)
+						this.handleBottomLayoutChange(false)
+						this.maybeAutoPlayAiVoice(assistantMessageId, fullText)
+					},
+					error => {
+						this.sending = false
+						this.replaceAssistantReply(
+							convId,
+							assistantMessageId,
+							`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
+						)
+						uni.showToast({
+							title: 'AI 接口调用失败',
+							icon: 'none'
+						})
+						this.handleBottomLayoutChange(false)
+					}
+				)
+			},
+			// 修改用户气泡：截断其后消息并按新正文重新生成 AI 回复
+			onUserMessageEdit({ messageId, text }) {
+				if (this.isLocked) {
+					this.showGiveUpModal = true
+					return
+				}
+				if (this.sending) {
+					uni.showToast({ title: '请等待当前回复完成', icon: 'none' })
+					return
+				}
+				const current = this.currentConversation
+				const raw = current.messages || []
+				const idx = raw.findIndex(m => m.id === messageId && m.role === 'user')
+				if (idx < 0) return
+
+				const prev = raw[idx]
+				const imgCount = prev.filePaths && prev.filePaths.length ? prev.filePaths.length : 0
+				const hasImages = imgCount > 0
+				const nextText = typeof text === 'string' ? text.trim() : ''
+				if (!nextText && !hasImages) {
+					uni.showToast({ title: '内容不能为空', icon: 'none' })
+					return
+				}
+
+				const prefix = raw.slice(0, idx)
+				const updatedUser = {
+					...prev,
+					text: nextText,
+					time: getTimestamp()
+				}
+				const pendingId = Date.now() + 1
+				const pendingAssistant = createPendingAssistantMessage()
+				pendingAssistant.id = pendingId
+
+				const nextMessages = prefix.concat([updatedUser, pendingAssistant])
+				const convId = current.id
+
+				const previewSlice = nextText || (imgCount > 1 ? `【图片】×${imgCount}` : imgCount ? '【图片】' : '')
+				this.conversations = this.conversations.map(item => {
+					if (item.id !== convId) return item
+					return {
+						...item,
+						messages: nextMessages,
+						preview: previewSlice.replace(/[#*_`>-]/g, '').slice(0, 24) || item.preview,
+						updatedAt: getTimestamp()
+					}
+				})
+
+				const aiMessages = this.buildAiMessagesPrefix(prefix.concat([updatedUser]))
+				this.sending = true
+				this.handleBottomLayoutChange(true)
+				this.userHasScrolled = false
+
+				requestAiChatStream(
+					aiMessages,
+					{ mode: this.currentMode },
+					chunkText => {
+						this.replaceAssistantReply(convId, pendingId, chunkText)
+					},
+					fullText => {
+						this.sending = false
+						this.replaceAssistantReply(convId, pendingId, fullText)
+						this.handleBottomLayoutChange(false)
+						this.maybeAutoPlayAiVoice(pendingId, fullText)
+					},
+					error => {
+						this.sending = false
+						this.replaceAssistantReply(
+							convId,
+							pendingId,
+							`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
+						)
+						uni.showToast({
+							title: 'AI 接口调用失败',
+							icon: 'none'
+						})
+						this.handleBottomLayoutChange(false)
+					}
+				)
+			},
 			showInterviewLockedToast() {
 				// 将原本简单的 Toast 提示改为直接弹窗确认
 				this.showGiveUpModal = true
+			},
+			setAutoVoiceBroadcast(enabled) {
+				this.autoVoiceBroadcast = !!enabled
+				try {
+					uni.setStorageSync('ai_auto_voice_broadcast', this.autoVoiceBroadcast)
+				} catch (e) {}
+			},
+			maybeAutoPlayAiVoice(messageId, fullText) {
+				if (!this.autoVoiceBroadcast || !fullText || typeof fullText !== 'string') {
+					return
+				}
+				const trimmed = fullText.replace(/\s/g, '')
+				if (!trimmed) {
+					return
+				}
+				this.$nextTick(() => {
+					const list = this.$refs.messageList
+					if (list && typeof list.playVoiceForMessage === 'function') {
+						list.playVoiceForMessage(messageId, fullText)
+					}
+				})
 			},
 			// 底部布局与键盘：保证输入区高度变化后，消息区仍能保持在可读位置。
 			closeBottomMore() {
@@ -779,6 +996,7 @@
 						this.sending = false
 						this.replaceAssistantReply(current.id, pendingAssistantMessage.id, fullText)
 						this.handleBottomLayoutChange(false)
+						this.maybeAutoPlayAiVoice(pendingAssistantMessage.id, fullText)
 					},
 					(error) => {
 						// 失败
@@ -889,7 +1107,6 @@
 		position: fixed;
 		left: 0;
 		right: 0;
-		bottom: 0;
 		z-index: 7;
 		box-shadow: 0 -10rpx 30rpx rgba(21, 48, 94, 0.05);
 	}

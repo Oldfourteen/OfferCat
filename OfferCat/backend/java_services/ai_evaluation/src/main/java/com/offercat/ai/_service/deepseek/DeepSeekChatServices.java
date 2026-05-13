@@ -264,10 +264,12 @@ public class DeepSeekChatServices {
 
                 // 流式请求中如果是 SPRING_CAMP 或 AIHR 模式，调用百度联网搜索获取实时背景
                 if (mode == AiChatMode.SPRING_CAMP || mode == AiChatMode.AIHR) {
-                    // 通知前端正在搜索（可选，部分前端如果没做特殊处理，直接显示字即可）
-                    try {
-                        emitter.send(SseEmitter.event().data("正在为你联网搜索最新的" + majorName + "专业招聘资讯...\\n\\n"));
-                    } catch (Exception ignored) {
+                    // AIHR 为模拟面试角色，不向用户展示「正在联网搜索…」类系统旁白，避免破坏沉浸感
+                    if (mode == AiChatMode.SPRING_CAMP) {
+                        try {
+                            emitter.send(SseEmitter.event().data("正在为你联网搜索最新的" + majorName + "专业招聘资讯...\\n\\n"));
+                        } catch (Exception ignored) {
+                        }
                     }
 
                     String currentYear = String.valueOf(Year.now().getValue());

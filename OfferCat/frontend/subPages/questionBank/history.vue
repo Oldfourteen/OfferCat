@@ -192,7 +192,7 @@
 	.placeholder {
 		width: 72rpx;
 		height: 72rpx;
-		border-radius: 22rpx;
+		border-radius: 50%;
 		background: rgba(255, 255, 255, 0.92);
 		display: flex;
 		align-items: center;
@@ -201,6 +201,7 @@
 
 	.back-btn {
 		font-size: 42rpx;
+		line-height: 1;
 		color: #30435a;
 	}
 

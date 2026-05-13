@@ -175,11 +175,6 @@ public class AuthServiceImplement implements AuthService {
             return ResponseResult.error("当前账号未绑定手机号，禁止登录");
         }
 
-        /**  登录的角色也除去企业和教师，仅允许学生和管理员登录 */
-        if (user.getUserRole() == null || (user.getUserRole() != 1 && user.getUserRole() != 4)) {
-            return ResponseResult.error("当前角色禁止登录系统");
-        }
-
         // 根据登录类型执行不同的校验逻辑
         /**  模式1：密码登录 */
         if ("password".equals(request.getLoginType())) {
@@ -197,6 +192,9 @@ public class AuthServiceImplement implements AuthService {
         } else {
             return ResponseResult.error("不支持的登录类型");
         }
+
+        // 所有用户默认按学生使用；仅 user_role=4 保留为管理员（须在库中显式配置）
+        applyDefaultStudentRoleUnlessAdmin(user);
 
         // 执行统一的后续登录处理
         return loginAfterAuth(user);
@@ -367,6 +365,17 @@ public class AuthServiceImplement implements AuthService {
         } catch (NoSuchAlgorithmException e) {
             throw new IllegalStateException("SHA-256 not available", e);
         }
+    }
+
+    /**
+     * 非管理员一律按「学生」使用；管理员(4)仅由数据库显式授权保留，注册与普通接口不会升为管理员。
+     */
+    private void applyDefaultStudentRoleUnlessAdmin(User user) {
+        if (user.getUserRole() != null && user.getUserRole() == 4) {
+            return;
+        }
+        userMapper.normalizeToStudentUnlessAdmin(user.getUserId());
+        user.setUserRole(1);
     }
 
     /**

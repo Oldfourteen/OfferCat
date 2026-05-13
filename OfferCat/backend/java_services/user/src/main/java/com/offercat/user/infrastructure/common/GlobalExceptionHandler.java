@@ -1,9 +1,14 @@
 package com.offercat.user.infrastructure.common;
 
+import java.util.stream.Collectors;
+
+import org.springframework.dao.DataAccessException;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import java.util.stream.Collectors;
 
 /**
  * 全局异常处理，确保所有校验错误返回给前端的格式都是 ResponseResult
@@ -30,9 +35,19 @@ public class GlobalExceptionHandler {
     }
 
     /**
-     * 【安全规范】处理数据库异常，隐藏原生 SQL 错误信息
+     * 无法从连接池取得数据库连接或 DB 暂不可达：HTTP 503，便于网关/前端识别为短时不可用并进行重试或友好提示。
      */
-    @ExceptionHandler({java.sql.SQLException.class, org.springframework.dao.DataAccessException.class})
+    @ExceptionHandler(CannotGetJdbcConnectionException.class)
+    public ResponseEntity<ResponseResult<Void>> handleJdbcUnavailable(CannotGetJdbcConnectionException ex) {
+        return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(ResponseResult.error(503,
+                        "数据服务暂时不可用，请稍后重试。（常见原因：数据库未启动、与本机网络不通、连接池占满或被防火墙阻断）"));
+    }
+
+    /**
+     * 【安全规范】处理数据库异常，隐藏原生 SQL 错误信息（不含「无法连接」场景，已由 {@link CannotGetJdbcConnectionException} 承接）
+     */
+    @ExceptionHandler({java.sql.SQLException.class, DataAccessException.class})
     public ResponseResult<Void> handleDatabaseException(Exception ex) {
         return ResponseResult.internalError("服务器繁忙，请稍后再试");
     }

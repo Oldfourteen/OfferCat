@@ -1,0 +1,41 @@
+{
+  "title": "张三的简历",
+  "name": "张三",
+  "gender": "男",
+  "title_line": "求职意向：后端开发实习生",
+  "email": "zhangsan@example.com",
+  "phone": "13800000000",
+  "certificate": "CET-6",
+  "avatar": "",
+
+  "education": {
+    "school": "某某大学",
+    "major": "计算机科学与技术 · 本科",
+    "date": "2022.09 - 2026.06"
+  },
+
+  "campus": [
+    {
+      "title": "学生会技术部部长",
+      "description": "负责活动报名系统开发与维护，推动团队协作。",
+      "date": "2023.09 - 2024.06"
+    }
+  ],
+
+  "projects": [
+    {
+      "name": "OfferCat 简历模块",
+      "date": "2025.03 - 2025.05",
+      "description": "参与前后端联调与 PDF 导出方案设计，熟悉 REST API。",
+      "tech_stack": ["Spring Boot", "Vue", "MySQL"],
+      "highlights": ["完成接口联调", "编写接口文档"]
+    }
+  ],
+
+  "skills": ["C++", "Python", "MySQL", "Git"],
+
+  "personal_traits": {
+    "description": "学习主动性强，乐于协作，对人工智能与深度学习方向有浓厚兴趣。",
+    "tag": "团队协作"
+  }
+}

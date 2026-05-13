@@ -24,7 +24,9 @@
 				</view>
 					<text class="module-title">{{ item.title }}</text>
 					<text class="module-desc">{{ item.desc }}</text>
-					<text class="module-meta">{{ item.meta }}</text>
+					<view class="module-meta-chip">
+						<text class="module-meta">{{ item.meta }}</text>
+					</view>
 				</view>
 				<view class="module-arrow">→</view>
 			</view>
@@ -135,6 +137,9 @@
 		padding: 24rpx;
 		border-radius: 30rpx;
 		border: 2rpx solid rgba(49, 101, 215, 0.08);
+		box-shadow:
+			0 2rpx 4rpx rgba(21, 48, 94, 0.04),
+			0 8rpx 20rpx rgba(49, 101, 215, 0.08);
 	}
 
 	.module-card.is-written {
@@ -182,8 +187,7 @@
 	}
 
 	.module-title,
-	.module-desc,
-	.module-meta {
+	.module-desc {
 		display: block;
 	}
 
@@ -201,11 +205,27 @@
 		color: #66758f;
 	}
 
-	.module-meta {
+	/* 底部统计文案：半透明底透出卡片渐变；灰色描边 + 中性阴影只做凸起感 */
+	.module-meta-chip {
 		margin-top: 14rpx;
+		align-self: flex-start;
+		padding: 10rpx 22rpx;
+		border-radius: 999rpx;
+		background: rgba(255, 255, 255, 0.38);
+		border: 2rpx solid rgba(138, 146, 162, 0.42);
+		box-shadow:
+			inset 0 2rpx 3rpx rgba(255, 255, 255, 0.75),
+			inset 0 -2rpx 4rpx rgba(72, 78, 90, 0.07),
+			0 3rpx 6rpx rgba(72, 78, 90, 0.06),
+			0 8rpx 18rpx rgba(72, 78, 90, 0.1);
+	}
+
+	.module-meta {
+		display: block;
 		font-size: 21rpx;
 		font-weight: 700;
 		color: #5d76bd;
+		line-height: 1.35;
 	}
 
 	.module-arrow {
@@ -233,13 +253,28 @@
 	}
 
 	.question-bank.theme-dark .section-subtitle,
-	.question-bank.theme-dark .module-desc,
-	.question-bank.theme-dark .module-meta {
+	.question-bank.theme-dark .module-desc {
 		color: rgba(255, 255, 255, 0.58);
+	}
+
+	.question-bank.theme-dark .module-meta-chip {
+		background: rgba(255, 255, 255, 0.1);
+		border-color: rgba(168, 174, 188, 0.38);
+		box-shadow:
+			inset 0 1rpx 2rpx rgba(255, 255, 255, 0.14),
+			inset 0 -2rpx 6rpx rgba(0, 0, 0, 0.28),
+			0 4rpx 12rpx rgba(0, 0, 0, 0.3);
+	}
+
+	.question-bank.theme-dark .module-meta {
+		color: rgba(190, 210, 255, 0.88);
 	}
 
 	.question-bank.theme-dark .module-card {
 		border-color: rgba(255, 255, 255, 0.06);
+		box-shadow:
+			0 2rpx 6rpx rgba(0, 0, 0, 0.35),
+			0 10rpx 24rpx rgba(0, 0, 0, 0.22);
 	}
 
 	.question-bank.theme-dark .module-card.is-written,

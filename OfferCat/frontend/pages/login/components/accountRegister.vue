@@ -26,15 +26,9 @@
 					@blur="handlePasswordBlur" 
 				/>
 				<view class="toggle-btn" @click="togglePasswordVisible">
-				<svg v-if="showPassword" class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-					<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-				</svg>
-				<svg v-else class="eye-icon" viewBox="0 0 1024 1024" fill="currentColor">
-					<path d="M928 268.8c-137.6 169.6-272 252.8-409.6 252.8-134.4-3.2-278.4-86.4-422.4-256-19.2-19.2-51.2-22.4-70.4-3.2S0 310.4 19.2 329.6c163.2 188.8 329.6 288 499.2 288 169.6 0 332.8-99.2 486.4-288 16-22.4 12.8-54.4-9.6-70.4-19.2-16-51.2-12.8-67.2 9.6z"/>
-					<path d="M163.2 470.4l-96 108.8c-12.8 16-12.8 38.4 3.2 51.2s38.4 12.8 51.2-3.2l96-108.8c12.8-16 12.8-38.4-3.2-51.2s-38.4-12.8-51.2 3.2z m192 128l-38.4 150.4c-3.2 19.2 6.4 38.4 25.6 41.6s38.4-6.4 41.6-25.6l38.4-150.4c3.2-19.2-6.4-38.4-25.6-41.6s-38.4 6.4-41.6 25.6z m275.2 6.4l54.4 150.4c6.4 19.2 28.8 28.8 44.8 22.4 19.2-6.4 28.8-25.6 22.4-44.8l-54.4-150.4c-6.4-19.2-28.8-28.8-44.8-22.4-19.2 6.4-28.8 25.6-22.4 44.8z m192-131.2l108.8 108.8c12.8 12.8 35.2 12.8 51.2 0s12.8-35.2 0-51.2l-108.8-108.8c-12.8-12.8-35.2-12.8-51.2 0s-12.8 38.4 0 51.2z"/>
-				</svg>
-			</view>
+					<image v-if="showPassword" class="eye-icon" src="../../../asset/image/eye-solid.png" mode="aspectFit"></image>
+					<image v-else class="eye-icon" src="../../../asset/image/eye-slash-solid.png" mode="aspectFit"></image>
+				</view>
 			</view>
 			<view class="error-text" v-if="passwordError">{{ passwordError }}</view>
 			<!-- 确认密码输入框用于二次校验两次密码是否一致。 -->
@@ -49,15 +43,9 @@
 					@blur="handleConfirmPasswordBlur" 
 				/>
 				<view class="toggle-btn" @click="toggleConfirmPasswordVisible">
-				<svg v-if="showConfirmPassword" class="eye-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
-					<path d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
-					<path d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
-				</svg>
-				<svg v-else class="eye-icon" viewBox="0 0 1024 1024" fill="currentColor">
-					<path d="M928 268.8c-137.6 169.6-272 252.8-409.6 252.8-134.4-3.2-278.4-86.4-422.4-256-19.2-19.2-51.2-22.4-70.4-3.2S0 310.4 19.2 329.6c163.2 188.8 329.6 288 499.2 288 169.6 0 332.8-99.2 486.4-288 16-22.4 12.8-54.4-9.6-70.4-19.2-16-51.2-12.8-67.2 9.6z"/>
-					<path d="M163.2 470.4l-96 108.8c-12.8 16-12.8 38.4 3.2 51.2s38.4 12.8 51.2-3.2l96-108.8c12.8-16 12.8-38.4-3.2-51.2s-38.4-12.8-51.2 3.2z m192 128l-38.4 150.4c-3.2 19.2 6.4 38.4 25.6 41.6s38.4-6.4 41.6-25.6l38.4-150.4c3.2-19.2-6.4-38.4-25.6-41.6s-38.4 6.4-41.6 25.6z m275.2 6.4l54.4 150.4c6.4 19.2 28.8 28.8 44.8 22.4 19.2-6.4 28.8-25.6 22.4-44.8l-54.4-150.4c-6.4-19.2-28.8-28.8-44.8-22.4-19.2 6.4-28.8 25.6-22.4 44.8z m192-131.2l108.8 108.8c12.8 12.8 35.2 12.8 51.2 0s12.8-35.2 0-51.2l-108.8-108.8c-12.8-12.8-35.2-12.8-51.2 0s-12.8 38.4 0 51.2z"/>
-				</svg>
-			</view>
+					<image v-if="showConfirmPassword" class="eye-icon" src="../../../asset/image/eye-solid.png" mode="aspectFit"></image>
+					<image v-else class="eye-icon" src="../../../asset/image/eye-slash-solid.png" mode="aspectFit"></image>
+				</view>
 			</view>
 			<view class="error-text" v-if="confirmPasswordError">{{ confirmPasswordError }}</view>
 			<!-- 手机号和验证码输入复用公共组件，负责发送验证码与倒计时。 -->

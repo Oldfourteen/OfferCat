@@ -97,11 +97,15 @@ export function requestAiChatStream(messages = [], options = {}, onChunk, onComp
 	
 	// 发起真正的流式请求，图片已在进入这里前完成上传。
 	const doRequest = (uploadedImages) => {
+		const payload = { userId, majorCode, mode, question, userImages: uploadedImages }
+		if (options.hrIdleTimeout) {
+			payload.hrIdleTimeout = true
+		}
 		const requestTask = uni.request({
 			url: `${BASE_URL}/api/ai/chat-stream`,
 			method: 'POST',
 			header: { 'Content-Type': 'application/json' },
-			data: { userId, majorCode, mode, question, userImages: uploadedImages },
+			data: payload,
 			enableChunked: true,
 			success: res => {
 				if (res.statusCode < 200 || res.statusCode >= 300) {

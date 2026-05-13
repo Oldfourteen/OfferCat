@@ -114,9 +114,29 @@ public class DeepSeekChatServices {
         return sb.toString().replace("{{majorName}}", majorName != null ? majorName : "通用");
     }
 
-    // 兼容旧接口：默认 AIHR
+    /**
+     * 按业务模式解析系统提示。GENERAL 与未知模式必须使用通用助手稿，禁止使用求职顾问类人设，避免与非快捷功能会话混淆。
+     */
+    private String resolveSystemPrompt(AiChatMode mode, String majorName) {
+        if (mode == AiChatMode.AIHR) {
+            return loadHRKnowledgeBase(majorName);
+        }
+        String skillFile = switch (mode) {
+            case RESUME_POLISH -> "resume_polish.md";
+            case GROUP_INTERVIEW -> "group_interview.md";
+            case JOB_MATCH -> "job_match.md";
+            case SPRING_CAMP -> "spring_camp.md";
+            case GENERAL -> "general_assistant.md";
+            default -> "general_assistant.md";
+        };
+        String skillTemplate = loadSkillPrompt(skillFile);
+        String majorLabel = majorName != null ? majorName : "通用";
+        return skillTemplate.replace("{{majorName}}", majorLabel);
+    }
+
+    // 兼容旧接口：与当前产品策略一致，默认走通用助手（不传 mode 的旧调用方不再强制 HR 模拟面试人设）
     public String chatWithAI(Long userId, String majorCode, String userQuestion) {
-        return chatWithAI(userId, majorCode, "AIHR", userQuestion, null);
+        return chatWithAI(userId, majorCode, "GENERAL", userQuestion, null);
     }
 
     // 新接口：按 mode 切换 prompt
@@ -124,26 +144,7 @@ public class DeepSeekChatServices {
         String majorName = MajorEnum.getNameByCode(majorCode);
 
         AiChatMode mode = AiChatMode.from(modeStr);
-        String systemPrompt;
-
-        if (mode == AiChatMode.AIHR) {
-            systemPrompt = loadHRKnowledgeBase(majorName);
-        } else {
-            String skillFile = switch (mode) {
-                case RESUME_POLISH ->
-                    "resume_polish.md";
-                case GROUP_INTERVIEW ->
-                    "group_interview.md";
-                case JOB_MATCH ->
-                    "job_match.md";
-                case SPRING_CAMP ->
-                    "spring_camp.md";
-                default ->
-                    "hr_consultant.md";
-            };
-            String skillTemplate = loadSkillPrompt(skillFile);
-            systemPrompt = skillTemplate.replace("{{majorName}}", majorName);
-        }
+        String systemPrompt = resolveSystemPrompt(mode, majorName);
 
         // 如果是 SPRING_CAMP 或 AIHR 模式，调用百度联网搜索获取实时背景
         if (mode == AiChatMode.SPRING_CAMP || mode == AiChatMode.AIHR) {
@@ -235,32 +236,17 @@ public class DeepSeekChatServices {
         }
     }
 
-    public void streamChatWithAI(Long userId, String majorCode, String modeStr, String userQuestion, List<String> userImages, SseEmitter emitter) {
+    private static final String HR_IDLE_TIMEOUT_SYSTEM_APPEND = """
+
+            【面试官情境·系统】候选人未在你上一回合要求的限时内作出有效回应，已静默约5分钟。请在遵守安全与合规要求的前提下自然推进模拟面试：可体现你对沟通响应、执行力与职业素养的观察，并据此微调你的态度、追问深度与节奏（勿编造事实，保持专业克制）。""";
+
+    public void streamChatWithAI(Long userId, String majorCode, String modeStr, String userQuestion, List<String> userImages, boolean hrIdleTimeout, SseEmitter emitter) {
         executor.submit(() -> {
             StringBuilder fullAnswer = new StringBuilder();
             try {
                 String majorName = MajorEnum.getNameByCode(majorCode);
                 AiChatMode mode = AiChatMode.from(modeStr);
-                String systemPrompt;
-
-                if (mode == AiChatMode.AIHR) {
-                    systemPrompt = loadHRKnowledgeBase(majorName);
-                } else {
-                    String skillFile = switch (mode) {
-                        case RESUME_POLISH ->
-                            "resume_polish.md";
-                        case GROUP_INTERVIEW ->
-                            "group_interview.md";
-                        case JOB_MATCH ->
-                            "job_match.md";
-                        case SPRING_CAMP ->
-                            "spring_camp.md";
-                        default ->
-                            "hr_consultant.md";
-                    };
-                    String skillTemplate = loadSkillPrompt(skillFile);
-                    systemPrompt = skillTemplate.replace("{{majorName}}", majorName);
-                }
+                String systemPrompt = resolveSystemPrompt(mode, majorName);
 
                 // 流式请求中如果是 SPRING_CAMP 或 AIHR 模式，调用百度联网搜索获取实时背景
                 if (mode == AiChatMode.SPRING_CAMP || mode == AiChatMode.AIHR) {
@@ -278,12 +264,19 @@ public class DeepSeekChatServices {
                     systemPrompt = systemPrompt.replace("{{searchContext}}", searchContext);
                 }
 
+                if (mode == AiChatMode.AIHR && hrIdleTimeout) {
+                    systemPrompt = (systemPrompt != null ? systemPrompt : "") + HR_IDLE_TIMEOUT_SYSTEM_APPEND;
+                }
+
                 String finalUserQuestion = userQuestion;
                 // 处理 OCR 逻辑
                 if (userImages != null && !userImages.isEmpty()) {
-                    try {
-                        emitter.send(SseEmitter.event().data("正在提取图片内容，请稍候...\\n\\n"));
-                    } catch (Exception ignored) {
+                    // AIHR 模拟面试不向候选人展示 OCR 等待提示，避免打断沉浸感（与联网搜索策略一致）
+                    if (mode != AiChatMode.AIHR) {
+                        try {
+                            emitter.send(SseEmitter.event().data("正在提取图片内容，请稍候...\\n\\n"));
+                        } catch (Exception ignored) {
+                        }
                     }
 
                     StringBuilder ocrTextBuilder = new StringBuilder();

@@ -1,8 +1,8 @@
 <template>
-	<!-- 欢迎区：当前对话为空时，告诉用户这是一个求职 AI 助手页面 -->
+	<!-- 欢迎区：空会话时使用通用话术；具体求职能力由底部快捷入口进入专属模式后再启用 -->
 	<view class="welcome" :class="themeClass">
 		<text class="welcome-title">同学，很高兴见到你</text>
-		<text class="welcome-subtitle">有什么求职相关的问题需要我帮忙解答吗？</text>
+		<text class="welcome-subtitle">聊聊什么都可以；需要润色简历、模拟面试等功能时，用下方快捷入口即可。</text>
 	</view>
 </template>
 

@@ -33,7 +33,7 @@
 					</view>
 				</view>
 				
-				<view class="input-item" :class="{'input-active': currentFocus === 'password'}">
+				<view class="input-item password-row" :class="{'input-active': currentFocus === 'password'}">
 					<input
 						type="text"
 						:password="!showPassword"
@@ -43,11 +43,14 @@
 						@input="onPasswordInput"
 						@blur="handlePasswordBlur"
 					/>
-					<view class="toggle-btn" @click="togglePasswordVisible">{{ showPassword ? '隐藏' : '显示' }}</view>
+					<view class="toggle-btn" @click="togglePasswordVisible">
+						<image v-if="showPassword" class="eye-icon" src="../../asset/image/eye-solid.png" mode="aspectFit"></image>
+						<image v-else class="eye-icon" src="../../asset/image/eye-slash-solid.png" mode="aspectFit"></image>
+					</view>
 				</view>
 				<view class="error-text" v-if="passwordError">{{ passwordError }}</view>
 				
-				<view class="input-item" :class="{'input-active': currentFocus === 'confirmPassword'}">
+				<view class="input-item password-row" :class="{'input-active': currentFocus === 'confirmPassword'}">
 					<input
 						type="text"
 						:password="!showConfirmPassword"
@@ -57,7 +60,10 @@
 						@input="onConfirmPasswordInput"
 						@blur="handleConfirmPasswordBlur"
 					/>
-					<view class="toggle-btn" @click="toggleConfirmPasswordVisible">{{ showConfirmPassword ? '隐藏' : '显示' }}</view>
+					<view class="toggle-btn" @click="toggleConfirmPasswordVisible">
+						<image v-if="showConfirmPassword" class="eye-icon" src="../../asset/image/eye-solid.png" mode="aspectFit"></image>
+						<image v-else class="eye-icon" src="../../asset/image/eye-slash-solid.png" mode="aspectFit"></image>
+					</view>
 				</view>
 				<view class="error-text" v-if="confirmPasswordError">{{ confirmPasswordError }}</view>
 			</view>
@@ -314,17 +320,39 @@
 			}
 			
 			.toggle-btn {
+				width: 28px;
 				height: 28px;
-				padding: 0 10px;
-				margin-left: 10px;
-				border-radius: 14px;
-				border: 1px solid #eee;
-				color: #666;
-				font-size: 12px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				flex-shrink: 0;
+				color: #999;
+				transition: color 0.2s;
+				
+				&:active {
+					color: #5d76bd;
+				}
+				
+				.eye-icon {
+					width: 20px;
+					height: 20px;
+				}
+			}
+		}
+		
+		.password-row {
+			position: relative;
+			height: 50px;
+			
+			input {
+				height: 100%;
+			}
+			
+			.toggle-btn {
+				position: absolute;
+				right: 0;
+				top: 50%;
+				transform: translateY(-50%);
 			}
 		}
 		

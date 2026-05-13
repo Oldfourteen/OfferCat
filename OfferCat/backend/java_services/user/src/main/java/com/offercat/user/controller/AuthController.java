@@ -50,6 +50,15 @@ public class AuthController {
     }
 
     /**
+     * 修改密码
+     * 需提供手机号、验证码、新密码及确认密码
+     */
+    @PostMapping("/reset-password")
+    public ResponseResult<Void> resetPassword(@RequestBody @Valid ResetPasswordRequest request) {
+        return authService.resetPassword(request);
+    }
+
+    /**
      * 完善学生信息
      * 登录后如果 isComplete 为 false，且用户选择学生身份时调用
      */

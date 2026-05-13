@@ -33,4 +33,9 @@ public class AiChatModeRequest {
     
     //  用户图片
     private java.util.List<String> userImages;
+
+    /**
+     * AIHR 模拟面试：客户端因「限时内未作答」触发的自动跟进时为 true，服务端在系统提示中补充面试官情境。
+     */
+    private Boolean hrIdleTimeout;
 }

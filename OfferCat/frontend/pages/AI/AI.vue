@@ -26,6 +26,11 @@
 				/>
 			</view>
 
+			<view v-if="hrRespondSecondsRemaining > 0" class="hr-respond-timer" :class="themeClass">
+				<text class="hr-respond-timer__label">限时作答</text>
+				<text class="hr-respond-timer__value">{{ hrRespondTimerDisplay }}</text>
+			</view>
+
 			<!-- 主滚动区：承载欢迎区、消息流和底部留白，保证聊天区可滚动 -->
 			<scroll-view
 				class="ai-scroll animate-item"
@@ -111,18 +116,46 @@
 	import { BASE_URL } from '@/api/config.js'
 	import { saveQuestionHistory } from '@/utils/questionHistory.js'
 
-	// 统一生成聊天时间文案，当前页面都按即时消息处理。
-	function getTimestamp() {
-		return '刚刚'
+	function newMessageTimeMs() {
+		return Date.now()
+	}
+
+	function formatDrawerUpdatedAt(ms = Date.now()) {
+		const d = new Date(ms)
+		const pad = n => String(n).padStart(2, '0')
+		return `${pad(d.getHours())}:${pad(d.getMinutes())}`
+	}
+
+	function parseHistoryTimeMs(createTime) {
+		if (!createTime || typeof createTime !== 'string') return null
+		const normalized = createTime.indexOf('T') >= 0 ? createTime : createTime.replace(' ', 'T')
+		const parsed = Date.parse(normalized)
+		return Number.isFinite(parsed) ? parsed : null
+	}
+
+	/** AIHR：面试官明确要求在时限内作答时，才启动客户端 5 分钟倒计时 */
+	const HR_RESPOND_WINDOW_MS = 5 * 60 * 1000
+
+	function assistantRequestsTimedAnswer(text) {
+		if (!text || typeof text !== 'string') return false
+		const compact = text.replace(/\s/g, '')
+		if (!/(回答|作答|回复|补充说明|说一下|谈谈)/.test(compact)) return false
+		if (/时间限制/.test(compact)) return true
+		if (/限时/.test(compact)) return true
+		if (/(分钟|秒钟|秒|分)(内|里).{0,20}(回答|作答|回复)/.test(compact)) return true
+		if (/(回答|作答|回复).{0,24}(分钟|秒钟|秒|分)/.test(compact)) return true
+		if (/请.{0,8}(在|于).{0,12}(分钟|秒钟|秒|分)/.test(compact)) return true
+		return false
 	}
 
 	// 占位中的 AI 消息，先渲染 loading，再用流式结果替换。
 	function createPendingAssistantMessage() {
+		const ts = newMessageTimeMs()
 		return {
-			id: Date.now() + 1,
+			id: ts + 1,
 			role: 'assistant',
 			text: 'AI 正在思考中，请稍等...',
-			time: getTimestamp(),
+			timeMs: ts,
 			loading: true
 		}
 	}
@@ -130,9 +163,9 @@
 	function createConversationItem(index) {
 		return {
 			id: Date.now() + index,
-			title: index === 1 ? '求职总控台' : '新对话',
+			title: '新对话',
 			preview: index === 1 ? '随时开始新的求职问题' : '点击开始输入你的问题',
-			updatedAt: '刚刚',
+			updatedAt: formatDrawerUpdatedAt(),
 			messages: [],
 			isInterviewEnded: false
 		}
@@ -184,7 +217,11 @@
 				userHasScrolled: false,
 				scrollClientHeight: 0,
 				skipNextOnShow: false,
-				autoVoiceBroadcast: false
+				autoVoiceBroadcast: false,
+				hrRespondSecondsRemaining: 0,
+				hrRespondDeadlineMs: null,
+				hrRespondTimeoutTimer: null,
+				hrRespondTickTimer: null
 			}
 		},
 		computed: {
@@ -215,6 +252,12 @@
 			// 当前会话是否为从服务端拉取的「云端历史记录」（仅此会话展示「保留对话」开关）
 			isCloudHistoryConversation() {
 				return this.currentConversation && this.currentConversation.title === '云端历史记录'
+			},
+			hrRespondTimerDisplay() {
+				const s = this.hrRespondSecondsRemaining
+				const m = Math.floor(s / 60)
+				const r = s % 60
+				return `${String(m).padStart(2, '0')}:${String(r).padStart(2, '0')}`
 			}
 		},
 		watch: {
@@ -234,6 +277,11 @@
 				handler() {
 					this.saveLocalConversations()
 				}
+			},
+			currentMode(mode) {
+				if (mode !== 'AIHR') {
+					this.clearHrRespondWindow()
+				}
 			}
 		},
 		// 生命周期：负责恢复会话、监听键盘以及处理中断中的面试状态。
@@ -242,12 +290,14 @@
 			this.initKeyboardListener()
 		},
 		beforeDestroy() {
+			this.clearHrRespondWindow()
 			this.removeKeyboardListener()
 			if (this.isInterviewMode && !this.interviewEnded && !this.hasRecordedInterview) {
 				this.recordMockInterview('AI 模拟面试 (意外退出)')
 			}
 		},
 		onUnload() {
+			this.clearHrRespondWindow()
 			if (this.isInterviewMode && !this.interviewEnded && !this.hasRecordedInterview) {
 				this.recordMockInterview('AI 模拟面试 (意外退出)')
 			}
@@ -293,6 +343,69 @@
 			}
 		},
 		methods: {
+			clearHrRespondWindow() {
+				if (this.hrRespondTimeoutTimer) {
+					clearTimeout(this.hrRespondTimeoutTimer)
+					this.hrRespondTimeoutTimer = null
+				}
+				if (this.hrRespondTickTimer) {
+					clearInterval(this.hrRespondTickTimer)
+					this.hrRespondTickTimer = null
+				}
+				this.hrRespondDeadlineMs = null
+				this.hrRespondSecondsRemaining = 0
+			},
+			maybeArmHrTimedRespondWindow(fullText) {
+				if (this.currentMode !== 'AIHR' || !this.isInterviewMode || this.interviewEnded || this.isCurrentInterviewEnded) {
+					this.clearHrRespondWindow()
+					return
+				}
+				if (!assistantRequestsTimedAnswer(fullText)) {
+					this.clearHrRespondWindow()
+					return
+				}
+				this.armHrRespondWindow()
+			},
+			armHrRespondWindow() {
+				this.clearHrRespondWindow()
+				const deadline = Date.now() + HR_RESPOND_WINDOW_MS
+				this.hrRespondDeadlineMs = deadline
+				const tick = () => {
+					const sec = Math.max(0, Math.ceil((deadline - Date.now()) / 1000))
+					this.hrRespondSecondsRemaining = sec
+					if (sec <= 0 && this.hrRespondTickTimer) {
+						clearInterval(this.hrRespondTickTimer)
+						this.hrRespondTickTimer = null
+					}
+				}
+				tick()
+				this.hrRespondTickTimer = setInterval(tick, 1000)
+				this.hrRespondTimeoutTimer = setTimeout(() => {
+					this.onHrRespondTimeout()
+				}, HR_RESPOND_WINDOW_MS)
+			},
+			onHrRespondTimeout() {
+				this.hrRespondTimeoutTimer = null
+				if (this.hrRespondTickTimer) {
+					clearInterval(this.hrRespondTickTimer)
+					this.hrRespondTickTimer = null
+				}
+				this.hrRespondDeadlineMs = null
+				this.hrRespondSecondsRemaining = 0
+
+				if (this.currentMode !== 'AIHR' || !this.isInterviewMode || this.interviewEnded || this.isCurrentInterviewEnded) {
+					return
+				}
+				if (this.sending) {
+					return
+				}
+
+				this.sendMessage(
+					'【面试计时·系统】候选人未在你要求的限时内回复，已超过5分钟无有效作答。请继续面试并据此调整你的沟通方式与专业判断。',
+					true,
+					{ hrIdleTimeout: true }
+				)
+			},
 			// 本地/云端历史：优先恢复缓存，再补充云端聊天记录。
 			loadLocalConversations() {
 				try {
@@ -344,6 +457,7 @@
 						const reversed = [...historyData].reverse()
 						reversed.forEach((item, index) => {
 							const timeStr = item.createTime ? item.createTime.replace('T', ' ') : '历史'
+							const historyMs = parseHistoryTimeMs(item.createTime)
 							const isHidden = ['帮我润色简历经历', '开启HR模拟面试', '开启AI模拟面试', '模拟大厂群面场景', '分析岗位匹配度'].includes(item.userContent)
 							const consultId = item.id != null ? Number(item.id) : null
 							const retained = item.retained === 1 || item.retained === true
@@ -363,6 +477,7 @@
 								role: 'user',
 								text: item.userContent || '',
 								time: timeStr,
+								timeMs: historyMs != null ? historyMs : undefined,
 								hidden: isHidden,
 								filePaths: filePaths && filePaths.length > 0 ? filePaths : undefined,
 								type: filePaths && filePaths.length > 0 ? 'images' : 'text',
@@ -385,6 +500,7 @@
 								role: 'assistant',
 								text: item.aiContent || '',
 								time: timeStr,
+								timeMs: historyMs != null ? historyMs : undefined,
 								loading: false,
 								filePaths: aiFilePaths && aiFilePaths.length > 0 ? aiFilePaths : undefined,
 								type: aiFilePaths && aiFilePaths.length > 0 ? 'images' : 'text',
@@ -449,6 +565,7 @@
 					this.showGiveUpModal = true
 					return
 				}
+				this.clearHrRespondWindow()
 				if (this.sending) {
 					uni.showToast({ title: '请等待当前回复完成', icon: 'none' })
 					return
@@ -480,8 +597,7 @@
 						return {
 							...m,
 							text: 'AI 正在思考中，请稍等...',
-							loading: true,
-							time: getTimestamp()
+							loading: true
 						}
 					})
 					return { ...item, messages }
@@ -500,6 +616,7 @@
 						this.replaceAssistantReply(convId, assistantMessageId, fullText)
 						this.handleBottomLayoutChange(false)
 						this.maybeAutoPlayAiVoice(assistantMessageId, fullText)
+						this.maybeArmHrTimedRespondWindow(fullText)
 					},
 					error => {
 						this.sending = false
@@ -522,6 +639,7 @@
 					this.showGiveUpModal = true
 					return
 				}
+				this.clearHrRespondWindow()
 				if (this.sending) {
 					uni.showToast({ title: '请等待当前回复完成', icon: 'none' })
 					return
@@ -541,10 +659,11 @@
 				}
 
 				const prefix = raw.slice(0, idx)
+				const editTs = newMessageTimeMs()
 				const updatedUser = {
 					...prev,
 					text: nextText,
-					time: getTimestamp()
+					timeMs: editTs
 				}
 				const pendingId = Date.now() + 1
 				const pendingAssistant = createPendingAssistantMessage()
@@ -560,7 +679,7 @@
 						...item,
 						messages: nextMessages,
 						preview: previewSlice.replace(/[#*_`>-]/g, '').slice(0, 24) || item.preview,
-						updatedAt: getTimestamp()
+						updatedAt: formatDrawerUpdatedAt(editTs)
 					}
 				})
 
@@ -580,6 +699,7 @@
 						this.replaceAssistantReply(convId, pendingId, fullText)
 						this.handleBottomLayoutChange(false)
 						this.maybeAutoPlayAiVoice(pendingId, fullText)
+						this.maybeArmHrTimedRespondWindow(fullText)
 					},
 					error => {
 						this.sending = false
@@ -692,6 +812,7 @@
 					this.showGiveUpModal = true
 					return
 				}
+				this.clearHrRespondWindow()
 				const next = createConversationItem(this.conversations.length + 1)
 				this.conversations.unshift(next)
 				this.activeConversationId = next.id
@@ -710,6 +831,7 @@
 					this.showGiveUpModal = true
 					return
 				}
+				this.clearHrRespondWindow()
 				this.activeConversationId = id
 				this.drawerVisible = false
 				this.handleBottomLayoutChange(true)
@@ -722,6 +844,7 @@
 			},
 			confirmGiveUp() {
 				this.showGiveUpModal = false
+				this.clearHrRespondWindow()
 				this.interviewEnded = true
 				this.isInterviewMode = false
 				this.currentMode = ''
@@ -770,6 +893,7 @@
 					this.showGiveUpModal = true
 					return
 				}
+				this.clearHrRespondWindow()
 				if (this.conversations.length === 1) {
 					const next = createConversationItem(1)
 					this.conversations = [next]
@@ -918,7 +1042,7 @@
 				})
 			},
 			// 发送消息：组装用户消息、插入 AI 占位、并发起流式回复请求。
-			async sendMessage(content, isHidden = false) {
+			async sendMessage(content, isHidden = false, streamOptions = {}) {
 				const textContent = typeof content === 'string' ? content : ''
 								this.userHasScrolled = false; // Reset scroll flag
 				this.isUserScrolling = false;
@@ -928,6 +1052,8 @@
 				if ((!value && !filePaths.length) || this.sending) {
 					return
 				}
+
+				this.clearHrRespondWindow()
 
 				if (this.streamTimer) {
 					clearInterval(this.streamTimer)
@@ -939,12 +1065,12 @@
 				this.draft = ''
 
 				const current = this.currentConversation
-				const timestamp = getTimestamp()
+				const userTs = newMessageTimeMs()
 				const userMessage = { 
-					id: Date.now(), 
+					id: userTs, 
 					role: 'user', 
 					text: value, 
-					time: timestamp, 
+					timeMs: userTs,
 					hidden: isHidden,
 					filePaths: filePaths.length > 0 ? filePaths : undefined,
 					type: filePaths.length > 0 ? 'images' : 'text'
@@ -970,7 +1096,7 @@
 						...item,
 						title: item.messages.length ? item.title : (isHidden ? '开启新模式' : previewText.slice(0, 8)),
 						preview: isHidden ? '进入功能模式...' : previewText,
-						updatedAt: timestamp,
+						updatedAt: formatDrawerUpdatedAt(userTs),
 						messages: nextMessages
 					}
 				})
@@ -986,7 +1112,7 @@
 
 				requestAiChatStream(
 					aiMessages,
-					{ mode: this.currentMode },
+					{ mode: this.currentMode, ...streamOptions },
 					(chunkText) => {
 						// 收到流式数据块
 						this.replaceAssistantReply(current.id, pendingAssistantMessage.id, chunkText)
@@ -997,6 +1123,7 @@
 						this.replaceAssistantReply(current.id, pendingAssistantMessage.id, fullText)
 						this.handleBottomLayoutChange(false)
 						this.maybeAutoPlayAiVoice(pendingAssistantMessage.id, fullText)
+						this.maybeArmHrTimedRespondWindow(fullText)
 					},
 					(error) => {
 						// 失败
@@ -1025,6 +1152,7 @@
 						this.recordMockInterview('AI 模拟面试')
 						uni.showToast({ title: '面试已结束', icon: 'none' })
 						interviewEndedNow = true
+						this.clearHrRespondWindow()
 					}
 				}
 
@@ -1041,8 +1169,7 @@
 						return {
 							...message,
 							text,
-							loading: false,
-							time: getTimestamp()
+							loading: false
 						}
 					})
 
@@ -1050,7 +1177,7 @@
 						...item,
 						messages,
 						preview: text.replace(/[#*_`>-]/g, '').slice(0, 24) || item.preview,
-						updatedAt: getTimestamp(),
+						updatedAt: formatDrawerUpdatedAt(),
 						isInterviewEnded: interviewEndedNow ? true : item.isInterviewEnded
 					}
 				})
@@ -1109,6 +1236,53 @@
 		right: 0;
 		z-index: 7;
 		box-shadow: 0 -10rpx 30rpx rgba(21, 48, 94, 0.05);
+	}
+
+	.hr-respond-timer {
+		position: fixed;
+		left: 32rpx;
+		right: 32rpx;
+		z-index: 9;
+		top: calc(var(--status-bar-height) + 102rpx);
+		display: flex;
+		flex-direction: row;
+		align-items: center;
+		justify-content: center;
+		gap: 16rpx;
+		padding: 16rpx 28rpx;
+		border-radius: 999rpx;
+		background: rgba(49, 101, 215, 0.14);
+		border: 1rpx solid rgba(49, 101, 215, 0.28);
+		box-shadow: 0 8rpx 24rpx rgba(49, 101, 215, 0.12);
+		pointer-events: none;
+	}
+
+	.hr-respond-timer__label {
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #25408f;
+	}
+
+	.hr-respond-timer__value {
+		font-size: 30rpx;
+		font-weight: 700;
+		font-variant-numeric: tabular-nums;
+		color: #3165d7;
+		letter-spacing: 2rpx;
+	}
+
+	.hr-respond-timer.theme-dark {
+		background: rgba(74, 103, 247, 0.2);
+		border-color: rgba(142, 169, 255, 0.35);
+		box-shadow: 0 8rpx 28rpx rgba(0, 0, 0, 0.35);
+	}
+
+	.hr-respond-timer.theme-dark .hr-respond-timer__label {
+		color: #c8d4ff;
+	}
+
+	.hr-respond-timer.theme-dark .hr-respond-timer__value {
+		color: #aebfff;
 	}
 
 

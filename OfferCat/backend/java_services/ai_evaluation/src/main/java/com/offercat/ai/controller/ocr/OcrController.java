@@ -130,7 +130,7 @@ public class OcrController {
     }
 
     /**
-     * OCR + DeepSeekChat（AIHR对话）
+     * OCR + DeepSeekChat（默认通用对话，与带 mode 参数的聊天接口策略一致）
      */
     @PostMapping(value = "/chat-image", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     public ResponseEntity<?> chatImage(@RequestPart("file") MultipartFile file,

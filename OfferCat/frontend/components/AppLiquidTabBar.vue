@@ -1,7 +1,7 @@
 <template>
 	<view
 		class="liquid-tab-bar"
-		:class="[{ 'is-dark': theme === 'dark', 'is-slide-settling': mirrorSlideSettling }]"
+		:class="[{ 'is-dark': isDarkUi, 'is-slide-settling': mirrorSlideSettling }]"
 	>
 		<view class="liquid-tab-bar-inner">
 			<view class="liquid-mirror-track">
@@ -43,6 +43,7 @@
 		clearTabBarSlideStartIndex,
 		commitTabBarMirrorIndex
 	} from '@/utils/appLiquidTabBar.js'
+	import { applyTheme, THEME_CHANGE_EVENT } from '@/utils/theme.js'
 
 	const SLIDE_MS = 660
 	/* 先快后慢、末端绵长，观感更接近系统级 Tab 切换 */
@@ -71,10 +72,16 @@
 				_mirrorTransitioning: false,
 				_mirrorTransTimer: null,
 				_syncRaf: null,
-				_liquidTabSync: null
+				_liquidTabSync: null,
+				/** 与全局主题同步；缓存 Tab 实例父级 props 可能滞后，避免底栏深浅切换不及时 */
+				resolvedTheme: 'light',
+				_themeChangeHandler: null
 			}
 		},
 		computed: {
+			isDarkUi() {
+				return this.resolvedTheme === 'dark'
+			},
 			routeSelected() {
 				try {
 					const pages = getCurrentPages()
@@ -118,7 +125,35 @@
 				return style
 			}
 		},
+		watch: {
+			theme(next) {
+				if (next === 'dark' || next === 'light') {
+					this.resolvedTheme = next
+				}
+			}
+		},
+		created() {
+			try {
+				this.resolvedTheme = applyTheme()
+			} catch (e) {
+				this.resolvedTheme = this.theme === 'dark' ? 'dark' : 'light'
+			}
+		},
 		mounted() {
+			try {
+				this.resolvedTheme = applyTheme()
+			} catch (e) {
+				this.resolvedTheme = this.theme === 'dark' ? 'dark' : 'light'
+			}
+			this._themeChangeHandler = (payload) => {
+				const t = payload && payload.theme
+				if (t === 'dark' || t === 'light') {
+					this.resolvedTheme = t
+				}
+			}
+			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+				uni.$on(THEME_CHANGE_EVENT, this._themeChangeHandler)
+			}
 			this._liquidTabSync = () => this.rafDedupeSyncMirrorSlideIndex()
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on('liquid-tab-bar-sync', this._liquidTabSync)
@@ -151,6 +186,10 @@
 					uni.$off('liquid-tab-bar-sync', this._liquidTabSync)
 				}
 				this._liquidTabSync = null
+				if (typeof uni !== 'undefined' && typeof uni.$off === 'function' && this._themeChangeHandler) {
+					uni.$off(THEME_CHANGE_EVENT, this._themeChangeHandler)
+				}
+				this._themeChangeHandler = null
 			},
 			isActiveTabBarInstance() {
 				if (!this.tabPageNorm) {
@@ -422,6 +461,10 @@
 		transform: none !important;
 	}
 
+	.liquid-tab-bar.is-dark.is-slide-settling .liquid-drop-shimmer--drift {
+		opacity: 0.22 !important;
+	}
+
 	.liquid-tab-bar.is-slide-settling .liquid-tab-icon,
 	.liquid-tab-bar.is-slide-settling .liquid-tab-text {
 		transition: none !important;
@@ -668,78 +711,118 @@
 		pointer-events: none;
 	}
 
+	/* 深色：深蓝玻璃透镜（与选中态 #8ab7ff 同色系，避免灰白水珠撞色） */
 	.liquid-tab-bar.is-dark .liquid-drop {
-		border-color: rgba(230, 235, 245, 0.42);
+		border-color: rgba(120, 168, 242, 0.38);
 		box-shadow:
-			0 12rpx 34rpx rgba(0, 0, 0, 0.45),
-			0 2rpx 0 rgba(255, 255, 255, 0.08),
-			inset 0 4rpx 14rpx rgba(255, 255, 255, 0.14),
-			inset 0 -12rpx 26rpx rgba(0, 0, 0, 0.42);
-		backdrop-filter: blur(20px) saturate(105%);
-		-webkit-backdrop-filter: blur(20px) saturate(105%);
+			0 12rpx 36rpx rgba(0, 8, 24, 0.52),
+			0 2rpx 0 rgba(138, 183, 255, 0.12),
+			inset 0 6rpx 22rpx rgba(138, 183, 255, 0.14),
+			inset 0 -14rpx 28rpx rgba(10, 18, 40, 0.62),
+			0 0 40rpx rgba(74, 120, 200, 0.08);
+		backdrop-filter: blur(22px) saturate(118%);
+		-webkit-backdrop-filter: blur(22px) saturate(118%);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-base {
 		background: radial-gradient(
 			ellipse 118% 96% at 48% 12%,
-			rgba(236, 238, 246, 0.72) 0%,
-			rgba(120, 128, 142, 0.92) 38%,
-			rgba(52, 56, 66, 0.96) 72%,
-			rgba(28, 30, 38, 1) 100%
+			rgba(110, 162, 232, 0.52) 0%,
+			rgba(52, 92, 168, 0.82) 30%,
+			rgba(32, 58, 112, 0.94) 56%,
+			rgba(18, 32, 64, 0.98) 78%,
+			rgba(12, 22, 42, 1) 100%
 		);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-lens-blur {
-		opacity: 0.42;
+		opacity: 0.5;
 		background: radial-gradient(
-			circle at 46% 44%,
-			rgba(255, 255, 255, 0.22) 0%,
-			rgba(255, 255, 255, 0) 72%
+			circle at 46% 42%,
+			rgba(186, 214, 255, 0.28) 0%,
+			rgba(90, 140, 220, 0.06) 55%,
+			rgba(30, 50, 100, 0) 72%
 		);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-milk {
 		background: linear-gradient(
 			172deg,
-			rgba(255, 255, 255, 0.38) 0%,
-			rgba(255, 255, 255, 0.08) 38%,
-			rgba(130, 138, 156, 0.42) 85%,
-			rgba(72, 78, 92, 0.55) 100%
+			rgba(160, 200, 255, 0.42) 0%,
+			rgba(90, 130, 210, 0.28) 28%,
+			rgba(45, 78, 150, 0.52) 58%,
+			rgba(24, 44, 92, 0.62) 100%
 		);
-		opacity: 0.9;
+		opacity: 0.88;
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-lens-core {
-		opacity: 0.62;
+		opacity: 0.55;
 		background: radial-gradient(
-			circle at 42% 40%,
-			rgba(255, 255, 255, 0.88) 0%,
-			rgba(255, 255, 255, 0.22) 45%,
-			rgba(255, 255, 255, 0) 72%
+			circle at 42% 38%,
+			rgba(210, 228, 255, 0.55) 0%,
+			rgba(138, 183, 255, 0.22) 42%,
+			rgba(80, 120, 200, 0.06) 68%,
+			rgba(40, 70, 140, 0) 100%
 		);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-shimmer {
-		opacity: 0.36;
+		opacity: 0.38;
+		background:
+			radial-gradient(
+				ellipse 46% 40% at 30% 36%,
+				rgba(200, 220, 255, 0.65) 0%,
+				rgba(138, 183, 255, 0.18) 48%,
+				rgba(60, 100, 180, 0) 62%
+			),
+			radial-gradient(
+				ellipse 40% 44% at 72% 58%,
+				rgba(138, 183, 255, 0.38) 0%,
+				rgba(80, 120, 200, 0) 56%
+			);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-specular {
-		opacity: 0.72;
+		opacity: 0.58;
+		background: linear-gradient(
+			125deg,
+			rgba(230, 240, 255, 0.92) 0%,
+			rgba(170, 200, 255, 0.45) 32%,
+			rgba(100, 150, 220, 0.14) 52%,
+			rgba(60, 100, 180, 0) 100%
+		);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-flash {
-		opacity: 0.52;
+		opacity: 0.48;
+		background: radial-gradient(
+			circle at 35% 35%,
+			rgba(232, 242, 255, 0.95) 0%,
+			rgba(138, 183, 255, 0.35) 48%,
+			rgba(80, 120, 200, 0) 72%
+		);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-meniscus {
-		opacity: 0.68;
+		opacity: 0.78;
+		background: linear-gradient(
+			90deg,
+			rgba(138, 183, 255, 0) 0%,
+			rgba(210, 228, 255, 0.85) 42%,
+			rgba(210, 228, 255, 0.85) 58%,
+			rgba(138, 183, 255, 0) 100%
+		);
+		box-shadow:
+			0 2rpx 6rpx rgba(138, 183, 255, 0.35),
+			0 -1rpx 4rpx rgba(40, 80, 160, 0.2);
 	}
 
 	.liquid-tab-bar.is-dark .liquid-drop-lens-ring {
 		box-shadow:
-			inset 0 0 38rpx rgba(0, 0, 0, 0.55),
-			inset 0 0 16rpx rgba(255, 255, 255, 0.22),
-			inset 0 10rpx 24rpx rgba(255, 255, 255, 0.12);
+			inset 0 0 40rpx rgba(4, 10, 28, 0.58),
+			inset 0 0 18rpx rgba(138, 183, 255, 0.16),
+			inset 0 10rpx 26rpx rgba(120, 170, 240, 0.12);
 	}
 
 	.liquid-tab-item {
@@ -758,7 +841,10 @@
 		width: 48rpx;
 		height: 48rpx;
 		margin-bottom: 4rpx;
-		transition: transform 0.52s cubic-bezier(0.25, 0.82, 0.36, 1);
+		opacity: 1;
+		transition:
+			transform 0.52s cubic-bezier(0.25, 0.82, 0.36, 1),
+			opacity 0.28s ease;
 	}
 
 	.liquid-tab-item.is-active .liquid-tab-icon {
@@ -789,5 +875,14 @@
 
 	.liquid-tab-bar.is-dark .liquid-tab-text.active {
 		color: #8ab7ff;
+	}
+
+	/* 深色下 PNG 图标：未选中略压暗，与 theme.js 原生 tabBar 配色语义一致 */
+	.liquid-tab-bar.is-dark .liquid-tab-item:not(.is-active) .liquid-tab-icon {
+		opacity: 0.76;
+	}
+
+	.liquid-tab-bar.is-dark .liquid-tab-item.is-active .liquid-tab-icon {
+		opacity: 1;
 	}
 </style>

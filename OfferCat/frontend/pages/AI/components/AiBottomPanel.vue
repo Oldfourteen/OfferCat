@@ -39,7 +39,7 @@
 					:cursor-spacing="0"
 					:disabled="recording || disabledInput"
 					confirm-type="send"
-					:placeholder="disabledInput ? '该面试已结束' : '向 AI 顾问发送消息'"
+					:placeholder="inputPlaceholder"
 					placeholder-class="composer-placeholder"
 					:value="modelValue"
 					@input="onInput"
@@ -157,6 +157,20 @@
 		computed: {
 			themeClass() {
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			inputPlaceholder() {
+				if (this.disabledInput) {
+					return '该面试已结束'
+				}
+				const mode = this.activeMode || ''
+				const map = {
+					AIHR: '向面试官发送消息…',
+					RESUME_POLISH: '描述经历或粘贴简历片段…',
+					GROUP_INTERVIEW: '发送群面中的发言或问题…',
+					JOB_MATCH: '粘贴岗位描述或想问的问题…',
+					SPRING_CAMP: '输入春招/求职冲刺相关问题…'
+				}
+				return map[mode] || '向 AI 发送消息'
 			},
 			canSend() {
 				return !this.recording && !this.disabledInput && (String(this.modelValue || '').trim().length > 0 || (this.images && this.images.length > 0))
@@ -352,7 +366,9 @@
 		background: rgba(255, 255, 255, 0.94);
 		border: 2rpx solid rgba(49, 101, 215, 0.08);
 		border-radius: 26rpx;
-		box-shadow: 0 10rpx 24rpx rgba(49, 101, 215, 0.06);
+		box-shadow:
+			0 2rpx 6rpx rgba(21, 48, 94, 0.05),
+			0 10rpx 28rpx rgba(49, 101, 215, 0.09);
 		display: inline-flex;
 		align-items: center;
 		transition: all 0.2s ease;
@@ -361,7 +377,9 @@
 	.action-chip.is-active {
 		background: #3165d7;
 		border-color: #3165d7;
-		box-shadow: 0 12rpx 28rpx rgba(49, 101, 215, 0.25);
+		box-shadow:
+			0 4rpx 10rpx rgba(21, 48, 94, 0.12),
+			0 14rpx 32rpx rgba(49, 101, 215, 0.28);
 	}
 
 	.action-icon {

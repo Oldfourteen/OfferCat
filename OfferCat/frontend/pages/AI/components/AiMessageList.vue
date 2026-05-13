@@ -110,7 +110,7 @@
 							</view>
 						</view>
 
-						<text class="msg-time">{{ item.time }}</text>
+						<text class="msg-time">{{ item.displayTime }}</text>
 					</view>
 				</view>
 			</view>
@@ -138,7 +138,7 @@
 				default: 'light'
 			},
 			// 当前会话下的消息数组
-			// 每条消息至少包含 id、role、text、time
+			// 每条消息至少包含 id、role、text；展示时间由 timeMs（优先）或 time 字符串解析
 			messages: {
 				type: Array,
 				default() {
@@ -158,7 +158,10 @@
 				loadingId: null,
 				likedMap: {},
 				editTarget: null,
-				editDraft: ''
+				editDraft: '',
+				// 依赖此计数周期性重算「刚刚」等相对时间文案
+				timeTick: 0,
+				timeTickTimer: null
 			}
 		},
 		created() {
@@ -167,14 +170,27 @@
 				uni.$on(USER_PROFILE_UPDATED_EVENT, this.updateProfile)
 			}
 		},
+		mounted() {
+			this.timeTickTimer = setInterval(() => {
+				this.timeTick += 1
+			}, 10000)
+		},
 		beforeDestroy() {
 			stopAiVoice();
+			if (this.timeTickTimer) {
+				clearInterval(this.timeTickTimer)
+				this.timeTickTimer = null
+			}
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.updateProfile)
 			}
 		},
 		beforeUnmount() {
 			stopAiVoice();
+			if (this.timeTickTimer) {
+				clearInterval(this.timeTickTimer)
+				this.timeTickTimer = null
+			}
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.updateProfile)
 			}
@@ -184,13 +200,52 @@
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			renderedMessages() {
+				const _t = this.timeTick
 				return this.messages.filter(item => !item.hidden).map(item => ({
 					...item,
-					html: item.role === 'assistant' ? renderMarkdown(item.text) : renderPlainText(item.text)
+					html: item.role === 'assistant' ? renderMarkdown(item.text) : renderPlainText(item.text),
+					displayTime: this.formatMessageTime(item)
 				}))
 			}
 		},
 		methods: {
+			formatMessageClock(ms) {
+				const d = new Date(ms)
+				const yy = String(d.getFullYear()).slice(-2)
+				const mo = d.getMonth() + 1
+				const day = d.getDate()
+				const pad = n => String(n).padStart(2, '0')
+				const hm = `${pad(d.getHours())}:${pad(d.getMinutes())}`
+				return `${yy}/${mo}/${day} ${hm}`
+			},
+			tryParseTimeString(str) {
+				if (!str || typeof str !== 'string') return null
+				if (str === '历史') return null
+				const normalized = str.indexOf('T') >= 0 ? str : str.replace(' ', 'T')
+				const parsed = Date.parse(normalized)
+				return Number.isFinite(parsed) ? parsed : null
+			},
+			formatMessageTime(item) {
+				const JUST_NOW_MS = 60 * 1000
+				let ms = typeof item.timeMs === 'number' && Number.isFinite(item.timeMs) ? item.timeMs : null
+				if (ms == null && typeof item.id === 'number' && item.id > 1e12) {
+					ms = item.id
+				}
+				if (ms != null && Number.isFinite(ms)) {
+					const elapsed = Date.now() - ms
+					if (elapsed >= 0 && elapsed < JUST_NOW_MS) {
+						return '刚刚'
+					}
+					return this.formatMessageClock(ms)
+				}
+				const raw = item.time
+				if (!raw) return ''
+				const parsed = this.tryParseTimeString(raw)
+				if (parsed != null) {
+					return this.formatMessageClock(parsed)
+				}
+				return raw
+			},
 			voiceStatusLabel(item) {
 				if (!item || item.role !== 'assistant') return ''
 				if (this.playingId === item.id) return '播放中'

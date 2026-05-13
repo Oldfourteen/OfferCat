@@ -19,7 +19,7 @@ import java.util.Map;
  * @author: Ofteen
  * @data: 2026/4/17 - 20:27
  * @mail: oldfourteen41@gmail.com
- * @info: DeepSeek Chat 控制器，提供AI HR咨询功能
+ * @info: DeepSeek Chat 控制器，按 mode 提供通用对话与各专项能力（简历、面试等）
  */
 @RestController
 @RequestMapping("/api/ai")
@@ -38,9 +38,7 @@ public class DeepSeekChatController {
     private AiConsultRetentionService aiConsultRetentionService;
     
     /**
-     * 与AI HR咨询
-     * 输入：用户ID、专业代码、问题
-     * 输出：咨询结果
+     * 与 AI 对话（兼容旧客户端：不传 mode 时由服务端按通用助手处理）
      */
     @PostMapping("/chat")
     public String chat(
@@ -48,11 +46,6 @@ public class DeepSeekChatController {
             @RequestParam String majorCode,
             @RequestParam String question
     ){
-        /**
-         * 与AI HR咨询
-         * 输入：用户ID、专业代码、问题
-         * 输出：咨询结果
-         */
         String answer = deepSeekChatServices.chatWithAI(userId, majorCode, question);
         return answer;
     }
@@ -75,7 +68,14 @@ public class DeepSeekChatController {
     @PostMapping(value = "/chat-stream", produces = "text/event-stream;charset=UTF-8")
     public SseEmitter chatStream(@Valid @RequestBody AiChatModeRequest req) {
         SseEmitter emitter = new SseEmitter(120000L); // 2分钟超时
-        deepSeekChatServices.streamChatWithAI(req.getUserId(), req.getMajorCode(), req.getMode(), req.getQuestion(), req.getUserImages(), emitter);
+        deepSeekChatServices.streamChatWithAI(
+                req.getUserId(),
+                req.getMajorCode(),
+                req.getMode(),
+                req.getQuestion(),
+                req.getUserImages(),
+                Boolean.TRUE.equals(req.getHrIdleTimeout()),
+                emitter);
         return emitter;
     }
 

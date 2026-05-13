@@ -5,7 +5,6 @@
 				<!-- 标题区说明该模块承接成长相关入口与复盘内容。 -->
 				<text class="section-title">成长</text>
 			</view>
-			<text class="section-link" @click="navigateToTrajectory">查看趋势</text>
 		</view>
 
 		<view class="main-grid">
@@ -78,13 +77,6 @@
 			}
 		},
 		methods: {
-			navigateToTrajectory() {
-				// 查看趋势前先写入目标锚点，切到成长档案页后自动滚动到趋势区。
-				uni.setStorageSync('growth_archive_scroll_target', 'trend')
-				uni.switchTab({
-					url: '/pages/GrowthArchive/GrowthArchive'
-				})
-			},
 			handleToolClick(item) {
 				// 不同成长入口分发到成长档案、历史记录、收藏和冲刺营等页面。
 				const actions = {

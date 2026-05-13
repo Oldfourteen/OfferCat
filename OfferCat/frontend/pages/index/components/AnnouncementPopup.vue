@@ -123,7 +123,7 @@ export default {
     width: 100%;
     height: 80rpx;
     line-height: 80rpx;
-    background: linear-gradient(90deg, #007bfc, #01bcff);
+    background: #5d7aaf;
     color: #ffffff;
     font-size: 32rpx;
     border-radius: 40rpx;

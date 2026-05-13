@@ -69,6 +69,13 @@
 			}
 		},
 		{
+			"path": "pages/forum/index",
+			"style": {
+				"navigationStyle": "custom",
+				"navigationBarTitleText": "论坛"
+			}
+		},
+		{
 			"path": "pages/index/components/QuestionBankModules",
 			"style": {}
 		}
@@ -321,16 +328,22 @@
 				"selectedIconPath": "static/tabbar/archive_active.png"
 			},
 			{
-				"pagePath": "pages/AI/AI",
-				"text": "AI",
-				"iconPath": "static/tabbar/ai.png",
-				"selectedIconPath": "static/tabbar/ai_active.png"
+				"pagePath": "pages/forum/index",
+				"text": "论坛",
+				"iconPath": "static/tabbar/forum.png",
+				"selectedIconPath": "static/tabbar/forum_active.png"
 			},
 			{
 				"pagePath": "pages/my/my",
 				"text": "我的",
 				"iconPath": "static/tabbar/my.png",
 				"selectedIconPath": "static/tabbar/my_active.png"
+			},
+			{
+				"pagePath": "pages/AI/AI",
+				"text": "AI",
+				"iconPath": "static/tabbar/ai.png",
+				"selectedIconPath": "static/tabbar/ai_active.png"
 			}
 		]
 	},

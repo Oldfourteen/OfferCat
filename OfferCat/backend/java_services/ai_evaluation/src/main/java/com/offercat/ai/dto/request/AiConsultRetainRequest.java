@@ -8,12 +8,15 @@ import lombok.Data;
  */
 @Data
 public class AiConsultRetainRequest {
+    // 用户ID
     @NotNull
     private Long userId;
 
+    // 咨询记录主键（ai_consult.id）
     @NotNull
     private Long consultId;
 
+    // true 表示保留（不参与每月批量清理）；false 表示可被清理
     @NotNull
     private Boolean retained;
 }

@@ -4,13 +4,32 @@ server:
 spring:
   application:
     name: user-service
+  # 本地/服务器密钥：置于运行目录下的文件（不参与打包进 jar），见 secrets/application-dypns.yml.example
+  config:
+    import:
+      - optional:file:./secrets/application-dypns.yml
+      - optional:file:./config/application-dypns.yml
   datasource:
-    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC
+    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=UTC&connectTimeout=10000&socketTimeout=60000
     # 【安全规范】数据库账号最小权限原则：
     # 生产环境中禁止使用 root 账号，应分配仅具有当前库 CRUD 权限的普通账号
     username: root
     password: 1029384756
     driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 5
+      min-idle: 5
+      max-active: 30
+      max-wait: 60000
+      time-between-eviction-runs-millis: 60000
+      min-evictable-idle-time-millis: 300000
+      validation-query: SELECT 1
+      test-while-idle: true
+      test-on-borrow: false
+      pool-prepared-statements: true
+      max-pool-prepared-statement-per-connection-size: 20
+      filters: stat,slf4j
   data:
     redis:
       host: localhost
@@ -21,6 +40,9 @@ spring:
 mybatis:
   mapper-locations: classpath:mapper/*.xml
   type-aliases-package: com.offercat.user.entity
+  configuration:
+    # 必须开启：否则 user_role / user_id 等无法映射到 userRole / userId，会导致角色始终为「空」误判
+    map-underscore-to-camel-case: true
 
 seata:
   enabled: true
@@ -36,12 +58,21 @@ seata:
   registry:
     type: file
 
-# 短信宝配置
-smsbao:
-  username: ofteen  # 填写您的短信宝账号
-  api-key: 18ff51b7ba4f49babab617382aec8b66     # 填写您的短信宝 API Key
-  api-url: http://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
-  sign: "【Offer猫服务】"
+# 阿里云号码认证 · 短信验证码（与控制台 SchemeName / 签名 / 模版 CODE 保持一致）
+aliyun:
+  dypns:
+    # 默认走环境变量；也可由 spring.config.import 加载的外部 YAML 覆盖（推荐，密钥不入库不进包）
+    access-key-id: ${ALIBABA_CLOUD_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIBABA_CLOUD_ACCESS_KEY_SECRET:}
+    region-id: cn-hangzhou
+    scheme-name: offercat
+    country-code: "86"
+    sign-name: "速通互联验证码"
+    template-code: "100001"
+    template-param: '{"code":"##code##","min":"5"}'
+    code-length: 6
+    valid-time-seconds: 300
+    send-interval-seconds: 60
 
 # Eureka Client 配置
 eureka:

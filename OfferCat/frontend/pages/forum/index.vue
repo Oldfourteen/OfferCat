@@ -1,0 +1,130 @@
+<template>
+	<view class="forum-page" :class="themeClass">
+		<!-- 顶部导航栏 -->
+		<view class="forum-header-sticky">
+			<view class="header-content">
+				<text class="page-title">校园论坛</text>
+				<view class="header-actions">
+					<view class="action-btn" @click="goPublish">
+						<image v-if="theme === 'dark'" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmMWY0ZmEiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxsaW5lIHgxPSIxMiIgeTE9IjUiIHgyPSIxMiIgeTI9IjE5Ij48L2xpbmU+CiAgPGxpbmUgeDE9IjUiIHkxPSIxMiIgeDI9IjE5IiB5Mj0iMTIiPjwvbGluZT4KPC9zdmc+" class="icon-svg"></image>
+						<image v-else src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxYjFiMWIiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxsaW5lIHgxPSIxMiIgeTE9IjUiIHgyPSIxMiIgeTI9IjE5Ij48L2xpbmU+CiAgPGxpbmUgeDE9IjUiIHkxPSIxMiIgeDI9IjE5IiB5Mj0iMTIiPjwvbGluZT4KPC9zdmc+" class="icon-svg"></image>
+					</view>
+					<view class="action-btn" @click="goSearch">
+						<image v-if="theme === 'dark'" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiNmMWY0ZmEiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjgiPjwvY2lyY2xlPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSI+PC9saW5lPgo8L3N2Zz4=" class="icon-svg"></image>
+						<image v-else src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSI0MCIgaGVpZ2h0PSI0MCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxYjFiMWIiIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiPgogIDxjaXJjbGUgY3g9IjExIiBjeT0iMTEiIHI9IjgiPjwvY2lyY2xlPgogIDxsaW5lIHgxPSIyMSIgeTE9IjIxIiB4Mj0iMTYuNjUiIHkyPSIxNi42NSI+PC9saW5lPgo8L3N2Zz4=" class="icon-svg"></image>
+					</view>
+				</view>
+			</view>
+		</view>
+
+		<scroll-view class="forum-scroll" scroll-y :show-scrollbar="false" @scroll="handleScroll">
+			<view class="forum-container">
+				<!-- 复用现有的 ForumList 组件 -->
+				<ForumList :theme="theme" />
+			</view>
+		</scroll-view>
+		<AppLiquidTabBar tab-page-path="pages/forum/index" :theme="theme" />
+	</view>
+</template>
+
+<script>
+	import ForumList from '@/pages/forum/components/ForumList.vue'
+	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
+	import themeMixin from '@/utils/themeMixin.js'
+	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
+
+	export default {
+		mixins: [themeMixin, liquidTabBarPageMixin],
+		components: {
+			AppLiquidTabBar,
+			ForumList
+		},
+		data() {
+			return {
+				scrollTop: 0
+			}
+		},
+		methods: {
+			handleScroll(e) {
+				this.scrollTop = e.detail.scrollTop
+			},
+			goPublish() {
+				uni.navigateTo({
+					url: '/subPages/forum/publish'
+				})
+			},
+			goSearch() {
+				uni.navigateTo({
+					url: '/subPages/search/search'
+				})
+			}
+		}
+	}
+</script>
+
+<style lang="scss">
+	.forum-page {
+		height: 100vh;
+		display: flex;
+		flex-direction: column;
+		background-color: #f8fafd;
+		
+		&.theme-dark {
+			background-color: #111216;
+			.forum-header-sticky {
+				background: rgba(30, 32, 36, 0.8);
+				.page-title { color: #f4f7fb; }
+				.action-btn { background: rgba(255, 255, 255, 0.05); }
+			}
+		}
+	}
+
+	.forum-header-sticky {
+		padding: calc(var(--status-bar-height) + 20rpx) 30rpx 20rpx;
+		background: rgba(255, 255, 255, 0.8);
+		backdrop-filter: blur(20px);
+		z-index: 100;
+		
+		.header-content {
+			display: flex;
+			justify-content: space-between;
+			align-items: center;
+			
+			.page-title {
+				font-size: 40rpx;
+				font-weight: bold;
+				color: #15305e;
+			}
+			
+			.header-actions {
+				display: flex;
+				gap: 20rpx;
+				
+				.action-btn {
+					width: 72rpx;
+					height: 72rpx;
+					border-radius: 50%;
+					background: #fff;
+					display: flex;
+					align-items: center;
+					justify-content: center;
+					box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.05);
+					
+					.icon-svg {
+						width: 40rpx;
+						height: 40rpx;
+					}
+				}
+			}
+		}
+	}
+
+	.forum-scroll {
+		flex: 1;
+		min-height: 0;
+	}
+
+	.forum-container {
+		padding: 5rpx 30rpx calc(40rpx + 116rpx + env(safe-area-inset-bottom));
+	}
+</style>

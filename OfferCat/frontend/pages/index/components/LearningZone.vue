@@ -13,14 +13,6 @@
 			<view class="animate-item" style="animation-delay: 0.3s;">
 				<QuestionBankModules :theme="theme" :refresh-seed="refreshSeed" />
 			</view>
-			<!-- AI 顾问卡片负责引导用户快速进入 AI 页面。 -->
-			<view class="animate-item" style="animation-delay: 0.4s;">
-				<ChatFooter :theme="theme" />
-			</view>
-			<!-- 论坛区展示分页帖子列表，承接社区内容浏览。 -->
-			<view class="animate-item" style="animation-delay: 0.5s;">
-				<ForumList :theme="theme" />
-			</view>
 		</view>
 	</scroll-view>
 </template>
@@ -29,8 +21,6 @@
 	import NoticeBar from './NoticeBar.vue'
 	import Activity from './Activity.vue'
 	import QuestionBankModules from './QuestionBankModules.vue'
-	import ChatFooter from './ChatFooter.vue'
-	import ForumList from './ForumList.vue'
 
 	export default {
 		name: 'LearningZone',
@@ -48,9 +38,7 @@
 			// 首页模块都由学习区统一编排，父页面只关心滚动和主题透传。
 			NoticeBar,
 			Activity,
-			QuestionBankModules,
-			ChatFooter,
-			ForumList
+			QuestionBankModules
 		},
 		methods: {
 			emitScroll(event) {
@@ -65,6 +53,8 @@
 	.learning-scroll {
 		flex: 1;
 		min-height: 0;
+		/* H5：弱化纵向橡皮筋回弹，减轻 scrollTop 在触底附近抖动（小程序端忽略即可）。 */
+		overscroll-behavior-y: none;
 	}
 
 	.learning-page {

@@ -99,14 +99,15 @@
 		background-image:
 			linear-gradient(
 				180deg,
-				rgba(1, 188, 255, 0.1) 0%,
-				rgba(49, 101, 215, 0.4) 45%,
-				rgba(0, 123, 255, 0.05) 100%
+				rgba(100, 118, 193, 0.22) 0%,
+				rgba(46, 125, 245, 0.38) 45%,
+				rgba(14, 165, 233, 0.1) 100%
 			),
 			linear-gradient(
 				180deg,
-				rgba(0, 122, 252, 0.7) 0%,
-				rgba(1, 188, 255, 0) 100%
+				rgba(100, 118, 193, 0.58) 0%,
+				rgba(37, 130, 255, 0.38) 42%,
+				rgba(56, 189, 248, 0) 100%
 			);
 		background-size: 100% 550rpx;
 		background-repeat: no-repeat;

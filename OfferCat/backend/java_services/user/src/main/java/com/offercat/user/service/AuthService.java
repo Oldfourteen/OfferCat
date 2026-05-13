@@ -28,5 +28,10 @@ public interface AuthService {
      */
     ResponseResult<Void> completeStudentInfo(StudentInfoRequest studentInfoRequest);
 
+    /**
+     * 修改密码（通过短信验证码）
+     */
+    ResponseResult<Void> resetPassword(ResetPasswordRequest request);
+
     // 教师与企业完善接口已移除
 }

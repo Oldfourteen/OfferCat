@@ -87,6 +87,39 @@ public class AuthServiceImplement implements AuthService {
     }
 
     /**
+     * 修改密码（通过短信验证码）
+     */
+    @Override
+    @Transactional
+    public ResponseResult<Void> resetPassword(ResetPasswordRequest request) {
+        // 校验两次密码是否一致
+        if (request.getConfirmPassword() != null && !request.getNewPassword().equals(request.getConfirmPassword())) {
+            return ResponseResult.error("两次输入的密码不一致");
+        }
+
+        // 校验验证码
+        String key = CODE_PREFIX + request.getPhone();
+        String cachedCode = redisTemplate.opsForValue().get(key);
+        if (cachedCode == null || !cachedCode.equals(request.getCode())) {
+            return ResponseResult.error("验证码错误或已过期");
+        }
+
+        // 检查用户是否存在
+        User user = userMapper.selectByPhone(request.getPhone());
+        if (user == null) {
+            return ResponseResult.error("该手机号未注册");
+        }
+
+        // 更新密码
+        userMapper.updatePassword(user.getUserId(), passwordEncoder.encode(request.getNewPassword()));
+
+        // 修改成功后清理验证码
+        redisTemplate.delete(key);
+
+        return ResponseResult.success();
+    }
+
+    /**
      * 用户注册逻辑
      * 1. 从 Redis 校验验证码是否匹配
      * 2. 校验两次密码输入
@@ -444,5 +477,4 @@ public class AuthServiceImplement implements AuthService {
         return ResponseResult.success();
     }
 
-    // 教师与企业完善接口已移除
 }

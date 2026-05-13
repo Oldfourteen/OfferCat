@@ -26,7 +26,7 @@
 	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
-	import { BASE_URL } from '@/api/config.js'
+	import { BASE_URL, getApiBase } from '@/api/config.js'
 	import { getUser } from '@/utils/user.js'
 
 	export default {
@@ -142,7 +142,7 @@
 				// 优先读后端统计，失败时再使用本地缓存统计。
 				const user = getUser()
 				const studentId = user && user.studentId ? user.studentId : null
-				if (!studentId || !BASE_URL) {
+				if (!studentId || !getApiBase()) {
 					this.applyLocalStats()
 					return
 				}

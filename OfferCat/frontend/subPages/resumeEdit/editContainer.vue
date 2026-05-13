@@ -150,7 +150,11 @@
 			},
 			// 取消编辑，返回上一页
 			handleCancel() {
-				uni.navigateBack()
+				uni.navigateBack({
+					fail: () => {
+						uni.reLaunch({ url: '/pages/index/index' })
+					}
+				})
 			},
 			// 删除当前编辑条目
 			handleDelete() {
@@ -167,7 +171,11 @@
 						})
 						uni.showToast({ title: '已删除', icon: 'success' })
 						setTimeout(() => {
-							uni.navigateBack()
+							uni.navigateBack({
+								fail: () => {
+									uni.reLaunch({ url: '/pages/index/index' })
+								}
+							})
 						}, 500)
 					}
 				})
@@ -212,7 +220,11 @@
 				
 				// 返回上一页
 				setTimeout(() => {
-					uni.navigateBack()
+					uni.navigateBack({
+						fail: () => {
+							uni.reLaunch({ url: '/pages/index/index' })
+						}
+					})
 				}, 1500)
 			}
 		}

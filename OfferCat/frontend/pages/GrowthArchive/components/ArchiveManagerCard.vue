@@ -21,7 +21,7 @@
 
 <script>
 		import { getArchiveSummary, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
-		import { BASE_URL } from '@/api/config.js'
+		import { BASE_URL, getApiBase } from '@/api/config.js'
 		import { getUser } from '@/utils/user.js'
 
 		export default {
@@ -115,7 +115,7 @@
 				// 四类档案分开请求，全部返回后再一次性更新卡片数量。
 				const user = getUser()
 				const studentId = user && user.studentId ? user.studentId : null
-				if (!studentId || !BASE_URL) {
+				if (!studentId || !getApiBase()) {
 					this.applyLocalCounts()
 					return
 				}

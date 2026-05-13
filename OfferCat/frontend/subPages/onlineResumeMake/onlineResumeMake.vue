@@ -20,6 +20,8 @@
 				:gender="resumeData.gender"
 				:phone="resumeData.phone"
 				:email="resumeData.email"
+				:jobIntention="resumeData.jobIntention"
+				:certificates="resumeData.certificates"
 				:theme="theme"
 			/>
 			<!-- 自我评价模块 -->
@@ -82,6 +84,12 @@
 					phone: '',
 					email: '',
 					photo: '',
+					jobIntention: '',
+					certificates: [
+						{ name: '', url: '' },
+						{ name: '', url: '' },
+						{ name: '', url: '' }
+					],
 					selfEvaluation: '',
 					education: '',
 					educationEntries: [],
@@ -144,6 +152,22 @@
 			// 判断是否为多条目模块（教育/在校/工作/项目）
 			isMultiAppendType(type) {
 				return ['education', 'schoolExperience', 'workExperience', 'projectExperience'].includes(type)
+			},
+			normalizeCertificatesThree(raw) {
+				const emptySlot = () => ({ name: '', url: '' })
+				let list = []
+				if (Array.isArray(raw) && raw.length > 0) {
+					list = raw.map(item => {
+						const o = item && typeof item === 'object' ? item : {}
+						return {
+							name: String(o.name != null ? o.name : '').trim(),
+							url: String(o.url != null ? o.url : '').trim()
+						}
+					})
+				}
+				while (list.length < 3) list.push(emptySlot())
+				if (list.length > 3) list = list.slice(0, 3)
+				return list
 			},
 			// 创建单条条目结构（带ID、原始数据、HTML、时间）
 			makeEntry(rawData, html) {
@@ -242,6 +266,10 @@
 						if (data.gender) this.resumeData.gender = data.gender;
 						if (data.phone) this.resumeData.phone = data.phone;
 						if (data.email) this.resumeData.email = data.email;
+						if (data.jobIntention !== undefined) this.resumeData.jobIntention = data.jobIntention;
+						if (data.certificates !== undefined) {
+							this.resumeData.certificates = this.normalizeCertificatesThree(data.certificates)
+						}
 						if (!this.resumeData.resumeName) {
 							this.resumeData.resumeName = this.resumeData.name || '在线简历'
 						}
@@ -326,6 +354,8 @@
 					gender: genderCode,
 					phone: this.resumeData.phone,
 					email: this.resumeData.email,
+					job_intention: this.resumeData.jobIntention,
+					certificates: this.resumeData.certificates,
 					education: this.resumeData.education,
 					education_entries: this.resumeData.educationEntries,
 					skills: this.resumeData.skill,
@@ -516,7 +546,11 @@
 				if (resume.phone) this.resumeData.phone = resume.phone;
 				if (resume.email) this.resumeData.email = resume.email;
 				if (resume.photo) this.resumeData.photo = resume.photo;
-				
+				if (resume.job_intention) this.resumeData.jobIntention = resume.job_intention;
+				if (resume.certificates !== undefined && resume.certificates !== null) {
+					this.resumeData.certificates = this.normalizeCertificatesThree(resume.certificates)
+				}
+
 				// 如果后续有 AI 评分和 AI 评估，也可以考虑在页面某个地方展示
 				if (resume.ai_score || resume.ai_evaluation) {
 					console.log('该简历拥有 AI 评估数据:', resume.ai_score, resume.ai_evaluation);
@@ -580,6 +614,22 @@
 				}
 				.user-details .info-row .separator {
 					color: rgba(255, 255, 255, 0.2);
+				}
+				.job-intention-row {
+					.job-intention-label {
+						color: rgba(255, 255, 255, 0.58);
+					}
+					.job-intention-value {
+						color: #8ab7ff;
+					}
+				}
+				.certificates-section {
+					.certificates-label {
+						color: rgba(255, 255, 255, 0.58);
+					}
+					.cert-line {
+						color: rgba(255, 255, 255, 0.72);
+					}
 				}
 				.divider {
 					background-color: rgba(255, 255, 255, 0.06);

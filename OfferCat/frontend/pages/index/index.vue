@@ -7,19 +7,24 @@
 
 		<!-- 主内容区交给滚动容器承载，并向外透传滚动事件。 -->
 		<LearningZone :theme="theme" :refresh-seed="refreshSeed" @scroll="handleZoneScroll" />
+
+		<!-- 公告弹窗 -->
+		<AnnouncementPopup ref="announcementPopup" />
 	</view>
 </template>
 
 <script>
 	import LearningHeader from './components/LearningHeader.vue'
 	import LearningZone from './components/LearningZone.vue'
+	import AnnouncementPopup from './components/AnnouncementPopup.vue'
 	import themeMixin from '@/utils/themeMixin.js'
 
 	export default {
 		mixins: [themeMixin],
 		components: {
 			LearningHeader,
-			LearningZone
+			LearningZone,
+			AnnouncementPopup
 		},
 		data() {
 			return {
@@ -32,6 +37,12 @@
 		onShow() {
 			// 返回首页时刷新子组件依赖的 key，保证头部和内容区展示最新状态。
 			this.refreshSeed += 1
+			// 检查并显示公告弹窗（内部会判断是否登录及是否今天已弹出）
+			this.$nextTick(() => {
+				if (this.$refs.announcementPopup) {
+					this.$refs.announcementPopup.checkAndShow()
+				}
+			})
 		},
 		computed: {
 			headerSpacerStyle() {

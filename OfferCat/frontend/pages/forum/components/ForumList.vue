@@ -515,33 +515,20 @@
 
 	.forum-card {
 		padding: 30rpx 30rpx;
-		background: #fff;
-		border: 1rpx solid rgba(15, 23, 42, 0.05);
-		border-radius: 24rpx;
-		margin-bottom: 16rpx;
+		background: transparent;
+		border: none;
+		border-bottom: 1rpx solid rgba(15, 23, 42, 0.08);
+		border-radius: 0;
+		margin-bottom: 0;
 		box-sizing: border-box;
 		display: flex;
 		flex-direction: column;
-		box-shadow: 0 8rpx 24rpx rgba(15, 23, 42, 0.04);
+		box-shadow: none;
 		position: relative;
-		overflow: hidden;
-
-		&::after {
-			content: '';
-			position: absolute;
-			bottom: 0;
-			left: 30rpx;
-			right: 30rpx;
-			height: 2rpx;
-			background: linear-gradient(90deg, rgba(93, 118, 189, 0), rgba(93, 118, 189, 0.22), rgba(93, 118, 189, 0));
-		}
-
-		&:last-child::after {
-			display: none;
-		}
+		overflow: visible;
 
 		&:last-child {
-			margin-bottom: 0;
+			border-bottom: none;
 		}
 	}
 
@@ -788,12 +775,9 @@
 			background-color: #f4f7fb;
 		}
 		.forum-card {
-			background: #111216;
-			border-color: rgba(255, 255, 255, 0.06);
-			box-shadow: 0 8rpx 24rpx rgba(0, 0, 0, 0.24);
-			&::after {
-				background: linear-gradient(90deg, rgba(141, 164, 230, 0), rgba(141, 164, 230, 0.28), rgba(141, 164, 230, 0));
-			}
+			background: transparent;
+			border-bottom-color: rgba(255, 255, 255, 0.08);
+			box-shadow: none;
 		}
 		.forum-card-content {
 			.card-user-info .user-meta .user-name { color: #f4f7fb; }

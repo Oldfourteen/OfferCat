@@ -15,6 +15,8 @@ public class GrowthRecordVO {
     private Integer practiceCount;
     private Integer collectionCount;
     private Integer continuousCheckinDays;
+    /** 累计签到天数 */
+    private Integer totalCheckinDays;
     
     /** 用户是否已签到今日 */
     private Boolean checkedInToday;

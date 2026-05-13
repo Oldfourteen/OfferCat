@@ -1,21 +1,32 @@
 # 生产环境配置覆盖
 # 此文件放置于服务器 D:\offercat\config\application-prod.yml
+# 阿里云 AccessKey：同目录下放 application-dypns.yml（见 spring.config.import，勿提交仓库）
 # 所有微服务在 prod profile 下均会加载此文件（优先级高于 jar 内置配置）
 
 # 关闭 Seata 分布式事务（无 Seata Server 时必须关闭，否则服务无法启动）
 seata:
   enabled: false
 
-# 短信宝配置（文档：GET /sms，p=MD5「登录密码」）
-smsbao:
-  username: ofteen  # 短信宝注册用户名（u）
-  # 以下为登录密码明文；代码中会 MD5 一次作为 p（若填控制台里已有的 32 位 MD5 会被二次哈希导致报错 30）
-  api-key: 18ff51b7ba4f49babab617382aec8b66
-  api-url: https://api.smsbao.com/sms           # 短信宝发送接口地址 (仅填写基准地址)
-  sign: "【Offer猫服务】"
-  verification-user-default: "用户"
-  verification-validity: "5分钟"
+# 阿里云密钥：推荐环境变量，或把工作目录下的 ./secrets/application-dypns.yml、./config/application-dypns.yml 单独放好（不进 jar）
+aliyun:
+  dypns:
+    access-key-id: ${ALIBABA_CLOUD_ACCESS_KEY_ID:}
+    access-key-secret: ${ALIBABA_CLOUD_ACCESS_KEY_SECRET:}
+    region-id: cn-hangzhou
+    scheme-name: offercat
+    country-code: "86"
+    sign-name: "速通互联验证码"
+    template-code: "100001"
+    template-param: '{"code":"##code##","min":"5"}'
+    code-length: 6
+    valid-time-seconds: 300
+    send-interval-seconds: 60
+
 spring:
+  config:
+    import:
+      # 密钥文件名须为 application-dypns.yml，与下文路径一致时可不依赖「启动进程的工作目录」
+      - optional:file:D:/offercat/config/application-dypns.yml
   data:
     redis:
       timeout: 3000

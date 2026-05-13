@@ -6,11 +6,10 @@ import com.offercat.user.dto.response.AuthResponse;
 import com.offercat.user.entity.*;
 import com.offercat.user.infrastructure.common.ResponseResult;
 import com.offercat.user.infrastructure.service.EmailService;
-import com.offercat.user.infrastructure.service.SmsService;
+import com.offercat.user.infrastructure.service.SmsVerificationService;
 import com.offercat.user.service.AuthService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -20,9 +19,7 @@ import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.time.LocalDateTime;
 import java.util.Base64;
-import java.util.Random;
 import java.util.UUID;
-import java.util.concurrent.TimeUnit;
 import java.util.regex.Pattern;
 
 /**
@@ -38,12 +35,9 @@ public class AuthServiceImplement implements AuthService {
     /** 学生数据访问层 */
     @Autowired
     private StudentMapper studentMapper;
-    /** Redis 模板 */
+    /** 短信验证码（阿里云号码认证下发与核验） */
     @Autowired
-    private StringRedisTemplate redisTemplate;
-    /** 短信服务 */
-    @Autowired
-    private SmsService smsService;
+    private SmsVerificationService smsVerificationService;
     /** 邮箱服务 */
     @Autowired
     private EmailService emailService;
@@ -51,56 +45,38 @@ public class AuthServiceImplement implements AuthService {
     /** BCrypt 密码加密器 */
     private final BCryptPasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
 
-    /** Redis 中验证码的前缀和过期时间 */
-    private static final String CODE_PREFIX = "auth:code:";
-    private static final long CODE_EXPIRE = 5; // 5分钟过期
-
     /** 32 位十六进制 MD5，用于兼容历史库中的 MD5 密码 */
     private static final Pattern MD5_HEX = Pattern.compile("^[a-fA-F0-9]{32}$");
     /** 64 位十六进制 SHA-256，用于兼容部分历史/第三方存储 */
     private static final Pattern SHA256_HEX = Pattern.compile("^[a-fA-F0-9]{64}$");
 
     /**
-     * 发送验证码逻辑
-     * 1. 生成6位随机数
-     * 2. 以目标(手机号/邮箱)为键存入 Redis，设置5分钟有效期
-     * 3. 控制台打印日志模拟发送（实际需对接第三方SDK）
+     * 发送验证码：由阿里云号码认证生成验证码并下发短信，本地不落库、不写 Redis。
      */
     @Override
     public ResponseResult<Void> sendVerificationCode(SendCodeRequest request) {
-        /**  生成6位随机验证码 */
-        String code = String.format("%06d", new Random().nextInt(1000000));
-        
-        /**  存入 Redis */
-        String key = CODE_PREFIX + request.getPhone();
-        redisTemplate.opsForValue().set(key, code, CODE_EXPIRE, TimeUnit.MINUTES);
-        
-        /**  调用基础设施层发送验证码 (仅支持手机号) */
-        boolean sent = smsService.sendSms(request.getPhone(), code);
-        
+        boolean sent = smsVerificationService.sendVerificationCode(request.getPhone());
+
         if (!sent) {
             return ResponseResult.error("验证码发送失败，请稍后再试");
         }
-        
-        log.info("已成功向 {} 发送验证码", request.getPhone());
+
+        log.info("已向 {} 发起短信验证码（阿里云号码认证）", request.getPhone());
         return ResponseResult.success();
     }
 
     /**
      * 用户注册逻辑
-     * 1. 从 Redis 校验验证码是否匹配
+     * 1. 调用阿里云 CheckSmsVerifyCode 校验验证码
      * 2. 校验两次密码输入
      * 3. 检查手机号/邮箱是否已被占用
      * 4. 插入 user 表，初始化基础数据
-     * 5. 注册成功后清理验证码并执行自动登录
+     * 5. 注册成功后执行自动登录
      */
     @Override
     @Transactional
     public ResponseResult<AuthResponse> register(RegisterRequest request) {
-        /**  校验验证码 */
-        String key = CODE_PREFIX + request.getPhone();
-        String cachedCode = redisTemplate.opsForValue().get(key);
-        if (cachedCode == null || !cachedCode.equals(request.getCode())) {
+        if (!smsVerificationService.verifyCode(request.getPhone(), request.getCode())) {
             return ResponseResult.error("验证码错误或已过期");
         }
         
@@ -137,9 +113,6 @@ public class AuthServiceImplement implements AuthService {
         user.setCreateTime(LocalDateTime.now());
         userMapper.insert(user);
 
-        /**  注册成功后清理验证码 */
-        redisTemplate.delete(key);
-
         /**  注册完自动执行登录逻辑并返回 Token */
         return loginAfterAuth(user);
     }
@@ -148,8 +121,8 @@ public class AuthServiceImplement implements AuthService {
      * 用户登录逻辑 (双模式)
      * 1. 根据手机/邮箱/用户名查找用户
      * 2. 模式A-密码登录：对比数据库密码
-     * 3. 模式B-验证码登录：校验 Redis 验证码
-     * 4. 登录成功后清理验证码
+     * 3. 模式B-验证码登录：阿里云 CheckSmsVerifyCode
+     * 4. 登录成功后返回 Token（验证码消耗由阿里云侧处理）
      */
     @Override
     public ResponseResult<AuthResponse> login(LoginRequest request) {
@@ -185,13 +158,9 @@ public class AuthServiceImplement implements AuthService {
             if (user.getPhone() == null || !user.getPhone().equals(target)) {
                 return ResponseResult.error("验证码登录仅支持使用手机号");
             }
-            String key = CODE_PREFIX + target;
-            String cachedCode = redisTemplate.opsForValue().get(key);
-            if (cachedCode == null || !cachedCode.equals(request.getCode())) {
+            if (!smsVerificationService.verifyCode(target, request.getCode())) {
                 return ResponseResult.error("验证码错误或已过期");
             }
-            /**  登录成功清理验证码 */
-            redisTemplate.delete(key);
         } else {
             return ResponseResult.error("不支持的登录类型");
         }

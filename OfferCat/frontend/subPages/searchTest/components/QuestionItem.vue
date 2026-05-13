@@ -31,6 +31,10 @@ export default {
     value: {
       type: String,
       default: ''
+    },
+    theme: {
+      type: String,
+      default: 'light'
     }
   },
   methods: {

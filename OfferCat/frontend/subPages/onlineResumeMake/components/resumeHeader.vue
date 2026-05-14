@@ -36,6 +36,8 @@
 <script>
 	import editResumeNamePopup from './editResumeNamePopup.vue'
 	import { DEFAULT_AVATAR } from '@/utils/userProfile.js'
+	import { request } from '@/api/request.js'
+	import { getUser } from '@/utils/user.js'
 
 	export default {
 		name: 'resumeHeader',
@@ -59,6 +61,10 @@
 			theme: {
 				type: String,
 				default: 'light'
+			},
+			resumeId: {
+				type: [Number, String],
+				default: null
 			}
 		},
 		computed: {
@@ -136,50 +142,77 @@
 			},
 			handleUploadPhoto() {
 				uni.chooseImage({
-					count: 1, // 默认只选1张
-					sizeType: ['original', 'compressed'], // 可以指定是原图还是压缩图，默认二者都有
-					sourceType: ['album', 'camera'], // 从相册选择或拍照
+					count: 1,
+					sizeType: ['original', 'compressed'],
+					sourceType: ['album', 'camera'],
 					success: (res) => {
 						const tempFilePaths = res.tempFilePaths;
 						if (tempFilePaths && tempFilePaths.length > 0) {
-							// 临时图片路径
 							const selectedPhoto = tempFilePaths[0];
 							
-							// 模拟上传成功，直接更新本地预览
-							// 真实项目中需要调用 uni.uploadFile 将图片上传到服务器，然后获取真实的 url
 							uni.showLoading({ title: '上传中...' });
 							
-							// 模拟网络请求延迟
-							setTimeout(() => {
-								uni.hideLoading();
-								uni.showToast({ title: '上传成功', icon: 'success' });
-								
-								// 将新图片的URL发送给父组件 onlineResumeMake.vue
-								this.$emit('updatePhoto', selectedPhoto);
-							}, 800);
-
-							/*
-							// 真实的上传逻辑示例：
-							uni.uploadFile({
-								url: 'https://你的后端上传接口/upload', 
-								filePath: selectedPhoto,
-								name: 'file',
-								formData: {
-									'user': 'test'
-								},
-								success: (uploadFileRes) => {
-									// 解析后端返回的数据
-									const data = JSON.parse(uploadFileRes.data);
-									if(data.code === 200) {
-										// 将线上地址传给父组件
-										this.$emit('updatePhoto', data.url);
-									}
-								}
-							});
-							*/
+							this.uploadAvatarToServer(selectedPhoto);
 						}
 					}
 				});
+			},
+			async uploadAvatarToServer(filePath) {
+				try {
+					const user = getUser();
+					const userId = user && user.userId ? user.userId : '';
+					
+					// 先创建一个临时简历（如果没有 resumeId）
+					let targetResumeId = this.resumeId;
+					if (!targetResumeId) {
+						const createRes = await request({
+							url: '/api/resume/create',
+							method: 'POST',
+							data: {
+								userId: userId,
+								resumeName: '临时简历',
+								resumeStatus: 1
+							}
+						});
+						targetResumeId = createRes.resumeId;
+					}
+					
+					// 上传头像
+					uni.uploadFile({
+						url: `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/resume/${targetResumeId}/avatar`,
+						filePath: filePath,
+						name: 'file',
+						header: {
+							'Content-Type': 'multipart/form-data'
+						},
+						success: (uploadRes) => {
+							uni.hideLoading();
+							try {
+								const data = JSON.parse(uploadRes.data);
+								if (data && data.photo) {
+									uni.showToast({ title: '头像上传成功', icon: 'success' });
+									// 拼接完整的头像URL
+									const avatarUrl = `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/resume/${targetResumeId}/avatar`;
+									this.$emit('updatePhoto', avatarUrl);
+								} else {
+									uni.showToast({ title: '上传失败', icon: 'none' });
+								}
+							} catch (e) {
+								console.error('解析上传结果失败:', e);
+								uni.showToast({ title: '上传失败', icon: 'none' });
+							}
+						},
+						fail: (err) => {
+							uni.hideLoading();
+							console.error('头像上传失败:', err);
+							uni.showToast({ title: '上传失败', icon: 'none' });
+						}
+					});
+				} catch (e) {
+					uni.hideLoading();
+					console.error('创建简历失败:', e);
+					uni.showToast({ title: '操作失败', icon: 'none' });
+				}
 			}
 		}
 	}

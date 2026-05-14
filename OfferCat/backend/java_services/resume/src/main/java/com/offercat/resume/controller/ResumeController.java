@@ -4,9 +4,11 @@ import com.offercat.resume.entity.Resume;
 import com.offercat.resume.entity.dto.ResumeDiagnoseRequest;
 import com.offercat.resume.entity.dto.ResumeDiagnoseResult;
 import com.offercat.resume.entity.dto.ResumeGenerateRequest;
+import com.offercat.resume.entity.dto.ResumeHighlightResponse;
 import com.offercat.resume.entity.dto.ResumeStatsResponse;
 import com.offercat.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -14,13 +16,15 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
 
+import java.util.Arrays;
 import java.util.List;
 
 /**
  * 简历控制器
  * 功能：处理简历相关的HTTP请求
- * 实现：提供简历的CRUD、AI生成、AI诊断等接口
+ * 实现：提供简历的CRUD、AI生成、AI诊断、C++服务调用、头像上传等接口
  */
+@Slf4j
 @RestController
 @RequestMapping("/api/resume")
 @RequiredArgsConstructor
@@ -252,5 +256,117 @@ public class ResumeController {
          * 返回上传的简历
          */
         return ResponseEntity.ok(resume);
+    }
+
+    /**
+     * 使用C++服务导出简历为PDF
+     * 输入：简历ID、关键词列表（逗号分隔）
+     * 输出：PDF文件字节数组
+     */
+    @GetMapping("/export/pdf/cpp/{id}")
+    public ResponseEntity<byte[]> exportResumeToPdfWithCpp(
+            @PathVariable Long id,
+            @RequestParam(required = false) String keywords) {
+        /**
+         * 解析关键词参数
+         */
+        String[] keywordArray = null;
+        if (keywords != null && !keywords.isEmpty()) {
+            keywordArray = keywords.split(",");
+        }
+
+        /**
+         * 调用服务生成PDF
+         */
+        byte[] pdfBytes = resumeService.exportResumeToPdfWithCpp(id, keywordArray);
+
+        /**
+         * 如果PDF生成成功
+         */
+        if (pdfBytes != null) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.APPLICATION_PDF);
+            headers.setContentDispositionFormData("attachment", "resume_cpp.pdf");
+            headers.setContentLength(pdfBytes.length);
+            return new ResponseEntity<>(pdfBytes, headers, HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 使用C++服务对简历进行关键词高亮
+     * 输入：简历ID、关键词列表（逗号分隔）
+     * 输出：高亮结果响应对象
+     */
+    @PostMapping("/highlight/{id}")
+    public ResponseEntity<ResumeHighlightResponse> highlightResume(
+            @PathVariable Long id,
+            @RequestParam(required = false) String keywords) {
+        /**
+         * 解析关键词参数
+         */
+        String[] keywordArray = null;
+        if (keywords != null && !keywords.isEmpty()) {
+            keywordArray = keywords.split(",");
+        }
+
+        /**
+         * 调用服务进行高亮处理
+         */
+        ResumeHighlightResponse response = resumeService.highlightResume(id, keywordArray);
+
+        /**
+         * 返回高亮结果
+         */
+        if (response != null) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
+        }
+    }
+
+    /**
+     * 上传简历头像
+     * 输入：简历ID、头像文件
+     * 输出：更新后的简历对象
+     */
+    @PostMapping("/{id}/avatar")
+    public ResponseEntity<Resume> uploadResumeAvatar(
+            @PathVariable Long id,
+            @RequestParam MultipartFile file) {
+        /**
+         * 调用服务上传头像
+         */
+        Resume resume = resumeService.uploadResumeAvatar(id, file);
+        /**
+         * 返回更新后的简历
+         */
+        return ResponseEntity.ok(resume);
+    }
+
+    /**
+     * 获取简历头像
+     * 输入：简历ID
+     * 输出：头像文件字节数组
+     */
+    @GetMapping("/{id}/avatar")
+    public ResponseEntity<byte[]> getResumeAvatar(@PathVariable Long id) {
+        /**
+         * 调用服务获取头像
+         */
+        byte[] avatarBytes = resumeService.getResumeAvatar(id);
+
+        /**
+         * 如果头像存在
+         */
+        if (avatarBytes != null) {
+            HttpHeaders headers = new HttpHeaders();
+            headers.setContentType(MediaType.IMAGE_PNG);
+            headers.setContentLength(avatarBytes.length);
+            return new ResponseEntity<>(avatarBytes, headers, HttpStatus.OK);
+        } else {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
     }
 }

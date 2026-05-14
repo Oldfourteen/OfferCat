@@ -161,7 +161,7 @@ import CommonAvatar from '@/components/CommonAvatar.vue'
 import { request } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { getToken } from '@/utils/token'
-import { getUser } from '@/utils/user'
+import { getUser, resolveStoredUserId } from '@/utils/user'
 
 //响应式数据
 const avatarUrl = ref(DEFAULT_AVATAR)
@@ -275,13 +275,18 @@ const saveProfile = async () => {
 		uni.showToast({ title: '意向城市最多15个字', icon: 'none' })
 		return
 	}
+
+	const resolvedUserId = resolveStoredUserId(getUser())
+	if (resolvedUserId == null) {
+		uni.showToast({ title: '登录状态失效，请重新登录后再保存', icon: 'none' })
+		return
+	}
 	
 	uni.showLoading({ title: '保存中', mask: true })
 	try {
-		const storedUser = getUser()
 		// 组装提交给后端的数据
 		const user = {
-			userId: storedUser && storedUser.userId ? storedUser.userId : null,
+			userId: resolvedUserId,
 			avatar: avatarUrl.value,
 			nickname: nickname.value,
 			major: major.value,

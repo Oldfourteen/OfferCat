@@ -14,7 +14,7 @@ import java.util.Map;
  * 提供敏感词检测和过滤服务
  */
 @RestController
-@RequestMapping("/api/sensitive")
+@RequestMapping("/sensitive")
 @CrossOrigin(origins = "*")
 public class SensitiveWordController {
 

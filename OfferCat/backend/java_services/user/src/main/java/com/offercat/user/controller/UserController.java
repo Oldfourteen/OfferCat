@@ -55,6 +55,9 @@ public class UserController {
         if (existing == null) {
             Student student = new Student();
             student.setUserId(request.getUserId());
+            // 库表常见约束：school/college 非空；完善资料流程写在 user 表的学校需带到 student 行
+            student.setSchool(user.getSchool() != null ? user.getSchool() : "");
+            student.setCollege("");
             student.setGrade(request.getGrade());
             student.setMajor(request.getMajor());
             student.setAge(request.getAge() != null ? request.getAge() : 20);

@@ -84,7 +84,7 @@
 
 <script>
 	import { request } from '../../api/request'
-	import { getUser } from '../../utils/user'
+	import { getUser, resolveStoredUserId } from '../../utils/user'
 	import { saveUserProfile } from '../../utils/userProfile'
 	import { getToken } from '../../utils/token'
 
@@ -361,9 +361,14 @@
 				}
 
 				const storedUser = getUser()
+				const resolvedUserId = resolveStoredUserId(storedUser)
+				if (resolvedUserId == null) {
+					uni.showToast({ title: '登录状态失效，请重新登录', icon: 'none' })
+					return
+				}
 				// 提交给后端的字段名与本地 form 结构不完全一致，这里统一转换。
 				const payload = {
-					userId: storedUser && storedUser.userId ? storedUser.userId : null,
+					userId: resolvedUserId,
 					nickname: safeTrim(this.form.nickname),
 					gender: Number(this.form.gender),
 					studentId: safeTrim(this.form.student_id),

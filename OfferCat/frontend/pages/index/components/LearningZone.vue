@@ -58,7 +58,7 @@
 	}
 
 	.learning-page {
-		padding: 24rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+		padding: 12rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
 	}
 
 	.animate-item {

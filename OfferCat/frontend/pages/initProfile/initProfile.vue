@@ -39,7 +39,7 @@ import CommonAvatar from '@/components/CommonAvatar.vue'
 import { request } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { getToken } from '@/utils/token'
-import { getUser } from '@/utils/user'
+import { getUser, resolveStoredUserId } from '@/utils/user'
 
 // 页面仅维护首次资料初始化所需的头像、昵称和提交状态。
 const avatarUrl = ref(DEFAULT_AVATAR)
@@ -126,9 +126,15 @@ const handleSubmit = async () => {
 
 	try {
 		const storedUser = getUser()
+		const resolvedUserId = resolveStoredUserId(storedUser)
+		if (resolvedUserId == null) {
+			uni.hideLoading()
+			uni.showToast({ title: '登录状态失效，请重新登录', icon: 'none' })
+			return
+		}
 		// 当前页只提交昵称和最小必要字段，其他资料在后续完善页继续补齐。
 		const payload = {
-			userId: storedUser && storedUser.userId ? storedUser.userId : null,
+			userId: resolvedUserId,
 			nickname: trimmedNickname,
 			// 其他必填项使用默认值或原值避免报错
 			gender: storedUser?.gender || 0,

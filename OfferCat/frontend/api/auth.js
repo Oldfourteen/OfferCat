@@ -41,12 +41,12 @@ export function login(payload) {
 
 export function findPassword(payload) {
 	return request({
-		url: '/auth/find-password',
+		url: '/auth/reset-password',
 		method: 'POST',
 		data: {
 			phone: payload.phone,
 			code: payload.code,
-			password: payload.password,
+			newPassword: payload.password,
 			confirmPassword: payload.confirmPassword
 		}
 	})

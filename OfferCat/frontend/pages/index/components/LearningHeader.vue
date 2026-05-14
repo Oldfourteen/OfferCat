@@ -123,12 +123,14 @@
 			},
 			copyStyle() {
 				// 根据折叠进度动态调整文案区的透明度、位移和高度。
+				// 展开上限需 ≥ 年级行 + 间距 + 励志词两行（原 160rpx 会裁切第二行）。
 				const progress = Math.max(0, Math.min(this.collapseProgress, 1))
+				const copyExpandedMax = 280
 				return {
 					opacity: `${1 - progress}`,
 					transform: `translateY(-${progress * 28}rpx)`,
-					maxHeight: `${160 - progress * 160}rpx`,
-					marginTop: `${26 - progress * 26}rpx`
+					maxHeight: `${copyExpandedMax - progress * copyExpandedMax}rpx`,
+					marginTop: `${18 - progress * 18}rpx`
 				}
 			},
 			headerSubtitleQuote() {
@@ -194,7 +196,7 @@
 		left: 0;
 		right: 0;
 		z-index: 20;
-		padding: calc(var(--status-bar-height) + 20rpx) 30rpx 22rpx;
+		padding: calc(var(--status-bar-height) + 20rpx) 30rpx 12rpx;
 		background: linear-gradient(
 			180deg,
 			rgba(100, 118, 193, 0.8) 0%,
@@ -292,7 +294,7 @@
 
 	.header-title {
 		display: block;
-		margin-bottom: 26rpx;
+		margin-bottom: 14rpx;
 		font-size: 68rpx;
 		line-height: 1.08;
 		font-weight: 900;
@@ -301,10 +303,14 @@
 	}
 
 	.header-subtitle {
-		margin-top: 16rpx;
+		display: block;
+		width: 100%;
+		margin-top: 8rpx;
 		font-size: 24rpx;
 		line-height: 1.6;
 		color: rgba(255, 255, 255, 0.8);
+		white-space: normal;
+		word-break: break-word;
 	}
 
 	.learning-title {

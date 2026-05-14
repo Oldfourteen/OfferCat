@@ -13,67 +13,63 @@
 </template>
 
 <script>
+	import { completeOneClickLoginWithPhone } from '../../../utils/auth.js'
+
 	export default {
 		data() {
 			return {};
 		},
 		methods: {
+			/** 先交给父页做协议校验，通过后由父页调用 runOneClickLogin */
 			onLoginClick() {
-			  // 一键登录依赖 App 端 Univerify；H5 / 小程序等无 uni.preLogin，直接调用会报错。
-			  if (typeof uni.preLogin !== 'function') {
-			    uni.showToast({
-			      title: '一键登录仅在 App 内可用，请选其他登录方式',
-			      icon: 'none',
-			      duration: 2500
-			    });
-			    return;
-			  }
-
-			  // 预登录（提升速度）
-			  uni.preLogin({
-			    provider: 'univerify',
-			    success: () => {
-			      console.log("预登录成功");
-			
-			      // 调用一键登录
-			      uni.getUniverifyManager().login({
-			        success: async (res) => {
-			          console.log("授权成功", res);
-			          
-			          // 调用云函数换取真实手机号
-			          const result = await uniCloud.callFunction({
-			            name: "phoneLogin",
-			            data: {
-			              access_token: res.access_token
-			            }
-			          });
-			
-			          // 拿到手机号！
-			          const phone = result.result.phone;
-			          console.log("本机号码 =", phone);
-			
-			          // 成功后你想干嘛就写这里
-			          uni.showToast({
-			            title: "登录成功：" + phone,
-			            icon: "none"
-			          });
-			
-			          // 跳首页示例
-			          // uni.switchTab({ url: "/pages/index/index" });
-			        },
-			        fail: (err) => {
-			          console.error("登录失败", err);
-			          uni.showToast({
-			            title: "登录失败，请重试",
-			            icon: "none"
-			          });
-			        }
-			      });
-			    },
-			    fail: (err) => {
-			      console.error("预登录失败", err);
-			    }
-			  });
+				this.$emit('login')
+			},
+			/**
+			 * App 端 UniVerify 授权 → uniCloud phonelogin 换号 → 后端 /auth/login（oneClick）
+			 */
+			runOneClickLogin() {
+				return new Promise((resolve, reject) => {
+					if (typeof uni.preLogin !== 'function') {
+						reject(new Error('一键登录仅在 App 内可用，请选其他登录方式'))
+						return
+					}
+					if (typeof uniCloud === 'undefined' || typeof uniCloud.callFunction !== 'function') {
+						reject(new Error('未初始化 uniCloud，无法换取手机号'))
+						return
+					}
+					uni.preLogin({
+						provider: 'univerify',
+						success: () => {
+							uni.getUniverifyManager().login({
+								success: async (res) => {
+									try {
+										const cf = await uniCloud.callFunction({
+											name: 'phonelogin',
+											data: {
+												access_token: res.access_token
+											}
+										})
+										const payload = cf && cf.result ? cf.result : cf
+										if (!payload || payload.code !== 0 || !payload.phone) {
+											reject(new Error((payload && payload.msg) || '获取手机号失败'))
+											return
+										}
+										const session = await completeOneClickLoginWithPhone(payload.phone)
+										resolve(session)
+									} catch (e) {
+										reject(e)
+									}
+								},
+								fail: (err) => {
+									reject(new Error((err && err.errMsg) || '一键登录授权失败'))
+								}
+							})
+						},
+						fail: (err) => {
+							reject(new Error((err && err.errMsg) || '一键登录预校验失败'))
+						}
+					})
+				})
 			},
 			onOtherLoginClick() {
 				// 将其他登录方式入口点击事件抛给父页面做页面跳转。

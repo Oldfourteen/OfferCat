@@ -40,9 +40,10 @@ public class AuthController {
 
     /**
      * 用户登录
-     * 支持两种模式：
+     * 支持三种模式：
      * 1. 密码模式 (loginType="password")
      * 2. 验证码模式 (loginType="code")
+     * 3. 本机一键登录 (loginType="oneClick"，需在 App 完成 UniVerify 换号后再提交手机号)
      */
     @PostMapping("/login")
     public ResponseResult<AuthResponse> login(@RequestBody @Valid LoginRequest request) {

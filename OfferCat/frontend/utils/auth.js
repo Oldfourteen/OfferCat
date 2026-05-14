@@ -7,22 +7,26 @@ export function isDevEnv() {
 	return process.env.NODE_ENV !== 'production'
 }
 
-// 一键登录占位实现：调用登录接口并落地 token、用户信息与资料完整状态。
-export async function oneClickLogin() {
-	// TODO(后端)：这里需要接运营商一键登录（本机号码认证）或你的后端一键登录接口
-	// 当前仅做“把手机号发给后端登录并记录”的占位实现
-	const result = await login({ loginType: 'oneClick', phone: '17866832910' })
+/**
+ * UniVerify / uniCloud 换号成功后，用已校验手机号走后端一键登录并写入本地会话。
+ */
+export async function completeOneClickLoginWithPhone(phone) {
+	const target = String(phone || '').trim()
+	if (!/^1\d{10}$/.test(target)) {
+		throw new Error('手机号格式无效')
+	}
+	const result = await login({ loginType: 'oneClick', target, phone: target })
 
 	const token = (result && result.token) || (result && result.data && result.data.token) || ''
 	const user = (result && result.user) || (result && result.data && result.data.user) || null
-	
-	let isComplete = true;
-	const resData = (result && result.data) ? result.data : result;
+
+	let isComplete = true
+	const resData = result && result.data ? result.data : result
 	if (resData && typeof resData === 'object') {
 		if (resData.isComplete !== undefined) {
-			isComplete = resData.isComplete;
+			isComplete = resData.isComplete
 		} else if (resData.complete !== undefined) {
-			isComplete = resData.complete;
+			isComplete = resData.complete
 		}
 	}
 

@@ -49,6 +49,8 @@ public class AuthServiceImplement implements AuthService {
     private static final Pattern MD5_HEX = Pattern.compile("^[a-fA-F0-9]{32}$");
     /** 64 位十六进制 SHA-256，用于兼容部分历史/第三方存储 */
     private static final Pattern SHA256_HEX = Pattern.compile("^[a-fA-F0-9]{64}$");
+    /** 中国大陆手机号（与一键登录场景一致） */
+    private static final Pattern CN_MOBILE = Pattern.compile("^1\\d{10}$");
 
     /**
      * 发送验证码：由阿里云号码认证生成验证码并下发短信，本地不落库、不写 Redis。
@@ -146,11 +148,11 @@ public class AuthServiceImplement implements AuthService {
     }
 
     /**
-     * 用户登录逻辑 (双模式)
-     * 1. 根据手机/邮箱/用户名查找用户
-     * 2. 模式A-密码登录：对比数据库密码
-     * 3. 模式B-验证码登录：阿里云 CheckSmsVerifyCode
-     * 4. 登录成功后返回 Token（验证码消耗由阿里云侧处理）
+     * 用户登录逻辑
+     * 1. 根据手机/邮箱查找用户
+     * 2. password：校验密码
+     * 3. code：阿里云短信验证码校验
+     * 4. oneClick：本机一键登录（手机号应由 UniVerify + uniCloud 换号后提交）
      */
     @Override
     public ResponseResult<AuthResponse> login(LoginRequest request) {
@@ -183,6 +185,14 @@ public class AuthServiceImplement implements AuthService {
             }
             if (!smsVerificationService.verifyCode(target, request.getCode())) {
                 return ResponseResult.error("验证码错误或已过期");
+            }
+        } else if ("oneClick".equals(request.getLoginType())) {
+            /** 模式3：本机一键登录——手机号应由 App 侧 UniVerify + uniCloud getPhoneNumber 换号后再提交 */
+            if (!CN_MOBILE.matcher(target).matches()) {
+                return ResponseResult.error("一键登录需提供合法手机号");
+            }
+            if (user.getPhone() == null || !user.getPhone().equals(target)) {
+                return ResponseResult.error("一键登录仅支持使用已注册手机号");
             }
         } else {
             return ResponseResult.error("不支持的登录类型");

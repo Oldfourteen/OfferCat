@@ -51,7 +51,8 @@
 		computed: {
 			headerSpacerStyle() {
 				// 头部折叠后同步缩小占位高度，让内容区自然顶上去。
-				const expandedHeight = 258
+				// 与 LearningHeader 文案区 max-height 调高后对齐，避免列表第一条被遮挡。
+				const expandedHeight = 292
 				const collapsedHeight = 128
 				const height = expandedHeight - (expandedHeight - collapsedHeight) * this.headerCollapseProgress
 				return {

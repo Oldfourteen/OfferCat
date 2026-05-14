@@ -7,7 +7,7 @@ import lombok.Data;
 
 /**
  * 登录请求 DTO
- * 支持密码登录和验证码登录两种模式
+ * 支持密码登录、验证码登录与本机一键登录（oneClick）三种模式
  * 【安全规范】增加后端参数规则校验，防止超长输入和非法字符
  */
 @Data
@@ -26,8 +26,8 @@ public class LoginRequest {
     @Size(max = 6, message = "验证码长度不能超过6个字符")
     private String code;
 
-    // 登录类型：password (密码登录) 或 code (验证码登录)
-    @NotBlank(message = "登录类型不能为空（password/code）")
-    @Pattern(regexp = "^(password|code)$", message = "登录类型必须是 password 或 code")
+    // 登录类型：password | code | oneClick（一键登录需在客户端完成 UniVerify 换号后再调用）
+    @NotBlank(message = "登录类型不能为空（password/code/oneClick）")
+    @Pattern(regexp = "^(password|code|oneClick)$", message = "登录类型必须是 password、code 或 oneClick")
     private String loginType;
 }

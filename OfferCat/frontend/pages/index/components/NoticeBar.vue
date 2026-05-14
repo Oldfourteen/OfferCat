@@ -49,7 +49,8 @@
 		height: 72rpx;
 		border-radius: 36rpx;
 		background: #ffffff;
-		margin-top: 110rpx;
+		/* 与固定头部的间距已由首页 header-spacer 预留，仅保留贴顶后的轻间隙 */
+		margin-top: 12rpx;
 		margin-bottom: 24rpx;
 		box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.06);
 		

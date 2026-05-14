@@ -9,7 +9,7 @@
 			<!-- 手机号展示区回显当前设备或本地用户手机号。 -->
 			<telephone class="animate-item" :style="{ animationDelay: '0.25s' }"></telephone>
 			<!-- 登录操作区提供一键登录和切换其他登录方式入口。 -->
-			<loginArea class="animate-item" :style="{ animationDelay: '0.4s' }" @login="handleLogin" @otherLogin="handleOtherLogin"></loginArea>
+			<loginArea ref="loginAreaRef" class="animate-item" :style="{ animationDelay: '0.4s' }" @login="handleLogin" @otherLogin="handleOtherLogin"></loginArea>
 			<!-- 协议区置于底部，统一处理勾选状态与未勾选时的拦截弹窗。 -->
 			<confirmAgreement class="animate-item" :style="{ animationDelay: '0.55s' }" ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @save-agreement="saveAgreementAccepted" @agreed-login="doLogin"></confirmAgreement>
 		</view>
@@ -88,27 +88,25 @@
 				}
 			},
 			async doLogin() {
-				// 当前一键登录能力暂时关闭，统一展示不可用提示避免误操作。
 				uni.showLoading({ title: '登录中', mask: true })
 				try {
-					// 暂时禁用
-					// const { oneClickLogin } = require('../../utils/auth.js')
-					// const { isComplete } = await oneClickLogin()
-					
+					const area = this.$refs.loginAreaRef
+					if (!area || typeof area.runOneClickLogin !== 'function') {
+						throw new Error('一键登录初始化失败')
+					}
+					const { isComplete } = await area.runOneClickLogin()
 					uni.hideLoading()
-					// uni.showToast({ title: '登录成功', icon: 'success' })
-					// setTimeout(() => {
-					// 	if (isComplete === false) {
-					// 		uni.redirectTo({ url: '/pages/initProfile/initProfile' })
-					// 	} else {
-					// 		uni.switchTab({ url: '/pages/index/index' })
-					// 	}
-					// }, 600)
-					uni.showToast({ title: '该功能因授权问题暂时无法使用，非常抱歉给你带来不便QAQ', icon: 'none' })
-
+					uni.showToast({ title: '登录成功', icon: 'success' })
+					setTimeout(() => {
+						if (isComplete === false) {
+							uni.redirectTo({ url: '/pages/initProfile/initProfile' })
+						} else {
+							uni.switchTab({ url: '/pages/index/index' })
+						}
+					}, 600)
 				} catch (e) {
 					uni.hideLoading()
-					uni.showToast({ title: '该功能因授权问题暂时无法使用，非常抱歉给你带来不便QAQ', icon: 'none' })
+					uni.showToast({ title: (e && e.message) ? e.message : '登录失败', icon: 'none' })
 				}
 			},
 			handleOtherLogin() {

@@ -55,3 +55,9 @@ seata:
     type: file
   registry:
     type: file
+
+# C++简历PDF服务配置
+resume:
+  pdf:
+    service:
+      url: http://localhost:22570

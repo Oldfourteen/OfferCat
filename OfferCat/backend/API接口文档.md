@@ -32,6 +32,7 @@
 4. [AI简历模块](#ai简历模块)
 5. [AI咨询模块](#ai咨询模块)
 6. [雷达评估模块](#雷达评估模块)
+7. [专业交叉星图（galaxy-service）](#专业交叉星图galaxy-service)
 
 ---
 
@@ -1085,6 +1086,69 @@ true
 
 ---
 
+## 专业交叉星图（galaxy-service）
+
+**服务名称**: `galaxy-service`（注册到 Eureka，经网关 `http://{gateway}:14132/api/galaxy/**`）
+
+**说明**: 从 `classpath:galaxy/mock/*.json` 提供与 H5 mock 同构的图数据（无 DB）。H5 将 `fetchGalaxyBundle` 的 base 设为 `http://{gateway}:14132/api/galaxy`。
+
+**可选链路**：
+
+- `galaxy.cpp.graph-base-url` 指向 **C++ galaxy-graph** 时：`POST /hyperedges/containing` 与 `POST /path/shortest` 优先走 C++，失败则 Java 内存回退。
+- `galaxy.python.base-url` 指向 **Python galaxy** 时：`POST /recommend` 转发 `/galaxy/recommend`；`/embed/neighbors`、`/report` 必须配置 Python 才可用。
+
+### 1. 获取 manifest
+
+`GET /api/galaxy/manifest.json` 或 `GET /api/galaxy/manifest`
+
+返回 JSON 中含 `nodes_url`、`edges_url` 等为相对文件名（如 `nodes.json`），与现有 `useGraphManifest` 解析逻辑一致。
+
+### 2. 获取图静态分片
+
+| 方法 | 路径 | 说明 |
+|------|------|------|
+| GET | `/api/galaxy/nodes.json` | 节点列表 |
+| GET | `/api/galaxy/edges.json` | 边列表 |
+| GET | `/api/galaxy/hyperedges.json` | 超边列表 |
+| GET | `/api/galaxy/layout.json` | 布局坐标 |
+| GET | `/api/galaxy/recommend.json` | 推荐 mock |
+
+### 3. 包含某节点的超边
+
+`POST /api/galaxy/hyperedges/containing`
+
+**请求体**:
+
+```json
+{ "nodeId": "major_cs" }
+```
+
+**响应**: `hyperedges`（命中的超边对象数组）、`membersByHyperedge`（超边 id → 成员 id 数组）、`memberNodeIds`（去重后的全部成员 id）、`nodeId`。
+
+### 4. 推荐（POST，聚合 Python）
+
+`POST /api/galaxy/recommend`
+
+**请求体**: 可选 JSON（如 `selectedNodeId`）。已配置 `galaxy.python.base-url`（或旧项 `galaxy.python.recommend-base-url`）时转发到 `{base}/galaxy/recommend`；否则返回 classpath `recommend.json`。
+
+### 5. 语义近邻（POST，需 Python）
+
+`POST /api/galaxy/embed/neighbors`
+
+**请求体**: `{ "text": "自述", "k": 5 }` → 转发 Python `/galaxy/embed/neighbors`，返回 `rankedFusionIds`。
+
+### 6. 报告条带（POST，需 Python）
+
+`POST /api/galaxy/report` → 转发 Python `/galaxy/report`，返回 `bars` 等 JSON。
+
+### 7. 两节点最短路（POST）
+
+`POST /api/galaxy/path/shortest`
+
+**请求体**: `{ "fromId": "major_cs", "toId": "major_ds" }`（支持 `from_id` / `to_id`）
+
+**响应**: `found`、`nodeIds`（节点 id 序列）。配置 C++ 时优先走 C++ `/galaxy/path/shortest`，否则 Java 无向 BFS。
+
 ## 附录
 
 ### 用户角色说明
@@ -1133,5 +1197,7 @@ true
 
 | 日期 | 版本 | 说明 |
 |------|------|------|
+| 2026-05-14 | v1.2 | galaxy：C++/Python 可选链路、path/embed/report |
+| 2026-05-14 | v1.1 | 新增 galaxy-service 星图 API（网关 `/api/galaxy/**`） |
 | 2026-04-21 | v1.0 | 初始版本，整理所有API接口 |
 

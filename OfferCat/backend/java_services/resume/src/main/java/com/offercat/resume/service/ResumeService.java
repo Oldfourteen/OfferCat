@@ -5,6 +5,7 @@ import com.offercat.resume.entity.dto.PdfExportConfig;
 import com.offercat.resume.entity.dto.ResumeDiagnoseRequest;
 import com.offercat.resume.entity.dto.ResumeDiagnoseResult;
 import com.offercat.resume.entity.dto.ResumeGenerateRequest;
+import com.offercat.resume.entity.dto.ResumeHighlightResponse;
 import com.offercat.resume.entity.dto.ResumeStatsResponse;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -81,18 +82,32 @@ public interface ResumeService {
     ResumeDiagnoseResult diagnoseResume(ResumeDiagnoseRequest request);
 
     /**
-     * 导出简历为PDF
+     * 导出简历为PDF（使用Java本地生成）
      * 输入：简历ID
      * 输出：PDF文件的字节数组
      */
     byte[] exportResumeToPdf(Long id);
 
     /**
-     * 导出简历为PDF（自定义配置）
+     * 导出简历为PDF（使用Java本地生成，自定义配置）
      * 输入：简历ID、PDF导出配置
      * 输出：PDF文件的字节数组
      */
     byte[] exportResumeToPdf(Long id, PdfExportConfig config);
+
+    /**
+     * 使用C++服务导出简历为PDF
+     * 输入：简历ID、关键词列表
+     * 输出：PDF文件的字节数组
+     */
+    byte[] exportResumeToPdfWithCpp(Long id, String[] keywords);
+
+    /**
+     * 使用C++服务对简历进行关键词高亮
+     * 输入：简历ID、关键词列表
+     * 输出：高亮结果响应对象
+     */
+    ResumeHighlightResponse highlightResume(Long id, String[] keywords);
 
     /**
      * 获取简历统计数据
@@ -107,4 +122,18 @@ public interface ResumeService {
      * 输出：上传的简历对象
      */
     Resume uploadResume(Long userId, MultipartFile file);
+
+    /**
+     * 上传简历头像
+     * 输入：简历ID、头像文件
+     * 输出：更新后的简历对象
+     */
+    Resume uploadResumeAvatar(Long resumeId, MultipartFile file);
+
+    /**
+     * 获取简历头像
+     * 输入：简历ID
+     * 输出：头像文件字节数组
+     */
+    byte[] getResumeAvatar(Long resumeId);
 }

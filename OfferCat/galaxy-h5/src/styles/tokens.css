@@ -1,0 +1,42 @@
+:root {
+  /* 对齐 OfferCat 首页浅底 + 青蓝渐变气质；文档要求简约、非霓虹 */
+  --gx-bg: #f4f8fc;
+  --gx-bg-deep: #e8f0fa;
+  --gx-text: #2c405a;
+  --gx-text-muted: #5a6b85;
+  --gx-primary: #01bcff;
+  --gx-primary-deep: #3165d7;
+  --gx-card: rgba(255, 255, 255, 0.82);
+  --gx-card-border: rgba(49, 101, 215, 0.12);
+  --gx-radius: 14px;
+  --gx-shadow: 0 12px 40px rgba(15, 40, 80, 0.08);
+  --gx-major-fill: #7ec8ff;
+  --gx-major-edge: rgba(255, 255, 255, 0.95);
+  --gx-fusion-fill: #6b8fd8;
+  --gx-line: rgba(90, 120, 160, 0.35);
+  --gx-line-path: rgba(1, 188, 255, 0.65);
+  --gx-halo: rgba(255, 255, 255, 0.14);
+  --gx-halo-strong: rgba(200, 230, 255, 0.28);
+  --gx-scene-fog: #c5d8ee;
+  --gx-safe-top: env(safe-area-inset-top, 0px);
+  --gx-safe-bottom: env(safe-area-inset-bottom, 0px);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --gx-bg: #111216;
+    --gx-bg-deep: #1a1f2e;
+    --gx-text: #e8edf5;
+    --gx-text-muted: #9aa6bc;
+    --gx-card: rgba(28, 32, 44, 0.88);
+    --gx-card-border: rgba(120, 160, 255, 0.12);
+    --gx-shadow: 0 12px 48px rgba(0, 0, 0, 0.45);
+    --gx-major-fill: #5aa8e6;
+    --gx-fusion-fill: #6b7fd0;
+    --gx-line: rgba(140, 170, 210, 0.28);
+    --gx-line-path: rgba(120, 200, 255, 0.55);
+    --gx-halo: rgba(255, 255, 255, 0.06);
+    --gx-halo-strong: rgba(180, 210, 255, 0.18);
+    --gx-scene-fog: #1e2433;
+  }
+}

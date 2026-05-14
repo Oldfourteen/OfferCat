@@ -70,24 +70,9 @@
 				}
 
 				if (item.action === 'help') {
-					// 帮助中心通过 action sheet 提供使用说明和版本信息两个轻量入口。
-					uni.showActionSheet({
-						itemList: ['使用说明', '当前版本'],
-						success: res => {
-							const content = res.tapIndex === 0
-								? '你可以在首页查看任务，在题库完成练习，在成长档案追踪结果。'
-								: '演示版 v1.0.0，已支持个人资料、题库练习和成长评分。'
-							uni.showModal({
-								title: res.tapIndex === 0 ? '使用说明' : '当前版本',
-								content,
-								showCancel: false,
-								confirmText: '知道了',
-								// 深色模式下的样式
-								...(this.theme === 'dark' && {
-									confirmColor: '#8AB7FF'
-								})
-							})
-						}
+					// 跳转到帮助中心页面
+					uni.navigateTo({
+						url: '/subPages/helpCenter/helpCenter'
 					})
 					return
 				}

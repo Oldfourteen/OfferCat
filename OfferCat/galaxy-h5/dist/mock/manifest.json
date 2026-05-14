@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "nodes_url": "nodes.json",
+  "edges_url": "edges.json",
+  "hyperedges_url": "hyperedges.json",
+  "layout_url": "layout.json",
+  "layout_seed": "sphere-v1",
+  "wasm_url": null,
+  "compat": { "three": "^0.170", "data": 1 }
+}

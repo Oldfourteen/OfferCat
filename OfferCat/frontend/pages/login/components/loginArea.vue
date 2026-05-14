@@ -19,6 +19,16 @@
 		},
 		methods: {
 			onLoginClick() {
+			  // 一键登录依赖 App 端 Univerify；H5 / 小程序等无 uni.preLogin，直接调用会报错。
+			  if (typeof uni.preLogin !== 'function') {
+			    uni.showToast({
+			      title: '一键登录仅在 App 内可用，请选其他登录方式',
+			      icon: 'none',
+			      duration: 2500
+			    });
+			    return;
+			  }
+
 			  // 预登录（提升速度）
 			  uni.preLogin({
 			    provider: 'univerify',
@@ -89,7 +99,7 @@
 			justify-content: center;
 			align-items: center;
 			font-size: 16px;
-			margin-bottom: 20px; /* 两个按钮/文字之间的间距 */
+			margin-bottom: 16px;
 			transition: all 0.2s ease;
 
 			&:active {
@@ -110,7 +120,7 @@
 		.text-link {
 			font-size: 14px;
 			color: #666;
-			padding: 10px; /* 增加点击热区 */
+			padding: 8px 16px;
 			transition: opacity 0.2s ease;
 
 			&:active {

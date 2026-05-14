@@ -1,0 +1,14 @@
+[
+  { "id": "he_1", "member_node_ids": ["major_accounting", "major_law", "fusion_1"], "style_hint": "weak" },
+  { "id": "he_2", "member_node_ids": ["major_clinical", "major_marketing", "fusion_2"], "style_hint": "weak" },
+  { "id": "he_3", "member_node_ids": ["major_cs", "major_ds", "fusion_3"], "style_hint": "weak" },
+  { "id": "he_4", "member_node_ids": ["major_finance", "major_accounting", "fusion_4"], "style_hint": "weak" },
+  { "id": "he_5", "member_node_ids": ["major_swe", "major_electrical", "fusion_5"], "style_hint": "weak" },
+  { "id": "he_6", "member_node_ids": ["major_law", "major_marketing", "fusion_6"], "style_hint": "weak" },
+  { "id": "he_7", "member_node_ids": ["major_english", "major_marketing", "fusion_7"], "style_hint": "weak" },
+  { "id": "he_8", "member_node_ids": ["major_clinical", "major_law", "fusion_8"], "style_hint": "weak" },
+  { "id": "he_9", "member_node_ids": ["major_cs", "major_swe", "fusion_9"], "style_hint": "weak" },
+  { "id": "he_10", "member_node_ids": ["major_ds", "major_finance", "fusion_10"], "style_hint": "weak" },
+  { "id": "he_11", "member_node_ids": ["major_electrical", "major_finance", "fusion_11"], "style_hint": "weak" },
+  { "id": "he_12", "member_node_ids": ["major_english", "major_law", "fusion_12"], "style_hint": "weak" }
+]

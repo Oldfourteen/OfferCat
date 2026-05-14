@@ -8,10 +8,10 @@
 			<logoArea class="animate-item" :style="{ animationDelay: '0.1s' }"></logoArea>
 			<!-- 手机号展示区回显当前设备或本地用户手机号。 -->
 			<telephone class="animate-item" :style="{ animationDelay: '0.25s' }"></telephone>
-			<!-- 协议区统一处理勾选状态与未勾选时的拦截弹窗。 -->
-			<confirmAgreement class="animate-item" :style="{ animationDelay: '0.4s' }" ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @save-agreement="saveAgreementAccepted" @agreed-login="doLogin"></confirmAgreement>
 			<!-- 登录操作区提供一键登录和切换其他登录方式入口。 -->
-			<loginArea class="animate-item" :style="{ animationDelay: '0.55s' }" @login="handleLogin" @otherLogin="handleOtherLogin"></loginArea>
+			<loginArea class="animate-item" :style="{ animationDelay: '0.4s' }" @login="handleLogin" @otherLogin="handleOtherLogin"></loginArea>
+			<!-- 协议区置于底部，统一处理勾选状态与未勾选时的拦截弹窗。 -->
+			<confirmAgreement class="animate-item" :style="{ animationDelay: '0.55s' }" ref="agreementRef" :agreed="isAgreed" @change="onAgreementChange" @save-agreement="saveAgreementAccepted" @agreed-login="doLogin"></confirmAgreement>
 		</view>
 	</view>
 </template>
@@ -175,6 +175,11 @@
 		::v-deep .logo-area {
 			display: flex;
 			justify-content: center;
+		}
+
+		/* 一键登录页协议跟在「其他登录方式」后，收窄上边距避免中段留白过大 */
+		.content-wrapper ::v-deep .agreement-area {
+			margin-top: 16px;
 		}
 	}
 

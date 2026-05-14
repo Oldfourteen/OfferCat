@@ -10,6 +10,7 @@
 				:resumeName="resumeData.resumeName"
 				:photoUrl="resumeData.photo"
 				:resumeData="resumeData"
+				:resumeId="currentResumeId"
 				@updatePhoto="handleUpdatePhoto"
 				@updateResumeName="handleUpdateResumeName"
 				:theme="theme"
@@ -383,7 +384,7 @@
 					url: `/subPages/onlineResumeMake/previewResume?resume_data=${dataStr}`
 				})
 			},
-			// 导出PDF（调用后端接口）
+			// 导出PDF（调用C++服务生成）
 			async handleExportPdf() {
 				// 导出前先保存
 				const record = this.handleSaveResume()
@@ -426,15 +427,22 @@
 						}
 					})
 					
+					// 使用C++服务生成PDF
+					const pdfRes = await request({
+						url: `/api/resume/export/pdf/cpp/${res.resumeId}`,
+						method: 'GET',
+						responseType: 'blob'
+					})
+					
 					uni.hideLoading()
 					uni.showToast({ title: 'PDF导出成功', icon: 'success' })
 					
-					// 生成下载链接
-					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/${res.resumeId}`
+					// 生成下载链接（调用C++服务的PDF接口）
+					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/cpp/${res.resumeId}`
 					
 					uni.showModal({
 						title: '导出成功',
-						content: 'PDF 已生成，是否复制下载链接？\n\n' + realPdfUrl,
+						content: 'PDF 已生成（C++服务），是否复制下载链接？\n\n' + realPdfUrl,
 						confirmText: '复制链接',
 						cancelText: '关闭',
 						success: (resModal) => {

@@ -1,0 +1,8 @@
+{
+  "suggestions": [
+    { "nodeId": "fusion_3", "reason": "与计科、数据科学相邻，适合巩固交叉基础" },
+    { "nodeId": "fusion_9", "reason": "平台工程方向与当前路径相关" },
+    { "nodeId": "fusion_10", "reason": "量化与风控交叉，可拓展金融视野" }
+  ],
+  "note": "mock：后续由 Java 聚合 Py 推荐服务"
+}

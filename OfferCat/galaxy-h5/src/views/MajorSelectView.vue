@@ -1,0 +1,333 @@
+<script setup lang="ts">
+import { computed, ref } from 'vue'
+import { useRouter } from 'vue-router'
+import { GALAXY_MAJORS_KEY, MAJORS, type GalaxyMajorsPayload } from '@/data/majors'
+import { postCloseToShell } from '@/utils/bridge'
+
+const router = useRouter()
+const fromId = ref<string | null>(null)
+const toId = ref<string | null>(null)
+const toast = ref('')
+
+const canEnter = computed(() => !!fromId.value && !!toId.value && fromId.value !== toId.value)
+
+function showToast(msg: string) {
+  toast.value = msg
+  window.setTimeout(() => {
+    toast.value = ''
+  }, 1800)
+}
+
+function onCardClick(id: string) {
+  if (id === fromId.value) {
+    fromId.value = null
+    return
+  }
+  if (id === toId.value) {
+    toId.value = null
+    return
+  }
+  if (!fromId.value) {
+    fromId.value = id
+    return
+  }
+  if (!toId.value) {
+    if (id === fromId.value) {
+      showToast('请选择与起点不同的交叉意向专业')
+      return
+    }
+    toId.value = id
+    return
+  }
+  toId.value = id
+}
+
+function enterGalaxy() {
+  if (!canEnter.value) return
+  const payload: GalaxyMajorsPayload = { fromId: fromId.value!, toId: toId.value! }
+  sessionStorage.setItem(GALAXY_MAJORS_KEY, JSON.stringify(payload))
+  router.push({ name: 'galaxy' })
+}
+
+function goBack() {
+  // 选择页返回应直接退出星图容器，不再回到 3D 场景。
+  postCloseToShell()
+}
+</script>
+
+<template>
+  <div class="select-page">
+    <div class="bg-gradient" aria-hidden="true" />
+    <div class="custom-nav">
+      <button type="button" class="nav-btn" aria-label="返回" @click="goBack">‹</button>
+      <div class="nav-title">专业星系</div>
+      <div class="nav-right" />
+    </div>
+    <div class="nav-spacer" />
+    <header class="header">
+      <p class="eyebrow">专业交叉星系</p>
+      <h1 class="title">选择你的星域</h1>
+      <p class="subtitle">先选起点专业，再选交叉意向；进入星系后会高亮两专业之间的路径与融合关卡。</p>
+    </header>
+
+    <section class="picked" aria-live="polite">
+      <div class="picked-row">
+        <span class="label">主修 / 起点</span>
+        <span class="value">{{ fromId ? MAJORS.find((m) => m.id === fromId)?.label : '未选择' }}</span>
+      </div>
+      <div class="picked-row">
+        <span class="label">交叉意向</span>
+        <span class="value">{{ toId ? MAJORS.find((m) => m.id === toId)?.label : '未选择' }}</span>
+      </div>
+    </section>
+
+    <div class="grid">
+      <button
+        v-for="m in MAJORS"
+        :key="m.id"
+        type="button"
+        class="card"
+        :class="{
+          'is-from': m.id === fromId,
+          'is-to': m.id === toId,
+        }"
+        @click="onCardClick(m.id)"
+      >
+        <span class="card-title">{{ m.label }}</span>
+        <span class="card-tag">{{ m.tagline }}</span>
+      </button>
+    </div>
+
+    <footer class="footer">
+      <button type="button" class="btn primary" :disabled="!canEnter" @click="enterGalaxy">进入星系</button>
+    </footer>
+
+    <div v-if="toast" class="toast" role="status">{{ toast }}</div>
+  </div>
+</template>
+
+<style scoped>
+/* 铺满 WebView 视口并在此层滚动：避免 #app overflow:hidden 下仅靠 min-height 撑不开滚动链（手机端划不动） */
+.select-page {
+  position: fixed;
+  inset: 0;
+  width: 100%;
+  max-width: none;
+  margin: 0;
+  padding: calc(20px + var(--gx-safe-top)) 18px calc(24px + var(--gx-safe-bottom));
+  box-sizing: border-box;
+  overflow-y: auto;
+  overflow-x: hidden;
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior-y: contain;
+}
+
+.custom-nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 5;
+  height: calc(44px + var(--gx-safe-top));
+  padding-top: var(--gx-safe-top);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding-left: 12px;
+  padding-right: 12px;
+  box-sizing: border-box;
+  /* 与 OfferCat 首页星图入口一致的紫 → 靛渐变 */
+  background: linear-gradient(135deg, #5c35af 0%, #3f55c7 100%);
+}
+
+.nav-btn {
+  width: 38px;
+  height: 38px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.18);
+  background: rgba(255, 255, 255, 0.86);
+  color: #304965;
+  font-size: 24px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.nav-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
+}
+
+.nav-right {
+  width: 38px;
+  height: 38px;
+}
+
+.nav-spacer {
+  height: calc(52px + var(--gx-safe-top));
+}
+
+.bg-gradient {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--gx-bg);
+  background-image: linear-gradient(
+      180deg,
+      rgba(1, 188, 255, 0.12) 0%,
+      rgba(49, 101, 215, 0.18) 42%,
+      rgba(0, 123, 255, 0.04) 100%
+    ),
+    linear-gradient(180deg, rgba(0, 122, 252, 0.35) 0%, rgba(1, 188, 255, 0) 72%);
+  background-size: 100% 420px;
+  background-repeat: no-repeat;
+}
+
+.header {
+  margin-bottom: 18px;
+}
+
+.eyebrow {
+  margin: 0 0 6px;
+  font-size: 12px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--gx-text-muted);
+}
+
+.title {
+  margin: 0 0 8px;
+  font-size: 24px;
+  font-weight: 650;
+  letter-spacing: -0.02em;
+}
+
+.subtitle {
+  margin: 0;
+  font-size: 14px;
+  line-height: 1.55;
+  color: var(--gx-text-muted);
+}
+
+.picked {
+  margin-bottom: 16px;
+  padding: 12px 14px;
+  border-radius: var(--gx-radius);
+  background: var(--gx-card);
+  border: 1px solid var(--gx-card-border);
+  box-shadow: var(--gx-shadow);
+}
+
+.picked-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 12px;
+  padding: 4px 0;
+}
+
+.picked-row + .picked-row {
+  border-top: 1px solid rgba(49, 101, 215, 0.08);
+}
+
+.label {
+  font-size: 13px;
+  color: var(--gx-text-muted);
+}
+
+.value {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.card {
+  text-align: left;
+  border-radius: var(--gx-radius);
+  padding: 14px 12px;
+  border: 1px solid var(--gx-card-border);
+  background: var(--gx-card);
+  box-shadow: var(--gx-shadow);
+  cursor: pointer;
+  transition:
+    transform 0.15s ease,
+    border-color 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card:active {
+  transform: scale(0.98);
+}
+
+.card-title {
+  display: block;
+  font-size: 16px;
+  font-weight: 650;
+  margin-bottom: 4px;
+}
+
+.card-tag {
+  display: block;
+  font-size: 12px;
+  color: var(--gx-text-muted);
+  line-height: 1.35;
+}
+
+.card.is-from {
+  border-color: rgba(1, 188, 255, 0.55);
+  box-shadow: 0 0 0 1px rgba(1, 188, 255, 0.25);
+}
+
+.card.is-to {
+  border-color: rgba(49, 101, 215, 0.55);
+  box-shadow: 0 0 0 1px rgba(49, 101, 215, 0.22);
+}
+
+.footer {
+  margin-top: 20px;
+  display: flex;
+  justify-content: stretch;
+}
+
+.btn {
+  flex: 1;
+  border: none;
+  border-radius: 999px;
+  padding: 14px 16px;
+  font-size: 16px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.btn.primary {
+  color: #fff;
+  background: linear-gradient(135deg, var(--gx-primary) 0%, var(--gx-primary-deep) 100%);
+  box-shadow: 0 10px 28px rgba(49, 101, 215, 0.28);
+}
+
+.btn.primary:disabled {
+  opacity: 0.38;
+  cursor: not-allowed;
+  box-shadow: none;
+}
+
+.toast {
+  position: fixed;
+  left: 50%;
+  bottom: calc(88px + var(--gx-safe-bottom));
+  transform: translateX(-50%);
+  padding: 10px 16px;
+  border-radius: 999px;
+  background: rgba(20, 28, 44, 0.88);
+  color: #fff;
+  font-size: 13px;
+  max-width: 90vw;
+  text-align: center;
+}
+</style>

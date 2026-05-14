@@ -1,0 +1,10 @@
+{
+  "version": 1,
+  "nodes_url": "/mock/nodes.json",
+  "edges_url": "/mock/edges.json",
+  "hyperedges_url": "/mock/hyperedges.json",
+  "layout_url": "/mock/layout.json",
+  "layout_seed": "sphere-v1",
+  "wasm_url": null,
+  "compat": { "three": "^0.170", "data": 1 }
+}

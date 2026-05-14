@@ -18,40 +18,60 @@ import com.itextpdf.layout.element.Table;
 import com.itextpdf.layout.properties.TextAlignment;
 import com.itextpdf.layout.properties.UnitValue;
 import com.offercat.resume.client.AiServiceClient;
+import com.offercat.resume.client.ResumePdfClient;
 import com.offercat.resume.dao.ResumeMapper;
 import com.offercat.resume.entity.Resume;
 import com.offercat.resume.entity.dto.PdfExportConfig;
 import com.offercat.resume.entity.dto.ResumeDiagnoseRequest;
 import com.offercat.resume.entity.dto.ResumeDiagnoseResult;
 import com.offercat.resume.entity.dto.ResumeGenerateRequest;
+import com.offercat.resume.entity.dto.ResumeHighlightResponse;
 import com.offercat.resume.entity.dto.ResumeStatsResponse;
 import com.offercat.resume.service.ResumeService;
-import org.springframework.web.multipart.MultipartFile;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.web.multipart.MultipartFile;
 
-import java.io.ByteArrayOutputStream;
-import java.io.File;
-import java.io.IOException;
+import java.io.*;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * 简历服务实现类
  * 功能：提供简历相关的业务逻辑
+ * 说明：包含与C++服务通信、头像上传等功能
  */
 @Slf4j
 @Service
-@RequiredArgsConstructor// 注入 final 类型的字段
+@RequiredArgsConstructor
 public class ResumeServiceImplement implements ResumeService {
+
+    /**
+     * 头像存储目录
+     */
+    private static final String AVATAR_STORAGE_DIR = "g:/uploads/resume-avatars/";
+
     /**
      * 简历数据访问层
      */
+    private final ResumeMapper resumeMapper;
 
-    private final ResumeMapper resumeMapper;// 注入简历数据访问层
-    private final AiServiceClient aiServiceClient;// 注入AI服务客户端
+    /**
+     * AI服务客户端
+     */
+    private final AiServiceClient aiServiceClient;
+
+    /**
+     * C++简历PDF服务客户端
+     */
+    private final ResumePdfClient resumePdfClient;
 
     /**
      * 创建简历
@@ -587,5 +607,227 @@ public class ResumeServiceImplement implements ResumeService {
         resumeMapper.insert(resume);
         
         return resume;
+    }
+
+    /**
+     * 使用C++服务导出简历为PDF
+     * 输入：简历ID、关键词列表
+     * 输出：PDF文件的字节数组
+     */
+    @Override
+    public byte[] exportResumeToPdfWithCpp(Long id, String[] keywords) {
+        Resume resume = resumeMapper.findById(id);
+        if (resume == null) {
+            log.warn("简历不存在: {}", id);
+            return null;
+        }
+
+        /** 将简历对象转换为Map格式，供C++服务使用 */
+        Map<String, Object> resumeJson = resumeToJsonMap(resume);
+
+        /** 调用C++服务生成PDF */
+        return resumePdfClient.generateResumePdf(resumeJson, keywords, resume.getUserId());
+    }
+
+    /**
+     * 使用C++服务对简历进行关键词高亮
+     * 输入：简历ID、关键词列表
+     * 输出：高亮结果响应对象
+     */
+    @Override
+    public ResumeHighlightResponse highlightResume(Long id, String[] keywords) {
+        Resume resume = resumeMapper.findById(id);
+        if (resume == null) {
+            log.warn("简历不存在: {}", id);
+            return null;
+        }
+
+        /** 将简历对象转换为Map格式，供C++服务使用 */
+        Map<String, Object> resumeJson = resumeToJsonMap(resume);
+
+        /** 调用C++服务进行高亮处理 */
+        Map<String, Object> result = resumePdfClient.highlightResume(resumeJson, keywords, resume.getUserId());
+
+        if (result == null) {
+            return null;
+        }
+
+        /** 转换为响应对象 */
+        ResumeHighlightResponse response = new ResumeHighlightResponse();
+        response.setUnit((String) result.get("unit"));
+        response.setSpansById((Map<String, Object>) result.get("spansById"));
+        response.setHtmlById((Map<String, String>) result.get("htmlById"));
+
+        return response;
+    }
+
+    /**
+     * 将简历对象转换为Map格式（用于C++服务调用）
+     * 输入：简历对象
+     * 输出：Map格式的简历数据，符合C++服务约定格式
+     */
+    private Map<String, Object> resumeToJsonMap(Resume resume) {
+        Map<String, Object> map = new HashMap<>();
+        
+        /** 基础信息 */
+        if (resume.getRealName() != null) {
+            map.put("real_name", resume.getRealName());
+        }
+        if (resume.getGender() != null) {
+            map.put("gender", resume.getGender());
+        }
+        if (resume.getPhone() != null) {
+            map.put("phone", resume.getPhone());
+        }
+        if (resume.getEmail() != null) {
+            map.put("email", resume.getEmail());
+        }
+        if (resume.getPhoto() != null) {
+            map.put("photo", resume.getPhoto());
+        }
+
+        /** 专业名称（C++服务必填字段） */
+        map.put("majorName", "计算机科学与技术");
+
+        /** 求职意向 */
+        map.put("title_line", "求职意向：软件工程师");
+
+        /** 证书 */
+        map.put("certificate", "");
+
+        /** 教育背景 */
+        map.put("education", Map.of(
+            "school", resume.getCampusExperience() != null && !resume.getCampusExperience().isEmpty() ? resume.getCampusExperience() : "未知院校",
+            "major", "计算机科学与技术",
+            "date", "2022.09 - 2026.06"
+        ));
+
+        /** 在校经历（C++服务约定字段） */
+        map.put("campus", List.of());
+
+        /** 工作经历 */
+        if (resume.getWorkExperience() != null && !resume.getWorkExperience().isEmpty()) {
+            map.put("work_experience_entries", List.of(Map.of(
+                "company", "未知公司",
+                "position", "未知职位",
+                "date", "未知时间",
+                "description", resume.getWorkExperience()
+            )));
+        } else {
+            map.put("work_experience_entries", List.of());
+        }
+
+        /** 项目经验 */
+        if (resume.getProjectExperience() != null && !resume.getProjectExperience().isEmpty()) {
+            map.put("projects", List.of(Map.of(
+                "name", "未知项目",
+                "role", "未知角色",
+                "date", "未知时间",
+                "description", resume.getProjectExperience()
+            )));
+        } else {
+            map.put("projects", List.of());
+        }
+
+        /** 自我评价 */
+        if (resume.getSelfEvaluation() != null && !resume.getSelfEvaluation().isEmpty()) {
+            map.put("self_evaluation", resume.getSelfEvaluation());
+        } else {
+            map.put("self_evaluation", "");
+        }
+
+        /** 技能 */
+        map.put("skills", List.of("Java", "Python", "SQL"));
+
+        return map;
+    }
+
+    /**
+     * 上传简历头像
+     * 输入：简历ID、头像文件
+     * 输出：更新后的简历对象
+     */
+    @Override
+    public Resume uploadResumeAvatar(Long resumeId, MultipartFile file) {
+        Resume resume = resumeMapper.findById(resumeId);
+        if (resume == null) {
+            throw new IllegalArgumentException("简历不存在");
+        }
+
+        /** 验证文件类型 */
+        String contentType = file.getContentType();
+        if (!contentType.startsWith("image/")) {
+            throw new IllegalArgumentException("只支持图片格式的文件");
+        }
+
+        /** 生成文件存储路径 */
+        String extension = getFileExtension(file.getOriginalFilename());
+        String fileName = "avatar_" + resumeId + "_" + System.currentTimeMillis() + extension;
+        String uploadDir = AVATAR_STORAGE_DIR;
+        File dir = new File(uploadDir);
+
+        /** 创建目录（如果不存在） */
+        if (!dir.exists()) {
+            if (!dir.mkdirs()) {
+                log.error("创建头像目录失败: {}", uploadDir);
+                throw new RuntimeException("创建头像存储目录失败");
+            }
+        }
+
+        /** 完整的文件路径 */
+        String filePath = uploadDir + "/" + fileName;
+        File destFile = new File(filePath);
+
+        /** 保存文件 */
+        try {
+            log.info("保存头像文件: {}", filePath);
+            file.transferTo(destFile);
+        } catch (Exception e) {
+            log.error("头像上传失败", e);
+            throw new RuntimeException("头像上传失败", e);
+        }
+
+        /** 更新简历记录 */
+        resume.setPhoto(fileName);
+        resume.setUpdateTime(LocalDateTime.now());
+        resumeMapper.update(resume);
+
+        return resume;
+    }
+
+    /**
+     * 获取简历头像
+     * 输入：简历ID
+     * 输出：头像文件字节数组
+     */
+    @Override
+    public byte[] getResumeAvatar(Long resumeId) {
+        Resume resume = resumeMapper.findById(resumeId);
+        if (resume == null || resume.getPhoto() == null || resume.getPhoto().isEmpty()) {
+            return null;
+        }
+
+        /** 读取头像文件 */
+        String filePath = AVATAR_STORAGE_DIR + "/" + resume.getPhoto();
+        Path path = Paths.get(filePath);
+
+        try {
+            return Files.readAllBytes(path);
+        } catch (IOException e) {
+            log.error("读取头像文件失败: {}", filePath, e);
+            return null;
+        }
+    }
+
+    /**
+     * 获取文件扩展名
+     * 输入：文件名
+     * 输出：扩展名（含点号）
+     */
+    private String getFileExtension(String fileName) {
+        if (fileName == null || !fileName.contains(".")) {
+            return ".png";
+        }
+        return fileName.substring(fileName.lastIndexOf("."));
     }
 }

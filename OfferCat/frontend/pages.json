@@ -282,6 +282,16 @@
 					}
 				},
 				{
+					"path": "galaxy/galaxy",
+					"style": {
+						"navigationBarTitleText": "专业交叉星图",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
 					"path": "forum/detail",
 					"style": {
 						"navigationBarTitleText": "论坛详情",
@@ -295,6 +305,36 @@
 					"path": "forum/publish",
 					"style": {
 						"navigationBarTitleText": "发布动态",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "helpCenter/helpCenter",
+					"style": {
+						"navigationBarTitleText": "帮助中心",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "helpCenter/managerPage",
+					"style": {
+						"navigationBarTitleText": "管理者中心",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "helpCenter/onlineService",
+					"style": {
+						"navigationBarTitleText": "在线客服",
 						"navigationStyle": "custom",
 						"app-plus": {
 							"titleNView": false

@@ -116,14 +116,13 @@
 
 	<script>
 	import { clearUser } from '@/utils/user.js'
-import { clearToken } from '@/utils/token.js'
-import { getUserProfile, DEFAULT_AVATAR, DEFAULT_USER_PROFILE, USER_PROFILE_UPDATED_EVENT } from '@/utils/userProfile.js'
-import { applyTheme, getThemeMode, setTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT, THEME_SYSTEM } from '@/utils/theme.js'
+	import { clearToken } from '@/utils/token.js'
+	import { getUserProfile, DEFAULT_AVATAR, DEFAULT_USER_PROFILE, USER_PROFILE_UPDATED_EVENT } from '@/utils/userProfile.js'
+	import { applyTheme, getThemeMode, setTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT } from '@/utils/theme.js'
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 
 	const SETTINGS_KEY = 'my_security_settings'
 	const THEME_MODE_OPTIONS = [
-		{ label: '跟随系统', value: THEME_SYSTEM },
 		{ label: '浅色模式', value: THEME_LIGHT },
 		{ label: '深色模式', value: THEME_DARK }
 	]
@@ -157,15 +156,9 @@ import { applyTheme, getThemeMode, setTheme, THEME_CHANGE_EVENT, THEME_DARK, THE
 				return current ? current.label : '浅色模式'
 			},
 			themeModeShortLabel() {
-				if (this.themeMode === THEME_SYSTEM) {
-					return '系统'
-				}
 				return this.isDarkTheme ? '深色' : '浅色'
 			},
 			themeStatusText() {
-				if (this.themeMode === THEME_SYSTEM) {
-					return this.isDarkTheme ? '当前跟随系统为深色外观' : '当前跟随系统为浅色外观'
-				}
 				return this.isDarkTheme ? '已开启深色模式' : '当前为正常白色主题'
 			},
 			accountSummary() {
@@ -263,7 +256,7 @@ import { applyTheme, getThemeMode, setTheme, THEME_CHANGE_EVENT, THEME_DARK, THE
 						this.themeMode = selected.value
 						this.currentTheme = setTheme(selected.value)
 						uni.showToast({
-							title: selected.value === THEME_SYSTEM ? `已切换为跟随系统（当前${this.isDarkTheme ? '深色' : '浅色'}）` : selected.value === THEME_DARK ? '已切换深色模式' : '已切换正常白色主题',
+							title: selected.value === THEME_DARK ? '已切换深色模式' : '已切换正常白色主题',
 							icon: 'none'
 						})
 					}
@@ -273,7 +266,7 @@ import { applyTheme, getThemeMode, setTheme, THEME_CHANGE_EVENT, THEME_DARK, THE
 				this.themeMode = themeMode
 				this.currentTheme = setTheme(themeMode)
 				uni.showToast({
-					title: themeMode === THEME_SYSTEM ? `已切换为跟随系统（当前${this.isDarkTheme ? '深色' : '浅色'}）` : themeMode === THEME_DARK ? '已切换深色模式' : '已切换正常白色主题',
+					title: themeMode === THEME_DARK ? '已切换深色模式' : '已切换正常白色主题',
 					icon: 'none'
 				})
 			},

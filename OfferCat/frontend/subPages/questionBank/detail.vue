@@ -1,6 +1,6 @@
 <template>
 	<!-- 题单详情页面 -->
-	<view class="detail-page" :class="themeClass">
+	<view class="detail-page" :class="[themeClass, typeClass]">
 		<!-- 顶部导航栏：返回 + 标题 + 收藏 -->
 		<view class="detail-topbar">
 			<text class="back-btn" @click="goBack">
@@ -82,6 +82,9 @@
 					interview: '面试真题'
 				}
 				return map[this.type] || '题库详情'
+			},
+			typeClass() {
+				return this.type === 'interview' ? 'type-interview' : 'type-written'
 			}
 		},
 			onLoad(options) {

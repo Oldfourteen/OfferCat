@@ -1,5 +1,5 @@
 <script>
-	import { applyTheme, initThemeObserver } from '@/utils/theme.js'
+	import { applyTheme } from '@/utils/theme.js'
 	import { getToken } from '@/utils/token.js'
 
 	export default {
@@ -8,7 +8,6 @@
 			apiBase: '',
 		},
 		onLaunch: function() {
-			initThemeObserver()
 			applyTheme()
 			console.log('App Launch')
 			// 检查是否已有有效的登录态，自动跳转首页

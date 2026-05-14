@@ -1,17 +1,16 @@
 // 主题模式缓存键、可选主题模式和全局主题变更事件名。
 const THEME_KEY = 'app_theme_mode'
+const LEGACY_THEME_SYSTEM = 'system'
 
 export const THEME_LIGHT = 'light'
 export const THEME_DARK = 'dark'
-export const THEME_SYSTEM = 'system'
 export const THEME_CHANGE_EVENT = 'app-theme-updated'
 
-let hasThemeObserver = false
 let currentActiveTheme = null
 
 // 校验主题模式是否合法。
 function isValidThemeMode(theme) {
-	return [THEME_LIGHT, THEME_DARK, THEME_SYSTEM].includes(theme)
+	return [THEME_LIGHT, THEME_DARK].includes(theme)
 }
 
 // 广播主题变化，通知页面重新同步主题样式。
@@ -29,11 +28,17 @@ function emitThemeChange(theme, mode) {
 // 获取用户当前保存的主题模式。
 export function getThemeMode() {
 	const theme = uni.getStorageSync(THEME_KEY)
+	if (theme === LEGACY_THEME_SYSTEM) {
+		const migratedTheme = getLegacySystemTheme()
+		uni.setStorageSync(THEME_KEY, migratedTheme)
+		return migratedTheme
+	}
+
 	return isValidThemeMode(theme) ? theme : THEME_LIGHT
 }
 
-// 获取系统当前生效的明暗主题。
-export function getSystemTheme() {
+// 兼容旧版“跟随系统”配置，将其迁移为具体主题值。
+function getLegacySystemTheme() {
 	let systemTheme = ''
 
 	try {
@@ -56,10 +61,6 @@ export function getSystemTheme() {
 
 // 将主题模式解析为最终实际应用的主题值。
 export function resolveTheme(themeMode = getThemeMode()) {
-	if (themeMode === THEME_SYSTEM) {
-		return getSystemTheme()
-	}
-
 	return themeMode === THEME_DARK ? THEME_DARK : THEME_LIGHT
 }
 
@@ -124,18 +125,4 @@ export function applyTheme(theme = getThemeMode()) {
 	currentActiveTheme = nextTheme
 	emitThemeChange(nextTheme, nextMode)
 	return nextTheme
-}
-
-// 初始化系统主题监听，在跟随系统模式下自动同步。
-export function initThemeObserver() {
-	if (hasThemeObserver || typeof uni === 'undefined' || typeof uni.onThemeChange !== 'function') {
-		return
-	}
-
-	hasThemeObserver = true
-	uni.onThemeChange(() => {
-		if (getThemeMode() === THEME_SYSTEM) {
-			applyTheme(THEME_SYSTEM)
-		}
-	})
 }

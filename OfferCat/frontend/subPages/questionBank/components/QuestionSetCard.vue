@@ -62,8 +62,8 @@
 	}
 
 	.set-card.type-interview .company-badge {
-		background: linear-gradient(135deg, #ffffff, rgba(100, 232, 208, 0.16));
-		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		background: linear-gradient(135deg, #ffffff, rgba(69, 249, 222, 0.28));
+		box-shadow: inset 0 0 0 2rpx rgba(69, 249, 222, 0.42);
 		color: #157e70;
 	}
 
@@ -124,8 +124,8 @@
 	}
 
 	.set-card.theme-dark.type-interview .company-badge {
-		background: linear-gradient(135deg, rgba(35, 37, 43, 0.96), rgba(100, 232, 208, 0.16));
-		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		background: linear-gradient(135deg, rgba(35, 37, 43, 0.96), rgba(69, 249, 222, 0.12));
+		box-shadow: inset 0 0 0 2rpx rgba(69, 249, 222, 0.24);
 		color: #45f9de;
 	}
 

@@ -194,6 +194,10 @@
 		background: linear-gradient(180deg, #3165D7 0%, #f6fbff 18%, #f7f8fb 100%);
 	}
 
+	.exercise-page.type-interview {
+		background: linear-gradient(180deg, rgba(69, 249, 222, 0.24) 0%, #f1fffc 18%, #f7f8fb 100%);
+	}
+
 	.exercise-topbar {
 		flex-shrink: 0;
 		display: flex;
@@ -276,6 +280,10 @@
 		color: #5d76bd;
 	}
 
+	.exercise-page.type-interview .hero-type {
+		color: #15a996;
+	}
+
 	.hero-title {
 		margin-top: 16rpx;
 		font-size: 36rpx;
@@ -330,6 +338,11 @@
 		border-color: rgba(93, 118, 189, 0.42);
 	}
 
+	.exercise-page.type-interview .option-item.active {
+		background: rgba(69, 249, 222, 0.12);
+		border-color: rgba(69, 249, 222, 0.42);
+	}
+
 	.option-mark {
 		width: 44rpx;
 		height: 44rpx;
@@ -348,6 +361,11 @@
 	.option-item.active .option-mark {
 		background: #5d76bd;
 		color: #ffffff;
+	}
+
+	.exercise-page.type-interview .option-item.active .option-mark {
+		background: #45f9de;
+		color: #123d38;
 	}
 
 	.option-text {
@@ -389,8 +407,17 @@
 		color: #ffffff;
 	}
 
+	.exercise-page.type-interview .primary-btn {
+		background: #45f9de;
+		color: #123d38;
+	}
+
 	.submit-btn {
 		box-shadow: 0 14rpx 28rpx rgba(93, 118, 189, 0.18);
+	}
+
+	.exercise-page.type-interview .submit-btn {
+		box-shadow: 0 14rpx 28rpx rgba(69, 249, 222, 0.24);
 	}
 
 	.empty-state {
@@ -448,4 +475,14 @@
 		color: #8ab7ff;
 	}
 
+	.exercise-page.theme-dark.type-interview .hero-type,
+	.exercise-page.theme-dark.type-interview .option-mark {
+		color: #45f9de;
+	}
+
+	.exercise-page.theme-dark.type-interview .option-item.active .option-mark,
+	.exercise-page.theme-dark.type-interview .primary-btn {
+		background: #45f9de;
+		color: #103935;
+	}
 </style>

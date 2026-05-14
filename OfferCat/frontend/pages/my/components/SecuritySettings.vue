@@ -70,9 +70,15 @@
 				}
 
 				if (item.action === 'help') {
-					// 跳转到帮助中心页面
 					uni.navigateTo({
 						url: '/subPages/helpCenter/helpCenter'
+					})
+					return
+				}
+
+				if (item.action === 'feedback') {
+					uni.navigateTo({
+						url: '/subPages/helpCenter/feedback'
 					})
 					return
 				}
@@ -82,7 +88,6 @@
 					content: '当前为演示版本，你可以整理问题现象、复现步骤和截图后反馈给开发同学。',
 					showCancel: false,
 					confirmText: '知道了',
-					// 深色模式下的样式
 					...(this.theme === 'dark' && {
 						confirmColor: '#8AB7FF'
 					})

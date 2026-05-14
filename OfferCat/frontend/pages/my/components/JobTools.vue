@@ -227,18 +227,19 @@
 				if (this.todayChecked) return
 				
 				try {
+					uni.showLoading({ title: '打卡中...' })
+					
 					const res = await checkIn()
+					
 					if (res && res.data) {
 						this.todayChecked = true
 						
-						// 更新本地存储的打卡记录
 						const checkInKey = getCheckInKey()
 						const checkIns = uni.getStorageSync(checkInKey) || {}
 						const todayStr = new Date().toISOString().split('T')[0]
 						checkIns[todayStr] = true
 						uni.setStorageSync(checkInKey, checkIns)
 						
-						// 累计打卡次数从本地存储重新计算
 						this.calculateTotalCheckIns()
 						
 						this.weekDays = this.weekDays.map(day => {
@@ -248,6 +249,7 @@
 							return day
 						})
 						
+						uni.hideLoading()
 						uni.showToast({
 							title: '打卡成功！',
 							icon: 'success'
@@ -255,13 +257,31 @@
 						if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
 							uni.$emit(ARCHIVE_DATA_UPDATED_EVENT)
 						}
+					} else {
+						uni.hideLoading()
+						uni.showToast({
+							title: '打卡失败，请重试',
+							icon: 'none'
+						})
 					}
 				} catch (error) {
+					uni.hideLoading()
 					console.error('打卡失败:', error)
-					uni.showToast({
-						title: '打卡失败',
-						icon: 'error'
-					})
+					const errorMsg = error.message || '打卡失败'
+					if (errorMsg.includes('未获取用户信息')) {
+						uni.showModal({
+							title: '提示',
+							content: '未获取到用户信息，请重新登录后再试',
+							showCancel: false,
+							confirmText: '知道了'
+						})
+					} else {
+						uni.showToast({
+							title: errorMsg || '打卡失败',
+							icon: 'none',
+							duration: 2000
+						})
+					}
 				}
 			},
 			navigateToGrowth() {

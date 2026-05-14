@@ -80,7 +80,7 @@
 </template>
 
 <script>
-	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
+	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT, saveGrowthStats } from '@/utils/archiveData.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import { getCheckInKey } from '@/utils/user.js'
@@ -179,7 +179,10 @@
 					})
 				}
 				
-				// 从后端获取打卡状态
+				// 累计打卡次数从本地存储计算
+				this.calculateTotalCheckIns()
+				
+				// 今日状态和周打卡状态从后端获取
 				await this.fetchCheckInData()
 			},
 			async fetchCheckInData() {
@@ -190,8 +193,11 @@
 					])
 					
 					if (statsRes && statsRes.data) {
-						this.totalCheckIns = statsRes.data.totalCheckinDays || 0
 						this.todayChecked = statsRes.data.checkedInToday || false
+						// 保存后端返回的连续打卡天数到本地缓存
+						if (statsRes.data.consecutiveDays !== undefined) {
+							saveGrowthStats({ consecutiveDays: statsRes.data.consecutiveDays })
+						}
 					}
 					
 					if (weeklyRes && weeklyRes.data) {
@@ -224,7 +230,16 @@
 					const res = await checkIn()
 					if (res && res.data) {
 						this.todayChecked = true
-						this.totalCheckIns = res.data.totalCheckinDays || this.totalCheckIns + 1
+						
+						// 更新本地存储的打卡记录
+						const checkInKey = getCheckInKey()
+						const checkIns = uni.getStorageSync(checkInKey) || {}
+						const todayStr = new Date().toISOString().split('T')[0]
+						checkIns[todayStr] = true
+						uni.setStorageSync(checkInKey, checkIns)
+						
+						// 累计打卡次数从本地存储重新计算
+						this.calculateTotalCheckIns()
 						
 						this.weekDays = this.weekDays.map(day => {
 							if (day.isToday) {

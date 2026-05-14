@@ -103,20 +103,10 @@ export function getDashboardMetrics() {
 	const checkInKey = getCheckInKey()
 	const checkIns = uni.getStorageSync(checkInKey) || {}
 	const totalCheckIns = Object.values(checkIns).filter(Boolean).length
-
-	let consecutiveDays = 0
-	const today = new Date()
-	// 从今天向前回溯，计算连续打卡天数。
-	for (let i = 0; i < 365; i++) {
-		const currentDate = new Date(today)
-		currentDate.setDate(today.getDate() - i)
-		const dateStr = currentDate.toISOString().split('T')[0]
-		if (checkIns[dateStr]) {
-			consecutiveDays++
-		} else {
-			break
-		}
-	}
+	
+	// 连续打卡天数从后端获取（存储在本地缓存中）
+	const growthStats = uni.getStorageSync('growth_stats') || {}
+	const consecutiveDays = Number(growthStats.consecutiveDays) || 0
 
 	return {
 		resumeCount: resumeStats.totalResumes,
@@ -128,5 +118,13 @@ export function getDashboardMetrics() {
 		totalCheckIns,
 		consecutiveDays,
 		archiveSummary
+	}
+}
+
+// 保存后端返回的成长统计数据（用于连续打卡天数）
+export function saveGrowthStats(stats) {
+	if (stats && typeof stats === 'object') {
+		uni.setStorageSync('growth_stats', stats)
+		emitArchiveDataUpdated()
 	}
 }

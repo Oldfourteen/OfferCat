@@ -19,8 +19,8 @@
 		},
 		computed: {
 			displayPhone() {
-				// 根据本地手机号决定显示脱敏号码还是“本机号码”提示。
-				if (!this.phone) return '本机号码'
+				// 根据本地手机号决定显示脱敏号码还是品牌占位文案。
+				if (!this.phone) return 'OfferCat 简历猫'
 				return this.maskPhone(this.phone)
 			}
 		},

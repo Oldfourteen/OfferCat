@@ -137,6 +137,7 @@
         <module>resume</module>
         <module>ai_evaluation</module>
         <module>radar_evaluation</module>
+        <module>galaxy</module>
     </modules>
 
     <build>

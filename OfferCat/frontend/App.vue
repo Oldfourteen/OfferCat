@@ -6,6 +6,8 @@
 		globalData: {
 			// 留空则使用 api/config.js 中的默认网关。真机连本机后端时请填电脑局域网 IP + 网关端口，勿用 127.0.0.1。
 			apiBase: '',
+			// 星图 H5：留空则用内置 static/galaxy-h5/mock；填写则 web-view 从该地址拉 manifest（一般为 网关 + /api/galaxy，无末尾 /）。
+			galaxyApiBase: '',
 		},
 		onLaunch: function() {
 			initThemeObserver()

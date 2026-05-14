@@ -282,6 +282,16 @@
 					}
 				},
 				{
+					"path": "galaxy/galaxy",
+					"style": {
+						"navigationBarTitleText": "专业交叉星图",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
 					"path": "forum/detail",
 					"style": {
 						"navigationBarTitleText": "论坛详情",

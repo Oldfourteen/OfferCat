@@ -84,6 +84,11 @@ spring:
           predicates:
             - Path=/api/recruitment/**
 
+        - id: galaxy-service
+          uri: lb://galaxy-service
+          predicates:
+            - Path=/api/galaxy/**
+
 # Eureka Client 配置
 eureka:
   client:

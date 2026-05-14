@@ -310,6 +310,36 @@
 							"titleNView": false
 						}
 					}
+				},
+				{
+					"path": "helpCenter/helpCenter",
+					"style": {
+						"navigationBarTitleText": "帮助中心",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "helpCenter/managerPage",
+					"style": {
+						"navigationBarTitleText": "管理者中心",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "helpCenter/onlineService",
+					"style": {
+						"navigationBarTitleText": "在线客服",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
 				}
 			]
 		}

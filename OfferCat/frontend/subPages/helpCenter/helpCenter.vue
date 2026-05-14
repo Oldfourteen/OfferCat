@@ -15,7 +15,7 @@
 			<view class="hotline-card">
 				<view class="hotline-content">
 					<text class="hotline-label">官方客服热线</text>
-					<text class="hotline-number">952899</text>
+					<text class="hotline-number">15092730328</text>
 				</view>
 			</view>
 
@@ -60,14 +60,11 @@
 		mixins: [themeMixin],
 		data() {
 			return {
-				faqList: [
-					{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
-					{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
-					{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
-					{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
-					{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
-				]
+				faqList: []
 			}
+		},
+		onLoad() {
+			this.loadFaqList()
 		},
 		computed: {
 			themeClass() {
@@ -77,6 +74,34 @@
 		methods: {
 			goBack() {
 				uni.navigateBack()
+			},
+			loadFaqList() {
+				uni.request({
+					url: `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/help/faq`,
+					method: 'GET',
+					success: (res) => {
+						if (res.data && res.data.data) {
+							this.faqList = res.data.data
+						} else {
+							this.faqList = [
+								{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
+								{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
+								{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
+								{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
+								{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
+							]
+						}
+					},
+					fail: () => {
+						this.faqList = [
+							{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
+							{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
+							{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
+							{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
+							{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
+						]
+					}
+				})
 			},
 			navigateToManager() {
 				uni.navigateTo({
@@ -158,4 +183,111 @@
 			gap: 16rpx;
 		}
 
-		
+		.hotline-label {
+			font-size: 16px;
+			color: rgba(255, 255, 255, 0.8);
+		}
+
+		.hotline-number {
+			font-size: 24px;
+			font-weight: 700;
+			color: #fff;
+		}
+	}
+
+	.function-grid {
+		display: flex;
+		gap: 16rpx;
+		padding: 0 16px;
+	}
+
+	.function-item {
+		flex: 1;
+		background: #fff;
+		border-radius: 16rpx;
+		padding: 24rpx;
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+	}
+
+	.function-icon {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 20rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+
+		.icon-text {
+			font-size: 32rpx;
+		}
+	}
+
+	.manager-icon {
+		background: linear-gradient(135deg, #4a6cf7 0%, #6b8cff 100%);
+	}
+
+	.service-icon {
+		background: linear-gradient(135deg, #fa8c16 0%, #ffa940 100%);
+	}
+
+	.function-name {
+		font-size: 16px;
+		font-weight: 600;
+		color: #333;
+		margin-top: 12rpx;
+	}
+
+	.function-desc {
+		font-size: 12px;
+		color: #999;
+		margin-top: 4rpx;
+	}
+
+	.faq-section {
+		margin: 16px;
+		background: #fff;
+		border-radius: 16rpx;
+		padding: 20rpx;
+	}
+
+	.section-header {
+		margin-bottom: 16rpx;
+
+		.section-title {
+			font-size: 17px;
+			font-weight: 600;
+			color: #333;
+		}
+	}
+
+	.faq-list {
+		display: flex;
+		flex-direction: column;
+	}
+
+	.faq-item {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 16rpx 0;
+		border-bottom: 1rpx solid #f5f5f5;
+
+		&:last-child {
+			border-bottom: none;
+		}
+
+		.faq-question {
+			font-size: 15px;
+			color: #333;
+			flex: 1;
+		}
+
+		.faq-arrow {
+			font-size: 24rpx;
+			color: #ccc;
+		}
+	}
+</style>

@@ -23,9 +23,8 @@
 							<image class="user-avatar" :src="getAvatar(item.authorAvatar, item.userId)" mode="aspectFill"></image>
 							<view class="user-meta">
 								<text class="user-name">{{ getAuthorName(item.authorName, item.userId) }}</text>
-								<view class="user-tag-row">
-									<image class="tag-icon" src="/static/icons/tag.svg" mode="aspectFit" v-if="item.tag"></image>
-									<text class="user-tag">{{ item.tag || '默认分区' }}</text>
+								<view class="user-tag-row" v-if="getAuthorProfileText(item)">
+									<text class="user-tag">{{ getAuthorProfileText(item) }}</text>
 								</view>
 							</view>
 						</view>
@@ -144,7 +143,8 @@
 					id: 'mock_1',
 					userId: 'user_001',
 					authorName: 'Wind',
-					tag: '腾讯游戏筛选',
+					grade: '大三',
+					major: '软件工程',
 					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix',
 					createTime: '2026-05-13 10:30',
 					content: '又麻烦大家帮我做选择了，这次的疑问是，我想抽扣扣酱，但是又看到这次传说级手办制作很棒，导致我很犹豫，从今天到15号我算了下大概能攒多少资源，大家觉得哪个更划算一点呢？求建议！',
@@ -160,7 +160,8 @@
 					id: 'mock_2',
 					userId: 'user_002',
 					authorName: '(ฅωฅ)',
-					tag: '三角洲行动',
+					grade: '大二',
+					major: '数字媒体技术',
 					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Mia',
 					createTime: '2026-05-12 18:45',
 					content: '雷霆*忧郁小猫不让我睡觉，还不让我发游戏，我要曝光你。每天晚上都在我键盘上跑酷，真的是太调皮了！哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈',
@@ -178,6 +179,19 @@
 				if (!content) return ''
 				// 预留尾部“...全部”的宽度，避免末尾按钮换行。
 				return content.length > 68 ? content.substring(0, 68) : content
+			},
+			getAuthorProfileText(item) {
+				const currentUser = uni.getStorageSync('user') || uni.getStorageSync('user_v2') || {}
+				const currentUserId = currentUser.userId || currentUser.id
+				const currentProfile = currentUser.profile || {}
+				if (item.userId && currentUserId && item.userId === currentUserId) {
+					const grade = currentProfile.grade || currentUser.grade || currentProfile.graduationYear || currentUser.graduationYear || ''
+					const major = currentProfile.major || currentUser.major || ''
+					return [grade, major].filter(Boolean).join(' · ')
+				}
+				const grade = item.grade || item.authorGrade || item.graduationYear || ''
+				const major = item.major || item.authorMajor || ''
+				return [grade, major].filter(Boolean).join(' · ')
 			},
 			toggleCollect(item, index) {
 				const originalIsCollected = item.isCollected;

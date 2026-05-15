@@ -20,6 +20,16 @@
 			return {};
 		},
 		methods: {
+			closeAuthViewSafely() {
+				if (typeof uni.closeAuthView !== 'function') {
+					return
+				}
+				try {
+					uni.closeAuthView()
+				} catch (e) {
+					// 忽略授权页已关闭等场景，避免影响主流程。
+				}
+			},
 			/** 先交给父页做协议校验，通过后由父页调用 runOneClickLogin */
 			onLoginClick() {
 				this.$emit('login')
@@ -55,12 +65,15 @@
 											return
 										}
 										const session = await completeOneClickLoginWithPhone(payload.phone)
+										this.closeAuthViewSafely()
 										resolve(session)
 									} catch (e) {
+										this.closeAuthViewSafely()
 										reject(e)
 									}
 								},
 								fail: (err) => {
+									this.closeAuthViewSafely()
 									reject(new Error((err && err.errMsg) || '一键登录授权失败'))
 								}
 							})

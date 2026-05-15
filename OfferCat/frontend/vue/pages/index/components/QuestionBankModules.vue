@@ -17,6 +17,7 @@
 				@click.stop="goModule(item)"
 			>
 				<QuestionBankTypeGauge
+					:ref="`gauge-${item.key}`"
 					:theme="theme"
 					:tone="item.key === 'interview' ? 'interview' : 'written'"
 					:accuracy-percent="item.key === 'interview' ? interviewAccuracy : writtenAccuracy"
@@ -93,16 +94,19 @@
 			this.refreshPracticeScores()
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$on('pageShow', this.handlePageShow)
 			}
 		},
 		beforeDestroy() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$off('pageShow', this.handlePageShow)
 			}
 		},
 		beforeUnmount() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$off('pageShow', this.handlePageShow)
 			}
 		},
 		data() {
@@ -149,6 +153,16 @@
 				// 按配置跳转到对应题库子页面。
 				uni.navigateTo({
 					url: item.url
+				})
+			},
+			handlePageShow() {
+				this.$nextTick(() => {
+					this.modules.forEach(item => {
+						const gauge = this.$refs[`gauge-${item.key}`]
+						if (gauge && typeof gauge.resetAnimation === 'function') {
+							gauge.resetAnimation()
+						}
+					})
 				})
 			}
 		}

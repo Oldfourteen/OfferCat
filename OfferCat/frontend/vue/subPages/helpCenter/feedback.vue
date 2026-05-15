@@ -31,6 +31,16 @@
 			<view class="tip-text">
 				感谢您的反馈！您的每一条建议都对我们非常重要。
 			</view>
+
+			<view class="faq-section">
+				<view class="faq-title">常见问题参考</view>
+				<view class="faq-list">
+					<view class="faq-item" v-for="(item, index) in faqList" :key="index" @click="copyFaq(item)">
+						<text class="faq-icon">Q</text>
+						<text class="faq-content">{{ item }}</text>
+					</view>
+				</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -55,7 +65,14 @@
 				content: '',
 				contact: '',
 				contactError: '',
-				feedbackBackIcon: FEEDBACK_BACK_ICON
+				feedbackBackIcon: FEEDBACK_BACK_ICON,
+				faqList: [
+					'希望增加深色模式定时切换功能',
+					'简历导出PDF时格式错乱',
+					'AI面试模拟回答评分不准确',
+					'题库题目重复太多',
+					'消息通知不及时'
+				]
 			}
 		},
 		computed: {
@@ -145,6 +162,10 @@
 						}
 					}
 				})
+			},
+			copyFaq(text) {
+				this.content = text
+				uni.showToast({ title: '已复制到输入框', icon: 'success' })
 			},
 			submitFeedback() {
 				const len = this.content.trim().length
@@ -348,6 +369,64 @@
 		padding: 0 40rpx;
 	}
 
+	.faq-section {
+		margin-top: 40rpx;
+		background: #fff;
+		border-radius: 20rpx;
+		padding: 30rpx;
+		
+		.faq-title {
+			font-size: 28rpx;
+			font-weight: 700;
+			color: #24345b;
+			margin-bottom: 24rpx;
+		}
+		
+		.faq-list {
+			display: flex;
+			flex-direction: column;
+			gap: 16rpx;
+		}
+		
+		.faq-item {
+			display: flex;
+			align-items: flex-start;
+			gap: 16rpx;
+			padding: 20rpx;
+			background: #f8f9fa;
+			border-radius: 12rpx;
+			border: 2rpx solid transparent;
+			transition: all 0.2s ease;
+			
+			&:active {
+				background: #e9ecef;
+				border-color: #4AA9FE;
+			}
+			
+			.faq-icon {
+				width: 48rpx;
+				height: 48rpx;
+				background: linear-gradient(135deg, #4AA9FE, #3d8ef7);
+				color: #fff;
+				border-radius: 50%;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				font-size: 24rpx;
+				font-weight: bold;
+				flex-shrink: 0;
+			}
+			
+			.faq-content {
+				font-size: 26rpx;
+				color: #555;
+				line-height: 1.5;
+				flex: 1;
+				word-break: break-all;
+			}
+		}
+	}
+
 	.feedback-page.theme-dark {
 		background: #111216;
 
@@ -387,6 +466,26 @@
 			&.active {
 				background: linear-gradient(135deg, #5d76bd 0%, #4a63a0 100%);
 				color: #fff;
+			}
+		}
+
+		.faq-section {
+			background: #1d1f24;
+			
+			.faq-title {
+				color: #f4f7fb;
+			}
+			
+			.faq-item {
+				background: #2a2c33;
+				
+				&:active {
+					background: #34363d;
+				}
+				
+				.faq-content {
+					color: #eef2f8;
+				}
 			}
 		}
 	}

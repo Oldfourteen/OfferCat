@@ -41,6 +41,10 @@
 		onShow() {
 			// 返回首页时刷新子组件依赖的 key，保证头部和内容区展示最新状态。
 			this.refreshSeed += 1
+			// 通知子组件页面已显示，用于重置动画状态
+			if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+				uni.$emit('pageShow')
+			}
 			// 检查并显示公告弹窗（内部会判断是否登录及是否今天已弹出）
 			this.$nextTick(() => {
 				if (this.$refs.announcementPopup) {

@@ -1,6 +1,6 @@
 <template>
 	<!-- 纯色底 + 单色进度弧 + 外发光 -->
-	<view class="qbg-card" :class="[toneClazz, themeClazz]" @tap.stop>
+	<view class="qbg-card" :class="[toneClazz, themeClazz]" @tap.stop :id="uniqueId">
 		<view class="qbg-inner">
 			<view class="qbg-chart">
 				<svg class="qbg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -25,12 +25,13 @@
 							:stroke-width="strokeW"
 							:stroke-linecap="progressLinecap"
 							:stroke-dasharray="progDash"
+							:style="progressStyle"
 						/>
 					</g>
 				</svg>
 				<view class="qbg-center" :class="{ 'has-hint': !hasValue }">
 					<view class="qbg-metric-row" :class="{ 'is-untracked': !hasValue }">
-						<text class="qbg-num">{{ mainNumber }}</text>
+						<text class="qbg-num">{{ animatedNumber }}</text>
 						<text class="qbg-pct-suffix">%</text>
 					</view>
 					<text v-if="!hasValue" class="qbg-metric-hint">暂未统计</text>
@@ -61,6 +62,15 @@
 			categoryLabel: {
 				type: String,
 				default: ''
+			}
+		},
+		data() {
+			return {
+				animatedProgress: 0,
+				animatedNum: 0,
+				animationTriggered: false,
+				observer: null,
+				uniqueId: `qbg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
 			}
 		},
 		computed: {
@@ -102,9 +112,12 @@
 			hasValue() {
 				return this.numericPct !== null
 			},
-			progress01() {
+			targetProgress() {
 				if (!this.hasValue) return 0
 				return Math.max(0, Math.min(1, this.numericPct / 100))
+			},
+			progress01() {
+				return this.animatedProgress
 			},
 			progressLinecap() {
 				return this.progress01 > 0.004 ? 'round' : 'butt'
@@ -112,10 +125,75 @@
 			progDash() {
 				return `${this.arcLen * this.progress01} ${this.C}`
 			},
-			mainNumber() {
+			progressStyle() {
+				return {
+					transition: this.animationTriggered ? 'stroke-dasharray 0.5s ease-out' : 'none'
+				}
+			},
+			animatedNumber() {
 				if (!this.hasValue) return '0'
-				const n = this.numericPct
+				const n = this.animatedNum
 				return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
+			}
+		},
+		mounted() {
+			this.setupIntersectionObserver()
+		},
+		beforeUnmount() {
+			if (this.observer) {
+				this.observer.disconnect()
+			}
+			this.animationTriggered = false
+		},
+		methods: {
+			setupIntersectionObserver() {
+				const that = this
+				const observeElement = () => {
+					const el = document.getElementById(that.uniqueId)
+					if (el) {
+						that.observer = new IntersectionObserver(
+							(entries) => {
+								entries.forEach((entry) => {
+									if (entry.isIntersecting && !that.animationTriggered) {
+										that.triggerAnimation()
+									}
+								})
+							},
+							{
+								threshold: 0.3,
+								rootMargin: '0px 0px -50px 0px'
+							}
+						)
+						that.observer.observe(el)
+					} else {
+						setTimeout(observeElement, 100)
+					}
+				}
+				observeElement()
+			},
+			triggerAnimation() {
+				this.animationTriggered = true
+				if (!this.hasValue) return
+				const duration = 500
+				const startTime = Date.now()
+				const startValue = 0
+				const endValue = this.numericPct
+				const animate = () => {
+					const elapsed = Date.now() - startTime
+					const progress = Math.min(elapsed / duration, 1)
+					const eased = 1 - Math.pow(1 - progress, 3)
+					this.animatedNum = startValue + (endValue - startValue) * eased
+					this.animatedProgress = eased * this.targetProgress
+					if (progress < 1) {
+						requestAnimationFrame(animate)
+					}
+				}
+				requestAnimationFrame(animate)
+			},
+			resetAnimation() {
+				this.animationTriggered = false
+				this.animatedProgress = 0
+				this.animatedNum = 0
 			}
 		}
 	}

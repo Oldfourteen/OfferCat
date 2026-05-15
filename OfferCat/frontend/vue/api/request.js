@@ -41,6 +41,18 @@ function sleep(ms) {
 	return new Promise((resolve) => setTimeout(resolve, ms))
 }
 
+/** 挂到 Error 上，便于控制台/日志定位「404 到底请求了哪条 URL」。 */
+function attachRequestMeta(err, { base, path, method }) {
+	if (!err || typeof err !== 'object') return
+	err.requestUrl = `${base}${path}`
+	err.requestPath = path
+	err.requestMethod = method || 'GET'
+	if (err.statusCode === 404 || err.bizCode === 404) {
+		err.diagnostic404 =
+			'常见：外网端口未映射到 api-gateway（内网如 14132）而打到了 user 等其它进程，仅 /auth 正常、/api/growth 全 404；或 Eureka 中无 student-service 实例。'
+	}
+}
+
 /**
  * JSON 正文内常见错误字段（网关/网关错误页/HTML 或非标准体）
  */
@@ -99,6 +111,7 @@ export function request(options) {
 										: bizMsg
 								const err = new Error(errMsg)
 								if (typeof res.data.code === 'number') err.bizCode = res.data.code
+								attachRequestMeta(err, { base, path: url, method })
 								reject(err)
 							}
 							return
@@ -113,11 +126,14 @@ export function request(options) {
 					const message = formatHttpErrorMessage(res.statusCode, headline)
 					const err = new Error(message)
 					err.statusCode = res.statusCode
+					attachRequestMeta(err, { base, path: url, method })
 					reject(err)
 				},
 				fail: (err) => {
 					const raw = err && (err.errMsg || err.message || err.msg) ? err.errMsg || err.message || err.msg : ''
-					reject(new Error(normalizeNetworkError(raw)))
+					const e = new Error(normalizeNetworkError(raw))
+					attachRequestMeta(e, { base, path: url, method })
+					reject(e)
 				},
 			})
 		})

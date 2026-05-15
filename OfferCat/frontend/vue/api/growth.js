@@ -1,80 +1,1 @@
-import { request } from './request'
-import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
-
-/**
- * 拼装成长接口身份参数：同时传 studentId + userId（若存在）。
- * 服务端在缺 studentId 或缓存错配时可通过 userId 查库解析，内置浏览器清空部分缓存也不至于长期全 0。
- */
-function growthIdentityQuery() {
-	const studentId = resolveStoredStudentId()
-	const userId = resolveStoredUserId(getUser())
-	const parts = []
-	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)
-	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)
-	return parts.length ? `?${parts.join('&')}` : ''
-}
-
-/**
- * 成长相关接口的路径（遇「未命中路由」404 则换下一个；与网关 application.yml / GrowthRecordController 对齐）。
- * 1) `/api/growth/**` — 网关 growth-service 专用段（仓库默认；StripPrefix 后到 `/growth/**`）
- * 2) `/api/student/profile/growth/**` — 与 `/api/student/profile/**` 同 student-service 路由
- * 3) `/api/student/growth/**` — StripPrefix 后到 `/student/growth/**`
- * 4) `/growth/**` — 若 Nginx 等已剥掉网关前的 `/api` 前缀，仍直连「/growth/**」时用
- */
-const GROWTH_PREFIXES = ['/api/growth', '/api/student/profile/growth', '/api/student/growth', '/growth']
-
-function isHttpNotFound(err) {
-	if (!err) return false
-	if (err.statusCode === 404 || err.bizCode === 404) return true
-	const m = String(err.message || '')
-	// uni 部分运行时的 Error 未必挂 statusCode，但 formatHttpErrorMessage 会把 404 文案写进 message
-	return /^\s*Not Found\b/i.test(m) || /\b404\b/i.test(m)
-}
-
-/**
- * @param {() => object} buildOptions 接收 url 前缀，返回 request 的 options（含 url/method/data 等）
- */
-async function growthRequest(buildOptions) {
-	let lastErr
-	for (const prefix of GROWTH_PREFIXES) {
-		try {
-			const opts = buildOptions(prefix)
-			return await request(opts)
-		} catch (e) {
-			lastErr = e
-			if (isHttpNotFound(e) && prefix !== GROWTH_PREFIXES[GROWTH_PREFIXES.length - 1]) {
-				continue
-			}
-			throw e
-		}
-	}
-	throw lastErr
-}
-
-export function getGrowthRecordStats() {
-	const q = growthIdentityQuery()
-	return growthRequest((prefix) => ({
-		url: `${prefix}/stats${q}`,
-		method: 'GET',
-	}))
-}
-
-export function checkIn() {
-	const q = growthIdentityQuery()
-	if (!q) {
-		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
-	}
-	return growthRequest((prefix) => ({
-		url: `${prefix}/checkin${q}`,
-		method: 'POST',
-	}))
-}
-
-export function getWeeklyCheckinStatus() {
-	const q = growthIdentityQuery()
-	return growthRequest((prefix) => ({
-		url: `${prefix}/checkin/weekly${q}`,
-		method: 'GET',
-	}))
-}
-
+import { request } from './request'import { getApiBase } from './config'import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'/** * 拼装成长接口身份参数：同时传 studentId + userId（若存在）。 * 服务端在缺 studentId 或缓存错配时可通过 userId 查库解析，内置浏览器清空部分缓存也不至于长期全 0。 */function growthIdentityQuery() {	const studentId = resolveStoredStudentId()	const userId = resolveStoredUserId(getUser())	const parts = []	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)	return parts.length ? `?${parts.join('&')}` : ''}/** * 成长相关接口的路径（遇「未命中路由」404 则换下一个；与网关 application.yml / GrowthRecordController 对齐）。 * 1) `/api/growth/**` — 网关 growth-service 专用段（仓库默认；StripPrefix 后到 `/growth/**`） * 2) `/api/student/profile/growth/**` — 与 `/api/student/profile/**` 同 student-service 路由 * 3) `/api/student/growth/**` — StripPrefix 后到 `/student/growth/**` * 4) `/growth/**` — 若 Nginx 等已剥掉网关前的 `/api` 前缀，仍直连「/growth/**」时用 */const GROWTH_PREFIXES = ['/api/growth', '/api/student/profile/growth', '/api/student/growth', '/growth']function isHttpNotFound(err) {	if (!err) return false	if (err.statusCode === 404 || err.bizCode === 404) return true	const m = String(err.message || '')	// uni 部分运行时的 Error 未必挂 statusCode，但 formatHttpErrorMessage 会把 404 文案写进 message	return /^\s*Not Found\b/i.test(m) || /\b404\b/i.test(m)}/** * @param {() => object} buildOptions 接收 url 前缀，返回 request 的 options（含 url/method/data 等） */async function growthRequest(buildOptions) {	const base = getApiBase()	const attemptLog = []	let lastErr	for (const prefix of GROWTH_PREFIXES) {		const opts = buildOptions(prefix)		const fullUrl = `${base}${opts.url}`		try {			return await request(opts)		} catch (e) {			lastErr = e			attemptLog.push({				path: opts.url,				fullUrl: (e && e.requestUrl) || fullUrl,				statusCode: e && e.statusCode,				bizCode: e && e.bizCode,			})			if (isHttpNotFound(e) && prefix !== GROWTH_PREFIXES[GROWTH_PREFIXES.length - 1]) {				continue			}			const err = e instanceof Error ? e : new Error(String(e))			err.growthAttemptLog = attemptLog			const line = attemptLog				.map((a) => `[${a.statusCode ?? a.bizCode ?? '—'}] ${a.fullUrl}`)				.join(' | ')			err.message = `${err.message}\n[growth 已试 URL] ${line}`			throw err		}	}	if (lastErr instanceof Error) {		lastErr.growthAttemptLog = attemptLog	}	throw lastErr}export function getGrowthRecordStats() {	const q = growthIdentityQuery()	return growthRequest((prefix) => ({		url: `${prefix}/stats${q}`,		method: 'GET',	}))}export function checkIn() {	const q = growthIdentityQuery()	if (!q) {		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))	}	return growthRequest((prefix) => ({		url: `${prefix}/checkin${q}`,		method: 'POST',	}))}export function getWeeklyCheckinStatus() {	const q = growthIdentityQuery()	return growthRequest((prefix) => ({		url: `${prefix}/checkin/weekly${q}`,		method: 'GET',	}))}

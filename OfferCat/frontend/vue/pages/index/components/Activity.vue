@@ -1,5 +1,5 @@
 <template>
-	<view class="banner-card shadow-strong" :class="themeClass" @click="goToSpringCamp">
+	<view class="banner-card shadow-strong spring-banner" :class="themeClass" @click="goToSpringCamp">
 		<!-- 左侧文案区展示当前招季和活动主标题。 -->
 		<view class="banner-copy">
 			<text class="banner-title">{{ currentYear }} {{ seasonText }}</text>
@@ -102,7 +102,7 @@
 			display: flex;
 			flex-direction: column;
 		}
-		
+
 		.banner-title {
 			font-size: 50rpx;
 			line-height: 1.12;
@@ -131,7 +131,44 @@
 		
 	}
 
-	
+	.spring-banner {
+		overflow: hidden;
+
+		&::before,
+		&::after {
+			content: '';
+			position: absolute;
+			pointer-events: none;
+		}
+
+		&::before {
+			top: -26rpx;
+			right: -8rpx;
+			width: 220rpx;
+			height: 120rpx;
+			background:
+				radial-gradient(circle, rgba(255, 255, 255, 0.6) 0 6rpx, transparent 7rpx) 150rpx 18rpx / 24rpx 24rpx no-repeat,
+				radial-gradient(circle, rgba(244, 213, 120, 0.7) 0 5rpx, transparent 6rpx) 92rpx 42rpx / 20rpx 20rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)) 74rpx 54rpx / 44rpx 2rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.2)) 118rpx 34rpx / 2rpx 28rpx no-repeat,
+				radial-gradient(circle at top right, rgba(255, 255, 255, 0.22) 0, rgba(255, 255, 255, 0.22) 1rpx, transparent 2rpx) 0 0 / 100% 100% no-repeat;
+			opacity: 0.9;
+		}
+
+		&::after {
+			left: -28rpx;
+			bottom: -34rpx;
+			width: 110rpx;
+			height: 110rpx;
+			border-radius: 32rpx;
+			background:
+				radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0.08) 56%, rgba(255, 255, 255, 0) 57%),
+				linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.16));
+			clip-path: polygon(8% 72%, 34% 18%, 70% 68%);
+			transform: rotate(-10deg);
+		}
+	}
+
 	.banner-graphic {
 		position: relative;
 		width: 160rpx;
@@ -139,37 +176,73 @@
 		
 		.graphic-sheet {
 			position: absolute;
-			right: 20rpx;
-			bottom: 12rpx;
-			width: 180rpx;
-			height: 240rpx;
-			border-radius: 14rpx;
-			transform: rotate(-12deg);
-			background: linear-gradient(180deg, rgba(255, 255, 255, 0.34), rgba(255, 255, 255, 0.12));
-			border: 2rpx solid rgba(255, 255, 255, 0.24);
+			right: 30rpx;
+			bottom: 22rpx;
+			width: 158rpx;
+			height: 200rpx;
+			border-radius: 36rpx;
+			background:
+				linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03)),
+				repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 8rpx, rgba(255, 255, 255, 0.02) 8rpx 22rpx);
+			border: 2rpx solid rgba(255, 255, 255, 0.16);
+			transform: rotate(-14deg);
 		}
 		
 		.graphic-arrow {
 			position: absolute;
-			right: 8rpx;
-			bottom: 42rpx;
-			width: 0;
-			height: 0;
-			border-top: 44rpx solid transparent;
-			border-bottom: 44rpx solid transparent;
-			border-left: 140rpx solid #ffff21;
-			transform: rotate(-35deg) translateX(20rpx);
-			filter: drop-shadow(0 0 14rpx rgba(255, 248, 44, 0.4));
+			right: 15rpx;
+			bottom: 60rpx;
+			width: 164rpx;
+			height: 42rpx;
+			border-radius: 8rpx 0 0 8rpx;
+			background: linear-gradient(90deg, #fff7a0 0%, #ffe45d 55%, #ffc928 100%);
+			transform: rotate(-28deg);
+			box-shadow: 0 14rpx 30rpx rgba(255, 210, 48, 0.3);
+
+			&::before,
+			&::after {
+				content: '';
+				position: absolute;
+			}
+
+			&::before {
+				left: -40rpx;
+				top: 50%;
+				width: 56rpx;
+				height: 6rpx;
+				border-radius: 2rpx;
+				background: rgba(255, 240, 106, 0.42);
+				box-shadow: -20rpx -12rpx 0 rgba(255, 240, 106, 0.18), -34rpx 12rpx 0 rgba(255, 240, 106, 0.12);
+				transform: translateY(-50%);
+			}
+
+			&::after {
+				right: -32rpx;
+				top: 50%;
+				width: 0;
+				height: 0;
+				border-top: 34rpx solid transparent;
+				border-bottom: 34rpx solid transparent;
+				border-left: 42rpx solid #ffc928;
+				transform: translateY(-50%);
+			}
 		}
 		
 		.graphic-glow {
 			position: absolute;
-			right: -10rpx;
-			bottom: -12rpx;
-			width: 150rpx;
-			height: 150rpx;
+			right: 0;
+			bottom: 20rpx;
+			width: 176rpx;
+			height: 176rpx;
 			border-radius: 50%;
-			background: radial-gradient(circle, rgba(255, 255, 255, 0.24) 0%, rgba(255, 255, 255, 0) 72%);
+			background:
+				radial-gradient(circle, rgba(255, 239, 111, 0.28) 0%, rgba(255, 239, 111, 0) 72%),
+				linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)) 18rpx 112rpx / 42rpx 2rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)) 38rpx 92rpx / 2rpx 24rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)) 32rpx 128rpx / 28rpx 2rpx no-repeat,
+				radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 4rpx, transparent 5rpx) 16rpx 106rpx / 20rpx 20rpx no-repeat,
+				radial-gradient(circle, rgba(255, 255, 255, 0.68) 0 4rpx, transparent 5rpx) 138rpx 18rpx / 20rpx 20rpx no-repeat;
+			opacity: 0.9;
 		}
 	}
 

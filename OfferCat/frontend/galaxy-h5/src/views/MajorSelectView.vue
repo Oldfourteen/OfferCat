@@ -4,6 +4,15 @@ import { useRouter } from 'vue-router'
 import { GALAXY_MAJORS_KEY, MAJORS, type GalaxyMajorsPayload } from '@/data/majors'
 import { postCloseToShell } from '@/utils/bridge'
 
+/** 与 OfferCat 其它页一致的圆角描边左箭头（WebView 内嵌 SVG data URI，避免外链失效） */
+const GALAXY_NAV_BACK_ICON =
+  'data:image/svg+xml;charset=utf-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+      '<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>',
+  )
+
 const router = useRouter()
 const fromId = ref<string | null>(null)
 const toId = ref<string | null>(null)
@@ -59,7 +68,17 @@ function goBack() {
   <div class="select-page">
     <div class="bg-gradient" aria-hidden="true" />
     <div class="custom-nav">
-      <button type="button" class="nav-btn" aria-label="返回" @click="goBack">‹</button>
+      <button type="button" class="nav-btn" aria-label="返回" @click="goBack">
+        <img
+          class="nav-btn-img"
+          :src="GALAXY_NAV_BACK_ICON"
+          alt=""
+          width="19"
+          height="19"
+          decoding="async"
+          draggable="false"
+        />
+      </button>
       <div class="nav-title">专业星系</div>
       <div class="nav-right" />
     </div>
@@ -141,15 +160,31 @@ function goBack() {
 }
 
 .nav-btn {
-  width: 38px;
-  height: 38px;
-  border-radius: 12px;
-  border: 1px solid rgba(255, 255, 255, 0.18);
-  background: rgba(255, 255, 255, 0.86);
-  color: #304965;
-  font-size: 24px;
-  line-height: 1;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  border: none;
+  border-radius: 50%;
+  background: #fff;
   cursor: pointer;
+  box-shadow: 0 3px 9px rgba(34, 97, 193, 0.14);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.nav-btn-img {
+  width: 19px;
+  height: 19px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .nav-title {
@@ -160,8 +195,8 @@ function goBack() {
 }
 
 .nav-right {
-  width: 38px;
-  height: 38px;
+  width: 36px;
+  height: 36px;
 }
 
 .nav-spacer {

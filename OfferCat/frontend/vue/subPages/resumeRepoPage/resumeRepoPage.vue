@@ -1,13 +1,13 @@
 <template>
   <!-- 简历仓库 - 管理所有保存的简历 -->
-  <view class="container" :class="themeClass">、
+  <view class="container" :class="themeClass">
     <!-- 顶部导航栏 -->
     <view class="nav-header">
       <view class="status-bar"></view>
       <view class="nav-bar">
          <!-- 返回按钮 -->
         <view class="back-btn" @click="goBack">
-          <text class="back-icon">←</text>
+          <image class="back-icon-img" :src="resumeRepoBackIcon" mode="aspectFit" />
         </view>
         <text class="nav-title">简历仓库</text>
         <!-- 右侧管理按钮 -->
@@ -68,6 +68,14 @@ import { getResumeRepoList, deleteResumes } from '../../utils/resumeRepo.js'
 // 主题混入
 import themeMixin from '@/utils/themeMixin.js'
 
+const RESUME_REPO_BACK_ICON =
+  'data:image/svg+xml;charset=utf-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+      '<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>'
+  )
+
 export default {
   mixins: [themeMixin],
   components: {
@@ -75,6 +83,7 @@ export default {
   },
   data() {
     return {
+      resumeRepoBackIcon: RESUME_REPO_BACK_ICON,
       resumeList: [],
       isManageMode: false,
       selectedResumes: []
@@ -203,13 +212,23 @@ export default {
   padding: 0 15px;
 }
 .back-btn {
-  padding: 5px 10px 5px 0;
+  box-sizing: border-box;
+  width: 36px;
+  height: 36px;
+  padding: 0;
+  margin-right: 6px;
+  border-radius: 50%;
+  background: #fff;
   display: flex;
   align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  box-shadow: 0 3px 9px rgba(34, 97, 193, 0.14);
 }
-.back-icon {
-  font-size: 24px;
-  font-weight: bold;
+.back-icon-img {
+  width: 19px;
+  height: 19px;
+  flex-shrink: 0;
 }
 .nav-title {
   font-size: 16px;
@@ -330,9 +349,13 @@ export default {
 }
 
 .container.theme-dark .nav-title,
-.container.theme-dark .back-icon,
 .container.theme-dark .manage-btn {
   color: #f4f7fb;
+}
+
+.container.theme-dark .back-btn {
+  background: rgba(255, 255, 255, 0.92);
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.2);
 }
 
 .container.theme-dark .desc-text {

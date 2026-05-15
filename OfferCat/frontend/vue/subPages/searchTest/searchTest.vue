@@ -6,7 +6,11 @@
       <view class="status-bar"></view>
       <view class="nav-bar">
         <view class="back-btn" @click="goBack">
-          <text class="back-icon">‹</text>
+          <image
+            class="back-icon-img"
+            src="/static/icons/chevron-left.svg"
+            mode="aspectFit"
+          />
         </view>
         <text class="nav-title">题库测试</text>
         <view class="nav-right"></view>
@@ -85,7 +89,7 @@ export default {
     return {
       questions: [],
       answers: [],
-      showUnanswered: false // 控制未答题号块的显示/隐藏
+      showUnanswered: false
     }
   },
   computed: {
@@ -320,20 +324,21 @@ export default {
   padding: 0 15px;
 }
 .back-btn {
+  box-sizing: border-box;
   height: 72rpx;
   width: 72rpx;
   border-radius: 50%;
   background: rgba(255, 255, 255, 0.92);
+  padding: 0;
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 42rpx;
-  line-height: 1;
-  color: #30435a;
 }
-.back-icon {
-  font-size: 24px;
-  font-weight: bold;
+.back-icon-img {
+  width: 38rpx;
+  height: 38rpx;
+  flex-shrink: 0;
 }
 .nav-title {
   font-size: 16px;

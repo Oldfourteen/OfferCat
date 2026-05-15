@@ -3,7 +3,14 @@
 	<view class="manage-page" :class="themeClass">
 		<!-- 顶部导航栏：返回 + 标题 -->
 		<view class="manage-topbar">
-			<text class="back-icon" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image
+					class="back-icon-img"
+					:src="archiveManageBackIcon"
+					mode="aspectFit"
+					style="width: 42rpx; height: 42rpx"
+				/>
+			</view>
 			<view class="topbar-copy">
 				<text class="topbar-title">{{ pageTitle }}</text>
 				<text class="topbar-subtitle">{{ pageSubtitle }}</text>
@@ -251,6 +258,14 @@
 		}, {})
 	}
 
+	const ARCHIVE_MANAGE_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
@@ -259,7 +274,8 @@
 				recordsState: [], // 档案列表数据
 				editorVisible: false, // 编辑面板显隐
 				editingIndex: -1, // 正在编辑的索引，-1=新增
-				formData: {} // 表单数据
+				formData: {}, // 表单数据
+				archiveManageBackIcon: ARCHIVE_MANAGE_BACK_ICON
 			}
 		},
 		computed: {
@@ -422,23 +438,44 @@
 
 	.manage-topbar {
 		display: flex;
-		align-items: flex-start;
+		flex-direction: row;
+		flex-wrap: nowrap;
+		align-items: center;
 		gap: 18rpx;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
-	.back-icon {
-		width: 52rpx;
-		height: 52rpx;
-		font-size: 66rpx;
-		line-height: 44rpx;
-		font-weight: 400;
-		color: #222222;
-		text-align: center;
+	.back-btn {
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		min-width: 72rpx;
+		max-width: 72rpx;
+		padding: 0;
+		border-radius: 50%;
+		background: #fff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		flex-grow: 0;
+		overflow: hidden;
+		box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.08);
+	}
+
+	.back-icon-img {
+		width: 42rpx;
+		height: 42rpx;
+		max-width: 42rpx;
+		max-height: 42rpx;
+		display: block;
 		flex-shrink: 0;
 	}
 
 	.topbar-copy {
 		flex: 1;
+		min-width: 0;
 	}
 
 	.topbar-title,
@@ -458,7 +495,7 @@
 	}
 
 	.topbar-title {
-		font-size: 52rpx;
+		font-size: 56rpx;
 		font-weight: 900;
 		line-height: 1.12;
 		color: #111111;
@@ -671,7 +708,11 @@
 			linear-gradient(180deg, #111216 0%, #17191f 24%, #111216 100%);
 	}
 
-	.manage-page.theme-dark .back-icon,
+	.manage-page.theme-dark .back-btn {
+		background: rgba(255, 255, 255, 0.92);
+		box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.2);
+	}
+
 	.manage-page.theme-dark .topbar-title,
 	.manage-page.theme-dark .summary-value,
 	.manage-page.theme-dark .section-title,

@@ -16,6 +16,11 @@
 
 		computed: {
 
+			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView 强缓存旧 galaxy-app.js */
+			galaxyAssetVersion() {
+				return '20260216-gx-nav2'
+			},
+
 			/**
 			 * 默认不带 apiBase：星图 H5 使用同目录下 ./mock（打包在 static/galaxy-h5），无需启动 galaxy 后端。
 			 * 需要走网关时：在 App.vue 的 globalData.galaxyApiBase 填写完整根路径（无末尾 /），例如 http://IP:14132/api/galaxy
@@ -36,7 +41,7 @@
 
 							const base = trimmed.replace(/\/+$/, '')
 
-							return `/static/galaxy-h5/index.html?apiBase=${encodeURIComponent(base)}`
+							return `/static/galaxy-h5/index.html?apiBase=${encodeURIComponent(base)}&v=${this.galaxyAssetVersion}`
 
 						}
 
@@ -44,7 +49,7 @@
 
 				} catch (_) {}
 
-				return '/static/galaxy-h5/index.html'
+				return `/static/galaxy-h5/index.html?v=${this.galaxyAssetVersion}`
 
 			},
 

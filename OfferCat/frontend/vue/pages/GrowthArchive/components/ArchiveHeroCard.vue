@@ -27,7 +27,8 @@
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import { BASE_URL, getApiBase } from '@/api/config.js'
-	import { getUser } from '@/utils/user.js'
+	import { getGrowthRecordStats } from '@/api/growth.js'
+	import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
 	export default {
 		name: 'ArchiveHeroCard',
@@ -140,14 +141,13 @@
 			},
 			fetchStats() {
 				// 优先读后端统计，失败时再使用本地缓存统计。
-				const user = getUser()
-				const studentId = user && user.studentId ? user.studentId : null
+				const studentId = resolveStoredStudentId()
 				if (!studentId || !getApiBase()) {
 					this.applyLocalStats()
 					return
 				}
 				uni.request({
-					url: `${BASE_URL}/api/growth/stats`,
+					url: `${BASE_URL}/api/student/growth/stats`,
 					method: 'GET',
 					data: { studentId },
 					success: (res) => {

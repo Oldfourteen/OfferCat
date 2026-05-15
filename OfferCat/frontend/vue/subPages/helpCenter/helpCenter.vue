@@ -3,7 +3,9 @@
 		<!-- 顶部导航栏 -->
 		<view class="nav-bar">
 			<view class="nav-left" @click="goBack">
-				<text class="back-icon">‹</text>
+				<view class="back-btn">
+					<image class="back-icon-img" :src="helpCenterBackIcon" mode="aspectFit" />
+				</view>
 			</view>
 			<text class="nav-title">帮助中心</text>
 			<view class="nav-right"></view>
@@ -56,11 +58,20 @@
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
 
+	const HELP_CENTER_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#333333" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
-				faqList: []
+				faqList: [],
+				helpCenterBackIcon: HELP_CENTER_BACK_ICON
 			}
 		},
 		onLoad() {
@@ -146,27 +157,43 @@
 		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
 
 		.nav-left {
-			width: 60rpx;
+			flex: 0 0 auto;
+			min-width: 72rpx;
 			height: 44px;
 			display: flex;
 			align-items: center;
 			justify-content: flex-start;
 
-			.back-icon {
-				font-size: 36rpx;
-				color: #333;
-				font-weight: bold;
+			.back-btn {
+				box-sizing: border-box;
+				width: 72rpx;
+				height: 72rpx;
+				border-radius: 50%;
+				background: #fff;
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.08);
+			}
+
+			.back-icon-img {
+				width: 38rpx;
+				height: 38rpx;
+				flex-shrink: 0;
 			}
 		}
 
 		.nav-title {
+			flex: 1;
+			text-align: center;
 			font-size: 18px;
 			font-weight: 600;
 			color: #333;
 		}
 
 		.nav-right {
-			width: 60rpx;
+			flex: 0 0 auto;
+			min-width: 72rpx;
 		}
 	}
 

@@ -5,8 +5,8 @@
 		<view class="header">
 			<view class="header-inner">
 				<view class="header-side header-left">
-					<view class="icon-btn back-btn" @click="goBack">
-						<text class="back-icon">‹</text>
+					<view class="back-btn" @click="goBack">
+						<image class="back-icon-img" src="/static/icons/chevron-left.svg" mode="aspectFit" />
 					</view>
 				</view>
 				<text class="header-title">编辑个人信息</text>
@@ -491,24 +491,23 @@ $grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
 	z-index: 1;
 }
 
-.icon-btn {
-	width: 64rpx;
-	height: 64rpx;
+.back-btn {
+	box-sizing: border-box;
+	height: 72rpx;
+	width: 72rpx;
 	border-radius: 50%;
+	background: rgba(255, 255, 255, 0.92);
+	padding: 0;
+	flex-shrink: 0;
 	display: flex;
 	align-items: center;
 	justify-content: center;
-	background: rgba(255, 255, 255, 0.42);
-	backdrop-filter: blur(6px);
 }
 
-.back-btn .back-icon {
-	color: #fff;
-	font-size: 48rpx;
-	font-weight: 300;
-	line-height: 1;
-	margin-top: -4rpx;
-	text-align: center;
+.back-icon-img {
+	width: 38rpx;
+	height: 38rpx;
+	flex-shrink: 0;
 }
 
 .save-btn {
@@ -817,10 +816,6 @@ $grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
 			linear-gradient(180deg, rgba(77, 108, 182, 0.38) 0%, rgba(35, 42, 63, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
 			linear-gradient(180deg, rgba(74, 103, 247, 0.55) 0%, rgba(74, 103, 247, 0) 100%);
 		border-bottom-color: rgba(255, 255, 255, 0.06);
-	}
-
-	.icon-btn {
-		background: rgba(255, 255, 255, 0.12);
 	}
 
 	.save-btn {

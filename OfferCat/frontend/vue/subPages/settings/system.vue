@@ -1,7 +1,9 @@
 <template>
 	<view class="settings-page" :class="themeClass">
 		<view class="settings-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="settingsTopBackIcon" mode="aspectFit" />
+			</view>
 			<text class="topbar-title">设置</text>
 			<text class="placeholder"></text>
 		</view>
@@ -122,6 +124,14 @@
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 
 	const SETTINGS_KEY = 'my_security_settings'
+	// 与同文件 static/icons/chevron-left.svg 一致；inline 以便 APK/小程序上 <image> 稳定显示
+	const SETTINGS_TOP_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
 	const THEME_MODE_OPTIONS = [
 		{ label: '浅色模式', value: THEME_LIGHT },
 		{ label: '深色模式', value: THEME_DARK }
@@ -141,7 +151,8 @@
 					nickname: DEFAULT_USER_PROFILE.nickname,
 					phone: ''
 				},
-				settings: {}
+				settings: {},
+				settingsTopBackIcon: SETTINGS_TOP_BACK_ICON
 			}
 		},
 		computed: {
@@ -329,6 +340,10 @@
 </script>
 
 <style lang="scss">
+	/* 与资料编辑页 `.header` 同源双层品牌蓝渐变 */
+	$grad-blue-a: rgba(1, 188, 255, 0.1) 0%, rgba(49, 101, 215, 0.4) 45%, rgba(0, 123, 255, 0.05) 100%;
+	$grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
+
 	.settings-page {
 		height: 100vh;
 		display: flex;
@@ -344,36 +359,48 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 22rpx) 28rpx 18rpx;
-		background: linear-gradient(180deg, rgba(18, 18, 20, 0.98) 0%, rgba(18, 18, 20, 0.9) 100%);
-		border-bottom: 1rpx solid rgba(255, 255, 255, 0.04);
+		background:
+			linear-gradient(180deg, $grad-blue-a),
+			linear-gradient(180deg, $grad-blue-b);
+		border-bottom: 2rpx solid rgba(243, 253, 255, 0.6);
 	}
 
-	.back-btn,
+	.back-btn {
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.92);
+		padding: 0;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
+	}
+
 	.placeholder {
 		width: 72rpx;
 		height: 72rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.back-btn {
-		font-size: 50rpx;
-		font-weight: 300;
-		color: #f5f7fb;
-	}
-
-	.placeholder {
 		opacity: 0;
 	}
 
 	.topbar-title {
 		flex: 1;
 		text-align: center;
-		font-size: 36rpx;
-		font-weight: 800;
-		letter-spacing: 2rpx;
+		font-size: 34rpx;
+		font-weight: 700;
+		letter-spacing: 0.5rpx;
 		color: #ffffff;
+		text-shadow: 0 4rpx 16rpx rgba(38, 96, 189, 0.25);
 	}
 
 	.settings-scroll {
@@ -578,19 +605,6 @@
 	.settings-page.theme-light {
 		background: linear-gradient(180deg, #edf6ff 0%, #f7f9fe 16%, #f8fafd 100%);
 
-		.settings-topbar {
-			background: rgba(255, 255, 255, 0.88);
-			border-bottom-color: rgba(36, 52, 91, 0.05);
-		}
-
-		.back-btn {
-			color: #30435a;
-		}
-
-		.topbar-title {
-			color: #24345b;
-		}
-
 		.group-title {
 			color: #30496f;
 		}
@@ -634,6 +648,15 @@
 
 		.account-avatar {
 			border-color: rgba(88, 117, 184, 0.1);
+		}
+	}
+
+	.settings-page.theme-dark {
+		.settings-topbar {
+			background:
+				linear-gradient(180deg, rgba(77, 108, 182, 0.38) 0%, rgba(35, 42, 63, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
+				linear-gradient(180deg, rgba(74, 103, 247, 0.55) 0%, rgba(74, 103, 247, 0) 100%);
+			border-bottom-color: rgba(255, 255, 255, 0.06);
 		}
 	}
 </style>

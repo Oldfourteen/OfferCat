@@ -1,7 +1,9 @@
 <template>
 	<view class="legal-page" :class="themeClass">
 		<view class="legal-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="legalTopBackIcon" mode="aspectFit" />
+			</view>
 			<text class="topbar-title">鸣谢</text>
 			<text class="placeholder"></text>
 		</view>
@@ -38,6 +40,14 @@
 
 <script>
 	import { applyTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT } from '@/utils/theme.js'
+
+	const LEGAL_TOP_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
 	
 	import avatarQklym from '@/asset/thanks/avatar_qklym.png'
 import avatarDaoketa from '@/asset/thanks/avatar_daoketa.png'
@@ -52,6 +62,7 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 			return {
 				currentTheme: THEME_LIGHT,
 				themeListener: null,
+				legalTopBackIcon: LEGAL_TOP_BACK_ICON,
 				creators: [
 					{ name: '巧克力意面', role: '前端开发 & 页面设计', avatar: avatarQklym },
 					{ name: 'ARona233', role: '前端开发 & 页面设计', avatar: avatarDaoketa },
@@ -96,6 +107,9 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 </script>
 
 <style lang="scss">
+	$grad-teal-a: rgba(54, 186, 174, 0.12) 0%, rgba(44, 158, 144, 0.38) 45%, rgba(113, 220, 175, 0.06) 100%;
+	$grad-teal-b: rgba(44, 158, 144, 0.72) 0%, rgba(113, 220, 175, 0) 100%;
+
 	.legal-page {
 		height: 100vh;
 		display: flex;
@@ -108,23 +122,38 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 22rpx) 28rpx 18rpx;
+		background:
+			linear-gradient(180deg, $grad-teal-a),
+			linear-gradient(180deg, $grad-teal-b);
+		border-bottom: 2rpx solid rgba(233, 252, 248, 0.65);
 	}
 
-	.back-btn,
+	.back-btn {
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.94);
+		padding: 0;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 6rpx 18rpx rgba(30, 110, 98, 0.14);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
+	}
+
 	.placeholder {
 		width: 72rpx;
 		height: 72rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.back-btn {
-		font-size: 50rpx;
-		font-weight: 300;
-	}
-
-	.placeholder {
 		opacity: 0;
 	}
 
@@ -132,8 +161,10 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 		flex: 1;
 		text-align: center;
 		font-size: 34rpx;
-		font-weight: 800;
-		letter-spacing: 1rpx;
+		font-weight: 700;
+		letter-spacing: 0.5rpx;
+		color: #ffffff;
+		text-shadow: 0 4rpx 16rpx rgba(30, 110, 98, 0.28);
 	}
 
 	.legal-scroll {
@@ -241,12 +272,9 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 		margin-top: 6rpx;
 	}
 
-	/* 深浅色模式适配 */
-	.theme-light {
+	.legal-page.theme-light {
 		background-color: #f7f8fa;
 
-		.back-btn,
-		.topbar-title,
 		.hero-title,
 		.section-title {
 			color: #333;
@@ -262,11 +290,21 @@ import avatarSir from '@/asset/thanks/avatar_sir.png'
 		}
 	}
 
-	.theme-dark {
+	.legal-page.theme-dark {
 		background-color: #1a1b1e;
 
-		.back-btn,
-		.topbar-title,
+		.legal-topbar {
+			background:
+				linear-gradient(180deg, rgba(48, 120, 112, 0.4) 0%, rgba(32, 48, 46, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
+				linear-gradient(180deg, rgba(54, 186, 174, 0.52) 0%, rgba(54, 186, 174, 0) 100%);
+			border-bottom-color: rgba(255, 255, 255, 0.06);
+		}
+
+		.back-btn {
+			background: rgba(255, 255, 255, 0.92);
+			box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.22);
+		}
+
 		.hero-title,
 		.section-title {
 			color: #f7f8fa;

@@ -1,7 +1,9 @@
 <template>
 	<view class="feedback-page" :class="themeClass">
 		<view class="nav-bar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="feedbackBackIcon" mode="aspectFit" />
+			</view>
 			<text class="topbar-title">意见反馈</text>
 			<text class="placeholder"></text>
 		</view>
@@ -38,13 +40,22 @@
 
 	const STORAGE_KEY = 'feedback_draft'
 
+	const FEEDBACK_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
 				content: '',
 				contact: '',
-				contactError: ''
+				contactError: '',
+				feedbackBackIcon: FEEDBACK_BACK_ICON
 			}
 		},
 		computed: {
@@ -166,6 +177,9 @@
 </script>
 
 <style lang="scss">
+	$grad-blue-a: rgba(1, 188, 255, 0.1) 0%, rgba(49, 101, 215, 0.4) 45%, rgba(0, 123, 255, 0.05) 100%;
+	$grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
+
 	.feedback-page {
 		min-height: 100vh;
 		background: linear-gradient(180deg, #e8f4f2 0%, #f6fbff 18%, #f7f8fb 100%);
@@ -179,36 +193,47 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
-		background: rgba(232, 244, 242, 0.94);
-		backdrop-filter: blur(10rpx);
-	}
-
-	.back-btn,
-	.placeholder {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 22rpx;
-		background: rgba(255, 255, 255, 0.92);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		background:
+			linear-gradient(180deg, $grad-blue-a),
+			linear-gradient(180deg, $grad-blue-b);
+		border-bottom: 2rpx solid rgba(243, 253, 255, 0.6);
 	}
 
 	.back-btn {
-		font-size: 42rpx;
-		color: #30435a;
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.92);
+		padding: 0;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 6rpx 18rpx rgba(34, 97, 193, 0.14);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
+	}
+
+	.placeholder {
+		width: 72rpx;
+		height: 72rpx;
+		flex-shrink: 0;
+		opacity: 0;
 	}
 
 	.topbar-title {
 		flex: 1;
 		text-align: center;
-		font-size: 28rpx;
-		font-weight: 800;
-		color: #26334e;
-	}
-
-	.placeholder {
-		opacity: 0;
+		font-size: 34rpx;
+		font-weight: 700;
+		letter-spacing: 0.5rpx;
+		color: #ffffff;
+		text-shadow: 0 4rpx 16rpx rgba(38, 96, 189, 0.25);
 	}
 
 	.main-content {
@@ -323,13 +348,19 @@
 		padding: 0 40rpx;
 	}
 
-	.theme-dark {
+	.feedback-page.theme-dark {
 		background: #111216;
-		
+
 		.nav-bar {
-			background: #23252b;
-			.back-btn, .placeholder { background: #2a2c33; }
-			.back-btn, .topbar-title { color: #f4f7fb; }
+			background:
+				linear-gradient(180deg, rgba(77, 108, 182, 0.38) 0%, rgba(35, 42, 63, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
+				linear-gradient(180deg, rgba(74, 103, 247, 0.55) 0%, rgba(74, 103, 247, 0) 100%);
+			border-bottom-color: rgba(255, 255, 255, 0.06);
+		}
+
+		.back-btn {
+			background: rgba(255, 255, 255, 0.92);
+			box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.2);
 		}
 
 		.editor-card {

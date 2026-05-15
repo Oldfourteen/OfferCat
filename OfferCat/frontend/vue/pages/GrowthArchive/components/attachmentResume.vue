@@ -2,28 +2,30 @@
 	<view class="resume-card attachment-resume" :class="themeClass">
 		<view class="card-header">
 			<!-- 标题区说明附件简历支持上传与生成两种处理方式。 -->
-			<text class="title">附件简历</text>
-			<text class="subtitle">支持多种格式，一键投递</text>
+			<view class="header-main">
+				<text class="title">附件简历</text>
+				<text class="subtitle">支持多种格式，一键投递</text>
+			</view>
 		</view>
 		<view class="card-body">
-			<!-- 左侧主按钮根据是否有润色结果，切换为生成 PDF 的主流程入口。 -->
+			<!-- 主按钮根据是否有润色结果，切换为生成 PDF 的入口。 -->
 			<view class="action-btn make-btn" :class="{ 'has-result': polishedText }" @click="handleMake">
-				<view class="icon-wrap">
-					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEzOTUwNzc4IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIwOTg4MSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMjA5ODgyIj48L3BhdGg+PC9zdmc+" class="attachment-icon" mode="aspectFit" />
+				<view class="icon-wrap make-icon-wrap">
+					<image :src="makeIconSrc" class="btn-icon" mode="aspectFit" />
 				</view>
 				<view class="text-wrap">
 					<text class="btn-title">{{ polishedText ? '生成新PDF' : '制作附件简历' }}</text>
 					<text class="btn-desc">{{ polishedText ? '基于润色结果生成' : '海量模板，一键生成' }}</text>
 				</view>
 			</view>
+			<!-- 上传入口：选择附件简历并交给后端润色。 -->
 			<view class="action-btn upload-btn" @click="handleUpload">
-				<!-- 上传入口负责选择附件简历并交给后端进行润色。 -->
-				<view class="icon-wrap">
-					<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEzOTUwNzc4IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIwOTg4MSIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik02NjcuOSA5ODQuMmMtOTQuNyAwLTE4My45LTM2LjctMjUxLjItMTAzLjVMNzguNSA1NDIuNEMyNy45IDQ5MS44IDAgNDI0LjUgMCAzNTIuOXMyNy45LTEzOC44IDc4LjUtMTg5LjRTMTk2LjQgODUgMjY3LjkgODVzMTM4LjggMjcuOSAxODkuNCA3OC41bDMzOC4yIDMzOC4yYzY4LjYgNjkuNiA2OC42IDE4Mi41IDAuMiAyNTEuOS02OS40IDcwLjQtMTgzLjEgNzEuMi0yNTMuNiAxLjhMMzE2LjUgNTI5LjhjLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDIyNS41IDIyNS41YzQwLjcgNDAuMSAxMDYuOCAzOS43IDE0Ny4xLTEuMiAzOS44LTQwLjMgMzkuOC0xMDUuOSAwLTE0Ni4ybC0zMzgtMzM4Yy03NS4yLTc1LjItMTk3LjQtNzUuMS0yNzIuNiAwLTc1LjEgNzUuMS03NS4xIDE5Ny40IDAgMjcyLjZsMzM4LjIgMzM4LjJjNTMgNTIuNiAxMjMuMyA4MS42IDE5OC4xIDgxLjZoMWM3NS4xLTAuMyAxNDUuNy0yOS44IDE5OC42LTgzLjFDOTc2IDcxNi44IDk3NiA1MzkgODY3LjUgNDI5LjdMNTQxLjkgMTAzLjljLTE0LjctMTQuNy0xNC43LTM4LjUgMC01My4xIDE0LjctMTQuNyAzOC41LTE0LjcgNTMuMSAwbDMyNS43IDMyNS43YzEzNy42IDEzOC42IDEzNy42IDM2NCAwLjEgNTAyLjQtNjcuMSA2Ny42LTE1Ni41IDEwNS0yNTEuNyAxMDUuM2gtMS4yeiIgZmlsbD0iIzI3RDBEOCIgcC1pZD0iMjA5ODgyIj48L3BhdGg+PC9zdmc+" class="attachment-icon" mode="aspectFit" />
+				<view class="icon-wrap upload-icon-wrap">
+					<image :src="uploadIconSrc" class="btn-icon" mode="aspectFit" />
 				</view>
 				<view class="text-wrap">
 					<text class="btn-title">上传附件简历</text>
-					<text class="btn-desc">支持PDF/Word格式</text>
+					<text class="btn-desc">支持 PDF / Word 格式</text>
 				</view>
 			</view>
 		</view>
@@ -49,13 +51,19 @@
 			}
 		},
 		computed: {
-			// 暗色状态供模板和样式类切换复用。
-		isDarkTheme() {
-			return this.theme === 'dark' || this.theme === 'theme-dark'
-		},
+			isDarkTheme() {
+				return this.theme === 'dark' || this.theme === 'theme-dark'
+			},
 			themeClass() {
-				// 输出根节点主题类名，统一控制整张卡片的外观。
-			return this.isDarkTheme ? 'theme-dark' : ''
+				return this.isDarkTheme ? 'theme-dark' : ''
+			},
+			makeIconSrc() {
+				return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2ZmZmZmZiI+PHBhdGggZD0iTTMgMTcuMjVWMjFoMy43NUwxNy44MSA5Ljk0bC0zLjc1LTMuNzVMMyAxNy4yNXpNMjAuNzEgNy4wNGMuMzktLjM5LjM5LTEuMDIgMC0xLjQxbC0yLjM0LTIuMzRjLS4zOS0uMzktMS4wMi0uMzktMS40MSAwbC0xLjgzIDEuODMgMy43NSAzLjc1IDEuODMtMS44M3oiLz48L3N2Zz4='
+			},
+			uploadIconSrc() {
+				const fill = this.isDarkTheme ? '#8fa4e8' : '#5d76bd'
+				const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${fill}"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>`
+				return `data:image/svg+xml,${encodeURIComponent(svg)}`
 			}
 		},
 		methods: {
@@ -273,58 +281,76 @@
 	}
 
 	.card-header {
-		margin-bottom: 24rpx;
+		margin-bottom: 28rpx;
+	}
+
+	.header-main {
 		display: flex;
-		justify-content: space-between;
-		align-items: flex-end;
+		flex-direction: column;
+		align-items: flex-start;
+		gap: 8rpx;
 	}
 
 	.title {
-		font-size: 34rpx;
-		font-weight: bold;
-		color: #111827;
+		font-size: 36rpx;
+		font-weight: 700;
+		color: #0f172a;
+		letter-spacing: 0.5rpx;
+		line-height: 1.25;
 	}
 
 	.subtitle {
-		font-size: 24rpx;
-		color: #9ca3af;
+		font-size: 26rpx;
+		color: #64748b;
+		line-height: 1.4;
+		max-width: 100%;
 	}
 
 	.card-body {
 		display: flex;
 		flex-direction: column;
-		gap: 20rpx;
+		gap: 24rpx;
 		flex: 1;
 		justify-content: center;
 	}
 
 	.action-btn {
 		width: 100%;
-		border-radius: 999rpx;
-		padding: 24rpx 0;
+		border-radius: 24rpx;
+		padding: 28rpx 32rpx;
 		display: flex;
 		flex-direction: row;
-		justify-content: center;
+		justify-content: flex-start;
 		align-items: center;
-		text-align: center;
+		gap: 24rpx;
+		box-sizing: border-box;
 		background: #f8fafc;
 		border: 2rpx solid transparent;
-		transition: all 0.2s;
-		
+		box-shadow: 0 2rpx 8rpx rgba(15, 23, 42, 0.04);
+		transition: transform 0.15s ease, box-shadow 0.15s ease;
+
 		&:active {
-			transform: scale(0.98);
-			background: #f1f5f9;
+			transform: scale(0.985);
 		}
 	}
 
 	.make-btn {
-		background: #5d76bd;
-		color: #ffffff;
+		background: linear-gradient(135deg, #6b84c9 0%, #4f67b0 100%);
+		box-shadow: 0 10rpx 28rpx rgba(79, 103, 176, 0.35);
+
+		&:active {
+			box-shadow: 0 6rpx 16rpx rgba(79, 103, 176, 0.28);
+		}
 	}
 
 	.make-btn.has-result {
-		border-color: #10b981;
-		background: #10b981;
+		border-color: transparent;
+		background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
+		box-shadow: 0 10rpx 28rpx rgba(16, 185, 129, 0.35);
+
+		&:active {
+			box-shadow: 0 6rpx 16rpx rgba(16, 185, 129, 0.28);
+		}
 	}
 
 	.make-btn.has-result .btn-title {
@@ -332,29 +358,58 @@
 	}
 	
 	.make-btn.has-result .btn-desc {
-		color: rgba(255, 255, 255, 0.8);
+		color: rgba(255, 255, 255, 0.88);
 	}
 
 	.upload-btn {
-		background: #eff6ff;
+		background: #ffffff;
+		border-color: rgba(93, 118, 189, 0.28);
+		box-shadow: 0 2rpx 12rpx rgba(93, 118, 189, 0.08);
+
+		&:active {
+			background: #f8fafc;
+		}
 	}
 
 	.icon-wrap {
-		display: none; /* 隐藏原有的图标 */
+		width: 88rpx;
+		height: 88rpx;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+	}
+
+	.make-icon-wrap {
+		background: rgba(255, 255, 255, 0.22);
+	}
+
+	.upload-icon-wrap {
+		background: rgba(93, 118, 189, 0.12);
+	}
+
+	.btn-icon {
+		width: 44rpx;
+		height: 44rpx;
 	}
 
 	.text-wrap {
 		display: flex;
-		flex-direction: row;
-		align-items: center;
-		gap: 16rpx;
+		flex-direction: column;
+		align-items: flex-start;
+		justify-content: center;
+		gap: 6rpx;
+		flex: 1;
+		min-width: 0;
+		text-align: left;
 	}
 
 	.btn-title {
-		font-size: 30rpx;
-		font-weight: bold;
-		color: #5d76bd;
-		margin-bottom: 0;
+		font-size: 32rpx;
+		font-weight: 700;
+		color: #4f67b0;
+		line-height: 1.3;
 	}
 
 	.make-btn .btn-title {
@@ -363,11 +418,13 @@
 
 	.btn-desc {
 		font-size: 24rpx;
-		color: #6b7280;
+		color: #64748b;
+		line-height: 1.35;
+		font-weight: 400;
 	}
 	
 	.make-btn .btn-desc {
-		color: rgba(255, 255, 255, 0.8);
+		color: rgba(255, 255, 255, 0.88);
 	}
 
 	.resume-card.theme-dark {
@@ -379,55 +436,64 @@
 		}
 
 		.subtitle {
-			color: rgba(255, 255, 255, 0.58);
+			color: rgba(255, 255, 255, 0.55);
 		}
 
 		.action-btn {
 			background: #2a2c33;
-			border-color: transparent;
+			border-color: rgba(255, 255, 255, 0.06);
+			box-shadow: none;
+
 			&:active {
 				background: #31333a;
 			}
 		}
 
 		.make-btn {
-			background: #3165d7;
+			background: linear-gradient(135deg, #4a6fcb 0%, #3165d7 100%);
 			border-color: transparent;
+			box-shadow: 0 10rpx 28rpx rgba(49, 101, 215, 0.28);
 			
 			.btn-title {
 				color: #ffffff;
 			}
 			.btn-desc {
-				color: rgba(255, 255, 255, 0.8);
+				color: rgba(255, 255, 255, 0.88);
+			}
+
+			&:active {
+				box-shadow: 0 6rpx 16rpx rgba(49, 101, 215, 0.22);
 			}
 		}
 
 		.upload-btn {
 			background: #2a2c33;
+			border-color: rgba(143, 164, 232, 0.25);
+		}
+
+		.upload-icon-wrap {
+			background: rgba(143, 164, 232, 0.15);
 		}
 
 		.make-btn.has-result {
-			background: #10b981;
+			background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 			border-color: transparent;
+			box-shadow: 0 10rpx 28rpx rgba(16, 185, 129, 0.28);
 			
 			.btn-title {
 				color: #ffffff;
 			}
 			.btn-desc {
-				color: rgba(255, 255, 255, 0.8);
+				color: rgba(255, 255, 255, 0.88);
 			}
 		}
 
-		.icon-wrap {
-			background: rgba(93, 118, 189, 0.15);
-		}
-
 		.btn-title {
-			color: #7b90cc;
+			color: #a8b9ea;
 		}
 
 		.btn-desc {
-			color: rgba(255, 255, 255, 0.58);
+			color: rgba(255, 255, 255, 0.52);
 		}
 	}
 </style>

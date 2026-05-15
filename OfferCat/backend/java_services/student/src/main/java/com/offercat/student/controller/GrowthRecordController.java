@@ -14,7 +14,7 @@ import java.util.List;
  * 功能：处理成长档案相关的请求
  */
 @RestController
-@RequestMapping("/growth")
+@RequestMapping({"/growth", "/student/growth", "/student/profile/growth"})
 @CrossOrigin(origins = "*")
 public class GrowthRecordController {
     /**

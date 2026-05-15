@@ -1,0 +1,13 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 400 400" fill="none" shape-rendering="geometricPrecision" aria-hidden="true">
+  <g stroke-linecap="round" stroke-linejoin="round">
+    <g transform="translate(208 232) rotate(-24)">
+      <ellipse cx="0" cy="0" rx="192" ry="64" stroke="#E8F4FF" stroke-opacity="0.36" stroke-width="2.05"/>
+    </g>
+    <g transform="translate(186 246) rotate(16)">
+      <ellipse cx="0" cy="0" rx="178" ry="56" stroke="#DCEBFE" stroke-opacity="0.27" stroke-width="1.8"/>
+    </g>
+    <g transform="translate(218 226) rotate(-11)">
+      <ellipse cx="0" cy="0" rx="166" ry="48" stroke="#D4E8FC" stroke-opacity="0.19" stroke-width="1.52"/>
+    </g>
+  </g>
+</svg>

@@ -2,7 +2,7 @@
 	<view class="bank-topbar" :class="themeClass">
 		<view class="search-row">
 			<view class="back-btn" @click="goBack">
-				<view class="svg-icon back-icon"></view>
+				<image class="back-icon-img" src="/static/icons/chevron-left.svg" mode="aspectFit" />
 			</view>
 
 			<view class="search-box">
@@ -124,15 +124,22 @@
 	}
 
 	.back-btn {
+		box-sizing: border-box;
 		width: 72rpx;
 		height: 72rpx;
 		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.88);
+		background: rgba(255, 255, 255, 0.92);
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		padding: 0;
 		flex-shrink: 0;
-		box-shadow: 0 12rpx 24rpx rgba(20, 120, 115, 0.08);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
 	}
 
 	.search-box {
@@ -234,14 +241,6 @@
 		-webkit-mask-position: center;
 	}
 
-	.back-icon {
-		width: 44rpx;
-		height: 44rpx;
-		background-color: #314658;
-		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
-		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
-	}
-
 	.search-icon {
 		width: 36rpx;
 		height: 36rpx;
@@ -294,7 +293,10 @@
 		background: linear-gradient(180deg, rgba(74, 103, 247, 0.45) 0%, rgba(74, 103, 247, 0) 100%);
 	}
 
-	.bank-topbar.theme-dark .back-btn,
+	.bank-topbar.theme-dark .back-btn {
+		background: rgba(255, 255, 255, 0.92);
+	}
+
 	.bank-topbar.theme-dark .search-box,
 	.bank-topbar.theme-dark .action-btn,
 	.bank-topbar.theme-dark .bank-tab {
@@ -312,7 +314,6 @@
 		color: #eef2f8;
 	}
 
-	.bank-topbar.theme-dark .back-icon,
 	.bank-topbar.theme-dark .clear-icon,
 	.bank-topbar.theme-dark .refresh-icon,
 	.bank-topbar.theme-dark .tab-icon {

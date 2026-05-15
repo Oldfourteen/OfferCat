@@ -193,10 +193,13 @@
 					])
 					
 					if (statsRes && statsRes.data) {
-						this.todayChecked = statsRes.data.checkedInToday || false
-						// 保存后端返回的连续打卡天数到本地缓存
-						if (statsRes.data.consecutiveDays !== undefined) {
-							saveGrowthStats({ consecutiveDays: statsRes.data.consecutiveDays })
+						const sd = statsRes.data
+						this.todayChecked = sd.checkedInToday || false
+						// 后端字段为 continuousCheckinDays（兼容旧误用 consecutiveDays）
+						const streak =
+							sd.continuousCheckinDays != null ? sd.continuousCheckinDays : sd.consecutiveDays
+						if (streak !== undefined && streak !== null) {
+							saveGrowthStats({ consecutiveDays: Number(streak) || 0 })
 						}
 					}
 					

@@ -3,9 +3,9 @@
 	<view class="favorites-page" :class="themeClass">
 		<!-- 顶部导航栏 -->
 		<view class="favorites-topbar">
-			<text class="back-btn" @click="goBack">
-				<view class="svg-icon back-icon"></view>
-			</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="favoritesBackIcon" mode="aspectFit" />
+			</view>
 			<text class="topbar-title">我的收藏</text>
 			<text class="placeholder"></text>
 		</view>
@@ -91,12 +91,21 @@
 	// 收藏工具类
 	import { getQuestionFavorites, removeQuestionFavorite } from '@/utils/questionFavorites.js'
 
+	const FAVORITES_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
 				activeType: 'all',
 				favorites: [],
+				favoritesBackIcon: FAVORITES_BACK_ICON,
 				// 筛选标签配置
 				filterTabs: [
 					{ key: 'all', label: '全部' },
@@ -187,14 +196,6 @@
 		backdrop-filter: blur(10rpx);
 	}
 	
-	.back-icon {
-		width: 44rpx;
-		height: 44rpx;
-		background-color: #314658;
-		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
-		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
-	}
-
 	.back-btn,
 	.placeholder {
 		width: 72rpx;
@@ -204,12 +205,18 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-shrink: 0;
 	}
 
 	.back-btn {
-		font-size: 42rpx;
-		line-height: 1;
-		color: #30435a;
+		box-sizing: border-box;
+		box-shadow: 0 6rpx 18rpx rgba(34, 97, 193, 0.14);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
 	}
 
 	.topbar-title {
@@ -455,10 +462,14 @@
 		background: linear-gradient(180deg, rgba(35, 42, 63, 0.96) 0%, rgba(35, 42, 63, 0) 100%);
 	}
 
-	.favorites-page.theme-dark .back-btn,
 	.favorites-page.theme-dark .filter-chip {
 		background: rgba(35, 37, 43, 0.96);
 		color: #eef2f8;
+	}
+
+	.favorites-page.theme-dark .back-btn {
+		background: rgba(255, 255, 255, 0.92);
+		box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.2);
 	}
 
 	.favorites-page.theme-dark .topbar-title,

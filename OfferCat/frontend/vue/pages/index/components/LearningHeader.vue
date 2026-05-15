@@ -11,7 +11,7 @@
 				<CommonAvatar :src="profile.avatars" image-class="growth-avatars" />
 			</view>
 
-			<text class="topbar-nickname">{{ profile.nickname }}</text>
+			<text class="topbar-nickname">{{ nicknameWithTimeGreeting }}</text>
 
 			<view class="header-actions">
 				<!-- 三个操作分别用于主题切换、发帖和搜索。 -->
@@ -49,6 +49,15 @@
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 	import { setTheme } from '@/utils/theme.js'
 
+	/** 按设备本地时钟的小时段落划分问候语，全天 24 小时均有对应文案。 */
+	function greetingByLocalHour(date) {
+		const hour = date.getHours()
+		if (hour >= 5 && hour < 12) return '早上好'
+		if (hour >= 12 && hour < 14) return '中午好'
+		if (hour >= 14 && hour < 18) return '下午好'
+		return '晚上好'
+	}
+
 	export default {
 		name: 'LearningHeader',
 		components: {
@@ -81,7 +90,10 @@
 				toastVisible: false,
 				toastMessage: '',
 				toastTimer: null,
-				quoteUserKey: 'guest'
+				quoteUserKey: 'guest',
+				// 与设备本地时间同步的时段问候，由定时器与 onShow 刷新。
+				timeGreeting: '早上好',
+				greetingTimer: null
 			}
 		},
 		created() {
@@ -89,6 +101,7 @@
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(USER_PROFILE_UPDATED_EVENT, this.loadProfile)
 			}
+			this.syncGreetingTick()
 		},
 		beforeDestroy() {
 			// 兼容 Vue2 生命周期，移除资料监听并清理 toast 定时器。
@@ -98,6 +111,7 @@
 			if (this.toastTimer) {
 				clearTimeout(this.toastTimer)
 			}
+			this.clearGreetingTimer()
 		},
 		beforeUnmount() {
 			// 兼容 Vue3 生命周期，移除资料监听并清理 toast 定时器。
@@ -107,12 +121,16 @@
 			if (this.toastTimer) {
 				clearTimeout(this.toastTimer)
 			}
+			this.clearGreetingTimer()
 		},
 		mounted() {
 			// 首次挂载时读取本地用户资料。
 			this.loadProfile()
+			this.syncGreetingTick()
+			this.greetingTimer = setInterval(() => this.syncGreetingTick(), 60 * 1000)
 		},
 		onShow() {
+			this.syncGreetingTick()
 			// 每次回到首页都再次同步资料，避免跨页修改后头部不更新。
 			this.loadProfile()
 		},
@@ -135,9 +153,23 @@
 			},
 			headerSubtitleQuote() {
 				return getHeaderInspirationalQuote(this.quoteUserKey)
+			},
+			nicknameWithTimeGreeting() {
+				const nick = this.profile.nickname || ''
+				const phrase = this.timeGreeting
+				return nick ? `${nick} ${phrase}` : phrase
 			}
 		},
 		methods: {
+			syncGreetingTick() {
+				this.timeGreeting = greetingByLocalHour(new Date())
+			},
+			clearGreetingTimer() {
+				if (this.greetingTimer) {
+					clearInterval(this.greetingTimer)
+					this.greetingTimer = null
+				}
+			},
 			toggleTheme() {
 				// 在浅色/深色主题间切换，并给出短暂提示反馈。
 				const nextTheme = this.theme === 'dark' ? 'light' : 'dark'
@@ -245,7 +277,11 @@
 		.topbar-avatar {
 			width: 76rpx;
 			height: 76rpx;
+			min-width: 76rpx;
+			min-height: 76rpx;
+			flex-shrink: 0;
 			border-radius: 50%;
+			overflow: hidden;
 			// border: rgba(204, 221, 221, 0.5) solid 5rpx;
 		}
 
@@ -253,6 +289,7 @@
 			width: 76rpx;
 			height: 76rpx;
 			border-radius: 50%;
+			overflow: hidden;
 		}
 
 		.topbar-nickname {
@@ -271,12 +308,17 @@
 	.header-actions {
 		display: flex;
 		gap: 18rpx;
+		flex-shrink: 0;
 	}
 
 	.header-action {
 		width: 76rpx;
 		height: 76rpx;
+		min-width: 76rpx;
+		min-height: 76rpx;
+		flex-shrink: 0;
 		border-radius: 50%;
+		overflow: hidden;
 		background: rgba(255, 255, 255, 0.9);
 		color: #1b1b1b;
 		font-size: 54rpx;

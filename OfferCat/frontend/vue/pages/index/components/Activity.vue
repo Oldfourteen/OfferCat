@@ -122,9 +122,11 @@
 			padding: 18rpx 28rpx;
 			border-radius: 999rpx;
 			background: #ffffff;
+			border: 1rpx solid #e5e7eb;
 			font-size: 26rpx;
 			font-weight: 700;
 			color: #25A1F4;
+			box-shadow: 0 10rpx 26rpx rgba(25, 45, 110, 0.24), 0 4rpx 10rpx rgba(25, 45, 110, 0.14);
 		}
 		
 	}

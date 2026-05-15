@@ -1,7 +1,9 @@
 <template>
 	<view class="legal-page" :class="themeClass">
 		<view class="legal-topbar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="legalTopBackIcon" mode="aspectFit" />
+			</view>
 			<text class="topbar-title">用户服务协议</text>
 			<text class="placeholder"></text>
 		</view>
@@ -26,11 +28,20 @@
 <script>
 	import { applyTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT } from '@/utils/theme.js'
 
+	const LEGAL_TOP_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		data() {
 			return {
 				currentTheme: THEME_LIGHT,
 				themeListener: null,
+				legalTopBackIcon: LEGAL_TOP_BACK_ICON,
 				sections: [
 					{
 						title: '一、服务性质',
@@ -96,6 +107,9 @@
 </script>
 
 <style lang="scss">
+	$grad-teal-a: rgba(54, 186, 174, 0.12) 0%, rgba(44, 158, 144, 0.38) 45%, rgba(113, 220, 175, 0.06) 100%;
+	$grad-teal-b: rgba(44, 158, 144, 0.72) 0%, rgba(113, 220, 175, 0) 100%;
+
 	.legal-page {
 		height: 100vh;
 		display: flex;
@@ -108,23 +122,37 @@
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 22rpx) 28rpx 18rpx;
+		background:
+			linear-gradient(180deg, $grad-teal-a),
+			linear-gradient(180deg, $grad-teal-b);
+		border-bottom: 2rpx solid rgba(233, 252, 248, 0.65);
 	}
 
-	.back-btn,
+	.back-btn {
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.92);
+		padding: 0;
+		flex-shrink: 0;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		flex-shrink: 0;
+	}
+
 	.placeholder {
 		width: 72rpx;
 		height: 72rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-	}
-
-	.back-btn {
-		font-size: 50rpx;
-		font-weight: 300;
-	}
-
-	.placeholder {
 		opacity: 0;
 	}
 
@@ -132,8 +160,10 @@
 		flex: 1;
 		text-align: center;
 		font-size: 34rpx;
-		font-weight: 800;
-		letter-spacing: 1rpx;
+		font-weight: 700;
+		letter-spacing: 0.5rpx;
+		color: #ffffff;
+		text-shadow: 0 4rpx 16rpx rgba(30, 110, 98, 0.28);
 	}
 
 	.legal-scroll {
@@ -202,13 +232,6 @@
 	.legal-page.theme-light {
 		background: linear-gradient(180deg, #eefcf7 0%, #f7fbfb 18%, #f8fcfb 100%);
 
-		.legal-topbar {
-			background: rgba(255, 255, 255, 0.9);
-			border-bottom: 1rpx solid rgba(36, 52, 91, 0.05);
-		}
-
-		.back-btn,
-		.topbar-title,
 		.hero-title,
 		.section-title {
 			color: #1f3d39;
@@ -233,15 +256,19 @@
 		background: linear-gradient(180deg, #121214 0%, #151518 18%, #0f1012 100%);
 
 		.legal-topbar {
-			background: linear-gradient(180deg, rgba(18, 18, 20, 0.98) 0%, rgba(18, 18, 20, 0.9) 100%);
-			border-bottom: 1rpx solid rgba(255, 255, 255, 0.04);
+			background:
+				linear-gradient(180deg, rgba(48, 120, 112, 0.4) 0%, rgba(32, 48, 46, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
+				linear-gradient(180deg, rgba(54, 186, 174, 0.52) 0%, rgba(54, 186, 174, 0) 100%);
+			border-bottom-color: rgba(255, 255, 255, 0.06);
 		}
 
-		.back-btn,
-		.topbar-title,
 		.hero-title,
 		.section-title {
 			color: #f7f8fa;
+		}
+
+		.back-btn {
+			background: rgba(255, 255, 255, 0.92);
 		}
 
 		.hero-badge {

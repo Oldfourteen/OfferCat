@@ -3,7 +3,14 @@
 	<view class="search-page" :class="themeClass">
 		<!-- 顶部搜索栏 -->
 		<view class="search-topbar">
-			<text class="back-icon" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image
+					class="back-icon-img"
+					:src="forumSearchBackIcon"
+					mode="aspectFit"
+					style="width: 38rpx; height: 38rpx"
+				/>
+			</view>
 
 			<view class="search-shell">
 				<text class="search-icon">⌕</text>
@@ -92,10 +99,19 @@
 	const SEARCH_HISTORY_KEY = 'home_search_history'
 	const MAX_HISTORY_COUNT = 10
 
+	const FORUM_SEARCH_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
+				forumSearchBackIcon: FORUM_SEARCH_BACK_ICON,
 				keyword: '',
 				hasSearched: false,
 				historyList: [],
@@ -229,9 +245,13 @@
 	.search-topbar {
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 20rpx;
 		display: flex;
+		flex-direction: row;
+		flex-wrap: nowrap;
 		align-items: center;
 		gap: 18rpx;
 		flex-shrink: 0;
+		width: 100%;
+		box-sizing: border-box;
 	}
 
 	.search-scroll {
@@ -246,19 +266,36 @@
 		gap: 24rpx;
 	}
 
-	.back-icon {
-		width: 52rpx;
-		height: 52rpx;
-		font-size: 66rpx;
-		line-height: 44rpx;
-		font-weight: 400;
-		color: #222222;
-		text-align: center;
+	.back-btn {
+		box-sizing: border-box;
+		width: 72rpx;
+		height: 72rpx;
+		min-width: 72rpx;
+		max-width: 72rpx;
+		padding: 0;
+		border-radius: 50%;
+		background: rgba(240, 248, 255, 0.98);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+		flex-grow: 0;
+		overflow: hidden;
+		box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.07);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		max-width: 38rpx;
+		max-height: 38rpx;
+		display: block;
 		flex-shrink: 0;
 	}
 
 	.search-shell {
 		flex: 1;
+		min-width: 0;
 		height: 76rpx;
 		padding: 0 22rpx;
 		border-radius: 20rpx;
@@ -455,7 +492,11 @@
 		background: linear-gradient(180deg, #111216 0%, #17191f 28%, #111216 100%);
 	}
 
-	.search-page.theme-dark .back-icon,
+	.search-page.theme-dark .back-btn {
+		background: rgba(255, 255, 255, 0.92);
+		box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.22);
+	}
+
 	.search-page.theme-dark .section-title,
 	.search-page.theme-dark .history-text,
 	.search-page.theme-dark .result-title,

@@ -35,7 +35,7 @@
 			<view class="faq-section">
 				<view class="faq-title">常见问题参考</view>
 				<view class="faq-list">
-					<view class="faq-item" v-for="(item, index) in faqList" :key="index" @click="copyFaq(item)">
+					<view class="faq-item" v-for="(item, index) in (faqList || DEFAULT_FAQ_LIST)" :key="index" @click="copyFaq(item)">
 						<text class="faq-icon">Q</text>
 						<text class="faq-content">{{ item }}</text>
 					</view>
@@ -49,6 +49,14 @@
 	import themeMixin from '@/utils/themeMixin.js'
 
 	const STORAGE_KEY = 'feedback_draft'
+
+	const DEFAULT_FAQ_LIST = [
+		'希望增加深色模式定时切换功能',
+		'简历导出PDF时格式错乱',
+		'AI面试模拟回答评分不准确',
+		'题库题目重复太多',
+		'消息通知不及时'
+	]
 
 	const FEEDBACK_BACK_ICON =
 		'data:image/svg+xml;charset=utf-8,' +
@@ -66,13 +74,8 @@
 				contact: '',
 				contactError: '',
 				feedbackBackIcon: FEEDBACK_BACK_ICON,
-				faqList: [
-					'希望增加深色模式定时切换功能',
-					'简历导出PDF时格式错乱',
-					'AI面试模拟回答评分不准确',
-					'题库题目重复太多',
-					'消息通知不及时'
-				]
+				faqList: null,
+				faqLoaded: false
 			}
 		},
 		computed: {
@@ -85,6 +88,7 @@
 			}
 		},
 		onLoad() {
+			this.loadFaqList()
 			this.loadDraft()
 		},
 		methods: {
@@ -117,6 +121,26 @@
 				} catch (e) {
 					console.error('加载草稿失败', e)
 				}
+			},
+			loadFaqList() {
+				this.faqList = DEFAULT_FAQ_LIST
+				this.faqLoaded = true
+				this.fetchFaqFromServer()
+			},
+			fetchFaqFromServer() {
+				uni.request({
+					url: '/api/feedback/faq',
+					method: 'GET',
+					timeout: 5000,
+					success: (res) => {
+						if (res.data && res.data.code === 0 && res.data.data && Array.isArray(res.data.data)) {
+							this.faqList = res.data.data.length > 0 ? res.data.data : DEFAULT_FAQ_LIST
+						}
+					},
+					fail: () => {
+						console.log('FAQ数据加载失败，使用默认数据')
+					}
+				})
 			},
 			saveDraft() {
 				try {

@@ -18,7 +18,7 @@ import java.util.Map;
  * @author: Ofteen
  * @data: 2026/4/24 - 01:08
  * @mail: oldfourteen41@gmail.com
- * @info: 现已使用 SiliconFlow 的 Qwen2.5-VL 模型代替原有的 OCR.space
+ * @info: 现已使用 SiliconFlow 视觉语言模型（默认可通过配置切换）代替原有的 OCR.space
  */
 
 @Service
@@ -32,6 +32,10 @@ public class OcrSpaceServiceImplement {
 
     @Value("${siliconFlow.api-key}")
     private String sfApiKey;
+
+    /** 72B 等旧模型可能在平台侧被禁用（403 Model disabled），默认使用当前可用的 Qwen3-VL。 */
+    @Value("${siliconFlow.ocr.model:Qwen/Qwen3-VL-32B-Instruct}")
+    private String ocrVlModel;
 
     public OcrRecognizeResponse recognize(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("图片不能为空");
@@ -55,9 +59,8 @@ public class OcrSpaceServiceImplement {
             headers.setContentType(MediaType.APPLICATION_JSON);
             headers.setBearerAuth(sfApiKey);
 
-            // 3. 构造 Qwen2.5-VL 的请求体
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", "Qwen/Qwen2.5-VL-72B-Instruct"); // 使用最强大的 72B 免费/低成本视觉模型
+            requestBody.put("model", ocrVlModel);
             requestBody.put("stream", false);
 
             List<Map<String, Object>> messages = new ArrayList<>();

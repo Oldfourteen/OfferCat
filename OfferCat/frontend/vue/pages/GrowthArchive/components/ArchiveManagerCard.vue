@@ -13,7 +13,9 @@
 				</view>
 				<text class="entry-title">{{ item.title }}</text>
 				<text class="entry-desc">{{ item.desc }}</text>
-				<text class="entry-count">已录入 {{ item.count }} 项</text>
+				<view class="entry-count-badge">
+					<text class="entry-count">已录入 {{ item.count }} 项</text>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -194,10 +196,17 @@
 	}
 
 	.entry-item {
+		display: flex;
+		flex-direction: column;
+		align-items: flex-start;
 		padding: 24rpx;
 		border-radius: 24rpx;
 		background: linear-gradient(180deg, #fbfcff 0%, #f4f7ff 100%);
-		border: 2rpx solid rgba(49, 101, 215, 0.06);
+		border: 2rpx solid rgba(49, 101, 215, 0.1);
+		box-shadow:
+			0 10rpx 28rpx rgba(49, 101, 215, 0.12),
+			0 4rpx 14rpx rgba(15, 23, 42, 0.06),
+			0 1rpx 0 rgba(255, 255, 255, 0.85) inset;
 	}
 
 	.entry-icon {
@@ -235,9 +244,18 @@
 		min-height: 66rpx;
 	}
 
+	.entry-count-badge {
+		margin-top: 16rpx;
+		padding: 10rpx 20rpx;
+		border-radius: 14rpx;
+		border: 2rpx solid rgba(49, 101, 215, 0.35);
+		box-shadow:
+			0 6rpx 14rpx rgba(49, 101, 215, 0.12),
+			0 2rpx 6rpx rgba(15, 23, 42, 0.08);
+	}
+
 	.entry-count {
 		display: block;
-		margin-top: 16rpx;
 		font-size: 22rpx;
 		font-weight: 700;
 		color: #3165d7;
@@ -255,11 +273,22 @@
 
 	.section-card.theme-dark .entry-item {
 		background: #23252b;
-		border-color: rgba(255, 255, 255, 0.06);
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow:
+			0 10rpx 32rpx rgba(0, 0, 0, 0.45),
+			0 4rpx 14rpx rgba(0, 0, 0, 0.25),
+			0 1rpx 0 rgba(255, 255, 255, 0.06) inset;
 	}
 
 	.section-card.theme-dark .entry-desc,
 	.section-card.theme-dark .entry-count {
 		color: rgba(255, 255, 255, 0.58);
+	}
+
+	.section-card.theme-dark .entry-count-badge {
+		border-color: rgba(148, 176, 255, 0.45);
+		box-shadow:
+			0 6rpx 16rpx rgba(0, 0, 0, 0.35),
+			0 2rpx 6rpx rgba(0, 0, 0, 0.25);
 	}
 </style>

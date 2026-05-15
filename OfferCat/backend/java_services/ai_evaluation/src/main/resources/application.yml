@@ -94,8 +94,11 @@ siliconFlow:
     response-format: "mp3"
     stream: false
     speed: 1.0
+  # 图片识字 / AI 配文：须与 SiliconFlow 控制台「可用」的视觉模型一致；72B 等旧模型可能被平台禁用（403 Model disabled）
+  ocr:
+    model: "Qwen/Qwen3-VL-32B-Instruct"
 
-#OCR识图技术，原先为OCR.space，现已升级为使用SiliconFlow的Qwen2.5-VL模型，无1MB限制且识图更智能！
+# OCR识图：SiliconFlow VL 模型，无 OCR.space 的 1MB 限制；模型 ID 以官方模型页为准，禁用时可改 siliconFlow.ocr.model
 
 #AI生成用户画像PROMPT工程 加了消极提示词进行对撞，让AI更好的看懂要求！
 avatar:

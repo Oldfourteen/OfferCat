@@ -1,27 +1,27 @@
 <template>
 	<view class="forum-detail-page" :class="themeClass">
-		<!-- 顶部导航栏 -->
-		<view class="nav-bar">
-			<view class="nav-left" @click="goBack">
-				<text class="back-icon">‹</text>
+		<view class="detail-overlay" :class="{ 'is-leaving': isLeaving }" @click="goBack"></view>
+		<view class="detail-shell" :class="{ 'is-leaving': isLeaving }">
+			<!-- 顶部导航栏 -->
+			<view class="nav-bar">
+				<view class="nav-left" @click="goBack">
+					<text class="back-icon">‹</text>
+				</view>
+				<view class="nav-title-box">
+					<text class="nav-title">帖子详情</text>
+				</view>
+				<view class="nav-right"></view>
 			</view>
-			<view class="nav-title-box">
-				<text class="nav-title">帖子详情</text>
-			</view>
-			<view class="nav-right"></view>
-		</view>
 
-		<scroll-view class="detail-scroll" scroll-y>
-			<!-- 帖子正文块 -->
-			<view class="post-card">
+			<scroll-view class="detail-scroll" scroll-y>
+				<!-- 帖子正文块 -->
+				<view class="post-card">
 				<view class="author-info">
 					<image class="avatar" :src="getAvatar(post.authorAvatar, post.userId)" mode="aspectFill"></image>
 					<view class="author-meta">
 						<text class="name">{{ getAuthorName(post.authorName, post.userId) }}</text>
-						<view class="time-row">
-							<text class="time">{{ formatTime(post.createTime) }}</text>
-							<text class="tag" v-if="post.tag || post.userId === 1">{{ post.tag || (post.userId === 1 ? '开发者' : '讨论') }}</text>
-						</view>
+						<text class="profile-text" v-if="getAuthorProfileText(post)">{{ getAuthorProfileText(post) }}</text>
+						<text class="time">{{ formatTime(post.createTime) }}</text>
 					</view>
 					<view class="delete-btn" v-if="isAuthor" @click="deletePost">删除</view>
 				</view>
@@ -49,8 +49,8 @@
 				</view>
 			</view>
 
-			<!-- 评论区 -->
-			<view class="comment-section">
+				<!-- 评论区 -->
+				<view class="comment-section">
 				<view class="comment-header">
 					<text class="title">全部评论 {{ comments.length > 0 ? `(${comments.length})` : '' }}</text>
 				</view>
@@ -71,13 +71,14 @@
 						</view>
 					</view>
 				</view>
-			</view>
-		</scroll-view>
+				</view>
+			</scroll-view>
 
-		<!-- 底部评论输入框 -->
-		<view class="bottom-bar">
-			<input class="comment-input text-wrap-safe" type="text" placeholder="写下你的评论..." v-model="commentText" />
-			<view class="send-btn" :class="{active: commentText.length > 0}" @click="sendComment">发送</view>
+			<!-- 底部评论输入框 -->
+			<view class="bottom-bar">
+				<input class="comment-input text-wrap-safe" type="text" placeholder="写下你的评论..." v-model="commentText" />
+				<view class="send-btn" :class="{active: commentText.length > 0}" @click="sendComment">发送</view>
+			</view>
 		</view>
 	</view>
 </template>
@@ -96,7 +97,9 @@
 				post: {},
 				postImages: [],
 				comments: [],
-				commentText: ''
+				commentText: '',
+				isLeaving: false,
+				allowNativeBack: false
 			}
 		},
 		computed: {
@@ -105,6 +108,11 @@
 				const currentUserId = user.userId || user.id
 				return this.post && currentUserId && this.post.userId === currentUserId
 			}
+		},
+		onBackPress() {
+			if (this.allowNativeBack) return false
+			this.goBack()
+			return true
 		},
 		onLoad(options) {
 			console.log('detail onLoad options:', options)
@@ -130,7 +138,12 @@
 		},
 		methods: {
 			goBack() {
-				uni.navigateBack()
+				if (this.isLeaving) return
+				this.isLeaving = true
+				setTimeout(() => {
+					this.allowNativeBack = true
+					uni.navigateBack()
+				}, 240)
 			},
 			loadPostDetail() {
 				console.log('正在请求帖子详情，ID:', this.postId)
@@ -145,7 +158,7 @@
 						this.parseImages()
 					} else if (!uni.getStorageSync('currentPost_' + this.postId)) {
 						uni.showToast({ title: '帖子不存在或已被删除', icon: 'none' })
-						setTimeout(() => uni.navigateBack(), 1500)
+						setTimeout(() => this.goBack(), 1500)
 					}
 				}).catch(err => {
 				console.error('请求详情失败:', err)
@@ -213,6 +226,19 @@
 					}
 				}
 				return name || '匿名用户'
+			},
+			getAuthorProfileText(item) {
+				const currentUser = uni.getStorageSync('user') || uni.getStorageSync('user_v2') || {}
+				const currentUserId = currentUser.userId || currentUser.id
+				const currentProfile = currentUser.profile || {}
+				if (item.userId && currentUserId && item.userId === currentUserId) {
+					const grade = currentProfile.grade || currentUser.grade || currentProfile.graduationYear || currentUser.graduationYear || ''
+					const major = currentProfile.major || currentUser.major || ''
+					return [grade, major].filter(Boolean).join(' · ')
+				}
+				const grade = item.grade || item.authorGrade || item.graduationYear || ''
+				const major = item.major || item.authorMajor || ''
+				return [grade, major].filter(Boolean).join(' · ')
 			},
 			getFullUrl(url) {
 				if (!url) return ''
@@ -336,7 +362,7 @@
 									uni.showToast({ title: '删除成功', icon: 'success' })
 									uni.$emit('refresh')
 									setTimeout(() => {
-										uni.navigateBack()
+										this.goBack()
 									}, 1500)
 								} else {
 									uni.showToast({ title: res.msg || '删除失败', icon: 'none' })
@@ -383,9 +409,83 @@
 <style lang="scss">
 	.forum-detail-page {
 		height: 100vh;
+		width: 100%;
+		position: fixed;
+		left: 0;
+		top: 0;
+		display: flex;
+		flex-direction: column;
+		background: transparent;
+		overflow: hidden;
+	}
+
+	.detail-overlay {
+		position: absolute;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.14);
+		animation: detail-overlay-enter 260ms ease-out;
+		will-change: opacity;
+
+		&.is-leaving {
+			animation: detail-overlay-leave 240ms ease-in forwards;
+		}
+	}
+
+	.detail-shell {
+		position: relative;
+		z-index: 1;
+		height: 100%;
 		display: flex;
 		flex-direction: column;
 		background-color: #f6f6f6;
+		box-shadow: 0 -12rpx 48rpx rgba(15, 23, 42, 0.18);
+		animation: detail-shell-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+		will-change: transform, opacity;
+
+		&.is-leaving {
+			animation: detail-shell-leave 240ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+			pointer-events: none;
+		}
+	}
+
+	@keyframes detail-overlay-enter {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes detail-overlay-leave {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
+	}
+
+	@keyframes detail-shell-enter {
+		from {
+			transform: translateY(100%);
+			opacity: 0.98;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+
+	@keyframes detail-shell-leave {
+		from {
+			transform: translateY(0);
+			opacity: 1;
+		}
+		to {
+			transform: translateY(100%);
+			opacity: 0.98;
+		}
 	}
 
 	.nav-bar {
@@ -463,24 +563,16 @@
 					color: #333;
 				}
 
-				.time-row {
-					display: flex;
-					align-items: center;
+				.profile-text {
+					font-size: 22rpx;
+					color: #999;
 					margin-top: 4rpx;
-					gap: 12rpx;
+				}
 
-					.time {
-						font-size: 24rpx;
-						color: #999;
-					}
-					
-					.tag {
-						font-size: 20rpx;
-						color: #666;
-						background: #f5f5f5;
-						padding: 2rpx 12rpx;
-						border-radius: 6rpx;
-					}
+				.time {
+					font-size: 24rpx;
+					color: #999;
+					margin-top: 6rpx;
 				}
 			}
 			
@@ -708,7 +800,16 @@
 	/* Dark Theme */
 	.theme-dark {
 		&.forum-detail-page {
+			background: transparent;
+		}
+
+		.detail-overlay {
+			background: rgba(0, 0, 0, 0.32);
+		}
+		
+		.detail-shell {
 			background: #111216;
+			box-shadow: 0 -12rpx 48rpx rgba(0, 0, 0, 0.38);
 		}
 		
 		.nav-bar {

@@ -116,7 +116,7 @@
 				}
 
 				.confirm-btn {
-					background: #1677ff;
+					background: #5d76bd;
 					color: #fff;
 				}
 			}

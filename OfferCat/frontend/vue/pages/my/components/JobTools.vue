@@ -83,7 +83,7 @@
 	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT, saveGrowthStats } from '@/utils/archiveData.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
-	import { getCheckInKey } from '@/utils/user.js'
+	import { getCheckInKey, getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 	import { getGrowthRecordStats, checkIn, getWeeklyCheckinStatus } from '@/api/growth.js'
 
 	export default {
@@ -142,9 +142,11 @@
 		},
 		mounted() {
 			// 初次挂载时初始化打卡数据、同步档案数量并播放数字动画。
-			this.initCheckInData()
-			this.syncToolValues()
-			this.animateValues()
+			void (async () => {
+				await this.initCheckInData()
+				await this.syncToolValues()
+				this.animateValues()
+			})()
 		},
 		methods: {
 			startDailyTask() {
@@ -186,6 +188,14 @@
 				await this.fetchCheckInData()
 			},
 			async fetchCheckInData() {
+				let sid = resolveStoredStudentId()
+				let uid = resolveStoredUserId(getUser())
+				if (!sid && !uid) {
+					await syncUserProfileFromServer()
+					sid = resolveStoredStudentId()
+					uid = resolveStoredUserId(getUser())
+				}
+				if (!sid && !uid) return
 				try {
 					const [statsRes, weeklyRes] = await Promise.all([
 						getGrowthRecordStats(),
@@ -273,12 +283,27 @@
 					url: '/pages/GrowthArchive/GrowthArchive'
 				})
 			},
-			syncToolValues() {
-				// 从聚合指标同步四类档案数量，并写入数字动画源数据。
+			async syncToolValues() {
 				const metrics = getDashboardMetrics()
+				let resumeCount = metrics.resumeCount
+				let interviewCount = metrics.interviewCount
+				const canLoadGrowth =
+					Boolean(resolveStoredStudentId()) || Boolean(resolveStoredUserId(getUser()))
+				if (canLoadGrowth) {
+					try {
+						const res = await getGrowthRecordStats()
+						const d = res && res.data
+						if (d && typeof d === 'object') {
+							if (d.resumeCount != null) resumeCount = Number(d.resumeCount) || 0
+							if (d.interviewCount != null) interviewCount = Number(d.interviewCount) || 0
+						}
+					} catch (e) {
+						console.warn('[JobTools] growth/stats 失败，使用本地聚合', e)
+					}
+				}
 				const valueMap = {
-					'我的简历': metrics.resumeCount,
-					'面试记录': metrics.interviewCount,
+					'我的简历': resumeCount,
+					'面试记录': interviewCount,
 					'证书资质': metrics.archiveSummary.certificatesCount,
 					'竞赛奖项': metrics.archiveSummary.awardsCount
 				}
@@ -367,7 +392,10 @@
 		padding: 28rpx;
 		border-radius: 32rpx;
 		background: #ffffff;
-		box-shadow: 0 18rpx 42rpx rgba(67, 76, 210, 0.08);
+		border: 1rpx solid rgba(67, 76, 210, 0.06);
+		box-shadow:
+			0 2rpx 10rpx rgba(15, 23, 42, 0.04),
+			0 18rpx 42rpx rgba(67, 76, 210, 0.08);
 
 		.section-head {
 			display: flex;
@@ -394,6 +422,10 @@
 			padding: 26rpx;
 			border-radius: 28rpx;
 			background: linear-gradient(135deg, #edf6ff 0%, #f6f9ff 48%, #eaf0ff 100%);
+			border: 1rpx solid rgba(67, 76, 210, 0.08);
+			box-shadow:
+				0 2rpx 8rpx rgba(15, 23, 42, 0.05),
+				0 10rpx 26rpx rgba(67, 76, 210, 0.07);
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
@@ -519,6 +551,9 @@
 			border-radius: 24rpx;
 			background: linear-gradient(180deg, #fbfcff 0%, #f4f7ff 100%);
 			border: 2rpx solid rgba(67, 76, 210, 0.1);
+			box-shadow:
+				0 2rpx 8rpx rgba(15, 23, 42, 0.048),
+				0 8rpx 20rpx rgba(67, 76, 210, 0.065);
 			display: flex;
 			flex-direction: column;
 			align-items: center;
@@ -582,6 +617,9 @@
 			border-radius: 28rpx;
 			background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
 			border: 2rpx solid rgba(245, 158, 11, 0.2);
+			box-shadow:
+				0 2rpx 8rpx rgba(15, 23, 42, 0.045),
+				0 10rpx 26rpx rgba(245, 158, 11, 0.09);
 		}
 		
 		.check-in-header {
@@ -720,7 +758,10 @@
 		/* 深色模式 */
 		&.theme-dark {
 			background: linear-gradient(180deg, #23252b 0%, #1d1f24 100%);
-			box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.26);
+			border: 1rpx solid rgba(255, 255, 255, 0.06);
+			box-shadow:
+				0 3rpx 12rpx rgba(0, 0, 0, 0.3),
+				0 18rpx 42rpx rgba(0, 0, 0, 0.22);
 
 			.section-title,
 			.tool-name,
@@ -738,9 +779,20 @@
 				color: rgba(255, 255, 255, 0.58);
 			}
 
-			.hero-banner,
+			.hero-banner {
+				background: linear-gradient(135deg, #2a3140 0%, #262b36 100%);
+				border-color: rgba(255, 255, 255, 0.08);
+				box-shadow:
+					0 3rpx 12rpx rgba(0, 0, 0, 0.35),
+					0 12rpx 36rpx rgba(0, 0, 0, 0.22);
+			}
+
 			.tool-item {
 				background: linear-gradient(180deg, #2d3037 0%, #262930 100%);
+				border-color: rgba(255, 255, 255, 0.08);
+				box-shadow:
+					0 3rpx 12rpx rgba(0, 0, 0, 0.32),
+					0 10rpx 28rpx rgba(0, 0, 0, 0.18);
 			}
 
 
@@ -752,6 +804,9 @@
 			.check-in-container {
 				background: linear-gradient(135deg, #2d2a25 0%, #23211d 100%);
 				border-color: rgba(245, 158, 11, 0.3);
+				box-shadow:
+					0 3rpx 12rpx rgba(0, 0, 0, 0.34),
+					0 12rpx 32rpx rgba(0, 0, 0, 0.2);
 			}
 			
 			.check-in-title {

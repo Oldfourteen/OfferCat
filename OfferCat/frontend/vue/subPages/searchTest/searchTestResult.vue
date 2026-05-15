@@ -51,6 +51,7 @@
 
 <script>
 import { request } from '@/api/request.js'
+import { resolveStoredStudentId, syncUserProfileFromServer } from '@/utils/user.js'
 
 export default {
   data() {
@@ -171,6 +172,16 @@ export default {
       const user = uni.getStorageSync('user_v2') || {}; // 修正为 user_v2
       return user.userId || user.id;
     },
+    async resolveRadarStudentId() {
+      let u = uni.getStorageSync('user_v2') || {}
+      let sid = resolveStoredStudentId(u)
+      if (!sid) {
+        await syncUserProfileFromServer()
+        u = uni.getStorageSync('user_v2') || {}
+        sid = resolveStoredStudentId(u)
+      }
+      return sid
+    },
     calculateTop5(data) {
       if (!data) return [];
       const allDimensions = [
@@ -191,15 +202,19 @@ export default {
         uni.showToast({ title: '用户未登录', icon: 'none' });
         return;
       }
+      const studentId = await this.resolveRadarStudentId()
+      if (!studentId) {
+        uni.showToast({ title: '未获取学生档案，无法拉取评估结果', icon: 'none' });
+        return;
+      }
       
       uni.showLoading({ title: '正在获取最新结果...' });
 
       for (let i = 0; i < retries; i++) {
         try {
           const res = await request({
-            url: '/api/radar-chart/my-evaluation',
+            url: `/api/radar-chart/my-evaluation?studentId=${encodeURIComponent(String(studentId))}`,
             method: 'GET',
-            data: { studentId: userId }
           });
           
           const data = res.data || res;
@@ -231,12 +246,13 @@ export default {
     async fetchRadarData() {
       const userId = this.getUserId();
       if (!userId) return;
+      const studentId = await this.resolveRadarStudentId()
+      if (!studentId) return
 
       try {
         const res = await request({
-          url: '/api/radar-chart/my-evaluation',
+          url: `/api/radar-chart/my-evaluation?studentId=${encodeURIComponent(String(studentId))}`,
           method: 'GET',
-          data: { studentId: userId }
         });
 
         const data = res.data || res;

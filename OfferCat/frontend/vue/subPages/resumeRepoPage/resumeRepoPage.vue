@@ -197,7 +197,7 @@ export default {
   left: 0;
   right: 0;
   z-index: 100;
-  background-color: #4AA9FE;
+  background-color: #5d76bd;
   color: #ffffff;
 }
 .status-bar {
@@ -271,7 +271,7 @@ export default {
   margin-bottom: 20px;
 }
 .create-btn {
-  background-color: #4AA9FE;
+  background-color: #5d76bd;
   color: #fff;
   border-radius: 20px;
   padding: 0 30px;
@@ -310,8 +310,8 @@ export default {
   box-sizing: border-box;
 }
 .custom-checkbox.is-checked {
-  border-color: #4AA9FE;
-  background-color: #4AA9FE;
+  border-color: #5d76bd;
+  background-color: #5d76bd;
 }
 .checkbox-inner {
   width: 10px;
@@ -367,7 +367,7 @@ export default {
 }
 
 .container.theme-dark .create-btn {
-  background-color: #3165d7;
+  background-color: #5d76bd;
   color: #ffffff;
 }
 
@@ -395,8 +395,8 @@ export default {
 }
 
 .container.theme-dark .custom-checkbox.is-checked {
-  border-color: #4AA9FE;
-  background-color: #4AA9FE;
+  border-color: #5d76bd;
+  background-color: #5d76bd;
 }
 
 .container.theme-dark .checkbox-inner {

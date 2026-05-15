@@ -1,3 +1,5 @@
+import { request } from '@/api/request'
+
 // 用户信息的本地缓存键。
 const USER_KEY = 'user_v2'
 
@@ -69,6 +71,36 @@ export function resolveStoredStudentId(user) {
 	const n = typeof raw === 'number' ? raw : Number(raw)
 	if (!Number.isFinite(n) || n <= 0) return null
 	return n
+}
+
+/**
+ * 从网关拉取最新的用户与学生档案并 merge 到本地缓存。
+ * 用于：内置浏览器/H5 登录包体不完整、旧版缓存缺 studentId、切账号后需与库表 student 主键对齐。
+ */
+export async function syncUserProfileFromServer() {
+	const u = getUser()
+	const userId = resolveStoredUserId(u)
+	if (userId == null) return null
+	try {
+		const res = await request({
+			url: `/user/profile?userId=${encodeURIComponent(String(userId))}`,
+			method: 'GET',
+		})
+		const serverUser =
+			res && typeof res === 'object' && res.data && typeof res.data === 'object' ? res.data : null
+		if (!serverUser || serverUser.userId == null) return null
+
+		const merged = {
+			...(u && typeof u === 'object' ? u : {}),
+			...serverUser,
+			profile: serverUser.profile != null ? serverUser.profile : u && u.profile,
+		}
+		setUser(merged)
+		return merged
+	} catch (e) {
+		console.warn('[user] syncUserProfileFromServer 失败', e)
+		return null
+	}
 }
 
 // 基于当前用户生成独立的打卡缓存键。

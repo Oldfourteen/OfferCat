@@ -1,6 +1,7 @@
 <script>
 	import { applyTheme } from '@/utils/theme.js'
 	import { getToken } from '@/utils/token.js'
+	import { syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		globalData: {
@@ -28,6 +29,7 @@
 				// 检查本地存储中是否有有效的 token
 				const token = getToken()
 				if (token) {
+					void syncUserProfileFromServer()
 					// 已有登录态，自动跳转到首页
 					console.log('已检测到登录态，自动跳转首页')
 					uni.switchTab({

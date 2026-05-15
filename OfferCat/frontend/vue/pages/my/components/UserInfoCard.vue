@@ -97,7 +97,7 @@
 	import { getUserProfile, DEFAULT_AVATAR, DEFAULT_USER_PROFILE, USER_PROFILE_UPDATED_EVENT } from '@/utils/userProfile.js'
 	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT, saveGrowthStats } from '@/utils/archiveData.js'
 	import { getGrowthRecordStats } from '@/api/growth.js'
-	import { resolveStoredStudentId } from '@/utils/user.js'
+	import { resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer, getUser } from '@/utils/user.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import CommonAvatar from '@/components/CommonAvatar.vue'
@@ -215,9 +215,15 @@
 				]
 			},
 			async refreshDashboardStats() {
-				// 与成长档案 `/growth/stats` 对齐：简历/面试/收藏/连续打卡均来自库表聚合，避免仅靠本地缓存看起来像「丢数据」。
-				const studentId = resolveStoredStudentId()
-				if (!studentId) {
+				// 与成长档案 `/growth/stats` 对齐：服务端可用 userId 反查 student_id，避免仅存 userId 时仍回退本地全 0。
+				let studentId = resolveStoredStudentId()
+				let userId = resolveStoredUserId(getUser())
+				if (!studentId && !userId) {
+					await syncUserProfileFromServer()
+					studentId = resolveStoredStudentId()
+					userId = resolveStoredUserId(getUser())
+				}
+				if (!studentId && !userId) {
 					this.applyLocalDashboardStats()
 					return
 				}

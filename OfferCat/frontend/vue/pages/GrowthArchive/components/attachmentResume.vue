@@ -336,20 +336,29 @@
 
 	.make-btn {
 		background: linear-gradient(135deg, #6b84c9 0%, #4f67b0 100%);
-		box-shadow: 0 10rpx 28rpx rgba(79, 103, 176, 0.35);
+		/* 底部中性阴影 + 品牌色光晕，增强浮起感 */
+		box-shadow:
+			0 10rpx 22rpx rgba(15, 23, 42, 0.14),
+			0 16rpx 36rpx rgba(79, 103, 176, 0.32);
 
 		&:active {
-			box-shadow: 0 6rpx 16rpx rgba(79, 103, 176, 0.28);
+			box-shadow:
+				0 5rpx 14rpx rgba(15, 23, 42, 0.1),
+				0 8rpx 22rpx rgba(79, 103, 176, 0.26);
 		}
 	}
 
 	.make-btn.has-result {
 		border-color: transparent;
 		background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
-		box-shadow: 0 10rpx 28rpx rgba(16, 185, 129, 0.35);
+		box-shadow:
+			0 10rpx 22rpx rgba(15, 23, 42, 0.12),
+			0 16rpx 36rpx rgba(16, 185, 129, 0.32);
 
 		&:active {
-			box-shadow: 0 6rpx 16rpx rgba(16, 185, 129, 0.28);
+			box-shadow:
+				0 5rpx 14rpx rgba(15, 23, 42, 0.08),
+				0 8rpx 22rpx rgba(16, 185, 129, 0.24);
 		}
 	}
 
@@ -364,10 +373,15 @@
 	.upload-btn {
 		background: #ffffff;
 		border-color: rgba(93, 118, 189, 0.28);
-		box-shadow: 0 2rpx 12rpx rgba(93, 118, 189, 0.08);
+		box-shadow:
+			0 8rpx 20rpx rgba(15, 23, 42, 0.1),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.12);
 
 		&:active {
 			background: #f8fafc;
+			box-shadow:
+				0 4rpx 12rpx rgba(15, 23, 42, 0.08),
+				0 1rpx 4rpx rgba(93, 118, 189, 0.1);
 		}
 	}
 
@@ -452,7 +466,9 @@
 		.make-btn {
 			background: linear-gradient(135deg, #4a6fcb 0%, #3165d7 100%);
 			border-color: transparent;
-			box-shadow: 0 10rpx 28rpx rgba(49, 101, 215, 0.28);
+			box-shadow:
+				0 10rpx 22rpx rgba(0, 0, 0, 0.35),
+				0 14rpx 32rpx rgba(49, 101, 215, 0.3);
 			
 			.btn-title {
 				color: #ffffff;
@@ -462,13 +478,18 @@
 			}
 
 			&:active {
-				box-shadow: 0 6rpx 16rpx rgba(49, 101, 215, 0.22);
+				box-shadow:
+					0 5rpx 14rpx rgba(0, 0, 0, 0.28),
+					0 8rpx 22rpx rgba(49, 101, 215, 0.22);
 			}
 		}
 
 		.upload-btn {
 			background: #2a2c33;
 			border-color: rgba(143, 164, 232, 0.25);
+			box-shadow:
+				0 10rpx 24rpx rgba(0, 0, 0, 0.45),
+				0 2rpx 10rpx rgba(0, 0, 0, 0.25);
 		}
 
 		.upload-icon-wrap {
@@ -478,7 +499,9 @@
 		.make-btn.has-result {
 			background: linear-gradient(135deg, #34d399 0%, #10b981 100%);
 			border-color: transparent;
-			box-shadow: 0 10rpx 28rpx rgba(16, 185, 129, 0.28);
+			box-shadow:
+				0 10rpx 22rpx rgba(0, 0, 0, 0.32),
+				0 14rpx 32rpx rgba(16, 185, 129, 0.28);
 			
 			.btn-title {
 				color: #ffffff;

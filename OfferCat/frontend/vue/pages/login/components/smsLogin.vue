@@ -34,7 +34,7 @@
 	import humanVerify from './humanVerify.vue';
 	import { login } from '../../../api/auth'
 	import { setToken } from '../../../utils/token'
-	import { setUser } from '../../../utils/user'
+	import { setUser, syncUserProfileFromServer } from '../../../utils/user'
 	
 	export default {
 		components: {
@@ -113,6 +113,7 @@
 					
 					setToken(token)
 					setUser(user)
+					await syncUserProfileFromServer()
 					
 					uni.hideLoading()
 					uni.showToast({ title: '登录成功', icon: 'success' })

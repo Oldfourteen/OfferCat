@@ -152,7 +152,11 @@
 				})
 			},
 			openEntry(item) {
-				// 根据档案类型跳转到对应管理页。
+				// 从四类档案管理页返回成长档案时，跳过当次的问卷引导弹窗（见 GrowthArchive.consumeArchiveManageReturnSkip）。
+				const app = typeof getApp === 'function' ? getApp() : null
+				if (app && app.globalData) {
+					app.globalData.growthArchiveSkipAssessmentAfterManageNav = true
+				}
 				uni.navigateTo({
 					url: `/subPages/archive/manage?type=${item.type}`
 				})

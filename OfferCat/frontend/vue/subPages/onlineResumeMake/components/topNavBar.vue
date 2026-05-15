@@ -123,7 +123,7 @@
 				.right-text {
 					font-size: 15px;
 					font-weight: 600;
-					color: #1677ff;
+					color: #5d76bd;
 				}
 
 				.right-spacer {

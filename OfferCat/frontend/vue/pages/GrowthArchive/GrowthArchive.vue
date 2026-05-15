@@ -1,9 +1,7 @@
 <template>
 	<view class="growth-page" :class="themeClass">
-		<!-- 顶部栏固定，内容区按 tab 切换不同的成长模块。 -->
-		<view class="animate-fade-down" style="animation-delay: 0.1s;">
-			<GrowthTopBar :active-index="activeIndex" :theme="theme" @change="onTabChange" />
-		</view>
+		<!-- 顶栏禁止再包一层带动画的 view（opacity/transform 会产生层叠上下文，与内部滚动组合后易盖住 fixed 顶栏） -->
+		<GrowthTopBar :active-index="activeIndex" :theme="theme" @change="onTabChange" />
 		<view class="topbar-spacer"></view>
 		<view class="page">
 			<template v-if="activeIndex === 0">
@@ -84,13 +82,16 @@
 				showAssessmentModal: false,
 				showAssessmentCancel: false,
 				assessmentSeenKey: '',
+				// 从「我的档案管理」四类入口返回时，压制本轮 onShow 内的问卷引导（避免与异步 fetchRadarData 内二次触发叠加）。
+				suppressAssessmentAfterArchiveManageReturn: false,
 				// 雷达测评数据会透传给多个子组件共用。
 				radarData: null
 			}
 		},
-		onShow() {
+		async onShow() {
 			const user = getUser() || uni.getStorageSync('user_v2') || {}
 			const cacheKey = this.resolveRadarCacheKey(user)
+			this.consumeArchiveManageReturnSkip()
 			// 每次回到页面都尝试恢复目标滚动位置和最新测评数据。
 			this.handlePendingScroll()
 			this.checkFirstTimeRadar()
@@ -102,8 +103,12 @@
 					this.radarData = c[cacheKey]
 				}
 			}
-			// 然后异步拉取最新数据
-			this.fetchRadarData()
+			try {
+				// 异步拉取最新数据；内部可能再次触发 checkFirstTimeRadar，需与本页 suppress 标志协同。
+				await this.fetchRadarData()
+			} finally {
+				this.suppressAssessmentAfterArchiveManageReturn = false
+			}
 			// 总览四项统计独立于雷达测评；每次进入页面同步一次，避免仅显示占位「-」。
 			this.$nextTick(() => {
 				const card = this.$refs.archiveHeroCard
@@ -113,6 +118,13 @@
 			})
 		},
 		methods: {
+			consumeArchiveManageReturnSkip() {
+				const app = typeof getApp === 'function' ? getApp() : null
+				if (app && app.globalData && app.globalData.growthArchiveSkipAssessmentAfterManageNav) {
+					app.globalData.growthArchiveSkipAssessmentAfterManageNav = false
+					this.suppressAssessmentAfterArchiveManageReturn = true
+				}
+			},
 			resolveRadarCacheKey(user) {
 				const u = user && typeof user === 'object' ? user : {}
 				if (u.userId !== undefined && u.userId !== null && u.userId !== '') return u.userId
@@ -180,6 +192,13 @@
 				}
 			},
 			checkFirstTimeRadar() {
+				// 仅在「成长档案」分段展示问卷引导；简历工坊 / AI 画像不触发。
+				if (this.activeIndex !== 0) {
+					return
+				}
+				if (this.suppressAssessmentAfterArchiveManageReturn) {
+					return
+				}
 				// 未完成问卷时弹出引导弹窗，二次进入后才允许暂时跳过。
 				const user = getUser() || uni.getStorageSync('user_v2') || {}
 				const cacheKey = this.resolveRadarCacheKey(user)
@@ -216,6 +235,11 @@
 				// 切换 tab 时回到页面顶部，避免保留上一个模块的滚动位置。
 				this.activeIndex = index
 				uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+				if (index !== 0) {
+					this.showAssessmentModal = false
+				} else {
+					this.checkFirstTimeRadar()
+				}
 			},
 			handlePendingScroll() {
 				// 支持从其他页面带着目标锚点返回到指定 tab 或趋势模块。
@@ -268,6 +292,8 @@
 	}
 
 	.page {
+		position: relative;
+		z-index: 0;
 		padding: 20rpx 18rpx calc(40rpx + 116rpx + env(safe-area-inset-bottom));
 		box-sizing: border-box;
 		display: flex;
@@ -285,29 +311,13 @@
 		animation: slideUpFade 0.6s ease-out both;
 	}
 
+	/* 勿使用 transform：与简历工坊内 overflow 滚动叠在一起时，部分 WebView 会把内容层错误压到 fixed 顶栏之上 */
 	@keyframes slideUpFade {
 		from {
 			opacity: 0;
-			transform: translateY(40rpx);
 		}
 		to {
 			opacity: 1;
-			transform: translateY(0);
-		}
-	}
-
-	.animate-fade-down {
-		animation: fadeDown 0.6s ease-out both;
-	}
-
-	@keyframes fadeDown {
-		from {
-			opacity: 0;
-			transform: translateY(-20rpx);
-		}
-		to {
-			opacity: 1;
-			transform: translateY(0);
 		}
 	}
 

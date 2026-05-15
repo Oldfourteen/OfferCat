@@ -235,8 +235,9 @@
 		border-radius: 30rpx;
 		border: 2rpx solid rgba(49, 101, 215, 0.08);
 		box-shadow:
-			0 2rpx 4rpx rgba(21, 48, 94, 0.04),
-			0 8rpx 20rpx rgba(49, 101, 215, 0.08);
+			0 10rpx 28rpx rgba(15, 23, 42, 0.1),
+			0 4rpx 14rpx rgba(15, 23, 42, 0.06),
+			0 2rpx 8rpx rgba(49, 101, 215, 0.08);
 	}
 
 	.module-card.is-written {
@@ -370,8 +371,8 @@
 	.question-bank.theme-dark .module-card {
 		border-color: rgba(255, 255, 255, 0.06);
 		box-shadow:
-			0 2rpx 6rpx rgba(0, 0, 0, 0.35),
-			0 10rpx 24rpx rgba(0, 0, 0, 0.22);
+			0 12rpx 32rpx rgba(0, 0, 0, 0.45),
+			0 5rpx 16rpx rgba(0, 0, 0, 0.3);
 	}
 
 	.question-bank.theme-dark .module-card.is-written,

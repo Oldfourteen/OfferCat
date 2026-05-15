@@ -365,7 +365,10 @@ export default {
 	background: #FFFFFF;
 	border-radius: 24rpx;
 	padding: 30rpx;
-	box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.03);
+	/* 外层大卡：底部偏重阴影，与页面背景拉开层次 */
+	box-shadow:
+		0 10rpx 28rpx rgba(15, 23, 42, 0.1),
+		0 4rpx 12rpx rgba(15, 23, 42, 0.06);
 }
 
 .page-footer-note {
@@ -732,7 +735,9 @@ export default {
 	
 	.main-card {
 		background: #1F2937;
-		box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.2);
+		box-shadow:
+			0 12rpx 32rpx rgba(0, 0, 0, 0.45),
+			0 4rpx 14rpx rgba(0, 0, 0, 0.28);
 	}
 	
 	.upload-section {

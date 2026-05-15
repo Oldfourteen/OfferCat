@@ -237,14 +237,19 @@
 			},
 			aiBottomSpaceStyle() {
 				const panelHeight = this.bottomPanelHeight || 220
+				// adjustPan 下窗口不缩放：键盘弹起时用键盘高度占位；收起时仍为底栏高度
+				const bottomReserve =
+					this.keyboardHeight > 0 ? this.keyboardHeight : this.tabBarOverlapPx
 				return {
-					height: `${panelHeight + 24 + this.tabBarOverlapPx}px`
+					height: `${panelHeight + 24 + bottomReserve}px`
 				}
 			},
 			aiBottomLiftStyle() {
-				return {
-					bottom: `${this.tabBarOverlapPx}px`
+				// 键盘弹起时底栏保持在屏幕最底部（可被键盘盖住），输入区只靠键盘高度上推
+				if (this.keyboardHeight > 0) {
+					return { bottom: `${this.keyboardHeight}px` }
 				}
+				return { bottom: `${this.tabBarOverlapPx}px` }
 			},
 			isLocked() {
 				return this.isInterviewMode && !this.interviewEnded

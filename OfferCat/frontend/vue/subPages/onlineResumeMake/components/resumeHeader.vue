@@ -243,25 +243,30 @@
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				background-color: rgba(22, 119, 255, 0.1);
+				background-color: rgba(93, 118, 189, 0.12);
 				border-radius: 12px;
 
 				.btn-text {
 					font-size: 12px;
-					color: #1677ff;
+					color: #5d76bd;
 					font-weight: 500;
 				}
 			}
 		}
 
 		.completion-card {
-			background: linear-gradient(to right, #e6f4ff, #bae0ff);
+			background: linear-gradient(to right, #eef0f8, #e2e6f4);
 			border-radius: 12px;
 			padding: 16px 20px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
 			position: relative;
+			/* 底部立体：主投影略偏主色，辅层收窄增强“托起”感 */
+			box-shadow:
+				0 10px 28px -6px rgba(93, 118, 189, 0.28),
+				0 4px 14px -2px rgba(45, 60, 110, 0.14),
+				0 2px 4px rgba(93, 118, 189, 0.06);
 
 			.card-left {
 				display: flex;
@@ -281,13 +286,13 @@
 					.value {
 						font-size: 24px;
 						font-weight: bold;
-						color: #1677ff;
+						color: #5d76bd;
 					}
 				}
 
 				.hint {
 					font-size: 13px;
-					color: #69b1ff;
+					color: #4a5f99;
 				}
 			}
 

@@ -19,6 +19,8 @@
 	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 	import { applyTheme, getTheme } from '@/utils/theme.js'
+	import { getToken } from '@/utils/token.js'
+	import { getUser, resolveStoredStudentId, syncUserProfileFromServer } from '@/utils/user.js'
 	
 	const SCROLL_KEY = 'MY_PAGE_SCROLL_TOP'
 	
@@ -57,6 +59,9 @@
 			this.savedScrollTop = parseInt(saved) || 0
 		},
 		onShow() {
+			if (getToken() && getUser() && !resolveStoredStudentId()) {
+				void syncUserProfileFromServer()
+			}
 			// 每次回到我的页先同步最新主题，再重播卡片动画并恢复滚动位置。
 			this.currentTheme = applyTheme(getTheme())
 			this.animationKey += 1

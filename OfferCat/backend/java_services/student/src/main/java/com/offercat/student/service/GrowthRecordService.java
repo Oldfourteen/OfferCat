@@ -7,6 +7,13 @@ import com.offercat.student.vo.CheckinResultVO;
  * 功能：提供学生成长档案的增删改查操作
  */
 public interface GrowthRecordService {
+
+    /**
+     * 优先使用 studentId；缺省时按 userId 查 {@code student} 表主键。
+     *
+     * @return 有效 student_id，无法解析时返回 null
+     */
+    Long resolveStudentId(Long studentId, Long userId);
     
     /**
      * 获取学生成长档案统计信息，并同步最新的数据

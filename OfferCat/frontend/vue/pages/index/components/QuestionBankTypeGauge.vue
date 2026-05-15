@@ -213,30 +213,34 @@
 		background-color: #5793e8;
 		box-shadow:
 			inset 0 1rpx 0 rgba(255, 255, 255, 0.38),
-			0 14rpx 28rpx rgba(45, 110, 200, 0.22),
-			0 4rpx 10rpx rgba(25, 80, 170, 0.12);
+			0 4rpx 10rpx rgba(15, 23, 42, 0.08),
+			0 8rpx 18rpx rgba(45, 110, 200, 0.2),
+			0 2rpx 6rpx rgba(25, 80, 170, 0.1);
 	}
 
 	.qbg-card.is-tone-interview {
 		background-color: #4cc79a;
 		box-shadow:
 			inset 0 1rpx 0 rgba(255, 255, 255, 0.35),
-			0 14rpx 28rpx rgba(25, 120, 82, 0.2),
-			0 4rpx 10rpx rgba(12, 90, 60, 0.12);
+			0 4rpx 10rpx rgba(15, 23, 42, 0.07),
+			0 8rpx 18rpx rgba(25, 120, 82, 0.18),
+			0 2rpx 6rpx rgba(12, 90, 60, 0.09);
 	}
 
 	.qbg-card.is-theme-dark.is-tone-written {
 		background-color: #4d7fba;
 		box-shadow:
 			inset 0 1rpx 0 rgba(255, 255, 255, 0.2),
-			0 12rpx 26rpx rgba(0, 0, 0, 0.22);
+			0 6rpx 14rpx rgba(0, 0, 0, 0.28),
+			0 10rpx 22rpx rgba(20, 50, 100, 0.2);
 	}
 
 	.qbg-card.is-theme-dark.is-tone-interview {
 		background-color: #429e7e;
 		box-shadow:
 			inset 0 1rpx 0 rgba(255, 255, 255, 0.16),
-			0 12rpx 26rpx rgba(0, 0, 0, 0.2);
+			0 6rpx 14rpx rgba(0, 0, 0, 0.26),
+			0 10rpx 22rpx rgba(10, 60, 45, 0.18);
 	}
 
 	.qbg-inner {

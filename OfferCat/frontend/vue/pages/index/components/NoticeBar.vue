@@ -43,16 +43,22 @@
 
 <style lang="scss">
 	.notice-bar {
+		box-sizing: border-box;
 		display: flex;
 		align-items: center;
 		padding: 0 24rpx;
 		height: 72rpx;
 		border-radius: 36rpx;
-		background: #ffffff;
+		/* 极轻纵向渐变 + 分层阴影与顶缘内高光，略抬升胶囊立体感 */
+		background: linear-gradient(180deg, #ffffff 0%, #f8fbff 100%);
+		border: 1rpx solid rgba(255, 255, 255, 0.65);
 		/* 与固定头部的间距已由首页 header-spacer 预留，仅保留贴顶后的轻间隙 */
 		margin-top: 12rpx;
 		margin-bottom: 24rpx;
-		box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.06);
+		box-shadow:
+			0 8rpx 22rpx rgba(30, 80, 140, 0.1),
+			0 2rpx 8rpx rgba(30, 80, 140, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
 		
 		.notice-icon {
 			margin-right: 16rpx;
@@ -89,8 +95,12 @@
 	}
 
 	.notice-bar.theme-dark {
-		background: #25262b;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+		background: linear-gradient(180deg, #2c2d33 0%, #25262b 100%);
+		border: 1rpx solid rgba(255, 255, 255, 0.06);
+		box-shadow:
+			0 8rpx 22rpx rgba(0, 0, 0, 0.35),
+			0 2rpx 8rpx rgba(0, 0, 0, 0.22),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
 		
 		.notice-swiper .notice-item .notice-text {
 			color: #e5e5e5;

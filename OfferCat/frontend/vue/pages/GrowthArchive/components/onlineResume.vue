@@ -5,7 +5,9 @@
 				<!-- 在线简历卡片展示入口说明，进度区当前预留给完善度能力。 -->
 				<text class="title">在线简历</text>
 				<text class="subtitle">丰富在线经历，提高匹配率</text>
-				<text class="desc">分模块维护基本信息、教育、工作与项目经历；与成长档案联动，信息越完整，岗位匹配与推荐越精准。点击进入编辑器继续完善，并可配合导出使用。</text>
+				<view class="desc-box">
+					<text class="desc">分模块维护基本信息、教育、工作与项目经历；与成长档案联动，信息越完整，岗位匹配与推荐越精准。点击进入编辑器继续完善，并可配合导出使用。</text>
+				</view>
 				<view class="progress-wrap">
 				</view>
 			</view>
@@ -120,11 +122,22 @@
 		margin-bottom: 10rpx;
 	}
 
+	.desc-box {
+		margin-bottom: 16rpx;
+		padding: 18rpx 20rpx;
+		background: #f9fafb;
+		border: 1rpx solid #e5e7eb;
+		border-radius: 12rpx;
+		box-shadow:
+			0 1rpx 2rpx rgba(15, 23, 42, 0.06),
+			0 4rpx 10rpx rgba(15, 23, 42, 0.05);
+	}
+
 	.desc {
 		font-size: 22rpx;
 		line-height: 1.55;
 		color: #9ca3af;
-		margin-bottom: 16rpx;
+		display: block;
 	}
 
 	.progress-wrap {
@@ -182,6 +195,14 @@
 
 		.desc {
 			color: rgba(255, 255, 255, 0.45);
+		}
+
+		.desc-box {
+			background: rgba(255, 255, 255, 0.04);
+			border-color: rgba(255, 255, 255, 0.1);
+			box-shadow:
+				0 1rpx 3rpx rgba(0, 0, 0, 0.35),
+				0 6rpx 14rpx rgba(0, 0, 0, 0.22);
 		}
 
 		.icon-wrap {

@@ -116,14 +116,14 @@
 				.action-btn {
 					padding: 4px 12px;
 					border-radius: 14px;
-					background: #ebfef6;
+					background: #f0f2f9;
 					display: flex;
 					align-items: center;
 					justify-content: center;
 
 					.btn-text {
 						font-size: 13px;
-						color: #10b981;
+						color: #5d76bd;
 						font-weight: 500;
 					}
 				}
@@ -162,7 +162,7 @@
 
 				.job-intention-value {
 					font-size: 14px;
-					color: #1677ff;
+					color: #5d76bd;
 					font-weight: 500;
 				}
 			}

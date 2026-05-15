@@ -58,7 +58,7 @@
 			}
 
 			.export-btn {
-				background-color: #1677ff;
+				background-color: #5d76bd;
 				color: #fff;
 			}
 		}

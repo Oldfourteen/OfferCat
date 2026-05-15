@@ -79,6 +79,11 @@
 import QuestionItem from './components/QuestionItem.vue'
 import { request } from '@/api/request.js'
 import themeMixin from '@/utils/themeMixin.js'
+import {
+	resolveStoredStudentId,
+	resolveStoredUserId,
+	syncUserProfileFromServer
+} from '@/utils/user.js'
 
 export default {
   mixins: [themeMixin],
@@ -180,11 +185,21 @@ export default {
         return;
       }
 
-      const userInfo = uni.getStorageSync('user_v2');
-      const userId = userInfo ? (userInfo.userId || userInfo.id) : null;
-      
+      let userInfo = uni.getStorageSync('user_v2') || {};
+      const userId = resolveStoredUserId(userInfo);
+      let studentId = resolveStoredStudentId(userInfo);
+
       if (!userId) {
         uni.showToast({ title: '未获取到用户信息，请重新登录', icon: 'none' });
+        return;
+      }
+      if (!studentId) {
+        await syncUserProfileFromServer();
+        userInfo = uni.getStorageSync('user_v2') || {};
+        studentId = resolveStoredStudentId(userInfo);
+      }
+      if (!studentId) {
+        uni.showToast({ title: '未获取学生档案 ID，请先完善资料后再提交问卷', icon: 'none' });
         return;
       }
 
@@ -196,9 +211,8 @@ export default {
       let oldTimestamp = null;
       try {
         const oldEvalRes = await request({
-          url: '/api/radar-chart/my-evaluation',
+          url: `/api/radar-chart/my-evaluation?studentId=${encodeURIComponent(String(studentId))}`,
           method: 'GET',
-          data: { studentId: userId }
         });
         const oldData = oldEvalRes.data || oldEvalRes;
         if (oldData && oldData.createTime) {
@@ -213,7 +227,7 @@ export default {
           url: '/api/radar-chart/submit',
           method: 'POST',
           data: {
-            studentId: userId,
+            studentId,
             answers: this.answers
           }
         });
@@ -236,7 +250,7 @@ export default {
             }
           });
         } else {
-          uni.setStorageSync('has_submitted_radar_' + userId, true);
+          uni.setStorageSync('has_submitted_radar_' + userId, true); // 按账号 userId 记本地标记
           
           uni.showToast({
             title: '答题成功',

@@ -61,11 +61,17 @@
 		top: 0;
 		left: 0;
 		right: 0;
-		z-index: 20;
+		/* 高于页面内容、低于档案弹窗(999)；独立合成层减少与内部 overflow 滚动叠层错乱 */
+		z-index: 900;
+		transform: translate3d(0, 0, 0);
+		-webkit-transform: translate3d(0, 0, 0);
+		backface-visibility: hidden;
 		/* 保证在所有环境下都能有足够顶部安全区 */
 		padding: calc(env(safe-area-inset-top) + var(--status-bar-height) + 18rpx) 24rpx 18rpx;
 		background: rgba(255, 255, 255, 0.92);
 		backdrop-filter: blur(10rpx);
+		border-bottom: 1rpx solid rgba(17, 24, 39, 0.06);
+		box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
 	}
 
 	.segmented {
@@ -75,7 +81,10 @@
 		padding: 8rpx;
 		display: flex;
 		gap: 8rpx;
-		box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.06);
+		border: 1rpx solid rgba(17, 24, 39, 0.08);
+		box-shadow:
+			0 1rpx 2rpx rgba(17, 24, 39, 0.05),
+			0 10rpx 28rpx rgba(0, 0, 0, 0.07);
 	}
 
 	.seg-item {
@@ -105,11 +114,16 @@
 
 	.growth-topbar.theme-dark {
 		background: rgba(18, 19, 24, 0.92);
+		border-bottom-color: rgba(255, 255, 255, 0.08);
+		box-shadow: 0 6rpx 24rpx rgba(0, 0, 0, 0.35);
 	}
 
 	.growth-topbar.theme-dark .segmented {
 		background: rgba(255, 255, 255, 0.06);
-		box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.18);
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow:
+			0 1rpx 2rpx rgba(0, 0, 0, 0.25),
+			0 10rpx 28rpx rgba(0, 0, 0, 0.22);
 	}
 
 	.growth-topbar.theme-dark .seg-text {

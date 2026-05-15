@@ -227,7 +227,7 @@
 				const colorMap = {
 					1: '#6b7280',
 					2: '#374151',
-					3: '#1677ff',
+					3: '#5d76bd',
 					4: '#10b981',
 					5: '#059669'
 				}
@@ -241,10 +241,10 @@
 				const skillsHtml = skillItems.map(skill => {
 					const level = Number(skill.proficiency) || 3
 					const profText = textMap[level] || '掌握'
-					const color = colorMap[level] || '#1677ff'
+					const color = colorMap[level] || '#5d76bd'
 					return `<div class="resume-skill-box" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; padding: 12px 16px; background: #f9fafb; border-radius: 8px;">
 						<span class="resume-title" style="font-size: 16px; font-weight: 500; color: #111827; letter-spacing: 0.5px;">${skill.skill_name}</span>
-						<span style="font-size: 13px; color: ${color}; background: rgba(22, 119, 255, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: bold;">${profText}</span>
+						<span style="font-size: 13px; color: ${color}; background: rgba(93, 118, 189, 0.08); padding: 4px 10px; border-radius: 12px; font-weight: bold;">${profText}</span>
 					</div>`
 				}).join('')
 				return `<div class="resume-block-skill" style="margin-bottom: 20px;">${skillsHtml}</div>`
@@ -591,19 +591,25 @@
 					color: #f4f7fb;
 				}
 				.edit-icon-placeholder {
-					background-color: rgba(22, 119, 255, 0.15);
+					background-color: rgba(93, 118, 189, 0.2);
+				}
+				.edit-icon-placeholder .btn-text {
+					color: #c5cde8;
 				}
 				.completion-card {
-					background: linear-gradient(to right, #1a2c3f, #1e3a5f);
+					background: linear-gradient(to right, #1e2438, #2a3352);
+					box-shadow:
+						0 12px 32px -8px rgba(0, 0, 0, 0.5),
+						0 4px 12px rgba(0, 0, 0, 0.28);
 				}
 				.completion-rate .label {
 					color: rgba(255, 255, 255, 0.58);
 				}
 				.completion-rate .value {
-					color: #8ab7ff;
+					color: #a8b4e8;
 				}
 				.hint {
-					color: #69b1ff;
+					color: #8f9fd4;
 				}
 				.avatar-wrap .avatar-tag {
 					background: rgba(0, 0, 0, 0.7);
@@ -615,7 +621,10 @@
 					color: #f4f7fb;
 				}
 				.action-btn {
-					background: rgba(16, 185, 129, 0.15);
+					background: rgba(93, 118, 189, 0.18);
+				}
+				.action-btn .btn-text {
+					color: #c5cde8;
 				}
 				.user-details .info-row .info-item {
 					color: rgba(255, 255, 255, 0.58);
@@ -628,7 +637,7 @@
 						color: rgba(255, 255, 255, 0.58);
 					}
 					.job-intention-value {
-						color: #8ab7ff;
+						color: #a8b4e8;
 					}
 				}
 				.certificates-section {
@@ -649,7 +658,10 @@
 					color: #f4f7fb;
 				}
 				.section-header .action-btn {
-					background: rgba(16, 185, 129, 0.15);
+					background: rgba(93, 118, 189, 0.18);
+				}
+				.section-header .action-btn .btn-text {
+					color: #c5cde8;
 				}
 				.section-block .divider {
 					background-color: rgba(255, 255, 255, 0.06);
@@ -706,6 +718,10 @@
 				.bottom-actions .action-btn {
 					background-color: #23252b;
 					color: #f4f7fb;
+				}
+				.bottom-actions .export-btn {
+					background-color: #5d76bd;
+					color: #fff;
 				}
 			}
 		}

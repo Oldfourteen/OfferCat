@@ -4,14 +4,18 @@
 			<view class="text-content">
 				<text class="title">简历仓库</text>
 				<text class="subtitle">统一管理已制作/上传的简历</text>
-				<text class="desc">在线编辑保存的简历与上传附件都会集中在此，便于区分版本。支持查看详情、重命名、删除或再次打开编辑，避免文件散落在各处。</text>
+				<view class="desc-box">
+					<text class="desc">在线编辑保存的简历与上传附件都会集中在此，便于区分版本。支持查看详情、重命名、删除或再次打开编辑，避免文件散落在各处。</text>
+				</view>
 			</view>
 			<view class="icon-wrap">
 				<image src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MDEzMTE2MTQ3IiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjIwNDk1NiIgd2lkdGg9IjIwMCIgaGVpZ2h0PSIyMDAiPjxwYXRoIGQ9Ik01OTcuMzMzMzMzIDg1My4zMzMzMzN2ODUuMzMzMzM0aDIxMy4zMzMzMzRhNDIuNjY2NjY3IDQyLjY2NjY2NyAwIDEgMSAwIDg1LjMzMzMzM2gtNTk3LjMzMzMzNGE0Mi42NjY2NjcgNDIuNjY2NjY3IDAgMSAxIDAtODUuMzMzMzMzSDQyNi42NjY2Njd2LTg1LjMzMzMzNEg4NS4zMzMzMzNhODUuMzMzMzMzIDg1LjMzMzMzMyAwIDAgMS04NS4zMzMzMzMtODUuMzMzMzMzVjg1LjMzMzMzM2E4NS4zMzMzMzMgODUuMzMzMzMzIDAgMCAxIDg1LjMzMzMzMy04NS4zMzMzMzNoODUzLjMzMzMzNGE4NS4zMzMzMzMgODUuMzMzMzMzIDAgMCAxIDg1LjMzMzMzMyA4NS4zMzMzMzN2NjgyLjY2NjY2N2E4NS4zMzMzMzMgODUuMzMzMzMzIDAgMCAxLTg1LjMzMzMzMyA4NS4zMzMzMzNINTk3LjMzMzMzM3ogbTE2My4yNDI2NjctNDQ0Ljg0MjY2Nkw1MjMuOTQ2NjY3IDE4OC4wNzQ2NjdjLTEuODc3MzMzLTEuOTYyNjY3LTMuNTg0LTMuODQtNS4yOTA2NjctMy44NC03LjA4MjY2Ny0zLjc1NDY2Ny0xNS45NTczMzMtMS44NzczMzMtMjMuMDQgNS43MTczMzNMMjYyLjQgNDA4LjQ5MDY2N2MtNy4wODI2NjcgNS43MTczMzMtOC44NzQ2NjcgMTcuMDY2NjY3LTEuNzA2NjY3IDI2LjYyNGExNy4yMzczMzMgMTcuMjM3MzMzIDAgMCAwIDIyLjg2OTMzNCA3LjU5NDY2Nmw0Mi40OTYtMzkuOTM2djIzMy44MTMzMzRjMCAxMS4zNDkzMzMgNi45OTczMzMgMTguOTQ0IDE3LjU3ODY2NiAxOC45NDRoMzM1Ljc4NjY2N2MxMC41ODEzMzMgMCAxNy42NjQtNy41OTQ2NjcgMTcuNjY0LTE4Ljk0NFY0MDQuNjUwNjY3bDQyLjQxMDY2NyAzOC4wNTg2NjZjNy4wODI2NjcgNS43MTczMzMgMTcuNjY0IDEuODc3MzMzIDI0Ljc0NjY2Ni01LjcxNzMzMyA1LjI5MDY2Ny0xMS40MzQ2NjcgNS4yOTA2NjctMjIuNzg0LTMuNTg0LTI4LjUwMTMzM3oiIGZpbGw9IiM5NTcxRTkiIHAtaWQ9IjIwNDk1NyI+PC9wYXRoPjwvc3ZnPg==" class="repo-icon" mode="aspectFit" />
 			</view>
 		</view>
 		<view class="card-footer">
-			<text class="stat-item">总简历数 <text class="stat-num">{{ resumeCount }}</text></text>
+			<view class="stat-badge">
+				<text class="stat-item">总简历数 <text class="stat-num">{{ resumeCount }}</text></text>
+			</view>
 		</view>
 	</view>
 </template>
@@ -64,14 +68,18 @@
 		background: #ffffff;
 		border-radius: 20rpx;
 		padding: 30rpx;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.04);
+		border: 1rpx solid #e5e7eb;
+		box-shadow:
+			0 1rpx 2rpx rgba(15, 23, 42, 0.06),
+			0 4rpx 16rpx rgba(0, 0, 0, 0.05);
 		display: flex;
 		flex-direction: column;
 		height: 100%;
 		box-sizing: border-box;
 		position: relative;
-		overflow: hidden;
-		
+		overflow-x: hidden;
+		overflow-y: auto;
+
 		&:active {
 			background: #f9fafb;
 		}
@@ -80,9 +88,8 @@
 	.card-content {
 		display: flex;
 		justify-content: space-between;
-		align-items: center;
-		flex: 1;
-		min-height: 0;
+		align-items: flex-start;
+		flex: 0 1 auto;
 		width: 100%;
 	}
 
@@ -90,6 +97,7 @@
 		display: flex;
 		flex-direction: column;
 		flex: 1;
+		min-width: 0;
 		margin-right: 20rpx;
 	}
 
@@ -106,10 +114,22 @@
 		margin-bottom: 10rpx;
 	}
 
+	.desc-box {
+		margin-bottom: 0;
+		padding: 18rpx 20rpx;
+		background: #f9fafb;
+		border: 1rpx solid #e5e7eb;
+		border-radius: 12rpx;
+		box-shadow:
+			0 1rpx 2rpx rgba(15, 23, 42, 0.06),
+			0 4rpx 10rpx rgba(15, 23, 42, 0.05);
+	}
+
 	.desc {
 		font-size: 22rpx;
 		line-height: 1.55;
 		color: #9ca3af;
+		display: block;
 		margin-bottom: 0;
 	}
 
@@ -120,6 +140,19 @@
 		width: 100%;
 		margin-top: auto;
 		padding-top: 12rpx;
+	}
+
+	.stat-badge {
+		display: inline-flex;
+		align-items: center;
+		padding: 10rpx 20rpx;
+		border-radius: 999rpx;
+		border: 1rpx solid #e5e7eb;
+		background: linear-gradient(180deg, #ffffff 0%, #f3f4f6 100%);
+		box-shadow:
+			0 2rpx 8rpx rgba(15, 23, 42, 0.08),
+			0 1rpx 2rpx rgba(15, 23, 42, 0.04),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.95);
 	}
 
 	.stat-item {
@@ -151,7 +184,10 @@
 
 	.resume-card.theme-dark {
 		background: #1d1f24;
-		box-shadow: 0 4rpx 16rpx rgba(0, 0, 0, 0.2);
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow:
+			0 2rpx 6rpx rgba(0, 0, 0, 0.35),
+			0 8rpx 24rpx rgba(0, 0, 0, 0.22);
 
 		&:active {
 			background: #23252b;
@@ -165,8 +201,25 @@
 			color: rgba(255, 255, 255, 0.58);
 		}
 
+		.stat-badge {
+			border-color: rgba(255, 255, 255, 0.14);
+			background: linear-gradient(180deg, rgba(255, 255, 255, 0.08) 0%, rgba(255, 255, 255, 0.03) 100%);
+			box-shadow:
+				0 2rpx 10rpx rgba(0, 0, 0, 0.35),
+				0 1rpx 2rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.12);
+		}
+
 		.desc {
 			color: rgba(255, 255, 255, 0.45);
+		}
+
+		.desc-box {
+			background: rgba(255, 255, 255, 0.04);
+			border-color: rgba(255, 255, 255, 0.1);
+			box-shadow:
+				0 1rpx 3rpx rgba(0, 0, 0, 0.35),
+				0 6rpx 14rpx rgba(0, 0, 0, 0.22);
 		}
 
 		.icon-wrap {

@@ -129,7 +129,10 @@
 		padding: 28rpx;
 		border-radius: 32rpx;
 		background: #ffffff;
-		box-shadow: 0 18rpx 42rpx rgba(67, 76, 210, 0.08);
+		border: 1rpx solid rgba(67, 76, 210, 0.06);
+		box-shadow:
+			0 2rpx 10rpx rgba(15, 23, 42, 0.04),
+			0 18rpx 42rpx rgba(67, 76, 210, 0.08);
 	}
 
 	.section-head {
@@ -176,6 +179,9 @@
 			border-radius: 24rpx;
 			background: linear-gradient(180deg, #fbfcff 0%, #f5f7ff 100%);
 			border: 2rpx solid rgba(67, 76, 210, 0.1);
+			box-shadow:
+				0 2rpx 8rpx rgba(15, 23, 42, 0.048),
+				0 8rpx 20rpx rgba(67, 76, 210, 0.065);
 			display: flex;
 			flex-direction: column;
 			align-items: flex-start;
@@ -316,7 +322,10 @@
 
 	.growth-hub.theme-dark {
 		background: linear-gradient(180deg, #23252b 0%, #1d1f24 100%);
-		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.26);
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow:
+			0 3rpx 12rpx rgba(0, 0, 0, 0.32),
+			0 18rpx 42rpx rgba(0, 0, 0, 0.26);
 
 		.section-title,
 		.tool-name {
@@ -336,6 +345,10 @@
 		.stat-pill,
 		.sub-item {
 			background: linear-gradient(180deg, #2d3037 0%, #262930 100%);
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow:
+				0 3rpx 12rpx rgba(0, 0, 0, 0.3),
+				0 10rpx 26rpx rgba(0, 0, 0, 0.16);
 		}
 
 		.stat-value {

@@ -23,6 +23,11 @@ public interface GrowthRecordMapper {
     void updateGrowthRecord(GrowthRecord record);
 
     /**
+     * 按 user 主键解析 student 表主键（与成长统计、打卡等一致）。
+     */
+    Long selectStudentIdByUserId(@Param("userId") Long userId);
+
+    /**
      * 统计PDF简历生成次数
      */
     int countPdfResumes(@Param("studentId") Long studentId);

@@ -63,6 +63,7 @@
 
 <script>
 	import { request } from '@/api/request.js'
+	import { resolveStoredStudentId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		name: 'AIJobGapCard',
@@ -202,7 +203,7 @@
 			},
 			async fetchAiAnalysis(dimensions) {
 				// 后端分析使用当前用户与维度得分生成差距点和改进建议。
-				const user = uni.getStorageSync('user_v2') || {}
+				let user = uni.getStorageSync('user_v2') || {}
 				const userId = user.userId || user.id
 				if (!userId) {
 					console.log('[AIJobGapCard] 用户未登录，跳过AI分析');
@@ -210,11 +211,22 @@
 					this.roleProfile.suggestions = ['登录后可获取个性化的提升建议'];
 					return
 				}
+				let studentId = resolveStoredStudentId(user)
+				if (!studentId) {
+					await syncUserProfileFromServer()
+					user = uni.getStorageSync('user_v2') || {}
+					studentId = resolveStoredStudentId(user)
+				}
+				if (!studentId) {
+					this.roleProfile.gaps = ['未获取学生档案，请完善资料后重试'];
+					this.roleProfile.suggestions = ['完成个人资料初始化后再查看 AI 分析'];
+					return
+				}
 
 				this.isAnalyzing = true
 				try {
 					const reqData = {
-						studentId: userId,
+						studentId,
 						majorCode: user.majorCode || '',
 						targetRole: '综合能力评估',
 						dimensions: dimensions.map(d => ({

@@ -25,6 +25,19 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
      */
     @Autowired
     private GrowthRecordMapper growthRecordMapper;
+
+    @Override
+    public Long resolveStudentId(Long studentId, Long userId) {
+        if (studentId != null && studentId > 0) {
+            return studentId;
+        }
+        if (userId != null && userId > 0) {
+            Long sid = growthRecordMapper.selectStudentIdByUserId(userId);
+            return sid != null && sid > 0 ? sid : null;
+        }
+        return null;
+    }
+
     /**
      * 获取成长记录统计数据
      * @param studentId 学生ID

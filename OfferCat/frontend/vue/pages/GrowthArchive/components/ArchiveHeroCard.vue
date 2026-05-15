@@ -27,7 +27,7 @@
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import { getGrowthRecordStats } from '@/api/growth.js'
-	import { getUser, resolveStoredStudentId } from '@/utils/user.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		name: 'ArchiveHeroCard',
@@ -140,8 +140,14 @@
 			},
 			async fetchStats() {
 				// 与「我的」页一致：走 `getGrowthRecordStats`（带 Token、多网关前缀兜底），与雷达/成长档案是否已生成无关。
-				const studentId = resolveStoredStudentId()
-				if (!studentId) {
+				let studentId = resolveStoredStudentId()
+				let userId = resolveStoredUserId(getUser())
+				if (!studentId && !userId) {
+					await syncUserProfileFromServer()
+					studentId = resolveStoredStudentId()
+					userId = resolveStoredUserId(getUser())
+				}
+				if (!studentId && !userId) {
 					this.applyLocalStats()
 					return
 				}

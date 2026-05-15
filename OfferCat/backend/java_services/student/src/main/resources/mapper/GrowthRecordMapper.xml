@@ -20,6 +20,10 @@
         SELECT * FROM growth_record WHERE student_id = #{studentId}
     </select>
 
+    <select id="selectStudentIdByUserId" resultType="java.lang.Long">
+        SELECT student_id FROM student WHERE user_id = #{userId} LIMIT 1
+    </select>
+
     <insert id="insertGrowthRecord" useGeneratedKeys="true" keyProperty="recordId">
         INSERT INTO growth_record (
             student_id, resume_count, interview_count, practice_count, collection_count, 
@@ -43,16 +47,64 @@
         WHERE student_id = #{studentId}
     </update>
 
+    <!-- 简历：汇总 PDF 导出次数 + 在线简历条目（resume-service 写入 resume 表，按 user_id↔student 关联）-->
     <select id="countPdfResumes" resultType="int">
-        SELECT COUNT(*) FROM resume_pdf WHERE student_id = #{studentId}
+        SELECT COALESCE(
+            (
+                SELECT COUNT(*) FROM resume_pdf rp WHERE rp.student_id = #{studentId}
+            ), 0
+        )
+        + COALESCE(
+            (
+                SELECT COUNT(*)
+                FROM resume r
+                INNER JOIN student st ON r.user_id = st.user_id
+                WHERE st.student_id = #{studentId}
+            ), 0
+        )
+        + COALESCE(
+            (
+                SELECT COUNT(DISTINCT ac.id)
+                FROM ai_consult ac
+                INNER JOIN student st ON ac.user_id = st.user_id
+                WHERE st.student_id = #{studentId}
+                  AND IFNULL(TRIM(ac.user_content), '') &lt;&gt; ''
+                  AND (
+                      ac.user_content LIKE '%润色简历%'
+                      OR ac.user_content LIKE '%帮我润色简历%'
+                      OR ac.user_content LIKE '%简历润色%'
+                      OR (
+                          ac.user_content LIKE '%润色%'
+                          AND (ac.user_content LIKE '%简历%' OR ac.user_content LIKE '%经历%')
+                      )
+                  )
+            ), 0
+        )
     </select>
 
+    <!-- 模拟面试：结构化会话（interview_session） + 文本对话里的面试意图（ai_consult）-->
     <select id="countAiInterviews" resultType="int">
-        SELECT COUNT(*) 
-        FROM ai_consult ac
-        INNER JOIN student s ON ac.user_id = s.user_id
-        WHERE s.student_id = #{studentId} 
-          AND ac.user_content LIKE CONCAT('%', '开始面试', '%')
+        SELECT COALESCE(
+            (SELECT COUNT(*) FROM interview_session its WHERE its.student_id = #{studentId}),
+            0
+        )
+        + COALESCE(
+            (
+                SELECT COUNT(DISTINCT ac.id)
+                FROM ai_consult ac
+                INNER JOIN student st ON ac.user_id = st.user_id
+                WHERE st.student_id = #{studentId}
+                  AND IFNULL(TRIM(ac.user_content), '') &lt;&gt; ''
+                  AND (
+                      ac.user_content LIKE '%开始面试%'
+                      OR ac.user_content LIKE '%开启HR模拟面试%'
+                      OR ac.user_content LIKE '%开启AI模拟面试%'
+                      OR ac.user_content LIKE '%HR模拟面试%'
+                      OR ac.user_content LIKE '%模拟面试%'
+                  )
+            ),
+            0
+        )
     </select>
 
     <select id="countCollections" resultType="int">

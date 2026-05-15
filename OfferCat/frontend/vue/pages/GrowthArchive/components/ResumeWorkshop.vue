@@ -49,39 +49,33 @@
 </script>
 
 <style lang="scss" scoped>
+	/* max-height 对齐 GrowthArchive .page：扣顶栏占位 + 页面上边距 + 下边距（含底栏 116rpx），否则「幕布」比真实可视区高，滚到底仍像差一截 */
 	.resume-workshop {
 		width: 100%;
-		/* 减去顶部栏和页面 padding 的高度，使其占满一屏且不能滑动拖动 */
-		height: calc(100vh - env(safe-area-inset-top) - var(--status-bar-height) - 130rpx - 60rpx - env(safe-area-inset-bottom));
+		max-height: calc(
+			100vh - env(safe-area-inset-top) - var(--status-bar-height) - 130rpx - 20rpx - 40rpx - 116rpx -
+				env(safe-area-inset-bottom)
+		);
 		display: flex;
 		flex-direction: column;
 		gap: 24rpx;
-		overflow: hidden; /* 禁止滑动拖动 */
+		overflow-x: hidden;
+		overflow-y: auto;
+		overscroll-behavior-y: contain;
 		box-sizing: border-box;
+		padding-bottom: calc(48rpx + env(safe-area-inset-bottom));
 	}
 
 	.section-wrap {
+		flex: 0 0 auto;
 		width: 100%;
 		display: flex;
 		flex-direction: column;
 	}
 
-	/* 附件简历占比最大 */
-	.attachment-wrap {
-		flex: 5;
-	}
-
-	.online-wrap {
-		flex: 3;
-	}
-
-	.repo-wrap {
-		flex: 3;
-	}
-	
-	/* 透传高度给组件内部 */
-	:deep(.resume-card) {
-		height: 100%;
-		flex: 1;
+	/* 透传：子卡片不再强制 height:100% 撑满 flex 格，避免文案被父级「幕布」裁切 */
+	.resume-workshop :deep(.resume-card) {
+		height: auto;
+		min-height: 0;
 	}
 </style>

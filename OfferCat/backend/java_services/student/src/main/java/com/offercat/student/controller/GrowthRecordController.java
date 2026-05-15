@@ -25,13 +25,17 @@ public class GrowthRecordController {
 
     /**
      * 获取学生的成长档案统计信息（简历生成次数、面试次数、收藏数等）
-     * 
-     * @param studentId 学生ID
-     * @return 成长档案统计VO
+     * studentId 与 userId 二选一（或同时传）；缺 studentId 时服务端按 userId→student 表解析，避免 H5 缓存丢 studentId 导致长期为 0。
      */
     @GetMapping("/stats")
-    public ResponseResult<GrowthRecordVO> getStats(@RequestParam("studentId") Long studentId) {
-        GrowthRecordVO stats = growthRecordService.getGrowthRecordStats(studentId);
+    public ResponseResult<GrowthRecordVO> getStats(
+            @RequestParam(value = "studentId", required = false) Long studentId,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        GrowthRecordVO stats = growthRecordService.getGrowthRecordStats(sid);
         return ResponseResult.success(stats);
     }
 
@@ -43,8 +47,14 @@ public class GrowthRecordController {
      * @return 打卡结果（包含连续天数和累计天数）
      */
     @PostMapping("/checkin")
-    public ResponseResult<CheckinResultVO> checkIn(@RequestParam("studentId") Long studentId) {
-        CheckinResultVO result = growthRecordService.checkIn(studentId);
+    public ResponseResult<CheckinResultVO> checkIn(
+            @RequestParam(value = "studentId", required = false) Long studentId,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        CheckinResultVO result = growthRecordService.checkIn(sid);
         return ResponseResult.success(result);
     }
 
@@ -55,8 +65,14 @@ public class GrowthRecordController {
      * @return 长度为7的Boolean数组，代表周一到周日
      */
     @GetMapping("/checkin/weekly")
-    public ResponseResult<List<Boolean>> getWeeklyCheckinStatus(@RequestParam("studentId") Long studentId) {
-        List<Boolean> status = growthRecordService.getWeeklyCheckinStatus(studentId);
+    public ResponseResult<List<Boolean>> getWeeklyCheckinStatus(
+            @RequestParam(value = "studentId", required = false) Long studentId,
+            @RequestParam(value = "userId", required = false) Long userId) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        List<Boolean> status = growthRecordService.getWeeklyCheckinStatus(sid);
         return ResponseResult.success(status);
     }
 
@@ -69,10 +85,15 @@ public class GrowthRecordController {
      * @return 收藏结果
      */
     @PostMapping("/collect")
-    public ResponseResult<Void> collectQuestion(@RequestParam("studentId") Long studentId, 
+    public ResponseResult<Void> collectQuestion(@RequestParam(value = "studentId", required = false) Long studentId,
+                                                @RequestParam(value = "userId", required = false) Long userId,
                                                 @RequestParam("questionId") Long questionId,
                                                 @RequestParam("questionType") Integer questionType) {
-        growthRecordService.collectQuestion(studentId, questionId, questionType);
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        growthRecordService.collectQuestion(sid, questionId, questionType);
         return ResponseResult.success(null);
     }
 }

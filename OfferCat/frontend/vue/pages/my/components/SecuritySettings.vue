@@ -103,7 +103,10 @@
 		padding: 28rpx;
 		border-radius: 32rpx;
 		background: #ffffff;
-		box-shadow: 0 18rpx 42rpx rgba(67, 76, 210, 0.08);
+		border: 1rpx solid rgba(67, 76, 210, 0.06);
+		box-shadow:
+			0 2rpx 10rpx rgba(15, 23, 42, 0.04),
+			0 18rpx 42rpx rgba(67, 76, 210, 0.08);
 	}
 
 	.section-title,
@@ -141,7 +144,10 @@
 			display: flex;
 			flex-direction: column;
 			align-items: flex-start;
-			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+			box-shadow:
+				0 2rpx 8rpx rgba(15, 23, 42, 0.048),
+				0 8rpx 20rpx rgba(67, 76, 210, 0.065),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 		}
 
 	.setting-icon {
@@ -196,7 +202,10 @@
 
 	.security-settings.theme-dark {
 		background: linear-gradient(180deg, #23252b 0%, #1d1f24 100%);
-		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.26);
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow:
+			0 3rpx 12rpx rgba(0, 0, 0, 0.32),
+			0 18rpx 42rpx rgba(0, 0, 0, 0.26);
 
 		.section-title {
 			color: #f4f7fb;
@@ -209,7 +218,11 @@
 
 		.setting-item {
 			background: linear-gradient(180deg, #2d3037 0%, #262930 100%);
-			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.04);
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow:
+				0 3rpx 12rpx rgba(0, 0, 0, 0.3),
+				0 10rpx 26rpx rgba(0, 0, 0, 0.16),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.04);
 		}
 
 		.setting-name {

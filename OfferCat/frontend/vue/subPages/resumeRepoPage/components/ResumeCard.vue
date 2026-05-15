@@ -103,8 +103,8 @@ export default {
   box-sizing: border-box;
 }
 .custom-checkbox.is-checked {
-  border-color: #4AA9FE;
-  background-color: #4AA9FE;
+  border-color: #5d76bd;
+  background-color: #5d76bd;
 }
 .checkbox-inner {
   width: 10px;
@@ -155,8 +155,8 @@ export default {
   margin-left: 10px;
 }
 .status-normal {
-  background-color: #e6f7ff;
-  color: #1890ff;
+  background-color: rgba(93, 118, 189, 0.12);
+  color: #5d76bd;
 }
 .status-disabled {
   background-color: #fff1f0;
@@ -208,8 +208,8 @@ export default {
 }
 
 .resume-card-wrapper.theme-dark .status-normal {
-  background-color: rgba(24, 144, 255, 0.15);
-  color: #4AA9FE;
+  background-color: rgba(93, 118, 189, 0.22);
+  color: #9eb0e6;
 }
 
 .resume-card-wrapper.theme-dark .status-disabled {
@@ -223,8 +223,8 @@ export default {
 }
 
 .resume-card-wrapper.theme-dark .custom-checkbox.is-checked {
-  border-color: #4AA9FE;
-  background-color: #4AA9FE;
+  border-color: #5d76bd;
+  background-color: #5d76bd;
 }
 
 .resume-card-wrapper.theme-dark .checkbox-inner {

@@ -26,7 +26,6 @@
 	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
-	import { BASE_URL, getApiBase } from '@/api/config.js'
 	import { getGrowthRecordStats } from '@/api/growth.js'
 	import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
@@ -139,34 +138,30 @@
 					{ label: '题库收藏', value: String(metrics.favoritesCount) }
 				]
 			},
-			fetchStats() {
-				// 优先读后端统计，失败时再使用本地缓存统计。
+			async fetchStats() {
+				// 与「我的」页一致：走 `getGrowthRecordStats`（带 Token、多网关前缀兜底），与雷达/成长档案是否已生成无关。
 				const studentId = resolveStoredStudentId()
-				if (!studentId || !getApiBase()) {
+				if (!studentId) {
 					this.applyLocalStats()
 					return
 				}
-				uni.request({
-					url: `${BASE_URL}/api/student/growth/stats`,
-					method: 'GET',
-					data: { studentId },
-					success: (res) => {
-						if (res.statusCode === 200 && res.data && res.data.data) {
-							const d = res.data.data
-							this.stats = [
-								{ label: '我的简历', value: String(d.resumeCount ?? 0) },
-								{ label: '面试记录', value: String(d.interviewCount ?? 0) },
-								{ label: '题库练习', value: String(d.practiceCount ?? 0) },
-								{ label: '题库收藏', value: String(d.collectionCount ?? 0) }
-							]
-						} else {
-							this.applyLocalStats()
-						}
-					},
-					fail: () => {
+				try {
+					const res = await getGrowthRecordStats()
+					const d = res && res.data
+					if (!d || typeof d !== 'object') {
 						this.applyLocalStats()
+						return
 					}
-				})
+					this.stats = [
+						{ label: '我的简历', value: String(d.resumeCount ?? 0) },
+						{ label: '面试记录', value: String(d.interviewCount ?? 0) },
+						{ label: '题库练习', value: String(d.practiceCount ?? 0) },
+						{ label: '题库收藏', value: String(d.collectionCount ?? 0) }
+					]
+				} catch (e) {
+					console.warn('[ArchiveHeroCard] growth/stats 失败，使用本地统计', e)
+					this.applyLocalStats()
+				}
 			}
 		}
 	}

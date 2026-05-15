@@ -37,6 +37,8 @@
 	import editResumeNamePopup from './editResumeNamePopup.vue'
 	import { DEFAULT_AVATAR } from '@/utils/userProfile.js'
 	import { request } from '@/api/request.js'
+	import { BASE_URL } from '@/api/config.js'
+	import { getToken } from '@/utils/token.js'
 	import { getUser } from '@/utils/user.js'
 
 	export default {
@@ -178,21 +180,23 @@
 					}
 					
 					// 上传头像
+					const hdr = {}
+					const tok = getToken()
+					if (tok) {
+						hdr['Authorization'] = `Bearer ${tok}`
+					}
 					uni.uploadFile({
-						url: `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/resume/${targetResumeId}/avatar`,
+						url: `${BASE_URL}/api/resume/${targetResumeId}/avatar`,
 						filePath: filePath,
 						name: 'file',
-						header: {
-							'Content-Type': 'multipart/form-data'
-						},
+						header: hdr,
 						success: (uploadRes) => {
 							uni.hideLoading();
 							try {
 								const data = JSON.parse(uploadRes.data);
 								if (data && data.photo) {
 									uni.showToast({ title: '头像上传成功', icon: 'success' });
-									// 拼接完整的头像URL
-									const avatarUrl = `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/resume/${targetResumeId}/avatar`;
+									const avatarUrl = `${BASE_URL}/api/resume/${targetResumeId}/avatar`;
 									this.$emit('updatePhoto', avatarUrl);
 								} else {
 									uni.showToast({ title: '上传失败', icon: 'none' });

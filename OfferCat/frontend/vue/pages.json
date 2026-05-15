@@ -188,6 +188,16 @@
 					}
 				},
 				{
+					"path": "settings/gatewayHub",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "网关接通点",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
 					"path": "settings/privacy",
 					"style": {
 						"navigationStyle": "custom",

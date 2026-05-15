@@ -25,6 +25,9 @@ spring:
           uri: lb://user-service
           predicates:
             - Path=/api/user/**
+          filters:
+            # /api/user/profile → /user/profile（与 UserController @RequestMapping("/user") 对齐）
+            - StripPrefix=1
 
         - id: user-service-profile
           uri: lb://user-service
@@ -35,6 +38,11 @@ spring:
           uri: lb://ai-evaluation-service
           predicates:
             - Path=/api/ai/**
+
+        - id: ai-evaluation-question-bank
+          uri: lb://ai-evaluation-service
+          predicates:
+            - Path=/api/question-bank/**
 
         - id: resume-service
           uri: lb://resume-service
@@ -58,12 +66,19 @@ spring:
           filters:
             - StripPrefix=1
 
+        # /api/growth/** → Strip 掉 api → /growth/**（对齐 GrowthRecordController 的 @RequestMapping("/growth")）
         - id: growth-service
           uri: lb://student-service
           predicates:
             - Path=/api/growth/**
           filters:
             - StripPrefix=1
+
+        # 反向代理若已剥掉外层 /api（客户端仍请求的是 .../growth/**），兜底直连学生服务同一套控制器
+        - id: growth-service-no-api-prefix
+          uri: lb://student-service
+          predicates:
+            - Path=/growth/**
 
         - id: forum-service
           uri: lb://student-service
@@ -78,6 +93,23 @@ spring:
             - Path=/api/sensitive/**
           filters:
             - StripPrefix=1
+
+        - id: help-service
+          uri: lb://student-service
+          predicates:
+            - Path=/api/help/**
+          filters:
+            - StripPrefix=1
+
+        - id: chat-service-api
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/chat/**
+
+        - id: chat-service-admin
+          uri: lb://chat-service
+          predicates:
+            - Path=/api/admin/**
 
         - id: recruitment-service
           uri: lb://recruitment-service

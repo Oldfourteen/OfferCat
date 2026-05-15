@@ -1,4 +1,4 @@
-import { getUser, setUser } from './user.js'
+import { getUser, setUser, resolveStoredStudentId } from './user.js'
 import defaultAvatar from '@/asset/image/avatar.png'
 
 // 默认头像、资料变更事件以及用户资料默认结构。
@@ -56,10 +56,17 @@ export function getUserProfile() {
 export function saveUserProfile(profile = {}) {
 	const currentUser = getUser() || {}
 	const nextProfile = normalizeProfile({ ...currentUser, ...profile })
+	// 每次保存资料后，`profile` 会变成扁平结构；必须把 studentId 提到可视层，否则签到/成长接口读不到（原在 user.profile.studentId 的旧数据会「丢」一层）。
+	const mergedForSid = { ...currentUser, ...profile, ...nextProfile }
+	const sid = resolveStoredStudentId(mergedForSid)
+	const profileForStore = {
+		...nextProfile,
+		...(sid != null ? { studentId: sid } : {})
+	}
 	setUser({
 		...currentUser,
-		...nextProfile,
-		profile: nextProfile
+		...profileForStore,
+		profile: profileForStore
 	})
 	if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
 		uni.$emit(USER_PROFILE_UPDATED_EVENT, nextProfile)

@@ -19,9 +19,35 @@ export function resolveStoredUserId(user) {
 	return n
 }
 
+/**
+ * 从用户对象各层结构解析 student 主键（兼容根级、profile 嵌套、以及 saveUserProfile 误产生的 profile.profile）。
+ * @returns {string|number|null}
+ */
+function pickRawStudentId(u) {
+	if (!u || typeof u !== 'object') return null
+	const ok = (v) => (v !== undefined && v !== null && v !== '' ? v : null)
+	return (
+		ok(u.studentId) ??
+		ok(u.profile && u.profile.studentId) ??
+		ok(u.profile && u.profile.profile && u.profile.profile.studentId)
+	)
+}
+
 // 保存用户信息到本地缓存。
 export function setUser(user) {
-	uni.setStorageSync(USER_KEY, user || null)
+	if (user == null || typeof user !== 'object') {
+		uni.setStorageSync(USER_KEY, user || null)
+		return
+	}
+	const raw = pickRawStudentId(user)
+	let next = user
+	if (raw != null) {
+		const n = typeof raw === 'number' ? raw : Number(raw)
+		if (Number.isFinite(n) && n > 0 && (user.studentId == null || user.studentId === '')) {
+			next = { ...user, studentId: n }
+		}
+	}
+	uni.setStorageSync(USER_KEY, next)
 }
 
 // 清除本地缓存中的用户信息。
@@ -38,12 +64,7 @@ export function clearUser() {
 export function resolveStoredStudentId(user) {
 	const u = user != null ? user : getUser()
 	if (!u || typeof u !== 'object') return null
-	const raw =
-		u.studentId != null && u.studentId !== ''
-			? u.studentId
-			: u.profile && u.profile.studentId != null && u.profile.studentId !== ''
-				? u.profile.studentId
-				: null
+	const raw = pickRawStudentId(u)
 	if (raw === '' || raw == null) return null
 	const n = typeof raw === 'number' ? raw : Number(raw)
 	if (!Number.isFinite(n) || n <= 0) return null

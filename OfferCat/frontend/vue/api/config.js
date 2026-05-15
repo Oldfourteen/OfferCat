@@ -1,9 +1,13 @@
 /**
- * 后端网关根地址（不要末尾 /）。
- * 与真实部署不一致时，客户端会一直连到错误主机直至 uni.request 超时。
+ * 后端 API 网关根地址（勿带末尾 /）。
  *
- * 可选覆盖：在 App.vue 的 globalData.apiBase 中填写你的网关地址（如 http://公网IP:14132），
- * 便于真机调试不改此处默认值。
+ * OfferCat（TCP）：内网网关 listening **14132**；经 NAT/防火墙映射到外网端口 **21630**。
+ * 客户端（App / H5）请使用可与设备互通的入口，例如：**http://start.awacode.top:21630**。
+ * 同机房或 VPN 内需直连网关进程时再用内网主机 + **14132**。
+ *
+ * 与真实部署不一致时，会一直请求错误地址直至超时。
+ *
+ * 可选覆盖：`App.vue` → `globalData.apiBase`，便于真机或内网调试而不改此处默认值。
  */
 const DEFAULT_API_BASE = 'http://start.awacode.top:21630'.replace(/\/$/, '')
 

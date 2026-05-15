@@ -127,6 +127,12 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { getApiBase } from '@/api/config.js'
+	import { getToken } from '@/utils/token.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
+
+	/** 与 chat 服务约定：0 表示客服端 */
+	const CS_BOT_ID = 0
 
 	export default {
 		mixins: [themeMixin],
@@ -187,15 +193,54 @@
 					this.saveMessages()
 				}
 			},
+			buildChatPersistencePayload(messageList, userId) {
+				const rows = []
+				for (const msg of messageList || []) {
+					if (!msg || typeof msg.content !== 'string') continue
+					if (msg.isSelf) {
+						rows.push({
+							senderId: userId,
+							receiverId: CS_BOT_ID,
+							content: msg.content,
+							messageType: 0,
+							isRead: 1
+						})
+					} else {
+						rows.push({
+							senderId: CS_BOT_ID,
+							receiverId: userId,
+							content: msg.content,
+							messageType: 0,
+							isRead: 1
+						})
+					}
+				}
+				return rows
+			},
 			saveMessages() {
 				uni.setStorageSync('chat_messages', this.messageList)
-				
+
+				const userId = resolveStoredUserId(getUser())
+				if (!userId) {
+					return
+				}
+				const messages = this.buildChatPersistencePayload(this.messageList, userId)
+				if (!messages.length) {
+					return
+				}
+
+				const token = getToken()
+				const headers = {
+					'Content-Type': 'application/json'
+				}
+				if (token) {
+					headers['Authorization'] = `Bearer ${token}`
+				}
 				uni.request({
-					url: `${uni.getStorageSync('BASE_URL')}/api/chat/save`,
+					url: `${getApiBase()}/api/chat/save`,
 					method: 'POST',
-					data: {
-						messages: this.messageList
-					},
+					header: headers,
+					data: { messages },
 					fail: () => {
 						console.log('保存到服务器失败，已保存到本地')
 					}
@@ -246,42 +291,56 @@
 				}
 			},
 			callAiInterviewApi(type) {
+				const studentId = resolveStoredStudentId(getUser())
+				if (!studentId) {
+					uni.showToast({ title: '请先登录并完成学生资料', icon: 'none' })
+					return
+				}
+				const isLearn = type === '开始AI面试学习'
+				const targetPosition = isLearn ? 'AI面试学习' : '模拟面试练习'
+				const interviewMode = isLearn ? 2 : 1
+				const formBody =
+					`studentId=${encodeURIComponent(studentId)}` +
+					`&targetPosition=${encodeURIComponent(targetPosition)}` +
+					`&mode=${encodeURIComponent(interviewMode)}`
+
 				uni.showLoading({ title: '正在连接AI...' })
+				const token = getToken()
+				const headers = {
+					'Content-Type': 'application/x-www-form-urlencoded'
+				}
+				if (token) {
+					headers['Authorization'] = `Bearer ${token}`
+				}
 				uni.request({
-					url: `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/interview/ai/start`,
+					url: `${getApiBase()}/api/ai/interview/session/init`,
 					method: 'POST',
-					data: {
-						type: type === '开始AI面试学习' ? 'learn' : 'practice',
-						userId: uni.getStorageSync('userInfo')?.userId || 0
-					},
+					header: headers,
+					data: formBody,
 					success: (res) => {
 						uni.hideLoading()
-						if (res.data && res.data.success) {
-							const aiResponse = res.data.data || 'AI面试学习已开始，请准备好回答问题。'
-							this.messageList.push({
-								isSelf: true,
-								content: type,
-								time: this.getCurrentTime()
-							})
+						const body = res.data
+						const ok = res.statusCode >= 200 && res.statusCode < 300 && body && body.sessionId != null
+						this.messageList.push({
+							isSelf: true,
+							content: type,
+							time: this.getCurrentTime()
+						})
+						if (ok) {
+							const sid = body.sessionId
 							this.messageList.push({
 								isSelf: false,
-								content: aiResponse,
+								content: `已为你在云端创建 AI 面试会话（编号 ${sid}）。请前往 App 内的「模拟面试」等入口继续作答。`,
 								time: this.getCurrentTime()
 							})
-							this.saveMessages()
 						} else {
-							this.messageList.push({
-								isSelf: true,
-								content: type,
-								time: this.getCurrentTime()
-							})
 							this.messageList.push({
 								isSelf: false,
 								content: 'AI面试服务暂时不可用，请稍后再试。',
 								time: this.getCurrentTime()
 							})
-							this.saveMessages()
 						}
+						this.saveMessages()
 					},
 					fail: () => {
 						uni.hideLoading()

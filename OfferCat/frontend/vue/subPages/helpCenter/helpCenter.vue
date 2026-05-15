@@ -57,6 +57,15 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { request } from '@/api/request.js'
+
+	const DEFAULT_FAQ_LIST = [
+		{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
+		{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
+		{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
+		{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
+		{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
+	]
 
 	const HELP_CENTER_BACK_ICON =
 		'data:image/svg+xml;charset=utf-8,' +
@@ -86,33 +95,17 @@
 			goBack() {
 				uni.navigateBack()
 			},
-			loadFaqList() {
-				uni.request({
-					url: `${uni.getStorageSync('BASE_URL') || 'http://localhost:8080'}/api/help/faq`,
-					method: 'GET',
-					success: (res) => {
-						if (res.data && res.data.data) {
-							this.faqList = res.data.data
-						} else {
-							this.faqList = [
-								{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
-								{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
-								{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
-								{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
-								{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
-							]
-						}
-					},
-					fail: () => {
-						this.faqList = [
-							{ question: '如何创建简历？', answer: '在首页点击"创建简历"按钮，按照提示填写个人信息即可。' },
-							{ question: '如何修改密码？', answer: '进入个人中心 -> 设置 -> 修改密码。' },
-							{ question: '如何联系客服？', answer: '点击底部"在线客服"按钮，即可与人工客服沟通。' },
-							{ question: '数据如何备份？', answer: '系统会自动备份您的数据到云端，无需手动操作。' },
-							{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
-						]
+			async loadFaqList() {
+				try {
+					const body = await request({ url: '/api/help/faq', method: 'GET' })
+					if (body && Array.isArray(body.data) && body.data.length) {
+						this.faqList = body.data
+					} else {
+						this.faqList = DEFAULT_FAQ_LIST.slice()
 					}
-				})
+				} catch (_) {
+					this.faqList = DEFAULT_FAQ_LIST.slice()
+				}
 			},
 			navigateToManager() {
 				uni.navigateTo({

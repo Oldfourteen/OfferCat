@@ -91,7 +91,7 @@
 					: 'rgba(255, 255, 255, 0.36)'
 			},
 			progColor() {
-				return this.tone === 'interview' ? '#34d399' : '#38bdf8'
+				return '#d6deeb'
 			},
 			numericPct() {
 				const v = this.accuracyPercent
@@ -268,15 +268,10 @@
 		pointer-events: none;
 	}
 
-	.qbg-card.is-tone-written :deep(.qbg-prog) {
-		filter:
-			drop-shadow(0 0 14rpx rgba(56, 189, 248, 0.55))
-			drop-shadow(0 0 6rpx rgba(255, 255, 255, 0.45));
-	}
-
+	.qbg-card.is-tone-written :deep(.qbg-prog),
 	.qbg-card.is-tone-interview :deep(.qbg-prog) {
 		filter:
-			drop-shadow(0 0 14rpx rgba(52, 211, 153, 0.5))
-			drop-shadow(0 0 6rpx rgba(240, 253, 244, 0.4));
+			drop-shadow(0 0 14rpx rgba(214, 222, 235, 0.45))
+			drop-shadow(0 0 6rpx rgba(255, 255, 255, 0.35));
 	}
 </style>

@@ -6,15 +6,20 @@ function getStudentId() {
 }
 
 /**
- * 成长相关接口的网关路径（按优先级尝试，遇 HTTP 404 则换下一个）。
- * 1) `/api/student/profile/growth/**` — 与学生档案接口 `/api/student/profile/**` 同一段路由，线上最易与现有网关/Nginx 行为一致
- * 2) `/api/student/growth/**` — StripPrefix 后到 `/student/growth/**`
- * 3) `/api/growth/**` — 仓库 api_gateway 中的独立 growth 路由（旧部署可能未配置则会 404）
+ * 成长相关接口的路径（遇「未命中路由」404 则换下一个；与网关 application.yml / GrowthRecordController 对齐）。
+ * 1) `/api/growth/**` — 网关 growth-service 专用段（仓库默认；StripPrefix 后到 `/growth/**`）
+ * 2) `/api/student/profile/growth/**` — 与 `/api/student/profile/**` 同 student-service 路由
+ * 3) `/api/student/growth/**` — StripPrefix 后到 `/student/growth/**`
+ * 4) `/growth/**` — 若 Nginx 等已剥掉网关前的 `/api` 前缀，仍直连「/growth/**」时用
  */
-const GROWTH_PREFIXES = ['/api/student/profile/growth', '/api/student/growth', '/api/growth']
+const GROWTH_PREFIXES = ['/api/growth', '/api/student/profile/growth', '/api/student/growth', '/growth']
 
 function isHttpNotFound(err) {
-	return err && (err.statusCode === 404 || err.bizCode === 404)
+	if (!err) return false
+	if (err.statusCode === 404 || err.bizCode === 404) return true
+	const m = String(err.message || '')
+	// uni 部分运行时的 Error 未必挂 statusCode，但 formatHttpErrorMessage 会把 404 文案写进 message
+	return /^\s*Not Found\b/i.test(m) || /\b404\b/i.test(m)
 }
 
 /**

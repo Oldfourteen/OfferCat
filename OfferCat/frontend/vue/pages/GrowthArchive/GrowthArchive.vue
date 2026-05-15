@@ -9,7 +9,7 @@
 			<template v-if="activeIndex === 0">
 				<!-- 成长档案页：总览、档案管理、趋势图、AI 分析按顺序展开。 -->
 				<view class="animate-item" style="animation-delay: 0.2s;">
-					<ArchiveHeroCard :theme="theme" :radarData="radarData" />
+					<ArchiveHeroCard ref="archiveHeroCard" :theme="theme" :radarData="radarData" />
 				</view>
 				<view class="animate-item" style="animation-delay: 0.3s;">
 					<ArchiveManagerCard :theme="theme" />
@@ -62,6 +62,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 	import { request } from '@/api/request.js'
+	import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
 	export default {
 		mixins: [themeMixin, liquidTabBarPageMixin],
@@ -88,80 +89,107 @@
 			}
 		},
 		onShow() {
+			const user = getUser() || uni.getStorageSync('user_v2') || {}
+			const cacheKey = this.resolveRadarCacheKey(user)
 			// 每次回到页面都尝试恢复目标滚动位置和最新测评数据。
 			this.handlePendingScroll()
 			this.checkFirstTimeRadar()
 			// 先尝试从全局数据加载（APK中setStorageSync跨页面不可靠）
-			const user = uni.getStorageSync('user_v2') || {}
-			const userId = user.userId || user.id
-			if (userId) {
+			if (cacheKey != null && cacheKey !== '') {
 				const app = getApp()
-				if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
-					this.radarData = app.globalData.radarDataCache[userId]
+				const c = app && app.globalData && app.globalData.radarDataCache
+				if (c && c[cacheKey] != null) {
+					this.radarData = c[cacheKey]
 				}
 			}
 			// 然后异步拉取最新数据
 			this.fetchRadarData()
+			// 总览四项统计独立于雷达测评；每次进入页面同步一次，避免仅显示占位「-」。
+			this.$nextTick(() => {
+				const card = this.$refs.archiveHeroCard
+				if (card && typeof card.fetchStats === 'function') {
+					void card.fetchStats()
+				}
+			})
 		},
 		methods: {
+			resolveRadarCacheKey(user) {
+				const u = user && typeof user === 'object' ? user : {}
+				if (u.userId !== undefined && u.userId !== null && u.userId !== '') return u.userId
+				if (u.id !== undefined && u.id !== null && u.id !== '') return u.id
+				return null
+			},
 			async fetchRadarData() {
 				// 页面优先拉取最新测评结果，并同步写入全局缓存供其他页面复用。
-				const user = uni.getStorageSync('user_v2') || {}
-				const userId = user.userId || user.id
-				if (!userId) return
+				const user = getUser() || uni.getStorageSync('user_v2') || {}
+				const cacheKey = this.resolveRadarCacheKey(user)
+				const sid = resolveStoredStudentId(user)
+				const studentId = sid != null ? sid : cacheKey
+				if (studentId === null || studentId === undefined || studentId === '') {
+					return
+				}
 				try {
 					const res = await request({
 						url: '/api/radar-chart/my-evaluation',
 						method: 'GET',
-						data: { studentId: userId }
+						data: { studentId }
 					})
 					// 兼容不同封装的响应结构
 					const realData = res.data || res
 					if (realData && realData.totalScore !== undefined) {
 						this.radarData = realData
-						// 同时缓存到全局，供后续使用
-						const app = getApp()
-						if (app && app.globalData) {
-							app.globalData.radarDataCache = app.globalData.radarDataCache || {}
-							app.globalData.radarDataCache[userId] = realData
+						if (cacheKey != null && cacheKey !== '') {
+							const app = getApp()
+							if (app && app.globalData) {
+								app.globalData.radarDataCache = app.globalData.radarDataCache || {}
+								app.globalData.radarDataCache[cacheKey] = realData
+							}
 						}
 					} else {
-						// 后端没有查到数据，尝试使用全局缓存
 						const app = getApp()
-						if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
-							this.radarData = app.globalData.radarDataCache[userId]
+						const c = app && app.globalData && app.globalData.radarDataCache
+						if (cacheKey != null && cacheKey !== '' && c && c[cacheKey] != null) {
+							this.radarData = c[cacheKey]
 						} else {
-							// 清除 has_submitted_radar flag，以便下次可以重新弹窗引导
-							uni.removeStorageSync('has_submitted_radar_' + userId)
+							if (cacheKey != null && cacheKey !== '') {
+								uni.removeStorageSync('has_submitted_radar_' + cacheKey)
+							}
 							this.checkFirstTimeRadar()
 						}
 					}
 				} catch (e) {
-					// 查询失败时，尝试使用全局缓存
 					const app = getApp()
-					if (app && app.globalData && app.globalData.radarDataCache && app.globalData.radarDataCache[userId]) {
-						this.radarData = app.globalData.radarDataCache[userId]
+					const c = app && app.globalData && app.globalData.radarDataCache
+					const gotCache = cacheKey != null && cacheKey !== '' && c && c[cacheKey] != null
+					if (gotCache) {
+						this.radarData = c[cacheKey]
 					} else {
+						let hint =
+							e && e.statusCode === 503
+								? '雷达测评服务暂时不可用（HTTP 503）。请在服务器确认 radar-evaluation-service 已启动、已注册到 Eureka，且网关能路由到 /api/radar-chart/**。\n'
+								: ''
+						const msg =
+							e && typeof e.message === 'string' ? e.message : e ? String(e) : '未知错误'
 						uni.showModal({
 							title: '档案数据同步失败',
-							content: `请检查网络连接后重试。\n错误详情: ${e.message}`,
+							content: `${hint}请检查网络连接后重试。\n错误详情: ${msg}`,
 							showCancel: false
-						});
+						})
 					}
 					console.error('获取雷达数据失败', e)
 				}
 			},
 			checkFirstTimeRadar() {
 				// 未完成问卷时弹出引导弹窗，二次进入后才允许暂时跳过。
-				const user = uni.getStorageSync('user_v2') || {}
-				const userId = user.userId || user.id
-				if (!userId) return
-				
-				const storageKey = 'has_submitted_radar_' + userId
+				const user = getUser() || uni.getStorageSync('user_v2') || {}
+				const cacheKey = this.resolveRadarCacheKey(user)
+				if (cacheKey == null || cacheKey === '') return
+
+				const storageKey = 'has_submitted_radar_' + cacheKey
 				const hasSubmitted = uni.getStorageSync(storageKey)
-				
+
 				if (!hasSubmitted) {
-					const seenKey = 'has_seen_radar_modal_' + userId
+					const seenKey = 'has_seen_radar_modal_' + cacheKey
 					const hasSeen = uni.getStorageSync(seenKey)
 					
 					this.assessmentSeenKey = seenKey

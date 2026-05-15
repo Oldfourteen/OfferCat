@@ -99,6 +99,8 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { getApiBase } from '@/api/config.js'
+	import { getToken } from '@/utils/token.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -188,10 +190,18 @@
 			},
 			confirmMute(option) {
 				if (!this.currentUser) return
-				
+				const hdr = {
+					'Content-Type': 'application/json'
+				}
+				const t = getToken()
+				if (t) {
+					hdr['Authorization'] = `Bearer ${t}`
+				}
+
 				uni.request({
-					url: `${uni.getStorageSync('BASE_URL')}/api/admin/mute`,
+					url: `${getApiBase()}/api/admin/mute`,
 					method: 'POST',
+					header: hdr,
 					data: {
 						userId: this.currentUser.userId,
 						duration: option.value
@@ -216,9 +226,15 @@
 					confirmColor: '#ff4d4f',
 					success: (res) => {
 						if (res.confirm) {
+							const dh = {}
+							const dt = getToken()
+							if (dt) {
+								dh['Authorization'] = `Bearer ${dt}`
+							}
 							uni.request({
-								url: `${uni.getStorageSync('BASE_URL')}/api/admin/post/${postId}`,
+								url: `${getApiBase()}/api/admin/post/${postId}`,
 								method: 'DELETE',
+								header: dh,
 								success: (result) => {
 									if (result.data.success) {
 										this.postList = this.postList.filter(p => p.postId !== postId)

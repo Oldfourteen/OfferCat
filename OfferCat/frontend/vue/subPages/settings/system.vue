@@ -99,6 +99,19 @@
 					<text class="row-arrow">›</text>
 				</view>
 
+				<view class="single-action-card clickable" @click="openGatewayHub">
+					<view class="row-main">
+						<view class="row-icon icon-indigo">
+							<text class="hub-entry-emoji">🔗</text>
+						</view>
+						<view class="row-copy">
+							<text class="row-title">API 网关与接通点</text>
+							<text class="row-desc">网关根地址与各微服务路径一览，可复制完整 URL。</text>
+						</view>
+					</view>
+					<text class="row-arrow">›</text>
+				</view>
+
 				<view class="logout-card clickable" @click="handleLogout">
 					<view class="row-main">
 						<view class="row-icon icon-red">
@@ -309,6 +322,11 @@
 					url: '/subPages/settings/acknowledgment'
 				})
 			},
+			openGatewayHub() {
+				uni.navigateTo({
+					url: '/subPages/settings/gatewayHub'
+				})
+			},
 			showHelpDetail(title, content) {
 				uni.showModal({
 					title,
@@ -492,6 +510,16 @@
 	.row-icon-img {
 		width: 44rpx;
 		height: 44rpx;
+	}
+
+	.hub-entry-emoji {
+		width: 44rpx;
+		height: 44rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 34rpx;
+		line-height: 1;
 	}
 
 	.account-title,

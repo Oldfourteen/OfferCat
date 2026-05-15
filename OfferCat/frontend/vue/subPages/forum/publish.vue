@@ -2,7 +2,9 @@
 	<view class="publish-page" :class="themeClass">
 		<!-- 顶部导航栏 -->
 		<view class="nav-bar">
-			<text class="back-btn" @click="goBack">‹</text>
+			<view class="back-btn" @click="goBack">
+				<image class="back-icon-img" :src="publishBackIcon" mode="aspectFit" style="width: 38rpx; height: 38rpx" />
+			</view>
 			<text class="topbar-title">发布动态</text>
 			<text class="placeholder"></text>
 		</view>
@@ -30,13 +32,6 @@
 						<text class="upload-text">添加图片</text>
 					</view>
 				</view>
-
-				<view class="toolbar">
-					<view class="tool-btn ai-btn" @click="openAiPopup">
-						<text class="tool-icon">✨</text>
-						<text class="tool-text">AI配文</text>
-					</view>
-				</view>
 			</view>
 
 			<!-- 发布按钮 -->
@@ -47,48 +42,59 @@
 			</view>
 			
 			<view class="tip-text">
-				小Tip：上传一张图片后点击上方 AI 配文按钮，可一键生成精彩文案哦~ 嘿嘿嘿 awa
+				小Tip：上传一张图片后点击下方「AI配文」悬浮按钮，从底部拉出面板一键生成文案~ awa
 			</view>
 		</view>
 
-		<!-- AI 配文弹窗 -->
-		<uni-popup ref="aiPopup" type="bottom" :background-color="isDarkTheme ? '#1d1f24' : '#fff'">
-			<view class="ai-popup-content" :class="themeClass">
-				<view class="popup-title">AI 智能配文</view>
-				
-				<view class="section">
-					<view class="section-title">1. 选择篇幅</view>
-					<view class="options-wrap">
-						<view class="option-item" :class="{ active: aiForm.length === '50字' }" @click="aiForm.length = '50字'">
-							极简 (50字)
-						</view>
-						<view class="option-item" :class="{ active: aiForm.length === '100字' }" @click="aiForm.length = '100字'">
-							适中 (100字)
-						</view>
-						<view class="option-item" :class="{ active: aiForm.length === '150字' }" @click="aiForm.length = '150字'">
-							详细 (150字)
-						</view>
-					</view>
-				</view>
+		<!-- 悬浮入口：独立于编辑卡片，点开从底部拉出抽屉 -->
+		<view class="ai-fab-trigger" @click="openAiDrawer">
+			<text class="ai-fab-icon">✨</text>
+			<text class="ai-fab-text">AI配文</text>
+		</view>
 
-				<view class="section">
-					<view class="section-title">2. 选择风格</view>
-					<view class="options-wrap">
-						<view class="option-item" v-for="style in styleOptions" :key="style" 
-							  :class="{ active: aiForm.style === style }" @click="aiForm.style = style">
-							{{ style }}
-						</view>
-					</view>
-				</view>
+		<!-- 底部抽屉：全页独立遮罩 + 内容上滑 -->
+		<transition name="ai-drawer">
+			<view v-if="aiDrawerVisible" class="ai-drawer-mask" @click="closeAiDrawer" @touchmove.stop.prevent>
+				<view class="ai-drawer-sheet" :class="themeClass" @click.stop>
+					<view class="ai-drawer-handle" aria-hidden="true"></view>
+					<view class="ai-drawer-inner">
+						<view class="popup-title">AI 智能配文</view>
 
-				<view class="popup-actions">
-					<view class="action-btn cancel" @click="closeAiPopup">取消</view>
-					<view class="action-btn confirm" :class="{ disabled: isGenerating }" @click="generateCaption">
-						{{ isGenerating ? '生成中...' : '开始生成' }}
+						<view class="section">
+							<view class="section-title">1. 选择篇幅</view>
+							<view class="options-wrap">
+								<view class="option-item" :class="{ active: aiForm.length === '50字' }" @click="aiForm.length = '50字'">
+									极简 (50字)
+								</view>
+								<view class="option-item" :class="{ active: aiForm.length === '100字' }" @click="aiForm.length = '100字'">
+									适中 (100字)
+								</view>
+								<view class="option-item" :class="{ active: aiForm.length === '150字' }" @click="aiForm.length = '150字'">
+									详细 (150字)
+								</view>
+							</view>
+						</view>
+
+						<view class="section">
+							<view class="section-title">2. 选择风格</view>
+							<view class="options-wrap">
+								<view class="option-item" v-for="style in styleOptions" :key="style"
+									  :class="{ active: aiForm.style === style }" @click="aiForm.style = style">
+									{{ style }}
+								</view>
+							</view>
+						</view>
+
+						<view class="popup-actions">
+							<view class="action-btn cancel" @click="closeAiDrawer">取消</view>
+							<view class="action-btn confirm" :class="{ disabled: isGenerating }" @click="generateCaption">
+								{{ isGenerating ? '生成中...' : '开始生成' }}
+							</view>
+						</view>
 					</view>
 				</view>
 			</view>
-		</uni-popup>
+		</transition>
 	</view>
 </template>
 
@@ -99,10 +105,19 @@
 	import { getUserProfile } from '@/utils/userProfile.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 
+	const PUBLISH_BACK_ICON =
+		'data:image/svg+xml;charset=utf-8,' +
+		encodeURIComponent(
+			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
+				'</svg>'
+		)
+
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
+				publishBackIcon: PUBLISH_BACK_ICON,
 				content: '',
 				images: [], // { url: 'local_path', remoteUrl: 'backend_path' }
 				aiForm: {
@@ -110,6 +125,7 @@
 					style: '职场日常'
 				},
 				styleOptions: ['职场日常', '校园生活', '求职心得', '干货分享', '情感共鸣'],
+				aiDrawerVisible: false,
 				isGenerating: false,
 				userProfile: {}
 			}
@@ -182,16 +198,16 @@
 					urls: urls
 				})
 			},
-			openAiPopup() {
+			openAiDrawer() {
 				if (this.images.length === 0) {
 					uni.showToast({ title: '请先添加一张图片作为配文参考', icon: 'none' })
 					return
 				}
-				this.$refs.aiPopup.open()
+				this.aiDrawerVisible = true
 			},
-			closeAiPopup() {
+			closeAiDrawer() {
 				if (!this.isGenerating) {
-					this.$refs.aiPopup.close()
+					this.aiDrawerVisible = false
 				}
 			},
 			generateCaption() {
@@ -243,7 +259,7 @@
 							if (res.statusCode === 200 && data.caption) {
 								// 如果内容不为空，可以选择追加或者替换，这里选择追加
 								this.content = this.content ? this.content + '\n' + data.caption : data.caption
-								this.closeAiPopup()
+								this.closeAiDrawer()
 								uni.showToast({ title: '配文生成成功', icon: 'success' })
 							} else {
 								uni.showToast({ title: data.error || '生成失败', icon: 'none' })
@@ -345,16 +361,32 @@
 	.placeholder {
 		width: 72rpx;
 		height: 72rpx;
-		border-radius: 22rpx;
-		background: rgba(255, 255, 255, 0.92);
-		display: flex;
-		align-items: center;
-		justify-content: center;
+		flex-shrink: 0;
+		box-sizing: border-box;
 	}
 
 	.back-btn {
-		font-size: 42rpx;
-		color: #30435a;
+		border-radius: 50%;
+		padding: 0;
+		background: #ffffff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 6rpx 18rpx rgba(93, 118, 189, 0.14);
+	}
+
+	.back-icon-img {
+		width: 38rpx;
+		height: 38rpx;
+		max-width: 38rpx;
+		max-height: 38rpx;
+		display: block;
+		flex-shrink: 0;
+	}
+
+	.placeholder {
+		opacity: 0;
+		pointer-events: none;
 	}
 
 	.topbar-title {
@@ -413,7 +445,7 @@
 			display: flex;
 			flex-wrap: wrap;
 			gap: 20rpx;
-			margin-bottom: 40rpx;
+			margin-bottom: 0;
 			
 			.image-item {
 				width: 190rpx;
@@ -471,29 +503,6 @@
 				}
 			}
 		}
-		
-		.toolbar {
-			display: flex;
-			gap: 20rpx;
-			
-			.tool-btn {
-				display: flex;
-				align-items: center;
-				gap: 8rpx;
-				padding: 12rpx 24rpx;
-				background: #f8f8f8;
-				border-radius: 30rpx;
-				
-				.tool-icon {
-					font-size: 28rpx;
-				}
-				
-				.tool-text {
-					font-size: 26rpx;
-					color: #666;
-				}
-			}
-		}
 	}
 
 	.publish-btn-wrap {
@@ -515,7 +524,7 @@
 			transition: all 0.3s;
 			
 			&.active {
-				background: #4AA9FE;
+				background: #5d76bd;
 				color: #fff;
 			}
 		}
@@ -526,25 +535,102 @@
 		font-size: 24rpx;
 		color: #999;
 		line-height: 1.6;
-		padding: 0 40rpx;
+		padding: 0 40rpx 140rpx;
 	}
 
-	/* AI 弹窗样式 */
-	.ai-popup-content {
-		border-top-left-radius: 30rpx;
-		border-top-right-radius: 30rpx;
-		padding: 40rpx 30rpx calc(40rpx + env(safe-area-inset-bottom));
+	/* 图二样式：独立于编辑卡片外的悬浮胶囊入口 */
+	.ai-fab-trigger {
+		position: fixed;
+		right: 28rpx;
+		bottom: calc(210rpx + env(safe-area-inset-bottom));
+		z-index: 80;
+		display: flex;
+		align-items: center;
+		gap: 10rpx;
+		padding: 14rpx 28rpx;
+		border-radius: 999rpx;
+		background: #f4f6f9;
+		box-shadow: 0 8rpx 32rpx rgba(38, 51, 78, 0.12);
+		
+		.ai-fab-icon {
+			font-size: 30rpx;
+			line-height: 1;
+		}
+		
+		.ai-fab-text {
+			font-size: 26rpx;
+			color: #6b7588;
+			font-weight: 600;
+		}
+		
+		&:active {
+			opacity: 0.88;
+			transform: scale(0.98);
+		}
+	}
+
+	/* 底部抽屉：独立全屏遮罩层 + 内容上滑（不依赖 uni-popup） */
+	.ai-drawer-mask {
+		position: fixed;
+		left: 0;
+		right: 0;
+		top: 0;
+		bottom: 0;
+		z-index: 999;
+		background: rgba(15, 22, 36, 0.45);
+		display: flex;
+		flex-direction: column;
+		justify-content: flex-end;
+	}
+
+	.ai-drawer-sheet {
+		background: #fff;
+		border-top-left-radius: 32rpx;
+		border-top-right-radius: 32rpx;
+		max-height: 85vh;
+		overflow-y: auto;
+		box-shadow: 0 -12rpx 48rpx rgba(0, 0, 0, 0.12);
+		
+		.ai-drawer-handle {
+			width: 72rpx;
+			height: 8rpx;
+			border-radius: 8rpx;
+			background: #dbe0ea;
+			margin: 18rpx auto 8rpx;
+		}
+	}
+
+	.ai-drawer-enter-active,
+	.ai-drawer-leave-active {
+		transition: opacity 0.28s ease;
+		
+		.ai-drawer-sheet {
+			transition: transform 0.32s cubic-bezier(0.32, 0.72, 0, 1);
+		}
+	}
+
+	.ai-drawer-enter,
+	.ai-drawer-leave-to {
+		opacity: 0;
+		
+		.ai-drawer-sheet {
+			transform: translateY(110%);
+		}
+	}
+
+	.ai-drawer-inner {
+		padding: 12rpx 30rpx calc(36rpx + env(safe-area-inset-bottom));
 		
 		.popup-title {
 			text-align: center;
 			font-size: 34rpx;
 			font-weight: bold;
 			color: #333;
-			margin-bottom: 40rpx;
+			margin-bottom: 36rpx;
 		}
 		
 		.section {
-			margin-bottom: 40rpx;
+			margin-bottom: 36rpx;
 			
 			.section-title {
 				font-size: 28rpx;
@@ -567,9 +653,9 @@
 					border: 2rpx solid transparent;
 					
 					&.active {
-						background: rgba(74, 169, 254, 0.1);
-						color: #4AA9FE;
-						border-color: #4AA9FE;
+						background: rgba(93, 118, 189, 0.12);
+						color: #5d76bd;
+						border-color: #5d76bd;
 					}
 				}
 			}
@@ -578,7 +664,7 @@
 		.popup-actions {
 			display: flex;
 			gap: 30rpx;
-			margin-top: 60rpx;
+			margin-top: 48rpx;
 			
 			.action-btn {
 				flex: 1;
@@ -596,7 +682,7 @@
 				}
 				
 				&.confirm {
-					background: #4AA9FE;
+					background: #5d76bd;
 					color: #fff;
 					
 					&.disabled {
@@ -613,8 +699,13 @@
 		
 		.nav-bar {
 			background: #23252b;
-			.back-btn, .placeholder { background: #2a2c33; }
-			.back-btn, .topbar-title { color: #f4f7fb; }
+			.back-btn {
+				background: rgba(255, 255, 255, 0.92);
+				box-shadow: 0 6rpx 18rpx rgba(0, 0, 0, 0.2);
+			}
+			.topbar-title {
+				color: #f4f7fb;
+			}
 		}
 
 		.editor-card {
@@ -627,7 +718,19 @@
 				background: #2a2c33;
 				border-color: #444;
 			}
-			.tool-btn { background: #2a2c33; .tool-text { color: #aaa; } }
+		}
+
+		.tip-text {
+			color: #888;
+		}
+
+		.ai-fab-trigger {
+			background: #2a2c33;
+			box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.45);
+			
+			.ai-fab-text {
+				color: #b4bac8;
+			}
 		}
 
 		.publish-btn-wrap .publish-btn {
@@ -639,26 +742,40 @@
 			}
 		}
 
-		&.ai-popup-content {
+		.ai-drawer-sheet.theme-dark {
 			background: #1d1f24;
-			.popup-title, .section .section-title { color: #f4f7fb; }
-			.section .options-wrap .option-item {
-				background: #2a2c33;
-				color: #aaa;
-				&.active {
-					background: rgba(93, 118, 189, 0.2);
-					color: #5d76bd;
-					border-color: #5d76bd;
+			
+			.ai-drawer-handle {
+				background: #3a3d46;
+			}
+			
+			.ai-drawer-inner {
+				.popup-title,
+				.section .section-title {
+					color: #f4f7fb;
+				}
+				.section .options-wrap .option-item {
+					background: #2a2c33;
+					color: #aaa;
+					&.active {
+						background: rgba(93, 118, 189, 0.2);
+						color: #5d76bd;
+						border-color: #5d76bd;
+					}
+				}
+				.popup-actions .action-btn.cancel {
+					background: #2a2c33;
+					color: #aaa;
+				}
+				.popup-actions .action-btn.confirm {
+					background: #5d76bd;
+					color: #fff;
 				}
 			}
-			.popup-actions .action-btn.cancel {
-				background: #2a2c33;
-				color: #aaa;
-			}
-			.popup-actions .action-btn.confirm {
-				background: #5d76bd;
-				color: #fff;
-			}
+		}
+
+		.ai-drawer-mask {
+			background: rgba(0, 0, 0, 0.55);
 		}
 	}
 </style>

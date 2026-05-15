@@ -14,6 +14,8 @@ const errorMessage = ref('')
 const selectedNodeId = ref<string | null>(null)
 const recommend = ref<{ nodeId: string; reason: string }[]>([])
 const showRecommend = ref(false)
+/** 首次进入大星图时展示「个人星图」引导，可关闭 */
+const showEntryHint = ref(true)
 
 const payload = ref<GalaxyMajorsPayload | null>(null)
 
@@ -71,14 +73,6 @@ const visual = computed<GalaxyVisualState>(() => ({
   hyperMemberIds: hyperMemberIds.value,
   activeHyperedgeIds: activeHyperedgeIds.value,
 }))
-
-const pathCaption = computed(() => {
-  if (!payload.value || !graph.value) return ''
-  const a = graph.value.nodes.find((n) => n.id === payload.value!.fromId)?.label
-  const b = graph.value.nodes.find((n) => n.id === payload.value!.toId)?.label
-  if (!a || !b) return ''
-  return `${a} → ${b}`
-})
 
 watch(visual, (v) => {
   runtime.value?.setVisualState(v)
@@ -283,6 +277,14 @@ function labelForId(id: string) {
   return graph.value?.nodes.find((n) => n.id === id)?.label ?? id
 }
 
+function goPersonalGalaxy() {
+  void router.push({ name: 'personalHub' })
+}
+
+function closeEntryHint() {
+  showEntryHint.value = false
+}
+
 function goPractice() {
   /* 占位：后续跳转题库 / 原生页 */
   window.alert('「去练」将对接现有题库模块（占位）')
@@ -359,9 +361,10 @@ function goPractice() {
         </section>
       </aside>
 
-      <div v-else class="hint-chip">
-        <p class="side-hint">星球上方有专业名称；点选后查看融合域与成员</p>
-        <p v-if="pathCaption" class="path-caption">{{ pathCaption }}</p>
+      <div v-else-if="showEntryHint" class="hint-promo" role="note">
+        <button type="button" class="hint-dismiss" aria-label="关闭" @click.stop="closeEntryHint">×</button>
+        <p class="promo-title">个人专业星图</p>
+        <button type="button" class="btn promo-cta" @click="goPersonalGalaxy">进入个人星图</button>
       </div>
     </template>
   </div>
@@ -372,6 +375,7 @@ function goPractice() {
   position: relative;
   width: 100%;
   height: 100%;
+  min-height: 100dvh;
   overflow: hidden;
   background: #0f141f;
   isolation: isolate;
@@ -612,31 +616,55 @@ function goPractice() {
   color: rgba(210, 220, 245, 0.78);
 }
 
-.side-hint {
-  margin: 0;
-  font-size: 12px;
-  line-height: 1.5;
-  color: rgba(210, 220, 245, 0.78);
+.hint-promo {
+  position: fixed;
+  right: calc(12px + env(safe-area-inset-right, 0px));
+  bottom: calc(14px + var(--gx-safe-bottom, 0px));
+  z-index: 60;
+  width: min(188px, 48vw);
+  max-width: min(188px, 48vw);
+  box-sizing: border-box;
+  border-radius: 14px;
+  padding: 10px 12px 11px;
+  background: linear-gradient(145deg, rgba(58, 125, 255, 0.22), rgba(18, 24, 40, 0.92));
+  border: 1px solid rgba(140, 200, 255, 0.28);
+  box-shadow: 0 12px 36px rgba(0, 0, 0, 0.35);
+  backdrop-filter: blur(10px);
 }
 
-.path-caption {
-  margin: 2px 0 0;
-  font-size: 12px;
-  font-weight: 600;
-  color: rgba(200, 230, 255, 0.95);
-}
-
-.hint-chip {
+.hint-dismiss {
   position: absolute;
-  right: 12px;
-  top: calc(58px + var(--gx-safe-top));
-  z-index: 20;
-  max-width: min(240px, 62vw);
-  border-radius: 999px;
-  padding: 8px 12px;
-  background: rgba(12, 16, 26, 0.65);
-  border: 1px solid rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(8px);
+  top: 6px;
+  right: 8px;
+  width: 28px;
+  height: 28px;
+  border: none;
+  border-radius: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #eaf2ff;
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.promo-title {
+  margin: 0 26px 8px 0;
+  font-size: 13px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  color: #f2f7ff;
+}
+
+.promo-cta {
+  width: 100%;
+  border-radius: 10px;
+  padding: 8px 10px;
+  font-size: 12px;
+  font-weight: 700;
+  border: none;
+  cursor: pointer;
+  color: #0b1220;
+  background: linear-gradient(135deg, #e8f2ff, #9ec5ff);
 }
 
 .block {

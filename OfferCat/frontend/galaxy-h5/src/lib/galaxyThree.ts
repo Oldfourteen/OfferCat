@@ -25,6 +25,9 @@ const COL_STARFIELD = 0x9bb8e8
 const AUTO_ROTATE_ORBIT_SPEED = 1.35
 const AUTO_ROTATE_IDLE_MS = 4000
 
+/** 融合小行星轨道四象短标签（完整数值在业务侧弹层） */
+const FUSION_QUADRANT_LABELS = ['热度/年薪', '强度/竞争', '学历门槛', '学科技能'] as const
+
 export interface GalaxyVisualState {
   pathIds: Set<string>
   selectedId: string | null
@@ -241,6 +244,39 @@ export function mountGalaxyThree(
     return el
   }
 
+  const makeFusionQuadrantLabelElement = (text: string) => {
+    const el = document.createElement('div')
+    el.textContent = text
+    el.setAttribute('role', 'presentation')
+    el.style.cssText = [
+      'max-width: 52px',
+      'padding: 2px 5px',
+      'border-radius: 5px',
+      'font-size: 8px',
+      'font-weight: 650',
+      'line-height: 1.2',
+      'text-align: center',
+      'letter-spacing: 0.01em',
+      'color: #ede6ff',
+      'background: rgba(28, 20, 42, 0.82)',
+      'border: 1px solid rgba(200, 170, 255, 0.42)',
+      'box-shadow: 0 1px 5px rgba(0,0,0,0.35)',
+      'text-shadow: 0 1px 2px rgba(0,0,0,0.7)',
+      'display: -webkit-box',
+      '-webkit-box-orient: vertical',
+      '-webkit-line-clamp: 2',
+      'overflow: hidden',
+      'word-break: break-all',
+      'overflow-wrap: anywhere',
+      'opacity: 0',
+      'visibility: hidden',
+      'pointer-events: none',
+      'user-select: none',
+      '-webkit-user-select: none',
+    ].join(';')
+    return el
+  }
+
   /**
    * 节点球壳：用 MeshBasicMaterial + map，不依赖光照；并关闭 fog，否则 Exp2 雾会把贴图洗成一片雾色（看起来像纯色球）。
    */
@@ -300,19 +336,56 @@ export function mountGalaxyThree(
       r2.rotation.y = Math.PI / 3.2
       g.add(r2)
     } else {
-      const shardGeo = new THREE.OctahedronGeometry(coreRadius * 0.55, 0)
-      const shardMat = new THREE.MeshBasicMaterial({
-        color: 0xe8e0ff,
+      const orbitRadius = Math.max(coreRadius * 5.55, 0.78)
+      const labelRadius = orbitRadius * 1.2
+      const ringInner = orbitRadius * 0.82
+      const ringOuter = orbitRadius * 1.22
+      const ringGeo = new THREE.RingGeometry(ringInner, ringOuter, 80)
+      const ringMat = new THREE.MeshBasicMaterial({
+        color: COL_FUSION,
         transparent: true,
-        opacity: 0.35,
+        opacity: 0.5,
         depthWrite: false,
-        blending: THREE.AdditiveBlending,
+        side: THREE.DoubleSide,
         fog: false,
+        blending: THREE.AdditiveBlending,
       })
-      const shard = new THREE.Mesh(shardGeo, shardMat)
-      shard.position.set(coreRadius * 0.9, coreRadius * 0.4, 0)
-      shard.userData.part = 'shard'
-      g.add(shard)
+      const orbitRing = new THREE.Mesh(ringGeo, ringMat)
+      orbitRing.rotation.x = Math.PI / 2
+      orbitRing.renderOrder = 0
+      orbitRing.userData.part = 'ring'
+      g.add(orbitRing)
+
+      const satR = Math.max(coreRadius * 0.34, 0.052)
+      const satHue = [0.02, 0.14, 0.55, 0.42] as const
+      for (let i = 0; i < 4; i++) {
+        const geo = new THREE.SphereGeometry(satR, 14, 12)
+        const c = new THREE.Color().setHSL(satHue[i], 0.55, 0.62)
+        const satMat = new THREE.MeshBasicMaterial({
+          color: c,
+          transparent: true,
+          opacity: 0.94,
+          fog: false,
+        })
+        const sat = new THREE.Mesh(geo, satMat)
+        const ang = (i / 4) * Math.PI * 2 - Math.PI / 4
+        const sx = Math.cos(ang) * orbitRadius
+        const sz = Math.sin(ang) * orbitRadius
+        sat.position.set(sx, 0, sz)
+        sat.userData.part = 'satellite'
+        g.add(sat)
+
+        const capEl = makeFusionQuadrantLabelElement(FUSION_QUADRANT_LABELS[i])
+        const cap = new CSS2DObject(capEl)
+        const lx = Math.cos(ang) * labelRadius
+        const lz = Math.sin(ang) * labelRadius
+        const yLift = satR * 0.55 + (i % 2) * 0.018
+        cap.position.set(lx, yLift, lz)
+        cap.center.set(0.5, 1)
+        cap.renderOrder = 8
+        cap.userData.isFusionQuadrantLabel = true
+        g.add(cap)
+      }
     }
 
     const labelEl = makeNodeLabelElement(labelText, nodeType)
@@ -522,6 +595,28 @@ export function mountGalaxyThree(
           obj.renderOrder = selected ? 20 : 10
           return
         }
+        if (obj instanceof CSS2DObject && obj.userData.isFusionQuadrantLabel) {
+          const el = obj.element as HTMLElement
+          const showQuadrants = nodeType === 'fusion' && selected
+          if (!showQuadrants) {
+            el.style.opacity = '0'
+            el.style.visibility = 'hidden'
+            obj.renderOrder = 1
+            return
+          }
+          el.style.visibility = 'visible'
+          let op = dim ? 0.3 : 0.92
+          if (onPath || inHyper) op = Math.max(op, 0.9)
+          if (selected) op = 1
+          el.style.opacity = String(op)
+          el.style.filter = selected
+            ? 'drop-shadow(0 0 6px rgba(200, 160, 255, 0.75))'
+            : onPath || inHyper
+              ? 'drop-shadow(0 0 3px rgba(180, 140, 255, 0.4))'
+              : 'none'
+          obj.renderOrder = selected ? 18 : 8
+          return
+        }
         if (!(obj instanceof THREE.Mesh)) return
         const mat = obj.material
         if (mat instanceof THREE.MeshBasicMaterial) {
@@ -556,13 +651,15 @@ export function mountGalaxyThree(
           let base = 0.42
           if (part === 'glow') base = nodeType === 'major' ? 0.048 : 0.036
           else if (part === 'shard') base = 0.36
-          else if (part === 'ring') base = 0.48
+          else if (part === 'ring') base = nodeType === 'major' ? 0.48 : 0.52
+          else if (part === 'satellite') base = 0.9
           let op = base * opacityFactor
           if (onPath || inHyper) {
             if (part === 'glow' || part === 'shard') op = Math.max(op, 0.22)
             else op = Math.max(op, 0.82)
           }
-          if (selected && (part === 'glow' || part === 'shard')) op = Math.max(op, 0.34)
+          if (selected && (part === 'glow' || part === 'shard' || part === 'satellite')) op = Math.max(op, 0.34)
+          if (selected && part === 'ring' && nodeType === 'fusion') op = Math.max(op, 0.78)
           mat.opacity = op
           mat.transparent = true
         }

@@ -1,0 +1,65 @@
+import { pairKeysFromMajorIds } from '@/data/majorTxtMap'
+
+export type CrossJobRow = {
+  idx: number
+  pair: string
+  title: string
+  heat: string
+  salaryJunior: string
+  salaryMid: string
+  salarySenior: string
+  workIntensity: string
+  competition: string
+  education: string
+  skills: string
+}
+
+/** 解析 public/data/cross_job_catalog.tsv（由《具体专业》复制，制表符分隔） */
+export function parseCrossJobTsv(raw: string): CrossJobRow[] {
+  const lines = raw.split(/\r?\n/).filter((l) => l.trim().length > 0)
+  const out: CrossJobRow[] = []
+  for (let i = 0; i < lines.length; i++) {
+    const line = lines[i]!
+    if (line.startsWith('序号') || line.startsWith('\t序号')) continue
+    const cols = line.split('\t')
+    if (cols.length < 11) continue
+    const idx = Number.parseInt(cols[0]!, 10)
+    if (!Number.isFinite(idx)) continue
+    out.push({
+      idx,
+      pair: cols[1]!.trim(),
+      title: cols[2]!.trim(),
+      heat: cols[3]!.trim(),
+      salaryJunior: cols[4]!.trim(),
+      salaryMid: cols[5]!.trim(),
+      salarySenior: cols[6]!.trim(),
+      workIntensity: cols[7]!.trim(),
+      competition: cols[8]!.trim(),
+      education: cols[9]!.trim(),
+      skills: cols[10]!.trim(),
+    })
+  }
+  return out
+}
+
+let cache: CrossJobRow[] | null = null
+
+export async function loadCrossJobCatalog(): Promise<CrossJobRow[]> {
+  if (cache) return cache
+  const url = `${import.meta.env.BASE_URL}data/cross_job_catalog.tsv`.replace(/\/{2,}/g, '/')
+  const r = await fetch(url)
+  if (!r.ok) throw new Error(`无法加载岗位表: ${r.status}`)
+  const text = await r.text()
+  cache = parseCrossJobTsv(text)
+  return cache
+}
+
+/** 同一学科组合在表中通常连续 3 行 → 三选一岗位 */
+export async function threeJobsForMajorPair(majorIdA: string, majorIdB: string): Promise<CrossJobRow[]> {
+  const [k1, k2] = pairKeysFromMajorIds(majorIdA, majorIdB)
+  if (!k1) return []
+  const rows = await loadCrossJobCatalog()
+  const hit = rows.filter((r) => r.pair === k1 || r.pair === k2)
+  if (hit.length >= 3) return hit.slice(0, 3)
+  return hit
+}

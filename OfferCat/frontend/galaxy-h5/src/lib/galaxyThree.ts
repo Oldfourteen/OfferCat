@@ -35,6 +35,11 @@ export interface GalaxyVisualState {
   activeHyperedgeIds: Set<string>
 }
 
+export interface GalaxyMountOptions {
+  /** 0~1：随「点亮」进度加厚远景星尘，充盈整幅 3D 画面（不挂在小行星轨道上） */
+  ambientStarBoost?: number
+}
+
 export function mountGalaxyThree(
   container: HTMLElement,
   data: {
@@ -45,6 +50,7 @@ export function mountGalaxyThree(
   },
   initial: GalaxyVisualState,
   onPick: (nodeId: string | null) => void,
+  opts?: GalaxyMountOptions,
 ) {
   const width = container.clientWidth || window.innerWidth
   const height = container.clientHeight || window.innerHeight
@@ -140,14 +146,16 @@ export function mountGalaxyThree(
     scheduleAutoRotateResume()
   }
 
+  const ambientBoost = Math.min(1, Math.max(0, opts?.ambientStarBoost ?? 0))
+
   const nodeMeshes = new Map<string, THREE.Group>()
   const haloMeshes = new Map<string, THREE.Mesh>()
   let baseLine: THREE.LineSegments | null = null
   let pathLine: THREE.LineSegments | null = null
 
-  /** 远景星尘：与节点解耦，弱化「塑料球」观感 */
+  /** 远景星尘：与节点解耦；ambientBoost 提高粒子数与整体亮度，充盈整幅画面 */
   const addStarfield = () => {
-    const n = 1600
+    const n = Math.min(9200, Math.floor(1100 + ambientBoost * 7200))
     const positions = new Float32Array(n * 3)
     const sizes = new Float32Array(n)
     for (let i = 0; i < n; i++) {
@@ -155,27 +163,30 @@ export function mountGalaxyThree(
       const v = Math.random()
       const theta = 2 * Math.PI * u
       const phi = Math.acos(2 * v - 1)
-      const r = 28 + Math.random() * 72
+      const r = 26 + Math.random() * 78
       const sinPhi = Math.sin(phi)
       positions[i * 3] = r * sinPhi * Math.cos(theta)
       positions[i * 3 + 1] = r * sinPhi * Math.sin(theta)
       positions[i * 3 + 2] = r * Math.cos(phi)
-      sizes[i] = 0.04 + Math.random() * 0.12
+      const sz = 0.04 + Math.random() * 0.12 + ambientBoost * 0.06
+      sizes[i] = Math.min(0.26, sz)
     }
     const geo = new THREE.BufferGeometry()
     geo.setAttribute('position', new THREE.BufferAttribute(positions, 3))
     geo.setAttribute('size', new THREE.BufferAttribute(sizes, 1))
+    const alphaMul = 0.42 + ambientBoost * 0.58
     const mat = new THREE.ShaderMaterial({
       uniforms: {
         uColor: { value: new THREE.Color(COL_STARFIELD) },
         uPixelRatio: { value: Math.min(window.devicePixelRatio, 2) },
+        uAlphaMul: { value: alphaMul },
       },
       vertexShader: `
         attribute float size;
         uniform float uPixelRatio;
         varying float vAlpha;
         void main() {
-          vAlpha = 0.35 + 0.65 * (size - 0.04) / 0.12;
+          vAlpha = 0.35 + 0.65 * (size - 0.04) / 0.18;
           vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
           gl_PointSize = size * (220.0 * uPixelRatio) / (-mvPosition.z);
           gl_Position = projectionMatrix * mvPosition;
@@ -183,13 +194,14 @@ export function mountGalaxyThree(
       `,
       fragmentShader: `
         uniform vec3 uColor;
+        uniform float uAlphaMul;
         varying float vAlpha;
         void main() {
           vec2 c = gl_PointCoord - vec2(0.5);
           float d = length(c);
           if (d > 0.5) discard;
           float soft = smoothstep(0.5, 0.0, d);
-          gl_FragColor = vec4(uColor, soft * vAlpha * 0.55);
+          gl_FragColor = vec4(uColor, soft * vAlpha * uAlphaMul);
         }
       `,
       transparent: true,

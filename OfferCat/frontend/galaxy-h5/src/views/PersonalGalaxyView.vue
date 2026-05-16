@@ -11,7 +11,9 @@ import {
   toPersistedPayload,
 } from '@/data/personalGalaxyModel'
 import { hyperedgesContainingNode } from '@/utils/graph'
+import { goBackOrReplace } from '@/utils/navigation'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
+import { computeAmbientStarBoost } from '@/data/personalStarlitStore'
 
 const router = useRouter()
 
@@ -77,6 +79,7 @@ function remountThree() {
   rt.value?.dispose()
   rt.value = null
   if (!el || data.nodes.length === 0) return
+  const ambientStarBoost = computeAmbientStarBoost(data.nodes)
   rt.value = mountGalaxyThree(el, data, visual.value, (id) => {
     selectedId.value = id
     if (!id || !linkMode.value) return
@@ -91,7 +94,7 @@ function remountThree() {
     const b = majorsOnCanvas.value.find((m) => m.id === id)
     if (!a || !b) return
     void openJobModal(a, b)
-  })
+  }, { ambientStarBoost })
   rt.value.setVisualState(visual.value)
   rt.value.frameBounds(data.nodes.map((n) => n.id))
 }
@@ -159,8 +162,8 @@ async function saveGalaxy() {
   }, 3200)
 }
 
-function goHub() {
-  router.push({ name: 'personalHub' })
+function goBack() {
+  goBackOrReplace(router, { name: 'personalHub' })
 }
 
 onMounted(async () => {
@@ -200,7 +203,7 @@ onBeforeUnmount(() => {
     <div v-if="phase === 'error'" class="err-banner">{{ err }}</div>
 
     <header class="top-bar">
-      <button type="button" class="back-btn" @click="goHub">返回</button>
+      <button type="button" class="back-btn" @click="goBack">返回</button>
       <div class="top-titles">
         <h1 class="title">设计专属星图</h1>
         <p class="subtitle">与大星图相同的 3D 星球与材质；小行星四维来自岗位表，随图保存。</p>

@@ -1,18 +1,24 @@
 <script setup lang="ts">
-import { useRouter } from 'vue-router'
+import { inject } from 'vue'
+import { routerKey, type Router } from 'vue-router'
 
-const router = useRouter()
+/** 部分壳内 WebView 下 `useRouter()` 会报未定义；`inject(routerKey)` 与 useRouter 等价且更稳 */
+const router = inject(routerKey) as Router
+if (!router) {
+  throw new Error('[PersonalGalaxyHubView] router inject failed')
+}
 
 function goDesign() {
-  router.push({ name: 'personalDesign' })
+  void router.push({ path: '/personal/design' })
 }
 
 function goShowcase() {
-  router.push({ name: 'personalShowcase' })
+  void router.push({ path: '/personal/showcase' })
 }
 
+/** 仅用 path + replace，避免依赖 history.state.back（部分 WebView 状态异常） */
 function goGalaxy() {
-  router.push({ name: 'galaxy' })
+  void router.replace({ path: '/galaxy' })
 }
 </script>
 

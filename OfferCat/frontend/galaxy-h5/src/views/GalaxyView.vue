@@ -5,6 +5,7 @@ import { fetchGalaxyBundle, fetchRecommendMock, getGalaxyDataBase } from '@/comp
 import { GALAXY_MAJORS_KEY, type GalaxyMajorsPayload } from '@/data/majors'
 import { hyperedgesContainingNode, shortestPathUndirected } from '@/utils/graph'
 import { postCloseToShell } from '@/utils/bridge'
+import { computeAmbientStarBoost } from '@/data/personalStarlitStore'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState, type RawHE, type RawNode } from '@/lib/galaxyThree'
 
 const router = useRouter()
@@ -153,6 +154,7 @@ function mountThree(el: HTMLElement | null) {
     hyperMemberIds: new Set(),
     activeHyperedgeIds: new Set(),
   }
+  const ambientStarBoost = computeAmbientStarBoost(graph.value.nodes)
   const rt = mountGalaxyThree(
     el,
     graph.value,
@@ -160,6 +162,7 @@ function mountThree(el: HTMLElement | null) {
     (id) => {
       selectedNodeId.value = id
     },
+    { ambientStarBoost },
   )
   runtime.value = rt
   rt.setVisualState(visual.value)
@@ -278,7 +281,8 @@ function labelForId(id: string) {
 }
 
 function goPersonalGalaxy() {
-  void router.push({ name: 'personalHub' })
+  closeEntryHint()
+  void router.push({ path: '/personal' })
 }
 
 function closeEntryHint() {
@@ -286,8 +290,14 @@ function closeEntryHint() {
 }
 
 function goPractice() {
-  /* 占位：后续跳转题库 / 原生页 */
-  window.alert('「去练」将对接现有题库模块（占位）')
+  const id = selectedNodeId.value
+  if (!id || !graph.value) return
+  const n = graph.value.nodes.find((x) => x.id === id)
+  if (!n || n.type !== 'fusion') return
+  void router.push({
+    name: 'personalStarlit',
+    query: { fusionId: id, title: n.label, source: 'galaxy' },
+  })
 }
 </script>
 

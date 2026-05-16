@@ -51,7 +51,7 @@
 
 						<!-- 底部操作区 -->
 						<view class="card-actions">
-							<text class="view-count">浏览 {{ item.views || Math.floor(Math.random() * 10000) }}</text>
+							<text class="view-count">浏览 {{ item.views || 0 }}</text>
 							<view class="action-right">
 								<view class="action-item" @click.stop="likePost(item)">
 									<image class="icon-svg" :src="item.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
@@ -63,6 +63,7 @@
 								</view>
 								<view class="action-item collect-hint" @click.stop="toggleCollect(item, index)">
 									<image class="icon-svg" :src="item.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
+									<text class="count" :class="{ 'active-color': item.isCollected }">{{ item.favoriteCount || 0 }}</text>
 								</view>
 							</view>
 						</view>
@@ -74,23 +75,19 @@
 					<text class="empty-text">暂无帖子可查看</text>
 				</view>
 			</view>
-			
-			<!-- 分页控件 -->
-			<view class="pagination-controls" v-if="totalPages > 0">
-				<!-- 首页/页码选择/尾页三种方式共同控制分页。 -->
-				<view class="page-btn" :class="{ disabled: pageNum === 1 }" @click="goToFirstPage">首页</view>
-				<picker class="page-picker" mode="selector" :range="pageRange" :value="pageNum - 1" @change="onPageChange">
-					<view class="page-picker-text">第 {{ pageNum }} 页 / 共 {{ totalPages }} 页 ▾</view>
-				</picker>
-				<view class="page-btn" :class="{ disabled: pageNum === totalPages }" @click="goToLastPage">尾页</view>
-			</view>
 		</view>
 	</view>
 </template>
 
 <script>
-	import { request } from '@/api/request.js'
 	import { BASE_URL } from '@/api/config.js'
+	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
+	import {
+		getForumMockPosts,
+		toggleForumMockPostLike,
+		toggleForumMockPostCollect,
+		syncForumMockPostCache
+	} from '@/utils/forumLocalData.js'
 
 	export default {
 		props: {
@@ -103,76 +100,32 @@
 			return {
 				tabs: ['全部', '热点', '好友'],
 				currentTab: 0,
-				// 帖子列表与分页状态一起维护当前论坛卡片展示结果。
+				// 论坛帖子直接在当前页完整渲染，靠页面滚动浏览，不再做首页/尾页分页切换。
 				postList: [],
-				pageNum: 1,
-				pageSize: 3,
-				total: 0,
-				totalPages: 0
+				total: 0
 			}
 		},
 		computed: {
 			themeClass() {
 				// 论坛区整体按主题切换毛玻璃背景和文字颜色。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
-			},
-			pageRange() {
-				// 生成 picker 使用的页码文案数组。
-				const range = []
-				for (let i = 1; i <= this.totalPages; i++) {
-					range.push(`第 ${i} 页`)
-				}
-				return range
 			}
 		},
 		created() {
 			// 监听外部刷新事件，发帖或详情页操作后可主动更新首页列表。
 			uni.$on('refreshForumList', this.fetchPosts);
+			uni.$on('refresh', this.fetchPosts);
+			uni.$on('refreshForumListViews', this.refreshViewCounts);
 		},
 		beforeDestroy() {
 			// 组件销毁时移除全局事件监听，避免重复绑定。
 			uni.$off('refreshForumList', this.fetchPosts);
+			uni.$off('refresh', this.fetchPosts);
+			uni.$off('refreshForumListViews', this.refreshViewCounts);
 		},
 		mounted() {
-			// 首次进入首页时拉取第一页帖子数据。
-			// this.fetchPosts()
-			// 临时注入静态帖子数据
-			this.postList = [
-				{
-					postId: 'mock_1',
-					id: 'mock_1',
-					userId: 'user_001',
-					authorName: 'Wind',
-					grade: '大三',
-					major: '软件工程',
-					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Felix',
-					createTime: '2026-05-13 10:30',
-					content: '又麻烦大家帮我做选择了，这次的疑问是，我想抽扣扣酱，但是又看到这次传说级手办制作很棒，导致我很犹豫，从今天到15号我算了下大概能攒多少资源，大家觉得哪个更划算一点呢？求建议！',
-					images: '["https://images.unsplash.com/photo-1498050108023-c5249f4df085?auto=format&fit=crop&w=600&q=80", "https://images.unsplash.com/photo-1517694712202-14dd9538aa97?auto=format&fit=crop&w=600&q=80"]',
-					views: 7640,
-					commentCount: 48,
-					likeCount: 3,
-					isLiked: false,
-					isCollected: false
-				},
-				{
-					postId: 'mock_2',
-					id: 'mock_2',
-					userId: 'user_002',
-					authorName: '(ฅωฅ)',
-					grade: '大二',
-					major: '数字媒体技术',
-					authorAvatar: 'https://api.dicebear.com/7.x/adventurer/svg?seed=Mia',
-					createTime: '2026-05-12 18:45',
-					content: '雷霆*忧郁小猫不让我睡觉，还不让我发游戏，我要曝光你。每天晚上都在我键盘上跑酷，真的是太调皮了！哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈哈',
-					images: '["https://images.unsplash.com/photo-1514888286974-6c03e2ca1dba?auto=format&fit=crop&w=600&q=80"]',
-					views: 3201,
-					commentCount: 15,
-					likeCount: 102,
-					isLiked: true,
-					isCollected: true
-				}
-			];
+			// 首次进入首页时读取本地论坛 mock 数据。
+			this.fetchPosts()
 		},
 		methods: {
 			getPreviewContent(content) {
@@ -194,38 +147,13 @@
 				return [grade, major].filter(Boolean).join(' · ')
 			},
 			toggleCollect(item, index) {
-				const originalIsCollected = item.isCollected;
-				// 乐观更新
-				this.$set(this.postList, index, { ...item, isCollected: !originalIsCollected });
-				
+				const updatedPost = toggleForumMockPostCollect(item.postId || item.id)
+				if (!updatedPost) return
+				this.$set(this.postList, index, syncForumPostViews(updatedPost))
 				uni.showToast({
-					title: originalIsCollected ? '已取消收藏' : '收藏成功',
+					title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
 					icon: 'success'
-				});
-				
-				// 同步到本地缓存，参考旧版 comment 功能
-				let favorites = uni.getStorageSync('favorites') || [];
-				if (originalIsCollected) {
-					favorites = favorites.filter(fav => !(fav.isForumPost && String(fav.id) === String(item.postId)));
-				} else {
-					let plainText = item.content ? item.content.replace(/<[^>]+>/g, "") : '分享内容';
-					let title = plainText.length > 12 ? plainText.substring(0, 12) + '...' : plainText;
-					
-					favorites.unshift({
-						id: item.postId,
-						isForumPost: true,
-						type: '论坛',
-						title: title,
-						image: this.getCoverImage(item),
-						user_avatar: item.authorAvatar,
-						user_name: item.authorName,
-						time: item.createTime,
-						place: '小程序论坛',
-						desc: item.content,
-						create_time: new Date().getTime()
-					});
-				}
-				uni.setStorageSync('favorites', favorites);
+				})
 			},
 			switchTab(index) {
 				if (this.currentTab === index) return;
@@ -237,69 +165,39 @@
 					return;
 				}
 				this.currentTab = index;
-				this.pageNum = 1;
-				// this.fetchPosts();
+				this.fetchPosts();
 			},
 			fetchPosts() {
-				// 按当前页码和页大小请求论坛帖子，并补齐点赞响应字段。
-				request({
-					url: '/api/forum/post/search',
-					method: 'POST',
-					data: {
-						keyword: '',
-						pageNum: this.pageNum,
-						pageSize: this.currentTab === 1 ? 20 : this.pageSize, // 热点多拉一些用于本地排序
-						sort: this.currentTab === 1 ? 'hot' : 'latest'
-					}
-				}).then(res => {
-					if (res.code === 200 && res.data) {
-						let records = res.data.records || [];
-						if (this.currentTab === 1) {
-							// 热点：前端按热度排序并取前3
-							records.sort((a, b) => ((b.likeCount || 0) + (b.commentCount || 0)) - ((a.likeCount || 0) + (a.commentCount || 0)));
-							records = records.slice(0, 3);
-						}
-						this.postList = records.map(item => {
-							return {
-								...item,
-								isLiked: item.isLiked || false // 确保属性是响应式的
-							}
-						})
-						this.total = this.currentTab === 1 ? records.length : (res.data.total || 0);
-						this.totalPages = this.currentTab === 1 ? 1 : (res.data.pages || Math.ceil(this.total / this.pageSize));
-					}
-				}).catch(err => {
-					console.error('获取帖子列表失败', err)
+				const result = getForumMockPosts({
+					pageNum: 1,
+					pageSize: 1000,
+					currentTab: this.currentTab
 				})
+				let records = result.records || []
+				this.postList = syncForumPostsViews(records.map(item => ({
+					...item,
+					isLiked: Boolean(item.isLiked),
+					isCollected: Boolean(item.isCollected),
+					favoriteCount: Number(item.favoriteCount || 0)
+				})))
+				this.total = result.total || records.length
 			},
 			goToDetail(item) {
 				// 详情页先缓存完整帖子数据，规避后端详情接口异常时无法展示。
 				const id = item.postId || item.id;
+				const postIndex = this.postList.findIndex(post => String(post.postId || post.id) === String(id))
+				const updatedPost = incrementForumViewCount(item)
+				if (postIndex !== -1) {
+					this.$set(this.postList, postIndex, updatedPost)
+				}
 				// 缓存完整帖子数据，绕过后端崩溃的 detail 接口
-				uni.setStorageSync('currentPost_' + id, item);
+				syncForumMockPostCache(updatedPost)
 				uni.navigateTo({
-					url: `/subPages/forum/detail?id=${id}`
+					url: `/subPages/forum/detail?id=${id}&viewIncremented=1`
 				});
 			},
-			goToFirstPage() {
-				// 快速回到第一页并重新拉取列表。
-				if (this.pageNum > 1) {
-					this.pageNum = 1
-					this.fetchPosts()
-				}
-			},
-			goToLastPage() {
-				// 快速跳到最后一页并重新拉取列表。
-				if (this.pageNum < this.totalPages) {
-					this.pageNum = this.totalPages
-					this.fetchPosts()
-				}
-			},
-			onPageChange(e) {
-				// picker 选择页码后同步更新当前页并刷新数据。
-				const index = Number(e.detail.value)
-				this.pageNum = index + 1
-				this.fetchPosts()
+			refreshViewCounts() {
+				this.postList = syncForumPostsViews(this.postList)
 			},
 			getAvatar(avatar, postUserId) {
 				// 当前用户自己的帖子优先使用本地资料头像，避免接口返回旧头像。
@@ -394,7 +292,6 @@
 				return String(timeStr)
 			},
 			likePost(item) {
-				// 先做乐观更新提升交互速度，失败时再回滚点赞状态。
 				const user = uni.getStorageSync('user_v2') || {};
 				const userId = user.userId || user.id;
 				if (!userId) {
@@ -404,40 +301,10 @@
 
 				const postIndex = this.postList.findIndex(p => p.postId === item.postId);
 				if (postIndex === -1) return;
-
-				const post = this.postList[postIndex];
-				const originalIsLiked = post.isLiked;
-
-				// Optimistic UI update
-				const updatedPost = {
-					...post,
-					isLiked: !post.isLiked,
-					likeCount: post.isLiked ? Math.max(0, post.likeCount - 1) : post.likeCount + 1
-				};
-				this.$set(this.postList, postIndex, updatedPost);
-
-				const baseUrl = originalIsLiked ? `/api/forum/post/unlike/${item.postId}` : `/api/forum/post/like/${item.postId}`;
-
-				request({
-					url: baseUrl,
-					method: 'POST',
-					data: {
-						userId
-					}
-				}).then(res => {
-					if (res.code === 200) {
-						uni.showToast({ title: originalIsLiked ? '取消点赞' : '点赞成功', icon: 'none' });
-						uni.setStorageSync('currentPost_' + item.postId, this.postList[postIndex]);
-					} else {
-						// Revert on failure
-						this.$set(this.postList, postIndex, post);
-						uni.showToast({ title: res.msg || '操作失败', icon: 'none' });
-					}
-				}).catch((err) => {
-				// Revert on error
-				this.$set(this.postList, postIndex, post);
-				uni.showToast({ title: err.message || '网络错误', icon: 'none' });
-			});
+				const updatedPost = toggleForumMockPostLike(item.postId)
+				if (!updatedPost) return
+				this.$set(this.postList, postIndex, syncForumPostViews(updatedPost))
+				uni.showToast({ title: updatedPost.isLiked ? '点赞成功' : '取消点赞', icon: 'none' })
 			}
 		}
 	}
@@ -737,36 +604,6 @@
 		}
 	}
 
-	.pagination-controls {
-		display: flex;
-		justify-content: center;
-		align-items: center;
-		gap: 20rpx;
-		padding: 20rpx 0 10rpx;
-
-		.page-btn {
-			font-size: 26rpx;
-			color: #5d76bd;
-			padding: 10rpx 24rpx;
-			border-radius: 30rpx;
-			background: rgba(93, 118, 189, 0.1);
-			
-			&.disabled {
-				color: #999;
-				background: #f0f0f0;
-				pointer-events: none;
-			}
-		}
-
-		.page-picker {
-			.page-picker-text {
-				font-size: 26rpx;
-				color: #333;
-				padding: 10rpx 20rpx;
-			}
-		}
-	}
-
 	/* Dark Theme */
 	.theme-dark {
 		background: transparent;
@@ -799,18 +636,5 @@
 			.card-main .post-desc-container { color: rgba(255, 255, 255, 0.8); }
 		}
 		.empty-text { color: rgba(255, 255, 255, 0.4); }
-		.pagination-controls {
-			.page-btn {
-				color: #8da4e6;
-				background: rgba(141, 164, 230, 0.15);
-				&.disabled {
-					color: #666;
-					background: #2a2a2a;
-				}
-			}
-			.page-picker-text {
-				color: #ccc;
-			}
-		}
 	}
 </style>

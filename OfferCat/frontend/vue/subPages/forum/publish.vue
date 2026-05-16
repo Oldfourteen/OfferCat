@@ -99,11 +99,10 @@
 </template>
 
 <script>
-	import { request } from '@/api/request.js'
-	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getUserProfile } from '@/utils/userProfile.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { createForumMockPost } from '@/utils/forumLocalData.js'
 
 	const PUBLISH_BACK_ICON =
 		'data:image/svg+xml;charset=utf-8,' +
@@ -140,6 +139,23 @@
 			this.userProfile = getUserProfile()
 		},
 		methods: {
+			buildLocalCaption() {
+				const snippets = {
+					'职场日常': ['今天也在慢慢升级自己', '记录一下此刻的小成就', '把日常过成喜欢的样子'],
+					'校园生活': ['今天校园里的风都很温柔', '普通一天也值得认真收藏', '把学生时代过得热气腾腾'],
+					'求职心得': ['先行动，再慢慢打磨细节', '每次尝试都算数', '求职路上，耐心和坚持一样重要'],
+					'干货分享': ['顺手记下一点经验，留给后面的自己', '把踩过的坑整理成经验', '希望这条能帮你少绕一点路'],
+					'情感共鸣': ['总会有人理解你此刻的情绪', '认真生活的人会被温柔看见', '允许自己偶尔慢一点也没关系']
+				}
+				const style = this.aiForm.style
+				const candidates = snippets[style] || snippets['职场日常']
+				const targetLength = Number((this.aiForm.length || '').replace(/\D/g, '')) || 50
+				let sentence = candidates[Math.floor(Math.random() * candidates.length)]
+				while (sentence.length < targetLength) {
+					sentence += `，${candidates[(sentence.length / 3) % candidates.length | 0]}`
+				}
+				return sentence.slice(0, targetLength)
+			},
 			goBack() {
 				uni.navigateBack()
 			},
@@ -153,38 +169,10 @@
 					sourceType: ['album', 'camera'],
 					success: (res) => {
 						const tempFilePaths = res.tempFilePaths
-						// 直接显示本地图片，上传动作可以这里做或者发布时一起做。
-						// 为了AI配文和体验，我们在选择图片后直接上传
 						tempFilePaths.forEach(path => {
-							const imgObj = { url: path, remoteUrl: '', uploading: true }
+							const imgObj = { url: path, remoteUrl: path, uploading: false }
 							this.images.push(imgObj)
-							this.uploadImage(imgObj)
 						})
-					}
-				})
-			},
-			uploadImage(imgObj) {
-				uni.uploadFile({
-					url: BASE_URL + '/api/forum/post/uploadImage',
-					filePath: imgObj.url,
-					name: 'file',
-					success: (uploadRes) => {
-						try {
-							const data = JSON.parse(uploadRes.data)
-							if (data.code === 200) {
-								imgObj.remoteUrl = data.data
-							} else {
-								uni.showToast({ title: '图片上传失败', icon: 'none' })
-							}
-						} catch (e) {
-							uni.showToast({ title: '解析失败', icon: 'none' })
-						}
-					},
-					fail: () => {
-						uni.showToast({ title: '网络错误', icon: 'none' })
-					},
-					complete: () => {
-						imgObj.uploading = false
 					}
 				})
 			},
@@ -215,66 +203,13 @@
 				if (this.images.length === 0) return
 				
 				this.isGenerating = true
-				
-				const filePath = this.images[0].url;
-				
-				// 检查图片大小，如果超过 1MB (1048576 bytes) 则进行压缩
-				uni.getFileInfo({
-					filePath: filePath,
-					success: (infoRes) => {
-						if (infoRes.size > 1024 * 1024) {
-							// 大于 1MB，进行压缩
-							uni.compressImage({
-								src: filePath,
-								quality: 60, // 压缩质量
-								success: (compressRes) => {
-									this.doGenerateCaptionUpload(compressRes.tempFilePath);
-								},
-								fail: () => {
-									// 压缩失败则尝试原图上传（后端会抛出超过1MB异常）
-									this.doGenerateCaptionUpload(filePath);
-								}
-							});
-						} else {
-							this.doGenerateCaptionUpload(filePath);
-						}
-					},
-					fail: () => {
-						this.doGenerateCaptionUpload(filePath);
-					}
-				});
-			},
-			doGenerateCaptionUpload(filePath) {
-				uni.uploadFile({
-					url: BASE_URL + '/api/ai/ocr/generate-caption',
-					filePath: filePath,
-					name: 'file',
-					formData: {
-						length: this.aiForm.length,
-						style: this.aiForm.style
-					},
-					success: (res) => {
-						try {
-							const data = typeof res.data === 'string' ? JSON.parse(res.data) : res.data;
-							if (res.statusCode === 200 && data.caption) {
-								// 如果内容不为空，可以选择追加或者替换，这里选择追加
-								this.content = this.content ? this.content + '\n' + data.caption : data.caption
-								this.closeAiDrawer()
-								uni.showToast({ title: '配文生成成功', icon: 'success' })
-							} else {
-								uni.showToast({ title: data.error || '生成失败', icon: 'none' })
-							}
-						} catch (e) {
-							uni.showToast({ title: '解析响应失败', icon: 'none' })
-						}
-					},
-					fail: () => {
-						uni.showToast({ title: '网络错误', icon: 'none' })
-					},
-					complete: () => {
-						this.isGenerating = false
-					}
-				})
+				setTimeout(() => {
+					const caption = this.buildLocalCaption()
+					this.content = this.content ? `${this.content}\n${caption}` : caption
+					this.closeAiDrawer()
+					this.isGenerating = false
+					uni.showToast({ title: '本地配文生成成功', icon: 'success' })
+				}, 300)
 			},
 			async publishPost() {
 				const len = this.content.trim().length;
@@ -304,36 +239,21 @@
 				
 				const title = this.content.substring(0, 20) + (this.content.length > 20 ? '...' : '')
 				const remoteImages = this.images.filter(img => img.remoteUrl).map(img => img.remoteUrl)
-				
-				uni.showLoading({ title: '发布中...' })
-				
 				const user = uni.getStorageSync('user') || {}
 				const userId = user.userId || user.id || 1
-
-				request({
-					url: '/api/forum/post/create',
-					method: 'POST',
-					data: {
-						userId: userId,
-						title: title || '无标题分享',
-						content: this.content,
-						images: remoteImages
-					}
-				}).then(res => {
-					uni.hideLoading()
-					if (res.code === 200) {
-						uni.showToast({ title: '发布成功', icon: 'success' })
-						uni.$emit('refresh')
-						setTimeout(() => {
-							uni.navigateBack()
-						}, 1500)
-					} else {
-						uni.showToast({ title: res.msg || '发布失败', icon: 'none' })
-					}
-				}).catch(err => {
-					uni.hideLoading()
-					uni.showToast({ title: err.message || '网络错误', icon: 'none' })
+				createForumMockPost({
+					userId: userId,
+					title: title || '无标题分享',
+					content: this.content,
+					images: remoteImages
 				})
+				uni.hideLoading()
+				uni.showToast({ title: '发布成功', icon: 'success' })
+				uni.$emit('refresh')
+				uni.$emit('refreshForumList')
+				setTimeout(() => {
+					uni.navigateBack()
+				}, 800)
 			}
 		}
 	}

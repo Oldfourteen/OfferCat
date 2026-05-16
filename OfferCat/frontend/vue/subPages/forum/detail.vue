@@ -13,7 +13,7 @@
 				<view class="nav-right"></view>
 			</view>
 
-			<scroll-view class="detail-scroll" scroll-y>
+			<scroll-view class="detail-scroll" scroll-y :show-scrollbar="false">
 				<!-- 帖子正文块 -->
 				<view class="post-card">
 				<view class="author-info">
@@ -26,7 +26,7 @@
 					<view class="delete-btn" v-if="isAuthor" @click="deletePost">删除</view>
 				</view>
 
-				<text class="post-text text-wrap-safe">{{ post.content }}</text>
+				<view class="post-text text-wrap-safe">{{ post.content || '' }}</view>
 
 				<!-- 图片展示区 -->
 				<view class="post-images" :class="getImageLayoutClass(postImages)" v-if="postImages.length > 0">
@@ -36,7 +36,7 @@
 				</view>
 
 				<view class="post-actions-line">
-					<text class="view-count">浏览 {{ post.views || post.viewCount || Math.floor(Math.random() * 10000) }}</text>
+					<text class="view-count">浏览 {{ post.views || 0 }}</text>
 					<view class="actions">
 						<view class="action-btn" @click="likePost">
 							<image class="icon-svg" :src="post.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
@@ -44,6 +44,7 @@
 						</view>
 						<view class="action-btn collect-hint" @click="toggleCollect">
 							<image class="icon-svg" :src="post.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
+							<text class="count" :class="{ 'active-color': post.isCollected }">{{ post.favoriteCount || 0 }}</text>
 						</view>
 					</view>
 				</view>
@@ -53,6 +54,7 @@
 				<view class="comment-section">
 				<view class="comment-header">
 					<text class="title">全部评论 {{ comments.length > 0 ? `(${comments.length})` : '' }}</text>
+					<text class="sort-toggle-btn" @click="toggleCommentSortMode">{{ commentSortLabel }}</text>
 				</view>
 				
 				<view class="empty-comment" v-if="comments.length === 0">
@@ -60,34 +62,161 @@
 				</view>
 
 				<view class="comment-list" v-else>
-					<view class="comment-item" v-for="item in comments" :key="item.commentId">
+					<view class="comment-item" v-for="item in sortedComments" :key="item.commentId">
 						<image class="c-avatar" :src="getAvatar(item.authorAvatar, item.userId)" mode="aspectFill"></image>
 						<view class="c-content">
 							<view class="c-name-time">
 								<text class="c-name">{{ getAuthorName(item.authorName, item.userId) }}</text>
 								<text class="c-time">{{ formatTime(item.createTime) }}</text>
 							</view>
-							<text class="c-text text-wrap-safe">{{ item.content }}</text>
+							<view class="expandable-text-block">
+								<view class="c-text text-wrap-safe">{{ getDisplayText(item.content, getExpandKey('comment', item.commentId)) }}</view>
+								<text class="expand-toggle" :style="expandToggleStyle" v-if="shouldShowExpand(item.content)" @click.stop="toggleExpanded(getExpandKey('comment', item.commentId))">
+									{{ isExpanded(getExpandKey('comment', item.commentId)) ? '收起' : '展开' }}
+								</text>
+							</view>
+							<view class="c-actions-row">
+								<view class="reply-like-action" @click.stop="toggleCommentLike(item)">
+									<image class="mini-like-icon" :src="isCommentLiked(item) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+									<text class="reply-like-count" :class="{ active: isCommentLiked(item) }">{{ getCommentLikeCount(item) }}</text>
+								</view>
+								<text class="reply-action" @click.stop="startReplyToComment(item)">回复</text>
+							</view>
+							<view class="reply-preview-card" v-if="getReplyCount(item) > 0" @click.stop="openReplyThread(item)">
+								<view class="reply-preview-item" v-for="reply in getReplyPreview(item)" :key="getReplyId(reply)">
+									<text class="reply-preview-line text-wrap-safe">
+										<text class="reply-preview-name">{{ getAuthorName(reply.authorName, reply.userId) }}</text>
+										<text v-if="getReplyTargetName(reply, item)"> 回复 {{ getReplyTargetName(reply, item) }}</text>
+										：{{ reply.content }}
+									</text>
+								</view>
+								<text class="reply-preview-more" v-if="getReplyCount(item) > 2">共 {{ getReplyCount(item) }} 条回复，点击查看全部</text>
+							</view>
 						</view>
 					</view>
 				</view>
 				</view>
 			</scroll-view>
 
+			<view class="reply-sheet-mask" :class="{ 'is-closing': isReplySheetClosing }" v-if="activeReplyComment" @click="closeReplyThread"></view>
+			<view class="reply-sheet" :class="{ dragging: isReplySheetDragging, 'is-closing': isReplySheetClosing }" :style="replySheetStyle" v-if="activeReplyComment">
+				<view
+					class="reply-sheet-drag-zone"
+					@touchstart.stop.prevent="onReplySheetDragStart"
+					@touchmove.stop.prevent="onReplySheetDragMove"
+					@touchend.stop.prevent="onReplySheetDragEnd"
+					@touchcancel.stop.prevent="onReplySheetDragEnd"
+				>
+					<view class="reply-sheet-handle"></view>
+					<view class="reply-sheet-header">
+						<view class="reply-sheet-actions">
+							<text class="reply-sheet-close" @click="closeReplyThread">关闭</text>
+						</view>
+					</view>
+				</view>
+				<scroll-view class="reply-sheet-scroll" scroll-y :show-scrollbar="false">
+					<view class="sheet-root-card">
+						<view class="sheet-main-row">
+							<image class="sheet-avatar" :src="getAvatar(activeReplyComment.authorAvatar, activeReplyComment.userId)" mode="aspectFill"></image>
+							<view class="sheet-body">
+								<view class="sheet-name-time">
+									<text class="sheet-name">{{ getAuthorName(activeReplyComment.authorName, activeReplyComment.userId) }}</text>
+									<text class="sheet-time">{{ formatTime(activeReplyComment.createTime) }}</text>
+								</view>
+								<view class="expandable-text-block">
+									<view class="sheet-text text-wrap-safe">{{ getDisplayText(activeReplyComment.content, getExpandKey('sheet-root', activeReplyComment.commentId)) }}</view>
+									<text class="expand-toggle" :style="expandToggleStyle" v-if="shouldShowExpand(activeReplyComment.content)" @click.stop="toggleExpanded(getExpandKey('sheet-root', activeReplyComment.commentId))">
+										{{ isExpanded(getExpandKey('sheet-root', activeReplyComment.commentId)) ? '收起' : '展开' }}
+									</text>
+								</view>
+								<view class="c-actions-row">
+									<view class="reply-like-action" @click.stop="toggleCommentLike(activeReplyComment)">
+										<image class="mini-like-icon" :src="isCommentLiked(activeReplyComment) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+										<text class="reply-like-count" :class="{ active: isCommentLiked(activeReplyComment) }">{{ getCommentLikeCount(activeReplyComment) }}</text>
+									</view>
+									<text class="reply-action" @click.stop="startReplyToComment(activeReplyComment, true)">回复</text>
+								</view>
+							</view>
+						</view>
+					</view>
+					<view class="sheet-reply-wrap" v-if="getReplyCount(activeReplyComment) > 0">
+						<view class="sheet-reply-section-head">
+							<text class="sheet-reply-section-title">全部回复</text>
+							<text class="reply-sheet-sort" @click="toggleReplySortMode">{{ replySortLabel }}</text>
+						</view>
+						<view class="sheet-reply-list">
+						<view class="sheet-reply-item" v-for="reply in getSortedThreadReplies(activeReplyComment)" :key="getReplyId(reply)">
+							<image class="sheet-avatar" :src="getAvatar(reply.authorAvatar, reply.userId)" mode="aspectFill"></image>
+							<view class="sheet-body">
+								<view class="sheet-name-time">
+									<text class="sheet-name">{{ getAuthorName(reply.authorName, reply.userId) }}</text>
+									<text class="sheet-time">{{ formatTime(reply.createTime) }}</text>
+								</view>
+								<view class="expandable-text-block">
+									<view class="sheet-text text-wrap-safe">
+										<text v-if="getReplyTargetName(reply, activeReplyComment)" class="sheet-target">回复 {{ getReplyTargetName(reply, activeReplyComment) }}：</text>{{ getDisplayText(reply.content, getExpandKey('sheet-reply', getReplyId(reply)), 45) }}
+									</view>
+									<text class="expand-toggle" :style="expandToggleStyle" v-if="shouldShowExpand(reply.content, 45)" @click.stop="toggleExpanded(getExpandKey('sheet-reply', getReplyId(reply)))">
+										{{ isExpanded(getExpandKey('sheet-reply', getReplyId(reply))) ? '收起' : '展开' }}
+									</text>
+								</view>
+								<view class="c-actions-row">
+									<view class="reply-like-action" @click.stop="toggleCommentLike(reply, activeReplyComment)">
+										<image class="mini-like-icon" :src="isCommentLiked(reply) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+										<text class="reply-like-count" :class="{ active: isCommentLiked(reply) }">{{ getCommentLikeCount(reply) }}</text>
+									</view>
+									<text class="reply-action" @click.stop="startReplyToReply(activeReplyComment, reply)">回复</text>
+								</view>
+							</view>
+						</view>
+						</view>
+					</view>
+				</scroll-view>
+			</view>
+
 			<!-- 底部评论输入框 -->
 			<view class="bottom-bar">
-				<input class="comment-input text-wrap-safe" type="text" placeholder="写下你的评论..." v-model="commentText" />
-				<view class="send-btn" :class="{active: commentText.length > 0}" @click="sendComment">发送</view>
+				<view class="replying-banner" v-if="replyContext">
+					<text class="replying-label">回复 {{ replyContext.targetUserName }}</text>
+					<text class="replying-cancel" @click="clearReplyContext">取消</text>
+				</view>
+				<view class="emoji-panel" v-if="showEmojiPanel">
+					<view class="emoji-grid">
+						<text
+							class="emoji-item"
+							v-for="emoji in emojiList"
+							:key="emoji"
+							@click="insertEmoji(emoji)"
+						>{{ emoji }}</text>
+					</view>
+				</view>
+				<view class="bottom-bar-row">
+					<view class="emoji-trigger" @click="toggleEmojiPanel">
+						<text class="emoji-trigger-icon">😀</text>
+					</view>
+					<input class="comment-input text-wrap-safe" type="text" :placeholder="commentPlaceholder" v-model="commentText" />
+					<view class="send-btn" :class="{active: commentText.length > 0}" @click="sendComment">发送</view>
+				</view>
 			</view>
 		</view>
 	</view>
 </template>
 
 <script>
-	import { request } from '@/api/request.js'
 	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { incrementForumViewCount, syncForumPostViews } from '@/utils/forumViewCount.js'
+	import {
+		getForumMockPostDetail,
+		getForumMockComments,
+		toggleForumMockPostLike,
+		toggleForumMockPostCollect,
+		toggleForumMockCommentLike,
+		createForumMockComment,
+		deleteForumMockPost,
+		syncForumMockPostCache
+	} from '@/utils/forumLocalData.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -98,6 +227,23 @@
 				postImages: [],
 				comments: [],
 				commentText: '',
+				showEmojiPanel: false,
+				emojiList: ['😀', '😁', '😂', '🤣', '😊', '😍', '🥰', '😘', '🤔', '😭', '😤', '🥳', '😎', '👍', '👏', '🙏', '❤️', '💯', '🎉', '✨'],
+				replyContext: null,
+				activeReplyCommentId: null,
+				expandedTextMap: {},
+				commentSortMode: 'heat',
+				replySortMode: 'heat',
+				replySheetDefaultHeight: 0,
+				replySheetCurrentHeight: 0,
+				replySheetMaxHeight: 0,
+				replySheetCloseThreshold: 88,
+				replySheetDragStartY: 0,
+				replySheetDragStartHeight: 0,
+				isReplySheetDragging: false,
+				isReplySheetClosing: false,
+				replySheetCloseTimer: null,
+				replySheetTransitionMs: 240,
 				isLeaving: false,
 				allowNativeBack: false
 			}
@@ -107,6 +253,37 @@
 				const user = uni.getStorageSync('user') || {}
 				const currentUserId = user.userId || user.id
 				return this.post && currentUserId && this.post.userId === currentUserId
+			},
+			activeReplyComment() {
+				return this.findCommentById(this.activeReplyCommentId)
+			},
+			commentPlaceholder() {
+				if (this.replyContext && this.replyContext.targetUserName) {
+					return `回复 ${this.replyContext.targetUserName}...`
+				}
+				return '写下你的评论...'
+			},
+			commentSortLabel() {
+				return this.commentSortMode === 'heat' ? '按热度' : '按时间'
+			},
+			replySortLabel() {
+				return this.replySortMode === 'heat' ? '按热度' : '按时间'
+			},
+			replySheetStyle() {
+				if (!this.replySheetCurrentHeight) {
+					return {}
+				}
+				return {
+					height: `${this.replySheetCurrentHeight}px`
+				}
+			},
+			expandToggleStyle() {
+				return this.isDarkMode
+					? 'display:inline-block;margin-top:6rpx;font-size:20rpx;line-height:1.4;color:#8db6ff;font-weight:500;'
+					: 'display:inline-block;margin-top:6rpx;font-size:20rpx;line-height:1.4;color:#3b82f6;font-weight:500;'
+			},
+			sortedComments() {
+				return this.sortCommentList(this.comments, this.commentSortMode)
 			}
 		},
 		onBackPress() {
@@ -120,15 +297,19 @@
 			const id = options.id || options.postId;
 			if (id && id !== 'undefined' && id !== 'null') {
 				this.postId = id
+				const shouldIncrementView = options.viewIncremented !== '1'
 				// 尝试从缓存读取帖子详情，绕开后端崩溃的 /detail 接口
 				const cachedPost = uni.getStorageSync('currentPost_' + id)
 				if (cachedPost) {
-					this.post = Object.assign({}, cachedPost)
+					this.post = syncForumPostViews(Object.assign({}, cachedPost))
 					this.parseImages()
+					if (shouldIncrementView) {
+						this.recordPostView()
+					}
 				}
 				// 为了彻底屏蔽线上 500 弹出的“网络错误”，如果缓存里有数据，就不再去请求坏掉的后端接口
 				if (!cachedPost) {
-					this.loadPostDetail()
+					this.loadPostDetail(shouldIncrementView)
 				}
 				this.loadComments()
 			} else {
@@ -145,37 +326,340 @@
 					uni.navigateBack()
 				}, 240)
 			},
-			loadPostDetail() {
-				console.log('正在请求帖子详情，ID:', this.postId)
-				request({
-					url: `/api/forum/post/detail/${this.postId}`,
-					method: 'GET'
-				}).then(res => {
-					console.log('详情接口返回:', res)
-					if (res && res.code === 200 && res.data) {
-						// 确保触发响应式更新
-						this.post = Object.assign({}, res.data)
-						this.parseImages()
-					} else if (!uni.getStorageSync('currentPost_' + this.postId)) {
-						uni.showToast({ title: '帖子不存在或已被删除', icon: 'none' })
-						setTimeout(() => this.goBack(), 1500)
+			loadPostDetail(shouldIncrementView = false) {
+				const postDetail = getForumMockPostDetail(this.postId)
+				if (postDetail) {
+					this.post = syncForumPostViews(Object.assign({}, postDetail))
+					this.parseImages()
+					if (shouldIncrementView) {
+						this.recordPostView()
 					}
-				}).catch(err => {
-				console.error('请求详情失败:', err)
-				if (!uni.getStorageSync('currentPost_' + this.postId)) {
-					uni.showToast({ title: err.message || '网络错误', icon: 'none' })
+				} else if (!uni.getStorageSync('currentPost_' + this.postId)) {
+					uni.showToast({ title: '帖子不存在或已被删除', icon: 'none' })
+					setTimeout(() => this.goBack(), 1500)
 				}
-			})
 			},
 			loadComments() {
-				request({
-					url: `/api/forum/post/${this.postId}/comments`,
-					method: 'GET'
-				}).then(res => {
-					if (res.code === 200 && res.data) {
-						this.comments = res.data
+				this.comments = this.normalizeComments(getForumMockComments(this.postId))
+			},
+			getEntityId(item) {
+				if (!item || typeof item !== 'object') return ''
+				return item.commentId || item.replyId || item.id || ''
+			},
+			getCommentId(item) {
+				return this.getEntityId(item)
+			},
+			getReplyId(item) {
+				return this.getEntityId(item)
+			},
+			getExpandKey(type, id) {
+				return `${type}_${id || 'default'}`
+			},
+			getTextVisualLength(text) {
+				const normalized = String(text || '').replace(/\r/g, '')
+				let total = 0
+				for (const char of normalized) {
+					if (char === '\n') {
+						total += 0.8
+						continue
+					}
+					if (/\s/.test(char)) {
+						total += 0.35
+						continue
+					}
+					if (/[a-zA-Z0-9]/.test(char)) {
+						total += 0.55
+						continue
+					}
+					if (/[,.!?:;'"`~\-_=+(){}\[\]\\/<>@#$%^&*|]/.test(char)) {
+						total += 0.45
+						continue
+					}
+					total += 1
+				}
+				return total
+			},
+			getTruncatedDisplayText(text, limit) {
+				const normalized = String(text || '').replace(/\r/g, '')
+				let total = 0
+				let result = ''
+				const ellipsisReserve = 2.2
+				for (const char of normalized) {
+					const nextTotal = total + this.getTextVisualLength(char)
+					if (nextTotal > Math.max(0, limit - ellipsisReserve)) {
+						break
+					}
+					result += char
+					total = nextTotal
+				}
+				const trimmed = result.replace(/[\s,.;:!?"'，。；：、！？~～\-]+$/g, '')
+				return `${trimmed || result}...`
+			},
+			shouldShowExpand(text, limit = 60) {
+				if (!text) return false
+				return this.getTextVisualLength(text) > limit
+			},
+			isExpanded(key) {
+				return !!this.expandedTextMap[key]
+			},
+			getDisplayText(text, key, limit = 60) {
+				const normalized = String(text || '').replace(/\r/g, '')
+				if (!this.shouldShowExpand(normalized, limit) || this.isExpanded(key)) {
+					return normalized
+				}
+				return this.getTruncatedDisplayText(normalized, limit)
+			},
+			toggleExpanded(key) {
+				this.expandedTextMap = {
+					...this.expandedTextMap,
+					[key]: !this.expandedTextMap[key]
+				}
+			},
+			collectReplyArrays(item) {
+				if (!item || typeof item !== 'object') return []
+				return [item.replies, item.replyList, item.children, item.childComments, item.replyComments]
+					.filter(Array.isArray)
+					.flat()
+			},
+			normalizeComments(rawList) {
+				if (!Array.isArray(rawList)) return []
+				const flat = []
+				const visit = (item, inheritedRootId = null) => {
+					if (!item || typeof item !== 'object') return
+					const commentId = this.getEntityId(item)
+					if (!commentId) return
+					const normalized = {
+						...item,
+						commentId,
+						parentCommentId: item.parentCommentId || item.parentId || inheritedRootId || null,
+						replyToCommentId: item.replyToCommentId || item.replyId || item.replyToId || null,
+						likeCount: Number(item.likeCount || item.likes || 0),
+						isLiked: Boolean(item.isLiked),
+						replies: []
+					}
+					flat.push(normalized)
+					this.collectReplyArrays(item).forEach(child => {
+						visit(child, normalized.parentCommentId || normalized.commentId)
+					})
+				}
+				rawList.forEach(item => visit(item))
+				const byId = new Map()
+				flat.forEach(item => {
+					byId.set(String(item.commentId), item)
+				})
+				const roots = []
+				flat.forEach(item => {
+					const rootId = item.parentCommentId ? String(item.parentCommentId) : ''
+					if (rootId && byId.has(rootId) && rootId !== String(item.commentId)) {
+						byId.get(rootId).replies.push(item)
+					} else {
+						roots.push(item)
 					}
 				})
+				return roots
+			},
+			sortCommentList(list, sortMode = 'heat') {
+				const cloned = Array.isArray(list) ? [...list] : []
+				return cloned.sort((a, b) => {
+					if (sortMode === 'heat') {
+						const heatDiff = this.getCommentHeatScore(b) - this.getCommentHeatScore(a)
+						if (heatDiff !== 0) return heatDiff
+					}
+					return this.getTimeValue(b.createTime) - this.getTimeValue(a.createTime)
+				})
+			},
+			getCommentHeatScore(item) {
+				if (!item) return 0
+				return Number(item.likeCount || 0)
+			},
+			getTimeValue(timeValue) {
+				if (!timeValue) return 0
+				if (Array.isArray(timeValue)) {
+					const [y, m, d, h = 0, min = 0, sec = 0] = timeValue
+					return new Date(y, (m || 1) - 1, d || 1, h, min, sec).getTime()
+				}
+				if (typeof timeValue === 'string') {
+					const normalized = timeValue.replace('T', ' ')
+					const ts = new Date(normalized).getTime()
+					return Number.isNaN(ts) ? 0 : ts
+				}
+				if (typeof timeValue === 'number') {
+					return timeValue
+				}
+				return 0
+			},
+			findCommentById(commentId) {
+				if (!commentId) return null
+				return this.comments.find(item => String(item.commentId) === String(commentId)) || null
+			},
+			getThreadReplies(comment) {
+				const current = this.findCommentById(this.getCommentId(comment))
+				return current && Array.isArray(current.replies) ? current.replies : []
+			},
+			getSortedThreadReplies(comment) {
+				return this.sortCommentList(this.getThreadReplies(comment), this.replySortMode)
+			},
+			getReplyCount(comment) {
+				return this.getThreadReplies(comment).length
+			},
+			getReplyPreview(comment) {
+				return this.getSortedThreadReplies(comment).slice(0, 2)
+			},
+			getReplyTargetName(reply, rootComment) {
+				if (!reply) return ''
+				if (reply.replyToUserName || reply.replyToAuthorName || reply.replyToName) {
+					return reply.replyToUserName || reply.replyToAuthorName || reply.replyToName
+				}
+				if (reply.replyToCommentId) {
+					const replyToId = String(reply.replyToCommentId)
+					if (rootComment && String(this.getCommentId(rootComment)) === replyToId) {
+						return this.getAuthorName(rootComment.authorName, rootComment.userId)
+					}
+					const replies = rootComment ? this.getThreadReplies(rootComment) : []
+					const targetReply = replies.find(item => String(this.getReplyId(item)) === replyToId)
+					if (targetReply) {
+						return this.getAuthorName(targetReply.authorName, targetReply.userId)
+					}
+				}
+				return ''
+			},
+			setupReplySheetMetrics(forceReset = false) {
+				const systemInfo = uni.getSystemInfoSync ? uni.getSystemInfoSync() : {}
+				const windowHeight = Number(systemInfo.windowHeight || 0)
+				const windowWidth = Number(systemInfo.windowWidth || 375)
+				const safeAreaBottom = Number((systemInfo.safeAreaInsets && systemInfo.safeAreaInsets.bottom) || 0)
+				const rpxUnit = windowWidth / 750
+				const bottomOffset = (124 * rpxUnit) + safeAreaBottom
+				const defaultHeight = Math.round(windowHeight * 0.64)
+				const maxHeight = Math.max(defaultHeight, Math.round(windowHeight - bottomOffset))
+				this.replySheetDefaultHeight = defaultHeight
+				this.replySheetMaxHeight = maxHeight
+				if (forceReset || !this.replySheetCurrentHeight) {
+					this.replySheetCurrentHeight = defaultHeight
+				}
+			},
+			onReplySheetDragStart(event) {
+				if (!this.activeReplyComment) return
+				this.setupReplySheetMetrics()
+				const touch = event.touches && event.touches[0]
+				if (!touch) return
+				this.isReplySheetDragging = true
+				this.replySheetDragStartY = touch.clientY
+				this.replySheetDragStartHeight = this.replySheetCurrentHeight || this.replySheetDefaultHeight
+			},
+			onReplySheetDragMove(event) {
+				if (!this.isReplySheetDragging) return
+				const touch = event.touches && event.touches[0]
+				if (!touch) return
+				const deltaY = touch.clientY - this.replySheetDragStartY
+				const nextHeight = this.replySheetDragStartHeight - deltaY
+				const minHeight = Math.max(0, this.replySheetDefaultHeight - this.replySheetCloseThreshold - 120)
+				this.replySheetCurrentHeight = Math.min(this.replySheetMaxHeight, Math.max(minHeight, nextHeight))
+			},
+			onReplySheetDragEnd() {
+				if (!this.isReplySheetDragging) return
+				this.isReplySheetDragging = false
+				if (this.replySheetCurrentHeight < this.replySheetDefaultHeight - this.replySheetCloseThreshold) {
+					this.closeReplyThread()
+					return
+				}
+				const midpoint = this.replySheetDefaultHeight + ((this.replySheetMaxHeight - this.replySheetDefaultHeight) / 2)
+				this.replySheetCurrentHeight = this.replySheetCurrentHeight >= midpoint
+					? this.replySheetMaxHeight
+					: this.replySheetDefaultHeight
+			},
+			openReplyThread(comment) {
+				if (this.getReplyCount(comment) === 0) return
+				if (this.replySheetCloseTimer) {
+					clearTimeout(this.replySheetCloseTimer)
+					this.replySheetCloseTimer = null
+				}
+				this.isReplySheetClosing = false
+				this.setupReplySheetMetrics(true)
+				this.replyContext = {
+					rootCommentId: this.getCommentId(comment),
+					targetCommentId: this.getCommentId(comment),
+					targetUserId: comment.userId || '',
+					targetUserName: this.getAuthorName(comment.authorName, comment.userId)
+				}
+				this.activeReplyCommentId = this.getCommentId(comment)
+			},
+			closeReplyThread() {
+				if (!this.activeReplyComment || this.isReplySheetClosing) return
+				this.isReplySheetDragging = false
+				this.isReplySheetClosing = true
+				this.showEmojiPanel = false
+				this.replySheetCloseTimer = setTimeout(() => {
+					this.activeReplyCommentId = null
+					this.replyContext = null
+					this.isReplySheetClosing = false
+					this.replySheetCloseTimer = null
+					this.replySheetCurrentHeight = this.replySheetDefaultHeight
+				}, this.replySheetTransitionMs)
+			},
+			toggleEmojiPanel() {
+				this.showEmojiPanel = !this.showEmojiPanel
+			},
+			insertEmoji(emoji) {
+				this.commentText = `${this.commentText || ''}${emoji}`
+			},
+			startReplyToComment(comment, keepThreadOpen = false) {
+				this.replyContext = {
+					rootCommentId: this.getCommentId(comment),
+					targetCommentId: this.getCommentId(comment),
+					targetUserId: comment.userId || '',
+					targetUserName: this.getAuthorName(comment.authorName, comment.userId)
+				}
+				if (keepThreadOpen) {
+					this.activeReplyCommentId = this.getCommentId(comment)
+				}
+			},
+			startReplyToReply(rootComment, reply) {
+				this.replyContext = {
+					rootCommentId: this.getCommentId(rootComment),
+					targetCommentId: this.getReplyId(reply),
+					targetUserId: reply.userId || '',
+					targetUserName: this.getAuthorName(reply.authorName, reply.userId)
+				}
+				this.activeReplyCommentId = this.getCommentId(rootComment)
+			},
+			clearReplyContext() {
+				this.replyContext = null
+			},
+			toggleCommentSortMode() {
+				this.commentSortMode = this.commentSortMode === 'heat' ? 'time' : 'heat'
+			},
+			toggleReplySortMode() {
+				this.replySortMode = this.replySortMode === 'heat' ? 'time' : 'heat'
+			},
+			getCommentLikeCount(item) {
+				return Number((item && item.likeCount) || 0)
+			},
+			isCommentLiked(item) {
+				return Boolean(item && item.isLiked)
+			},
+			applyCommentLikeState(targetItem, nextLiked) {
+				if (!targetItem) return
+				targetItem.isLiked = nextLiked
+				targetItem.likeCount = Math.max(0, Number(targetItem.likeCount || 0) + (nextLiked ? 1 : -1))
+			},
+			toggleCommentLike(item) {
+				if (!item) return
+				const updated = toggleForumMockCommentLike(this.postId, this.getCommentId(item))
+				if (!updated) return
+				this.loadComments()
+				uni.showToast({
+					title: updated.isLiked ? '点赞成功' : '取消点赞',
+					icon: 'none'
+				})
+			},
+			recordPostView() {
+				const basePost = this.post && Object.keys(this.post).length
+					? this.post
+					: { postId: this.postId, id: this.postId }
+				this.post = incrementForumViewCount(basePost)
+				syncForumMockPostCache(this.post)
+				uni.$emit('refreshForumListViews')
 			},
 			parseImages() {
 				let imagesStr = this.post.images
@@ -247,6 +731,23 @@
 			},
 			formatTime(timeStr) {
 				if (!timeStr) return ''
+				const targetTime = this.getTimeValue(timeStr)
+				if (targetTime) {
+					const diffMs = Date.now() - targetTime
+					if (diffMs >= 0) {
+						const minuteMs = 60 * 1000
+						const hourMs = 60 * minuteMs
+						const dayMs = 24 * hourMs
+						if (diffMs < hourMs) {
+							const minutes = Math.max(1, Math.floor(diffMs / minuteMs))
+							return `${minutes}分钟前`
+						}
+						if (diffMs < dayMs) {
+							const hours = Math.max(1, Math.floor(diffMs / hourMs))
+							return `${hours}小时前`
+						}
+					}
+				}
 				if (typeof timeStr === 'string') {
 					return timeStr.substring(0, 16).replace('T', ' ')
 				}
@@ -270,38 +771,15 @@
 				return 'layout-multi';
 			},
 			toggleCollect() {
-				const originalIsCollected = this.post.isCollected;
-				this.$set(this.post, 'isCollected', !originalIsCollected);
-				
+				const updatedPost = toggleForumMockPostCollect(this.postId)
+				if (!updatedPost) return
+				this.post = syncForumPostViews(updatedPost)
+				this.parseImages()
 				uni.showToast({
-					title: originalIsCollected ? '已取消收藏' : '收藏成功',
+					title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
 					icon: 'success'
-				});
-				
-				let favorites = uni.getStorageSync('favorites') || [];
-				if (originalIsCollected) {
-					favorites = favorites.filter(fav => !(fav.isForumPost && String(fav.id) === String(this.postId)));
-				} else {
-					let plainText = this.post.content ? this.post.content.replace(/<[^>]+>/g, "") : '分享内容';
-					let title = plainText.length > 12 ? plainText.substring(0, 12) + '...' : plainText;
-					let coverImage = this.postImages.length > 0 ? this.getFullUrl(this.postImages[0]) : this.getAvatar(this.post.authorAvatar, this.post.userId);
-					
-					favorites.unshift({
-						id: this.postId,
-						isForumPost: true,
-						type: '论坛',
-						title: title,
-						image: coverImage,
-						user_avatar: this.post.authorAvatar,
-						user_name: this.post.authorName,
-						time: this.post.createTime,
-						place: '小程序论坛',
-						desc: this.post.content,
-						create_time: new Date().getTime()
-					});
-				}
-				uni.setStorageSync('favorites', favorites);
-				uni.setStorageSync('currentPost_' + this.postId, this.post);
+				})
+				uni.$emit('refreshForumList')
 			},
 			likePost() {
 				const user = uni.getStorageSync('user_v2') || {};
@@ -311,39 +789,11 @@
 					return;
 				}
 
-				const originalPost = { ...this.post };
-				const originalIsLiked = originalPost.isLiked;
-
-				// Optimistic UI update
-				this.post.isLiked = !this.post.isLiked;
-				if (this.post.isLiked) {
-					this.post.likeCount++;
-				} else {
-					this.post.likeCount = Math.max(0, this.post.likeCount - 1);
-				}
-
-				const baseUrl = originalIsLiked ? `/api/forum/post/unlike/${this.postId}` : `/api/forum/post/like/${this.postId}`;
-				request({
-					url: baseUrl,
-					method: 'POST',
-					data: {
-						userId
-					},
-				}).then(res => {
-					if (res.code === 200) {
-						uni.showToast({ title: originalIsLiked ? '取消点赞' : '点赞成功', icon: 'none' });
-						uni.setStorageSync('currentPost_' + this.postId, this.post);
-						uni.$emit('refreshForumList'); 
-					} else {
-						
-						this.post = originalPost;
-						uni.showToast({ title: res.msg || '操作失败', icon: 'none' });
-					}
-				}).catch((err) => {
-			
-				this.post = originalPost;
-				uni.showToast({ title: err.message || '网络错误', icon: 'none' });
-			});
+				const updatedPost = toggleForumMockPostLike(this.postId)
+				if (!updatedPost) return
+				this.post = syncForumPostViews(updatedPost)
+				uni.showToast({ title: updatedPost.isLiked ? '点赞成功' : '取消点赞', icon: 'none' });
+				uni.$emit('refreshForumList')
 			},
 			deletePost() {
 				uni.showModal({
@@ -353,23 +803,17 @@
 						if (res.confirm) {
 							const user = uni.getStorageSync('user') || {}
 							const currentUserId = user.userId || user.id || 1
-							
-							request({
-								url: `/api/forum/post/delete/${this.postId}?userId=${currentUserId}`,
-								method: 'DELETE'
-							}).then(res => {
-								if (res.code === 200) {
-									uni.showToast({ title: '删除成功', icon: 'success' })
-									uni.$emit('refresh')
-									setTimeout(() => {
-										this.goBack()
-									}, 1500)
-								} else {
-									uni.showToast({ title: res.msg || '删除失败', icon: 'none' })
-								}
-							}).catch(err => {
-							uni.showToast({ title: err.message || '网络错误', icon: 'none' })
-						})
+							const ok = deleteForumMockPost(this.postId, currentUserId)
+							if (ok) {
+								uni.showToast({ title: '删除成功', icon: 'success' })
+								uni.$emit('refresh')
+								uni.$emit('refreshForumList')
+								setTimeout(() => {
+									this.goBack()
+								}, 1500)
+							} else {
+								uni.showToast({ title: '删除失败', icon: 'none' })
+							}
 						}
 					}
 				})
@@ -386,21 +830,27 @@
 				const user = uni.getStorageSync('user') || {}
 				const userId = user.userId || user.id || 1
 				
-				request({
-					url: '/api/forum/post/comment',
-					method: 'POST',
-					data: {
-						postId: this.postId,
-						content: this.commentText,
-						userId: userId
-					}
-				}).then(res => {
-					if (res.code === 200) {
-						this.commentText = ''
-						uni.showToast({ title: '评论成功', icon: 'none' })
-						this.loadComments()
-					}
+				const updatedComments = createForumMockComment({
+					postId: this.postId,
+					content: this.commentText,
+					userId: userId,
+					parentCommentId: this.replyContext ? this.replyContext.rootCommentId : undefined,
+					replyToCommentId: this.replyContext ? this.replyContext.targetCommentId : undefined,
+					replyToUserId: this.replyContext ? this.replyContext.targetUserId : undefined
 				})
+				if (updatedComments) {
+					this.commentText = ''
+					this.showEmojiPanel = false
+					const currentReplyContext = this.replyContext
+					this.replyContext = null
+					this.loadComments()
+					const refreshedPost = getForumMockPostDetail(this.postId)
+					if (refreshedPost) {
+						this.post = syncForumPostViews(refreshedPost)
+					}
+					uni.$emit('refreshForumList')
+					uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
+				}
 			}
 		}
 	}
@@ -594,6 +1044,19 @@
 			display: block;
 		}
 
+	.expandable-text-block {
+		margin-bottom: 8rpx;
+	}
+
+	.expand-toggle {
+		display: inline-block;
+		margin-top: 6rpx;
+		font-size: 20rpx !important;
+		line-height: 1.4;
+		color: #3b82f6 !important;
+		font-weight: 500;
+	}
+
 		.post-images {
 			display: flex;
 			flex-wrap: wrap;
@@ -690,12 +1153,22 @@
 		.comment-header {
 			display: flex;
 			align-items: center;
+			justify-content: space-between;
 			margin-bottom: 40rpx;
 
 			.title {
 				font-size: 30rpx;
 				font-weight: bold;
 				color: #333;
+			}
+
+			.sort-toggle-btn {
+				padding: 8rpx 18rpx;
+				border-radius: 999rpx;
+				font-size: 21rpx;
+				color: #7d89a3;
+				background: #f5f7fb;
+				font-weight: 500;
 			}
 		}
 
@@ -750,6 +1223,70 @@
 						font-size: 30rpx;
 						color: #333;
 						line-height: 1.5;
+						display: block;
+					}
+
+					.c-actions-row {
+						display: flex;
+						align-items: center;
+						gap: 24rpx;
+						margin-top: 14rpx;
+					}
+
+					.reply-action {
+						font-size: 24rpx;
+						color: #5d76bd;
+						font-weight: 500;
+					}
+
+					.reply-like-action {
+						display: inline-flex;
+						align-items: center;
+						gap: 8rpx;
+					}
+
+					.mini-like-icon {
+						width: 24rpx;
+						height: 24rpx;
+					}
+
+					.reply-like-count {
+						font-size: 23rpx;
+						color: #8b95aa;
+					}
+
+					.reply-like-count.active {
+						color: #5d76bd;
+						font-weight: 600;
+					}
+
+					.reply-preview-card {
+						margin-top: 18rpx;
+						padding: 18rpx 20rpx;
+						border-radius: 18rpx;
+						background: #f6f8fc;
+					}
+
+					.reply-preview-item + .reply-preview-item {
+						margin-top: 10rpx;
+					}
+
+					.reply-preview-line {
+						font-size: 25rpx;
+						color: #5d6472;
+						line-height: 1.5;
+					}
+
+					.reply-preview-name {
+						color: #394a6d;
+						font-weight: 600;
+					}
+
+					.reply-preview-more {
+						display: block;
+						margin-top: 12rpx;
+						font-size: 23rpx;
+						color: #7d8aa6;
 					}
 				}
 				
@@ -762,12 +1299,81 @@
 	}
 
 	.bottom-bar {
+		position: relative;
+		z-index: 6;
 		padding: 20rpx 30rpx calc(20rpx + env(safe-area-inset-bottom));
 		background: #fff;
 		border-top: 1rpx solid rgba(0, 0, 0, 0.05);
 		display: flex;
-		align-items: center;
-		gap: 20rpx;
+		flex-direction: column;
+		gap: 16rpx;
+
+		.replying-banner {
+			display: flex;
+			align-items: center;
+			justify-content: space-between;
+			width: 100%;
+			padding: 0 10rpx;
+		}
+
+		.replying-label {
+			font-size: 24rpx;
+			color: #5d76bd;
+		}
+
+		.replying-cancel {
+			font-size: 24rpx;
+			color: #999;
+		}
+
+		.bottom-bar-row {
+			width: 100%;
+			display: flex;
+			align-items: center;
+			gap: 20rpx;
+		}
+
+		.emoji-panel {
+			width: 100%;
+			padding: 18rpx 20rpx;
+			border-radius: 24rpx;
+			background: #f6f8fc;
+			box-shadow: 0 8rpx 24rpx rgba(93, 118, 189, 0.12);
+		}
+
+		.emoji-grid {
+			display: flex;
+			flex-wrap: wrap;
+			gap: 14rpx;
+		}
+
+		.emoji-item {
+			width: 64rpx;
+			height: 64rpx;
+			border-radius: 18rpx;
+			background: #fff;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			font-size: 34rpx;
+			line-height: 1;
+		}
+
+		.emoji-trigger {
+			width: 72rpx;
+			height: 72rpx;
+			border-radius: 50%;
+			background: #f5f5f5;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			flex-shrink: 0;
+		}
+
+		.emoji-trigger-icon {
+			font-size: 36rpx;
+			line-height: 1;
+		}
 
 		.comment-input {
 			flex: 1;
@@ -795,6 +1401,273 @@
 				background: #4AA9FE;
 			}
 		}
+	}
+
+	.c-actions-row {
+		display: flex;
+		align-items: center;
+		gap: 24rpx;
+		margin-top: 14rpx;
+		flex-wrap: wrap;
+	}
+
+	.reply-action {
+		font-size: 24rpx;
+		color: #5d76bd;
+		font-weight: 500;
+	}
+
+	.reply-like-action {
+		display: inline-flex;
+		align-items: center;
+		gap: 8rpx;
+		flex-shrink: 0;
+	}
+
+	.mini-like-icon {
+		width: 24rpx;
+		height: 24rpx;
+		min-width: 24rpx;
+		min-height: 24rpx;
+		display: block;
+		opacity: 0.9;
+	}
+
+	.reply-like-count {
+		font-size: 23rpx;
+		color: #8b95aa;
+		line-height: 1;
+	}
+
+	.reply-like-count.active {
+		color: #5d76bd;
+		font-weight: 600;
+	}
+
+	.reply-sheet-mask {
+		position: absolute;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: calc(124rpx + env(safe-area-inset-bottom));
+		z-index: 4;
+		background: rgba(15, 23, 42, 0.24);
+		animation: reply-sheet-mask-enter 240ms ease-out;
+	}
+
+	.reply-sheet-mask.is-closing {
+		animation: reply-sheet-mask-leave 220ms ease-in forwards;
+	}
+
+	.reply-sheet {
+		position: absolute;
+		left: 0;
+		right: 0;
+		bottom: calc(124rpx + env(safe-area-inset-bottom));
+		z-index: 5;
+		background: #fff;
+		border-radius: 28rpx 28rpx 0 0;
+		padding: 18rpx 24rpx calc(24rpx + env(safe-area-inset-bottom));
+		box-shadow: 0 -12rpx 36rpx rgba(15, 23, 42, 0.18);
+		height: 64vh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		transition: height 220ms ease;
+		animation: reply-sheet-enter 260ms cubic-bezier(0.22, 1, 0.36, 1);
+		transform-origin: bottom center;
+		will-change: transform, opacity;
+	}
+
+	.reply-sheet.dragging {
+		transition: none;
+	}
+
+	.reply-sheet.is-closing {
+		animation: reply-sheet-leave 220ms cubic-bezier(0.4, 0, 0.2, 1) forwards;
+		pointer-events: none;
+	}
+
+	.reply-sheet-drag-zone {
+		flex-shrink: 0;
+	}
+
+	@keyframes reply-sheet-mask-enter {
+		from {
+			opacity: 0;
+		}
+		to {
+			opacity: 1;
+		}
+	}
+
+	@keyframes reply-sheet-mask-leave {
+		from {
+			opacity: 1;
+		}
+		to {
+			opacity: 0;
+		}
+	}
+
+	@keyframes reply-sheet-enter {
+		from {
+			transform: translateY(100%);
+			opacity: 0.92;
+		}
+		to {
+			transform: translateY(0);
+			opacity: 1;
+		}
+	}
+
+	@keyframes reply-sheet-leave {
+		from {
+			transform: translateY(0);
+			opacity: 1;
+		}
+		to {
+			transform: translateY(100%);
+			opacity: 0.92;
+		}
+	}
+
+	.reply-sheet-handle {
+		width: 72rpx;
+		height: 8rpx;
+		border-radius: 999rpx;
+		background: rgba(0, 0, 0, 0.12);
+		margin: 0 auto 18rpx;
+	}
+
+	.reply-sheet-header {
+		display: flex;
+		align-items: center;
+		justify-content: flex-end;
+		padding: 0 6rpx 18rpx;
+	}
+
+	.reply-sheet-actions {
+		display: flex;
+		align-items: center;
+		gap: 18rpx;
+	}
+
+	.reply-sheet-title {
+		font-size: 30rpx;
+		font-weight: bold;
+		color: #333;
+	}
+
+	.reply-sheet-close {
+		font-size: 26rpx;
+		color: #999;
+	}
+
+	.reply-sheet-sort {
+		padding: 8rpx 18rpx;
+		border-radius: 999rpx;
+		font-size: 21rpx;
+		color: #7d89a3;
+		background: #f5f7fb;
+		font-weight: 500;
+	}
+
+	.reply-sheet-scroll {
+		flex: 1;
+		min-height: 0;
+	}
+
+	.sheet-root-card {
+		padding: 18rpx 0 24rpx;
+		border-bottom: 6rpx solid rgba(0, 0, 0, 0.12);
+	}
+
+	.sheet-reply-wrap {
+		margin-top: 18rpx;
+		padding: 8rpx 0 0;
+	}
+
+	.sheet-main-row {
+		display: flex;
+		align-items: flex-start;
+		padding: 0 6rpx;
+	}
+
+	.sheet-reply-item {
+		display: flex;
+		align-items: flex-start;
+	}
+
+	.sheet-reply-section-head {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		margin-bottom: 10rpx;
+		padding: 0 4rpx 8rpx;
+	}
+
+	.sheet-reply-section-title {
+		font-size: 24rpx;
+		font-weight: 600;
+		color: #4d5b79;
+	}
+
+	.sheet-reply-item {
+		padding: 20rpx 6rpx;
+	}
+
+	.sheet-reply-list .sheet-reply-item + .sheet-reply-item {
+		border-top: 1rpx solid rgba(0, 0, 0, 0.04);
+	}
+
+	.sheet-avatar {
+		width: 58rpx;
+		height: 58rpx;
+		border-radius: 50%;
+		margin-right: 18rpx;
+		background: #f0f0f0;
+		flex-shrink: 0;
+	}
+
+	.sheet-body {
+		flex: 1;
+	}
+
+	.sheet-name-time {
+		display: flex;
+		align-items: flex-start;
+		justify-content: space-between;
+		gap: 16rpx;
+		margin-bottom: 10rpx;
+	}
+
+	.sheet-name {
+		flex: 1;
+		min-width: 0;
+		font-size: 27rpx;
+		font-weight: 600;
+		color: #333;
+		line-height: 1.4;
+	}
+
+	.sheet-time {
+		flex-shrink: 0;
+		font-size: 22rpx;
+		color: #999;
+		line-height: 1.4;
+		text-align: right;
+	}
+
+	.sheet-text {
+		display: block;
+		font-size: 28rpx;
+		color: #333;
+		line-height: 1.55;
+	}
+
+	.sheet-target {
+		color: #5d76bd;
 	}
 
 	/* Dark Theme */
@@ -835,6 +1708,7 @@
 				}
 			}
 			.post-text { color: #d1d8e5; }
+			.expand-toggle { color: #8db6ff !important; }
 			
 			.post-images .image-wrapper {
 				background: #23252b;
@@ -853,6 +1727,10 @@
 		.comment-section {
 			.comment-header {
 				.title { color: #eef2f8; }
+				.sort-toggle-btn {
+					background: #232834;
+					color: #8c98ad;
+				}
 			}
 			.empty-comment { color: #66758f; }
 			.comment-list .comment-item .c-content {
@@ -862,12 +1740,34 @@
 					.c-time { color: #66758f; }
 				}
 				.c-text { color: #d1d8e5; }
+				.reply-preview-card { background: #232834; }
+				.reply-preview-line { color: #aeb8ca; }
+				.reply-preview-name,
+				.reply-action { color: #8da4e6; }
+				.reply-preview-more { color: #8090ad; }
+				.reply-like-count { color: #7d8798; }
+				.reply-like-count.active { color: #8da4e6; }
 			}
 		}
+
+		.reply-action { color: #8da4e6; }
+		.reply-like-count { color: #7d8798; }
+		.reply-like-count.active { color: #8da4e6; }
 
 		.bottom-bar {
 			background: #17191f;
 			border-top-color: rgba(255, 255, 255, 0.05);
+			.emoji-panel {
+				background: #20242d;
+				box-shadow: none;
+			}
+			.emoji-item {
+				background: #2a2f39;
+			}
+			.emoji-trigger {
+				background: #23252b;
+				border: 1rpx solid rgba(255, 255, 255, 0.05);
+			}
 			.comment-input {
 				background: #23252b;
 				color: #f4f7fb;
@@ -881,6 +1781,58 @@
 					color: #fff;
 				}
 			}
+			.replying-label { color: #8da4e6; }
+			.replying-cancel { color: #8090ad; }
+		}
+
+		.reply-sheet {
+			background: #17191f;
+			box-shadow: 0 -12rpx 36rpx rgba(0, 0, 0, 0.38);
+		}
+
+		.reply-sheet-title { color: #eef2f8; }
+		.reply-sheet-sort {
+			background: #232834;
+			color: #8c98ad;
+		}
+		.sheet-root-card {
+			border-bottom-color: rgba(255, 255, 255, 0.05);
+		}
+		.sheet-reply-section-title { color: #dfe8fb; }
+		.sheet-reply-section-meta { color: #8c98ad; }
+		.sheet-reply-list .sheet-reply-item + .sheet-reply-item {
+			border-top-color: rgba(255, 255, 255, 0.05);
+		}
+		.sheet-name { color: #eef2f8; }
+		.sheet-time { color: #66758f; }
+		.sheet-text { color: #d1d8e5; }
+
+		.reply-sheet-mask {
+			background: rgba(0, 0, 0, 0.34);
+		}
+
+		.reply-sheet-handle {
+			background: rgba(255, 255, 255, 0.14);
+		}
+
+		.reply-sheet-title,
+		.sheet-name,
+		.sheet-text {
+			color: #eef2f8;
+		}
+
+		.reply-sheet-close,
+		.sheet-time {
+			color: #8090ad;
+		}
+
+		.sheet-root-card,
+		.sheet-reply-list .sheet-reply-item + .sheet-reply-item {
+			border-color: rgba(255, 255, 255, 0.05);
+		}
+
+		.sheet-target {
+			color: #8da4e6;
 		}
 	}
 </style>

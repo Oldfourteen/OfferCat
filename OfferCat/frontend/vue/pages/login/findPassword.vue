@@ -118,11 +118,21 @@
 			this.clearTimer();
 		},
 		methods: {
+			backToLogin() {
+				const pages = getCurrentPages()
+				if (Array.isArray(pages) && pages.length > 1) {
+					uni.navigateBack()
+					return
+				}
+				uni.redirectTo({
+					url: '/pages/login/otherLogin'
+				})
+			},
 			goBack() {
-				uni.navigateBack();
+				this.backToLogin();
 			},
 			goLogin() {
-				uni.navigateBack();
+				this.backToLogin();
 			},
 			handleFocus(field) {
 				this.currentFocus = field;
@@ -242,7 +252,7 @@
 					uni.hideLoading();
 					uni.showToast({ title: '密码重置成功', icon: 'success' });
 					setTimeout(() => {
-						uni.navigateBack();
+						this.backToLogin();
 					}, 600);
 				} catch (e) {
 					uni.hideLoading();

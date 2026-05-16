@@ -92,8 +92,7 @@
 <script>
 	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
-	// 网络请求
-	import { request } from '@/api/request.js'
+	import { searchForumMockPosts } from '@/utils/forumLocalData.js'
 
 	// 搜索历史存储配置
 	const SEARCH_HISTORY_KEY = 'home_search_history'
@@ -168,7 +167,7 @@
 				this.keyword = keyword
 				this.handleSearch()
 			},
-			// 执行搜索（仅远程论坛发布贴）
+			// 执行搜索（本地论坛 mock 数据）
 			async handleSearch() {
 				const normalizedKeyword = this.keyword.trim().toLowerCase()
 				this.hasSearched = true
@@ -180,37 +179,20 @@
 
 				uni.showLoading({ title: '搜索中...' })
 
-				let forumResults = []
-				try {
-					const res = await request({
-						url: '/api/forum/post/search',
-						method: 'POST',
-						data: {
-							keyword: normalizedKeyword,
-							pageNum: 1,
-							pageSize: 50
-						}
-					})
-					if (res.code === 200 && res.data && res.data.records) {
-						forumResults = res.data.records.map(post => {
-							const contentPreview = post.content ? post.content.replace(/\n/g, ' ') : '暂无内容'
-							return {
-								id: post.postId,
-								type: 'forum',
-								title: contentPreview.length > 20 ? contentPreview.substring(0, 20) + '...' : contentPreview,
-								summary: contentPreview,
-								company: post.authorName || '匿名用户',
-								category: '论坛帖子',
-								total: post.commentCount || 0,
-								rawPost: post
-							}
-						})
+				const forumResults = searchForumMockPosts(normalizedKeyword).map(post => {
+					const contentPreview = post.content ? post.content.replace(/\n/g, ' ') : '暂无内容'
+					return {
+						id: post.postId,
+						type: 'forum',
+						title: contentPreview.length > 20 ? contentPreview.substring(0, 20) + '...' : contentPreview,
+						summary: contentPreview,
+						company: post.authorName || '匿名用户',
+						category: '论坛帖子',
+						total: post.commentCount || 0,
+						rawPost: post
 					}
-				} catch (e) {
-					console.error('搜索帖子失败', e)
-				} finally {
-					uni.hideLoading()
-				}
+				})
+				uni.hideLoading()
 
 				this.searchResults = forumResults
 

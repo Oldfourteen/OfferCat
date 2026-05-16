@@ -1,4 +1,5 @@
 import { createRouter, createWebHashHistory } from 'vue-router'
+import { postRouteToShell } from '@/utils/bridge'
 import MajorSelectView from '@/views/MajorSelectView.vue'
 import GalaxyView from '@/views/GalaxyView.vue'
 import PersonalGalaxyHubView from '@/views/PersonalGalaxyHubView.vue'
@@ -21,4 +22,8 @@ export const router = createRouter({
     { path: '/personal', name: 'personalHub', component: PersonalGalaxyHubView },
     { path: '/personal-galaxy', redirect: { name: 'personalHub' } },
   ],
+})
+
+router.afterEach((to) => {
+  postRouteToShell(to.name)
 })

@@ -8,8 +8,15 @@ import {
   type PersonalGalaxyV1,
   type PersonalFusionInst,
 } from '@/data/personalGalaxyModel'
-import { computeAmbientStarBoost, getStarsLit } from '@/data/personalStarlitStore'
+import StarlitLeaderboardPanel from '@/components/StarlitLeaderboardPanel.vue'
+import {
+  computeAmbientStarBoost,
+  getStarsLit,
+  getTotalStarsLitForFusions,
+  STARLIT_MAX_STARS_PER_FUSION,
+} from '@/data/personalStarlitStore'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
+import { postRouteToShell } from '@/utils/bridge'
 import { goBackOrReplace, goToPersonalDesign } from '@/utils/navigation'
 
 const router = useRouter()
@@ -19,6 +26,8 @@ const phase = ref<'loading' | 'ready' | 'empty' | 'error'>('loading')
 const err = ref('')
 const saved = shallowRef<PersonalGalaxyV1 | null>(null)
 const selectedId = ref<string | null>(null)
+const leaderboardOpen = ref(false)
+const starlitTick = ref(0)
 
 const canvasHost = ref<HTMLElement | null>(null)
 const rt = shallowRef<ReturnType<typeof mountGalaxyThree> | null>(null)
@@ -60,6 +69,30 @@ const selectedLabel = computed(() => {
   return bundle.value.nodes.find((n) => n.id === selectedId.value)?.label ?? ''
 })
 
+const fusionIdsOnCanvas = computed(() => {
+  void starlitTick.value
+  return saved.value?.fusions.map((f) => f.id) ?? []
+})
+
+const canvasStarsTotal = computed(() => {
+  void starlitTick.value
+  return getTotalStarsLitForFusions(fusionIdsOnCanvas.value)
+})
+
+function refreshStarlitProgress() {
+  starlitTick.value += 1
+  if (phase.value === 'ready') remount()
+}
+
+function openLeaderboard() {
+  refreshStarlitProgress()
+  leaderboardOpen.value = true
+}
+
+function onStarlitStorage(e: StorageEvent) {
+  if (e.key === null || e.key === 'offercat_personal_starlit_v1') refreshStarlitProgress()
+}
+
 function remount() {
   const el = canvasHost.value
   const b = bundle.value
@@ -95,14 +128,23 @@ function goStarlit() {
 watch(
   () => route.fullPath,
   async () => {
-    if (route.name !== 'personalShowcase' || phase.value !== 'ready') return
+    if (route.name !== 'personalShowcase') return
+    refreshStarlitProgress()
+    if (phase.value !== 'ready') return
     saved.value = loadPersonalGalaxyFromStorage()
     await nextTick()
     remount()
   },
 )
 
+const onOpenLeaderboardEvent = () => openLeaderboard()
+
 onMounted(async () => {
+  window.addEventListener('storage', onStarlitStorage)
+  window.addEventListener('galaxy-open-leaderboard', onOpenLeaderboardEvent)
+  ;(window as Window & { __GALAXY_OPEN_LEADERBOARD__?: () => void }).__GALAXY_OPEN_LEADERBOARD__ =
+    () => window.dispatchEvent(new CustomEvent('galaxy-open-leaderboard'))
+  postRouteToShell('personalShowcase')
   if (!detectWebGL()) {
     phase.value = 'error'
     err.value = '当前环境不支持 WebGL'
@@ -116,10 +158,15 @@ onMounted(async () => {
   }
   phase.value = 'ready'
   await nextTick()
+  refreshStarlitProgress()
   remount()
 })
 
 onBeforeUnmount(() => {
+  window.removeEventListener('storage', onStarlitStorage)
+  window.removeEventListener('galaxy-open-leaderboard', onOpenLeaderboardEvent)
+  delete (window as Window & { __GALAXY_OPEN_LEADERBOARD__?: () => void }).__GALAXY_OPEN_LEADERBOARD__
+  postRouteToShell(route.name)
   rt.value?.dispose()
   rt.value = null
 })
@@ -134,7 +181,9 @@ onBeforeUnmount(() => {
         <p v-if="selectedLabel" class="sub">{{ selectedLabel }}</p>
         <p v-else class="sub muted">点击小行星查看四象与点亮星辰</p>
       </div>
-      <span class="spacer" aria-hidden="true" />
+      <button type="button" class="lb-trigger" @click="openLeaderboard">
+        排行榜 · {{ canvasStarsTotal }} 星
+      </button>
     </header>
 
     <div v-if="phase === 'loading'" class="overlay">加载…</div>
@@ -144,6 +193,19 @@ onBeforeUnmount(() => {
       <button type="button" class="cta" @click="goDesignFromEmpty">返回去设计</button>
     </div>
     <div v-else ref="canvasHost" class="canvas" />
+
+    <teleport to="body">
+      <button
+        v-if="phase === 'ready'"
+        type="button"
+        class="lb-fab"
+        aria-label="打开点亮排行榜"
+        @click="openLeaderboard"
+      >
+        <span class="lb-fab-title">排行榜</span>
+        <span class="lb-fab-sub">{{ canvasStarsTotal }} 星</span>
+      </button>
+    </teleport>
 
     <teleport to="body">
       <div
@@ -172,13 +234,20 @@ onBeforeUnmount(() => {
             <dd>{{ selectedFusion.row.skills }}</dd>
           </dl>
           <p class="starlit-hint">
-            已点亮 <strong>{{ getStarsLit(selectedFusion.id) }}</strong> / 50 颗星；答题正确可继续点亮（本页为前端占位，数据存本机）。
+            已点亮 <strong>{{ getStarsLit(selectedFusion.id) }}</strong> /
+            {{ STARLIT_MAX_STARS_PER_FUSION }} 颗星（本图合计 {{ canvasStarsTotal }} 星）；答题正确可继续点亮。
           </p>
           <button type="button" class="fusion-sheet-primary" @click="goStarlit">点亮星辰 · 去答题</button>
           <button type="button" class="fusion-sheet-close" @click="closeFusionSheet">收起</button>
         </div>
       </div>
     </teleport>
+
+    <StarlitLeaderboardPanel
+      :open="leaderboardOpen"
+      :fusion-ids="fusionIdsOnCanvas"
+      @close="leaderboardOpen = false"
+    />
   </div>
 </template>
 
@@ -196,7 +265,8 @@ onBeforeUnmount(() => {
 
 .bar {
   flex-shrink: 0;
-  z-index: 5;
+  position: relative;
+  z-index: 20;
   display: flex;
   align-items: flex-start;
   gap: 8px;
@@ -238,8 +308,51 @@ onBeforeUnmount(() => {
   cursor: pointer;
 }
 
-.spacer {
-  width: 56px;
+.lb-trigger {
+  flex-shrink: 0;
+  align-self: flex-start;
+  padding: 8px 10px;
+  border-radius: 10px;
+  border: 1px solid rgba(232, 184, 106, 0.45);
+  background: rgba(232, 184, 106, 0.18);
+  color: #f0d090;
+  font-size: 11px;
+  font-weight: 700;
+  line-height: 1.25;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.lb-fab {
+  position: fixed;
+  right: 12px;
+  bottom: calc(16px + var(--gx-safe-bottom, 0px));
+  z-index: 10050;
+  -webkit-transform: translateZ(0);
+  transform: translateZ(0);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-width: 72px;
+  padding: 10px 12px;
+  border: 1px solid rgba(232, 184, 106, 0.5);
+  border-radius: 14px;
+  background: linear-gradient(165deg, rgba(40, 32, 18, 0.96) 0%, rgba(18, 14, 8, 0.96) 100%);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+  color: #f0d090;
+  cursor: pointer;
+}
+
+.lb-fab-title {
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.lb-fab-sub {
+  font-size: 11px;
+  font-weight: 600;
+  color: rgba(240, 208, 144, 0.85);
 }
 
 .canvas {

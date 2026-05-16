@@ -8,10 +8,12 @@
 			<view class="banner-action">开始规划 →</view>
 		</view>
 		<view class="banner-graphic">
-			<!-- 右侧装饰图形只承担视觉强调作用。 -->
-			<view class="graphic-sheet"></view>
-			<view class="graphic-arrow"></view>
+			<!-- 光晕在最底层；箭头置顶，避免被裁切与白点盖住 -->
 			<view class="graphic-glow"></view>
+			<view class="graphic-sheet"></view>
+			<view class="graphic-arrow">
+				<image class="graphic-arrow-img" mode="aspectFit" :src="springTrendArrowSvg" />
+			</view>
 		</view>
 	</view>
 	<view class="banner-card shadow-strong galaxy-banner" :class="themeClass" @click="goToGalaxy">
@@ -44,6 +46,13 @@
 			}
 		},
 		computed: {
+			springTrendArrowSvg() {
+				// 底上两段与同向向量（严格平行）+中间右下一折；整体偏下并从右侧冲出；三角与躯干 fuse 拼接（base64）
+				return (
+					'data:image/svg+xml;base64,' +
+					'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0yOSA1MiAyODIgMjIxIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9InNwcmluZ0Fycm93R3JhZCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSItMTciIHkxPSIyNTUiIHgyPSIyMjciIHkyPSI2OCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZjdhMCIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZlNDVkIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmZjOTI4Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI3NwcmluZ0Fycm93R3JhZCkiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgc3Ryb2tlLW1pdGVybGltaXQ9IjE4IiBkPSJNIDIuMDAgMjIyLjAwIEwgNDEuNjkgMTc0LjM3IEwgNjkuNjkgMTk4LjM3IEwgMTE5LjYzIDEzOC40NSIvPjxwb2x5Z29uIGZpbGw9InVybCgjc3ByaW5nQXJyb3dHcmFkKSIgcG9pbnRzPSIxNjUuMTcgODMuNzkgMTUxLjg5IDE2MC42NSA5MS45NyAxMTAuNzIiLz48L3N2Zz4='
+				)
+			},
 			themeClass() {
 				// 横幅卡片根据主题切换整体视觉风格。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
@@ -132,7 +141,8 @@
 	}
 
 	.spring-banner {
-		overflow: hidden;
+		// 箭头外旋会后超出卡片裁剪盒，hidden 会直接「切没」整条黄色箭头
+		overflow: visible;
 
 		&::before,
 		&::after {
@@ -171,16 +181,18 @@
 
 	.banner-graphic {
 		position: relative;
-		width: 160rpx;
-		min-width: 160rpx;
+		z-index: 1;
+		width: 176rpx;
+		min-width: 176rpx;
 		
 		.graphic-sheet {
 			position: absolute;
+			z-index: 2;
 			right: 30rpx;
 			bottom: 22rpx;
 			width: 158rpx;
 			height: 200rpx;
-			border-radius: 36rpx;
+			border-radius: 12rpx;
 			background:
 				linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03)),
 				repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 8rpx, rgba(255, 255, 255, 0.02) 8rpx 22rpx);
@@ -190,59 +202,45 @@
 		
 		.graphic-arrow {
 			position: absolute;
-			right: 15rpx;
-			bottom: 60rpx;
-			width: 164rpx;
-			height: 42rpx;
-			border-radius: 8rpx 0 0 8rpx;
-			background: linear-gradient(90deg, #fff7a0 0%, #ffe45d 55%, #ffc928 100%);
-			transform: rotate(-28deg);
-			box-shadow: 0 14rpx 30rpx rgba(255, 210, 48, 0.3);
-
-			&::before,
-			&::after {
-				content: '';
-				position: absolute;
-			}
+			z-index: 4;
+			right: -75rpx;
+			bottom: 2rpx;
+			width: 300rpx;
+			height: 294rpx;
+			transform: rotate(-14deg);
+			filter: drop-shadow(0 12rpx 22rpx rgba(255, 210, 48, 0.32));
 
 			&::before {
-				left: -40rpx;
-				top: 50%;
-				width: 56rpx;
+				content: '';
+				position: absolute;
+				left: -6rpx;
+				bottom: 16rpx;
+				width: 52rpx;
 				height: 6rpx;
-				border-radius: 2rpx;
+				border-radius: 3rpx;
 				background: rgba(255, 240, 106, 0.42);
-				box-shadow: -20rpx -12rpx 0 rgba(255, 240, 106, 0.18), -34rpx 12rpx 0 rgba(255, 240, 106, 0.12);
-				transform: translateY(-50%);
+				box-shadow: -22rpx 8rpx 0 rgba(255, 240, 106, 0.22), -12rpx -14rpx 0 rgba(255, 240, 106, 0.14);
 			}
 
-			&::after {
-				right: -32rpx;
-				top: 50%;
-				width: 0;
-				height: 0;
-				border-top: 34rpx solid transparent;
-				border-bottom: 34rpx solid transparent;
-				border-left: 42rpx solid #ffc928;
-				transform: translateY(-50%);
+			.graphic-arrow-img {
+				display: block;
+				width: 100%;
+				height: 100%;
 			}
 		}
 		
 		.graphic-glow {
 			position: absolute;
+			z-index: 0;
 			right: 0;
-			bottom: 20rpx;
+			bottom: 16rpx;
 			width: 176rpx;
 			height: 176rpx;
 			border-radius: 50%;
-			background:
-				radial-gradient(circle, rgba(255, 239, 111, 0.28) 0%, rgba(255, 239, 111, 0) 72%),
-				linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)) 18rpx 112rpx / 42rpx 2rpx no-repeat,
-				linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)) 38rpx 92rpx / 2rpx 24rpx no-repeat,
-				linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)) 32rpx 128rpx / 28rpx 2rpx no-repeat,
-				radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 4rpx, transparent 5rpx) 16rpx 106rpx / 20rpx 20rpx no-repeat,
-				radial-gradient(circle, rgba(255, 255, 255, 0.68) 0 4rpx, transparent 5rpx) 138rpx 18rpx / 20rpx 20rpx no-repeat;
-			opacity: 0.9;
+			pointer-events: none;
+			// 避免白点叠在黄箭头上「像没了箭头」——只保留柔光
+			background: radial-gradient(circle, rgba(255, 239, 111, 0.28) 0%, rgba(255, 239, 111, 0) 68%);
+			opacity: 0.92;
 		}
 	}
 

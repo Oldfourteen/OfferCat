@@ -5,10 +5,10 @@
 
 	export default {
 		globalData: {
-			// 留空则使用 api/config.js 默认：**http://start.awacode.top:21308**（外网→内网网关 14132）。
+			// 留空则使用 api/config.js 默认：**http://start.awacode.top:21630**（外网→内网网关 14132）。
 			// 直连内网网关时填 http://内网IP:14132；真机勿用 127.0.0.1。
 			apiBase: '',
-			// 星图 H5：留空则用内置 static/galaxy-h5/mock。走网关时可填：**http://start.awacode.top:21308/api/galaxy**（无外网则用 http://内网IP:14132/api/galaxy）。
+			// 星图 H5：留空则用内置 static/galaxy-h5/mock。走网关时可填：**http://start.awacode.top:21630/api/galaxy**（无外网则用 http://内网IP:14132/api/galaxy）。
 			galaxyApiBase: '',
 		},
 		onLaunch: function() {

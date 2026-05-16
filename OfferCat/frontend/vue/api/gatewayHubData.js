@@ -6,7 +6,7 @@
  */
 
 export const GATEWAY_PORT_HINT =
-	'网关进程内网监听 TCP 14132；外网经 NAT 映射 21308（如 start.awacode.top:21308）。App 默认走外网根地址；同内网调试可改 App.vue globalData.apiBase。'
+	'网关进程内网监听 TCP 14132；外网经 NAT 映射 21630（如 start.awacode.top:21630）。App 默认走外网根地址；同内网调试可改 App.vue globalData.apiBase。'
 
 /**
  * @typedef {{ label: string, method?: string, path: string, note?: string }} GatewayHubItem

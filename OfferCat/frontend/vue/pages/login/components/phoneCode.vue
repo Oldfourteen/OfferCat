@@ -99,7 +99,7 @@
 				
 				uni.showLoading({ title: '发送中', mask: true })
 				try {
-					// TODO(后端/短信宝)：由后端接口去调用短信宝发送短信并落库/缓存验证码
+					// TODO(后端/阿里云短信)：由后端接口去调用阿里云短信发送验证码并落库/缓存
 					await sendCode({ phone: this.phone, scene: this.scene })
 					
 					uni.hideLoading()

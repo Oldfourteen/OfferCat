@@ -13,7 +13,7 @@ import org.springframework.context.annotation.ComponentScan;
 @SpringBootApplication
 @EnableDiscoveryClient
 @MapperScan("com.offercat.student.dao")
-@ComponentScan("com.offercat.shared")
+@ComponentScan({"com.offercat.student", "com.offercat.shared"})
 public class StudentServiceApplication {
 
  

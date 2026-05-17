@@ -3,6 +3,31 @@ import { getToken } from '@/utils/token'
 
 const DEFAULT_TIMEOUT_MS = 30000
 
+function createRequestId() {
+	const rand = Math.random().toString(16).slice(2)
+	return `${Date.now().toString(16)}-${rand}`
+}
+
+function getDefaultRetryTimes(method, url) {
+	const m = String(method || 'GET').toUpperCase()
+	const u = String(url || '')
+	if (m === 'GET') return 2
+	if (m === 'POST' && /^\/auth\/login(\?|$|\/)/.test(u)) return 2
+	return 0
+}
+
+function isRetryableGatewayStatus(code) {
+	return code === 502 || code === 503 || code === 504
+}
+
+function computeBackoffDelay(attempt, baseDelayMs) {
+	const base = Number.isFinite(baseDelayMs) && baseDelayMs > 0 ? baseDelayMs : 600
+	const cap = 3500
+	const exp = Math.min(cap, base * Math.pow(1.8, Math.max(0, attempt)))
+	const jitter = Math.floor(Math.random() * 160)
+	return exp + jitter
+}
+
 /**
  * HTTP 报错「播报」（如请求失败（404））后追加可读中文说明，便于排查网络/网关/服务问题。
  * @param {number} statusCode
@@ -53,6 +78,19 @@ function extractServerErrText(data, statusCode) {
 	return data.message || data.msg || data.error || data.detail || ''
 }
 
+function tryParseJsonBody(body) {
+	if (body == null) return body
+	if (typeof body !== 'string') return body
+	const s = body.trim()
+	if (!s) return body
+	if (!(s.startsWith('{') || s.startsWith('['))) return body
+	try {
+		return JSON.parse(s)
+	} catch (_) {
+		return body
+	}
+}
+
 export function request(options) {
 	const { url, method = 'GET', data, header } = options || {}
 
@@ -65,73 +103,128 @@ export function request(options) {
 	}
 
 	const token = getToken()
+	const requestId = options && options.__requestId ? String(options.__requestId) : createRequestId()
 	const reqHeader = {
 		'Content-Type': 'application/json',
+		Accept: 'application/json',
+		'X-Request-Id': requestId,
+		'X-Client-Timestamp': String(Date.now()),
 		...(header || {}),
 	}
 	if (token && !reqHeader['Authorization']) {
 		reqHeader['Authorization'] = `Bearer ${token}`
 	}
 
-	const timeout = options.timeout != null ? options.timeout : DEFAULT_TIMEOUT_MS
-	const isRetry = Boolean(options.__networkRetry)
-	const isRetry503 = Boolean(options.__gatewayRetry503)
+	const timeout = options && options.timeout != null ? options.timeout : DEFAULT_TIMEOUT_MS
+	const retryTimesRaw =
+		options && options.retryTimes != null ? Number(options.retryTimes) : getDefaultRetryTimes(method, url)
+	const retryTimes = Number.isFinite(retryTimesRaw) && retryTimesRaw > 0 ? Math.min(4, retryTimesRaw) : 0
+	const retryAttempt = options && options.__retryAttempt != null ? Number(options.__retryAttempt) : 0
+	const retryDelayMs = options && options.retryDelayMs != null ? Number(options.retryDelayMs) : 650
+
+	const requestUrl = `${base}${url}`
 
 	const runOnce = () =>
 		new Promise((resolve, reject) => {
-			uni.request({
-				url: `${base}${url}`,
+			let settled = false
+			let timer = null
+
+			const safeResolve = (val) => {
+				if (settled) return
+				settled = true
+				if (timer) clearTimeout(timer)
+				resolve(val)
+			}
+
+			const safeReject = (err) => {
+				if (settled) return
+				settled = true
+				if (timer) clearTimeout(timer)
+				reject(err)
+			}
+
+			const task = uni.request({
+				url: requestUrl,
 				method,
 				timeout,
 				data,
 				header: reqHeader,
 				success: (res) => {
 					const ok = res.statusCode >= 200 && res.statusCode < 300
-					if (ok) {
-						if (res.data && typeof res.data === 'object' && res.data.code !== undefined) {
-							if (res.data.code === 200) {
-								resolve(res.data)
-							} else {
-								const bizMsg = res.data.message || res.data.msg || '业务请求失败'
-								const errMsg =
-									res.data.code === 404 || res.data.code === 503
-										? formatHttpErrorMessage(res.data.code, String(bizMsg))
-										: bizMsg
-								const err = new Error(errMsg)
-								if (typeof res.data.code === 'number') err.bizCode = res.data.code
-								reject(err)
-							}
-							return
-						}
-						resolve(res.data)
+					if (!ok) {
+						const rawBody = res && res.data
+						const parsedBody = tryParseJsonBody(rawBody)
+						const serverText = extractServerErrText(parsedBody, res.statusCode)
+						const headline = serverText ? serverText : `请求失败（HTTP ${res.statusCode}）`
+						const message = formatHttpErrorMessage(res.statusCode, headline)
+						const err = new Error(message)
+						err.statusCode = res.statusCode
+						err.requestUrl = requestUrl
+						err.response = res
+						safeReject(err)
 						return
 					}
-					const serverText = extractServerErrText(res.data, res.statusCode)
-					const headline = serverText
-						? serverText
-						: `请求失败（HTTP ${res.statusCode}）`
-					const message = formatHttpErrorMessage(res.statusCode, headline)
-					const err = new Error(message)
-					err.statusCode = res.statusCode
-					reject(err)
+
+					const body = tryParseJsonBody(res && res.data)
+					if (body && typeof body === 'object' && body.code !== undefined && body.code !== null) {
+						const bizCode = typeof body.code === 'string' ? Number(body.code) : body.code
+						if (bizCode !== 0 && bizCode !== 200) {
+							const bizMsg = body.message || body.msg || body.error || '业务请求失败'
+							const errMsg =
+								bizCode === 404 || bizCode === 503
+									? formatHttpErrorMessage(bizCode, String(bizMsg))
+									: String(bizMsg)
+							const err = new Error(errMsg)
+							err.statusCode = res.statusCode
+							err.bizCode = bizCode
+							err.requestUrl = requestUrl
+							err.response = res
+							safeReject(err)
+							return
+						}
+					}
+
+					safeResolve(body)
 				},
-				fail: (err) => {
-					const raw = err && (err.errMsg || err.message || err.msg) ? err.errMsg || err.message || err.msg : ''
-					reject(new Error(normalizeNetworkError(raw)))
+				fail: (e) => {
+					const raw = e && (e.errMsg || e.message) ? String(e.errMsg || e.message) : '网络请求失败'
+					const err = new Error(normalizeNetworkError(raw))
+					err.requestUrl = requestUrl
+					err.cause = e
+					safeReject(err)
 				},
 			})
+
+			const t = Number(timeout)
+			if (Number.isFinite(t) && t > 0) {
+				timer = setTimeout(() => {
+					try {
+						if (task && typeof task.abort === 'function') task.abort()
+					} catch (_) {}
+					safeReject(new Error(normalizeNetworkError('timeout')))
+				}, t + 200)
+			}
 		})
 
 	return runOnce().catch(async (e) => {
-		const msg = (e && e.message) || ''
-		const looksLikeTimeout = /超时|timeout/i.test(msg)
-		if (looksLikeTimeout && !isRetry) {
-			await sleep(600)
-			return request({ ...options, __networkRetry: true })
-		}
-		if (e && e.statusCode === 503 && !isRetry503) {
-			await sleep(900)
-			return request({ ...options, __gatewayRetry503: true })
+		const msg = String((e && e.message) || '')
+		const statusCode = e && (e.statusCode || e.bizCode)
+		const looksLikeTimeout = /timeout|超时/i.test(msg)
+		const looksLikeConnIssue =
+			/connection refused|无法连接|ECONNREFUSED|failed to connect|network error|网络请求失败|request:fail/i.test(msg)
+		const canRetry =
+			retryTimes > 0 && Number.isFinite(retryAttempt) && retryAttempt >= 0 && retryAttempt < retryTimes
+		const shouldRetry =
+			canRetry && (looksLikeTimeout || looksLikeConnIssue || isRetryableGatewayStatus(statusCode))
+		if (shouldRetry) {
+			await sleep(computeBackoffDelay(retryAttempt, retryDelayMs))
+			return request({
+				...options,
+				__retryAttempt: retryAttempt + 1,
+				__requestId: requestId,
+				retryTimes,
+				retryDelayMs,
+			})
 		}
 		throw e
 	})

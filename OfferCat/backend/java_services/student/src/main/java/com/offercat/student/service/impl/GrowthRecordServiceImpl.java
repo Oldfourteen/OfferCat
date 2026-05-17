@@ -53,8 +53,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         int resumeCount = growthRecordMapper.countPdfResumes(studentId);
         int interviewCount = growthRecordMapper.countAiInterviews(studentId);
         int collectionCount = growthRecordMapper.countCollections(studentId);
-        int practiceCount = growthRecordMapper.countWrittenTestRecords(studentId) + 
-                            growthRecordMapper.countInterviewTestRecords(studentId);
+        int practiceCount = growthRecordMapper.countWrittenTestRecords(studentId) +
+                growthRecordMapper.countInterviewTestRecords(studentId) +
+                growthRecordMapper.sumPracticeAnsweredCount(studentId);
 
         LocalDate today = LocalDate.now();
         int continuousDays = 0;
@@ -124,6 +125,25 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
         return vo;
     }
+
+    @Override
+    public void submitPracticeSession(Long studentId, String paperId, Integer paperType, Integer totalCount, Integer answeredCount, Integer correctCount) {
+        if (studentId == null || studentId <= 0) {
+            throw new IllegalArgumentException("studentId 无效");
+        }
+        if (paperId == null || paperId.trim().isEmpty()) {
+            throw new IllegalArgumentException("paperId 不能为空");
+        }
+        int t = totalCount == null ? 0 : totalCount;
+        int a = answeredCount == null ? 0 : answeredCount;
+        int c = correctCount == null ? 0 : correctCount;
+        if (t < 0 || a < 0 || c < 0) {
+            throw new IllegalArgumentException("统计数据不能为负数");
+        }
+        growthRecordMapper.insertPracticeSession(studentId, paperId.trim(), paperType, t, a, c);
+        getGrowthRecordStats(studentId);
+    }
+    /**
     /**
      * 签到成长记录
      * @param studentId 学生ID

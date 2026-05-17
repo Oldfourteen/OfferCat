@@ -1,5 +1,5 @@
 import { setToken } from './token'
-import { setUser, syncUserProfileFromServer } from './user'
+import { setUser, scheduleLoginProfileSync } from './user'
 import { login } from '../api/auth'
 
 // 判断当前是否为开发环境。
@@ -36,7 +36,7 @@ export async function completeOneClickLoginWithPhone(phone) {
 
 	setToken(token)
 	setUser(user)
-	await syncUserProfileFromServer()
+	scheduleLoginProfileSync({ timeout: 12000 })
 
 	return { token, user, isComplete }
 }

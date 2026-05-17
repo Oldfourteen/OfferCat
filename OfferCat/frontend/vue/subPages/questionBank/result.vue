@@ -3,9 +3,9 @@
 	<view class="result-page" :class="themeClass" v-if="result">
 		<!-- 顶部导航栏 -->
 		<view class="result-topbar">
-			<text class="back-btn" @click="goBack">
+			<view class="back-btn" @click="goBack">
 				<view class="svg-icon back-icon"></view>
-			</text>
+			</view>
 			<text class="topbar-title">评分结果</text>
 			<text class="placeholder"></text>
 		</view>

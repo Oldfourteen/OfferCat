@@ -8,6 +8,8 @@ export const USER_PROFILE_UPDATED_EVENT = 'user-profile-updated'
 export const DEFAULT_USER_PROFILE = {
 	avatar: DEFAULT_AVATAR,
 	nickname: '',
+	school: '',
+	idCard: '',
 	major: '',
 	graduationYear: '',
 	grade: '',
@@ -30,6 +32,8 @@ function normalizeProfile(source = {}) {
 		...source,
 		avatar: source.avatar || DEFAULT_USER_PROFILE.avatar,
 		nickname: source.nickname || DEFAULT_USER_PROFILE.nickname,
+		school: source.school ?? DEFAULT_USER_PROFILE.school,
+		idCard: source.idCard ?? DEFAULT_USER_PROFILE.idCard,
 		major: source.major || DEFAULT_USER_PROFILE.major,
 		graduationYear: grade,
 		grade,

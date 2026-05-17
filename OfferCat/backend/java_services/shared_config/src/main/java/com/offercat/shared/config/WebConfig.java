@@ -21,7 +21,7 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns("*")// 允许所有来源
                 .allowedMethods("GET", "POST", "PUT", "DELETE", "OPTIONS")// 允许的 HTTP 方法
                 .allowedHeaders("*")// 允许的请求头
-                .allowCredentials(true)// 允许跨域请求携带凭证
+                .allowCredentials(false)// 允许跨域请求携带凭证
                 .maxAge(3600);// 跨域请求最大缓存时间，单位秒
     }
     /**

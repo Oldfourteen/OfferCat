@@ -124,6 +124,8 @@
 				avatarUrl: DEFAULT_AVATAR,
 				userProfile: {
 					nickname: DEFAULT_USER_PROFILE.nickname,
+					school: DEFAULT_USER_PROFILE.school,
+					idCard: DEFAULT_USER_PROFILE.idCard,
 					major: DEFAULT_USER_PROFILE.major,
 					graduationYear: DEFAULT_USER_PROFILE.graduationYear,
 					jobStatus: DEFAULT_USER_PROFILE.jobStatus,
@@ -172,7 +174,12 @@
 			},
 			profileSummary() {
 				// 将专业、毕业年份和求职状态压缩成一行摘要文案。
-				return [this.userProfile.major, this.userProfile.graduationYear, this.userProfile.jobStatus].filter(Boolean).join(' · ')
+				const school = this.userProfile.school
+				const idCard = this.userProfile.idCard
+				const studentInfo = school ? [school, idCard ? `学号${idCard}` : null].filter(Boolean) : []
+				return [...studentInfo, this.userProfile.major, this.userProfile.graduationYear, this.userProfile.jobStatus]
+					.filter(Boolean)
+					.join(' · ')
 			}
 		},
 		mounted() {
@@ -186,13 +193,16 @@
 			void this.refreshDashboardStats()
 		},
 		methods: {
-			loadUserInfo() {
+			async loadUserInfo() {
+				await syncUserProfileFromServer({ timeout: 12000 })
 				// 从本地资料缓存回填头像、昵称、简介和期望标签信息。
 				const user = getUserProfile()
 				this.avatarUrl = user.avatar
 				this.userProfile = {
 					...this.userProfile,
 					nickname: user.nickname,
+					school: user.school,
+					idCard: user.idCard,
 					major: user.major,
 					graduationYear: user.graduationYear,
 					jobStatus: user.jobStatus,

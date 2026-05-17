@@ -1,14 +1,14 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set BASE=c:\Users\14101\Desktop\uniapp\OfferCat\backend\java_services\deploy
-set APP=%BASE%\apps
+set BASE=%~dp0..
+set APP=%BASE%\..\dist
 set LOG=%BASE%\logs
 set CFG=%BASE%\config
 
 if not exist "%LOG%" mkdir "%LOG%"
 
-REM ====== 服务配置（窗口标题=服务名，JAR=文件名）======
+REM ====== 服务配置（窗口标�?服务名，JAR=文件名）======
 set S1_NAME=registry
 set S1_JAR=registry.jar
 
@@ -79,13 +79,13 @@ call "%~f0" start
 exit /b 0
 
 
-REM ====== 启动一个服务 ======
+REM ====== 启动一个服�?======
 :startOne
 set NAME=%1
 set JAR=%2
 
 if not exist "%APP%\%JAR%" (
-  echo [WARN] 找不到 %APP%\%JAR% ，跳过 %NAME%
+  echo [WARN] 找不�?%APP%\%JAR% ，跳�?%NAME%
   goto :eof
 )
 
@@ -97,7 +97,7 @@ start "%NAME%" cmd /k ^
 goto :eof
 
 
-REM ====== 停止一个服务 ======
+REM ====== 停止一个服�?======
 :stopOne
 set NAME=%1
 echo Stopping %NAME% ...

@@ -101,6 +101,7 @@
                       OR ac.user_content LIKE '%开启AI模拟面试%'
                       OR ac.user_content LIKE '%HR模拟面试%'
                       OR ac.user_content LIKE '%模拟面试%'
+                      OR ac.user_content LIKE '%[AIHR]%'
                   )
             ),
             0
@@ -117,6 +118,18 @@
 
     <select id="countInterviewTestRecords" resultType="int">
         SELECT COUNT(*) FROM student_interview_record WHERE student_id = #{studentId}
+    </select>
+
+    <insert id="insertPracticeSession">
+        INSERT INTO student_practice_session (
+            student_id, paper_id, paper_type, total_count, answered_count, correct_count
+        ) VALUES (
+            #{studentId}, #{paperId}, #{paperType}, #{totalCount}, #{answeredCount}, #{correctCount}
+        )
+    </insert>
+
+    <select id="sumPracticeAnsweredCount" resultType="int">
+        SELECT COALESCE(SUM(answered_count), 0) FROM student_practice_session WHERE student_id = #{studentId}
     </select>
 
     <insert id="insertQuestionCollect">

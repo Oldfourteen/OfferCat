@@ -41,7 +41,7 @@
 			/**
 			 * 默认不带 apiBase：星图 H5 使用同目录下 ./mock（打包在 static/galaxy-h5），无需启动 galaxy 后端。
 			 * 需要走网关时：App.vue → globalData.galaxyApiBase 填网关上的 Galaxy 前缀（无末尾 /），例如
-			 * **http://start.awacode.top:21630/api/galaxy**，内网调试可用 **http://内网IP:14132/api/galaxy**。
+			 * **http://start.awacode.top:21308/api/galaxy**，内网调试可用 **http://内网IP:14132/api/galaxy**。
 			 * H5 / App 统一 iframe.html（内含 uni.webview.js，避免双入口缓存不一致）。
 			 */
 			galaxyUrl() {

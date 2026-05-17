@@ -52,6 +52,15 @@ public interface GrowthRecordMapper {
      */
     int countInterviewTestRecords(@Param("studentId") Long studentId);
 
+    void insertPracticeSession(@Param("studentId") Long studentId,
+                               @Param("paperId") String paperId,
+                               @Param("paperType") Integer paperType,
+                               @Param("totalCount") Integer totalCount,
+                               @Param("answeredCount") Integer answeredCount,
+                               @Param("correctCount") Integer correctCount);
+
+    int sumPracticeAnsweredCount(@Param("studentId") Long studentId);
+
     /**
      * 收藏题库
      */

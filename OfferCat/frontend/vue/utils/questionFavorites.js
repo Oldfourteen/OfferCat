@@ -1,6 +1,13 @@
-// 题库收藏记录的本地缓存键与更新事件名。
-const QUESTION_FAVORITES_KEY = 'question_bank_favorites'
+import { getUser } from '@/utils/user.js'
+
+const LEGACY_QUESTION_FAVORITES_KEY = 'question_bank_favorites'
 export const QUESTION_FAVORITES_UPDATED_EVENT = 'question-favorites-updated'
+
+function getQuestionFavoritesKey() {
+	const user = getUser() || {}
+	const userId = user.userId || user.id || 'guest'
+	return `question_bank_favorites_${userId}`
+}
 
 // 补零格式化时间片段。
 function padNumber(value) {
@@ -38,11 +45,19 @@ function normalizeFavoriteItem(item = {}) {
 
 // 读取全部收藏题单并按最新时间倒序返回。
 export function getQuestionFavorites() {
-	const records = uni.getStorageSync(QUESTION_FAVORITES_KEY)
-	if (!Array.isArray(records)) {
-		return []
+	const key = getQuestionFavoritesKey()
+	const records = uni.getStorageSync(key)
+	if (Array.isArray(records)) {
+		return records.map(normalizeFavoriteItem).sort((a, b) => b.timestamp - a.timestamp)
 	}
-	return records.map(normalizeFavoriteItem).sort((a, b) => b.timestamp - a.timestamp)
+
+	const legacy = uni.getStorageSync(LEGACY_QUESTION_FAVORITES_KEY)
+	if (Array.isArray(legacy) && legacy.length) {
+		uni.setStorageSync(key, legacy)
+		uni.removeStorageSync(LEGACY_QUESTION_FAVORITES_KEY)
+		return legacy.map(normalizeFavoriteItem).sort((a, b) => b.timestamp - a.timestamp)
+	}
+	return []
 }
 
 // 判断指定题单是否已被收藏。
@@ -55,7 +70,8 @@ export function saveQuestionFavorite(record) {
 	const nextItem = normalizeFavoriteItem(record)
 	const favorites = getQuestionFavorites().filter(item => item.paperId !== nextItem.paperId)
 	favorites.unshift(nextItem)
-	uni.setStorageSync(QUESTION_FAVORITES_KEY, favorites)
+	const key = getQuestionFavoritesKey()
+	uni.setStorageSync(key, favorites)
 	if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
 		uni.$emit(QUESTION_FAVORITES_UPDATED_EVENT)
 	}
@@ -65,7 +81,8 @@ export function saveQuestionFavorite(record) {
 // 删除指定题单的收藏记录。
 export function removeQuestionFavorite(paperId = '') {
 	const favorites = getQuestionFavorites().filter(item => item.paperId !== paperId)
-	uni.setStorageSync(QUESTION_FAVORITES_KEY, favorites)
+	const key = getQuestionFavoritesKey()
+	uni.setStorageSync(key, favorites)
 	if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
 		uni.$emit(QUESTION_FAVORITES_UPDATED_EVENT)
 	}

@@ -45,4 +45,6 @@ public interface GrowthRecordService {
      * @return 长度为7的Boolean数组，代表周一到周日
      */
     java.util.List<Boolean> getWeeklyCheckinStatus(Long studentId);
+
+    void submitPracticeSession(Long studentId, String paperId, Integer paperType, Integer totalCount, Integer answeredCount, Integer correctCount);
 }

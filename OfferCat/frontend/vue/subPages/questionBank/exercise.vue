@@ -3,9 +3,9 @@
 	<view class="exercise-page" :class="themeClass">
 		<!-- 顶部导航栏：返回 + 标题 + 答题进度 -->
 		<view class="exercise-topbar">
-			<text class="back-btn" @click="goBack">
+			<view class="back-btn" @click="goBack">
 				<view class="svg-icon back-icon"></view>
-			</text>
+			</view>
 			<text class="topbar-title">在线练习</text>
 			<view class="progress-btn">已答 {{ answeredCount }}/{{ totalCount }}</view>
 		</view>
@@ -59,6 +59,7 @@
 		import { getQuestionDetail, getQuestionPaper } from './data'
 		// 答题历史记录工具
 		import { saveQuestionHistory } from '@/utils/questionHistory.js'
+		import { submitPracticeSession } from '@/api/growth.js'
 		// 主题切换混入
 		import themeMixin from '@/utils/themeMixin.js'
 
@@ -164,6 +165,16 @@
 				uni.setStorageSync(`question_result_${sessionId}`, result)
 				// 保存到答题历史
 				saveQuestionHistory(result)
+
+				void submitPracticeSession({
+					paperId: this.paperId,
+					paperType: this.type === 'interview' ? 2 : 1,
+					totalCount: this.totalCount,
+					answeredCount: this.answeredCount,
+					correctCount,
+				}).catch((e) => {
+					console.warn('[exercise] submitPracticeSession 失败', e)
+				})
 				
 				// 跳转到结果页
 				const resultUrl = `/subPages/questionBank/result?session=${sessionId}`

@@ -3,9 +3,9 @@
 	<view class="detail-page" :class="[themeClass, typeClass]">
 		<!-- 顶部导航栏：返回 + 标题 + 收藏 -->
 		<view class="detail-topbar">
-			<text class="back-btn" @click="goBack">
+			<view class="back-btn" @click="goBack">
 				<view class="svg-icon back-icon"></view>
-			</text>
+			</view>
 			<text class="detail-topbar-title">题单详情</text>
 			<text class="favorite-btn" :class="{ active: isFavorite }" @click="toggleFavorite">{{ isFavorite ? '已藏' : '收藏' }}</text>
 		</view>
@@ -62,6 +62,7 @@
 	import { getQuestionDetail } from './data'
 	// 收藏工具类
 	import { isQuestionFavorited, saveQuestionFavorite, removeQuestionFavorite } from '@/utils/questionFavorites.js'
+	import { collectQuestion } from '@/api/growth.js'
 	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
 
@@ -132,6 +133,7 @@
 					highlights: this.detail.highlights
 				})
 				this.isFavorite = true
+				void collectQuestion(this.detail.id, this.type === 'interview' ? 4 : 3).catch(() => {})
 				uni.showToast({ title: '已加入收藏', icon: 'none' })
 			},
 			// 开始练习，跳转到刷题页面
@@ -158,7 +160,7 @@
 	.back-icon {
 		width: 44rpx;
 		height: 44rpx;
-		background-color: #314658;
+		background-color: currentColor;
 		mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
 		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iMTUgMTggOSAxMiAxNSA2Ij48L3BvbHlsaW5lPjwvc3ZnPg==");
 	}
@@ -174,7 +176,6 @@
 	}
 
 	.back-btn,
-	.detail-topbar-title,
 	.favorite-btn {
 		width: 72rpx;
 	}
@@ -381,7 +382,9 @@
 
 	.detail-page.theme-dark .back-btn,
 	.detail-page.theme-dark .favorite-btn {
-		background: rgba(35, 37, 43, 0.96);
+		background: rgba(255, 255, 255, 0.08);
+		border: 1rpx solid rgba(255, 255, 255, 0.08);
+		box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.28);
 		color: #eef2f8;
 	}
 

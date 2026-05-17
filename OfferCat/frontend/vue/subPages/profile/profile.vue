@@ -84,6 +84,16 @@
 				<view class="form-label">真实姓名</view>
 				<input class="form-input" v-model="realName" maxlength="10" placeholder="请输入真实姓名" />
 			</view>
+
+			<view class="form-item">
+				<view class="form-label">学校</view>
+				<input class="form-input" v-model="school" maxlength="20" placeholder="请输入学校" />
+			</view>
+
+			<view class="form-item">
+				<view class="form-label">学号</view>
+				<input class="form-input" v-model="idCard" maxlength="20" placeholder="请输入学号" />
+			</view>
 			
 			<view class="form-item">
 				<view class="form-label">手机号</view>
@@ -161,7 +171,7 @@ import CommonAvatar from '@/components/CommonAvatar.vue'
 import { request } from '@/api/request'
 import { BASE_URL } from '@/api/config'
 import { getToken } from '@/utils/token'
-import { getUser, resolveStoredUserId } from '@/utils/user'
+import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user'
 
 //响应式数据
 const avatarUrl = ref(DEFAULT_AVATAR)
@@ -170,6 +180,8 @@ const major = ref('计算机科学与技术')
 const graduationYear = ref('大四')
 const jobStatus = ref('求职中')
 const realName = ref('')
+const school = ref('')
+const idCard = ref('')
 const phone = ref('')
 const email = ref('')
 const gender = ref('male')
@@ -223,6 +235,8 @@ const loadUserInfo = () => {
 	graduationYear.value = user.graduationYear || ''
 	jobStatus.value = user.jobStatus || ''
 	realName.value = user.realName || ''
+	school.value = user.school || ''
+	idCard.value = user.idCard || ''
 	phone.value = user.phone || ''
 	email.value = user.email || ''
 	gender.value = user.gender || 'male'
@@ -230,6 +244,11 @@ const loadUserInfo = () => {
 	desiredPosition.value = String(user.desiredPosition || '').slice(0, 15)
 	desiredCity.value = String(user.desiredCity || '').slice(0, 15)
 	expectedSalary.value = String(user.expectedSalary || '').slice(0, 10)
+}
+
+const refreshUserInfo = async () => {
+	await syncUserProfileFromServer({ timeout: 12000 })
+	loadUserInfo()
 }
 
 // 保存个人信息（校验 + 上传服务器 + 本地存储）
@@ -253,6 +272,18 @@ const saveProfile = async () => {
 	}
 	if (String(realName.value || '').length > 10) {
 		uni.showToast({ title: '真实姓名最多10个字', icon: 'none' })
+		return
+	}
+	if (String(school.value || '').length > 20) {
+		uni.showToast({ title: '学校最多20个字', icon: 'none' })
+		return
+	}
+	if (String(idCard.value || '').length > 20) {
+		uni.showToast({ title: '学号最多20个字符', icon: 'none' })
+		return
+	}
+	if ((school.value && !idCard.value) || (!school.value && idCard.value)) {
+		uni.showToast({ title: '学校与学号需同时填写', icon: 'none' })
 		return
 	}
 	if (phone.value && !/^\d{11}$/.test(phone.value)) {
@@ -294,6 +325,8 @@ const saveProfile = async () => {
 			grade: graduationYear.value,
 			jobStatus: jobStatus.value,
 			realName: realName.value,
+			school: school.value,
+			idCard: idCard.value,
 			phone: phone.value,
 			email: email.value,
 			gender: gender.value === 'male' ? 1 : (gender.value === 'female' ? 2 : 0),
@@ -312,13 +345,20 @@ const saveProfile = async () => {
 		})
 
 		const studentId = resp && resp.data && resp.data.studentId ? resp.data.studentId : null
+		const serverUserInfo = resp && resp.data && resp.data.userInfo ? resp.data.userInfo : null
 
 		// 对于前端状态，仍使用字符串 gender
-		const localUser = {
-			...user,
-			gender: gender.value,
-			...(studentId ? { studentId } : {})
-		}
+		const localUser = serverUserInfo && typeof serverUserInfo === 'object'
+			? {
+				...serverUserInfo,
+				gender: gender.value,
+				...(studentId ? { studentId } : {})
+			}
+			: {
+				...user,
+				gender: gender.value,
+				...(studentId ? { studentId } : {})
+			}
 		
 		saveUserProfile(localUser)
 		uni.hideLoading()
@@ -417,12 +457,12 @@ const chooseAvatar = () => {
 
 onMounted(() => {
 	theme.value = applyTheme()
-	loadUserInfo()
+	void refreshUserInfo()
 })
 
 onShow(() => {
 	theme.value = applyTheme()
-	loadUserInfo()
+	void refreshUserInfo()
 })
 </script>
 
@@ -852,6 +892,10 @@ $grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
 
 		.form-input,
 		.form-textarea {
+			color: #f4f7fb;
+		}
+
+		.picker-value {
 			color: #f4f7fb;
 		}
 

@@ -60,7 +60,7 @@
 	import humanVerify from './humanVerify.vue';
 	import { login } from '../../../api/auth'
 	import { setToken } from '../../../utils/token'
-	import { setUser, syncUserProfileFromServer } from '../../../utils/user'
+	import { setUser, scheduleLoginProfileSync } from '../../../utils/user'
 	
 	export default {
 		components: {
@@ -158,7 +158,8 @@
 
 					setToken(token)
 					setUser(user)
-					await syncUserProfileFromServer()
+					// 与登录响应档案对齐放在后台执行，避免首包冷连接时二次请求拖住 loading
+					scheduleLoginProfileSync({ timeout: 12000 })
 
 					uni.hideLoading()
 					uni.showToast({ title: '登录成功', icon: 'success' })

@@ -46,6 +46,8 @@ public class UserController {
         userToUpdate.setGender(request.getGender());
         userToUpdate.setAvatar(request.getAvatar());
         userToUpdate.setRealName(request.getRealName());
+        userToUpdate.setSchool(request.getSchool());
+        userToUpdate.setIdCard(request.getIdCard());
         userToUpdate.setPhone(request.getPhone());
         userToUpdate.setEmail(request.getEmail());
         userMapper.updateProfileInfo(userToUpdate);

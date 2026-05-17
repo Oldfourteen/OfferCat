@@ -35,7 +35,10 @@ export function login(payload) {
 	return request({
 		url: '/auth/login',
 		method: 'POST',
-		data
+		data,
+		timeout: 45000,
+		retryTimes: 2,
+		retryDelayMs: 700
 	})
 }
 

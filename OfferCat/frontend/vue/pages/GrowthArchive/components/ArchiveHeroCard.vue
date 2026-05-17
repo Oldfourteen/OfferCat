@@ -195,6 +195,7 @@
 			.hero-title {
 				font-size: 40rpx;
 				font-weight: 800;
+				color: #ffffff;
 			}
 
 			.re-evaluate-btn {
@@ -205,6 +206,7 @@
 				border: 2rpx solid rgba(255, 255, 255, 0.3);
 				backdrop-filter: blur(4px);
 				transition: all 0.2s;
+				color: #ffffff;
 			}
 
 			.re-evaluate-btn:active {
@@ -249,6 +251,7 @@
 				.stat-value {
 					font-size: 54rpx;
 					font-weight: 800;
+					color: #ffffff;
 				}
 
 				.stat-label {
@@ -264,5 +267,20 @@
 	.hero-card.theme-dark {
 		background: linear-gradient(145deg, #20242d 0%, #1a1d24 35%, #14161b 100%);
 		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.22);
+	}
+
+	.hero-card.theme-dark .hero-title,
+	.hero-card.theme-dark .stat-value {
+		color: #f4f7fb;
+	}
+
+	.hero-card.theme-dark .hero-subtitle,
+	.hero-card.theme-dark .hero-date,
+	.hero-card.theme-dark .stat-label {
+		color: rgba(255, 255, 255, 0.78);
+	}
+
+	.hero-card.theme-dark .re-evaluate-btn {
+		color: #f4f7fb;
 	}
 </style>

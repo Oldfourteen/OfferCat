@@ -1,6 +1,7 @@
 package com.offercat.student.controller;
 
 import com.offercat.student.common.ResponseResult;
+import com.offercat.student.dto.SubmitPracticeDTO;
 import com.offercat.student.service.GrowthRecordService;
 import com.offercat.student.vo.GrowthRecordVO;
 import com.offercat.student.vo.CheckinResultVO;
@@ -94,6 +95,26 @@ public class GrowthRecordController {
             return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
         }
         growthRecordService.collectQuestion(sid, questionId, questionType);
+        return ResponseResult.success(null);
+    }
+
+    @PostMapping("/practice/submit")
+    public ResponseResult<Void> submitPractice(@RequestBody SubmitPracticeDTO dto) {
+        if (dto == null) {
+            return ResponseResult.error(400, "请求体不能为空");
+        }
+        Long sid = growthRecordService.resolveStudentId(dto.getStudentId(), dto.getUserId());
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        growthRecordService.submitPracticeSession(
+                sid,
+                dto.getPaperId(),
+                dto.getPaperType(),
+                dto.getTotalCount(),
+                dto.getAnsweredCount(),
+                dto.getCorrectCount()
+        );
         return ResponseResult.success(null);
     }
 }

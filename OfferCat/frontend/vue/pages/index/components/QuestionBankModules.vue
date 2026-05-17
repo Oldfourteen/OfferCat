@@ -52,7 +52,6 @@
 						<text class="module-meta">{{ item.meta }}</text>
 					</view>
 				</view>
-				<view class="module-arrow">→</view>
 			</view>
 		</view>
 
@@ -326,20 +325,6 @@
 		line-height: 1.35;
 	}
 
-	.module-arrow {
-		width: 64rpx;
-		height: 64rpx;
-		margin-left: 18rpx;
-		border-radius: 20rpx;
-		// background: rgba(255, 255, 255, 0.84);
-		// box-shadow: 0 10rpx 24rpx rgba(49, 101, 215, 0.08);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 30rpx;
-		color: #46648f;
-	}
-
 	.question-bank.theme-dark {
 		background: linear-gradient(180deg, #23252b 0%, #1d1f24 100%);
 		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.22);
@@ -378,11 +363,5 @@
 	.question-bank.theme-dark .module-card.is-written,
 	.question-bank.theme-dark .module-card.is-interview {
 		background: linear-gradient(135deg, rgba(74, 103, 247, 0.2) 0%, rgba(38, 40, 46, 0.96) 70%);
-	}
-
-	.question-bank.theme-dark .module-arrow {
-		background: rgba(255, 255, 255, 0.08);
-		box-shadow: none;
-		color: #dbe4f3;
 	}
 </style>

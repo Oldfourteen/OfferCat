@@ -74,10 +74,20 @@ export function resolveStoredStudentId(user) {
 }
 
 /**
+ * 登录接口已挂载 student.profile，正常情况下无需再等第二跳 GET。
+ * 若此前网络未建立（尤其密码登录无「发验证码」预热），.await 同步会与冷启动叠加，体感长时间卡在「登录中」。
+ *
+ * @param {{ timeout?: number }} [opts] 可选超时（毫秒）；登录后建议较短，失败由其它入口再对齐。
+ */
+export function scheduleLoginProfileSync(opts) {
+	void syncUserProfileFromServer(opts)
+}
+
+/**
  * 从网关拉取最新的用户与学生档案并 merge 到本地缓存。
  * 用于：内置浏览器/H5 登录包体不完整、旧版缓存缺 studentId、切账号后需与库表 student 主键对齐。
  */
-export async function syncUserProfileFromServer() {
+export async function syncUserProfileFromServer(opts) {
 	const u = getUser()
 	const userId = resolveStoredUserId(u)
 	if (userId == null) return null
@@ -85,6 +95,7 @@ export async function syncUserProfileFromServer() {
 		const res = await request({
 			url: `/user/profile?userId=${encodeURIComponent(String(userId))}`,
 			method: 'GET',
+			timeout: opts && opts.timeout != null ? opts.timeout : undefined,
 		})
 		const serverUser =
 			res && typeof res === 'object' && res.data && typeof res.data === 'object' ? res.data : null

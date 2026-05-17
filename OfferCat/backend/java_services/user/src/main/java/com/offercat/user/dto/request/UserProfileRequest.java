@@ -18,6 +18,10 @@ public class UserProfileRequest {
     private String nickname;
     // 真实姓名
     private String realName;
+    // 学校
+    private String school;
+    // 学号（对应 user 表 id_card 字段）
+    private String idCard;
     // 手机号
     private String phone;
     // 邮箱

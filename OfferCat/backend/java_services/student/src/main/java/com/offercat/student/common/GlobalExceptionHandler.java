@@ -2,6 +2,8 @@ package com.offercat.student.common;
 
 import java.util.stream.Collectors;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.dao.DataAccessException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
     public ResponseResult<Void> handleValidation(MethodArgumentNotValidException ex) {
@@ -31,6 +35,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(CannotGetJdbcConnectionException.class)
     public ResponseEntity<ResponseResult<Void>> handleJdbcUnavailable(CannotGetJdbcConnectionException ex) {
+        log.error("[student-service] 数据库连接不可用", ex);
         return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
                 .body(ResponseResult.error(503,
                         "数据服务暂时不可用，请稍后重试。（常见原因：数据库未启动、网络不通、连接池占满）"));
@@ -38,11 +43,13 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler({java.sql.SQLException.class, DataAccessException.class})
     public ResponseResult<Void> handleDatabase(Exception ex) {
+        log.error("[student-service] 数据库访问异常", ex);
         return ResponseResult.error(500, "服务器繁忙，请稍后再试");
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseResult<Void> handleOther(Exception ex) {
+        log.error("[student-service] 未处理异常", ex);
         return ResponseResult.error(500, "服务器繁忙，请稍后再试");
     }
 }

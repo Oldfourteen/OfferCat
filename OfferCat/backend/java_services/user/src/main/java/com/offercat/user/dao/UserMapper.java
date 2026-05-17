@@ -47,6 +47,8 @@ public interface UserMapper {
             "<if test='gender != null'>gender = #{gender},</if>",
             "<if test='avatar != null'>avatar = #{avatar},</if>",
             "<if test='realName != null'>real_name = #{realName},</if>",
+            "<if test='school != null'>school = #{school},</if>",
+            "<if test='idCard != null'>id_card = #{idCard},</if>",
             "<if test='phone != null'>phone = #{phone},</if>",
             "<if test='email != null'>email = #{email},</if>",
             "update_time = NOW()",

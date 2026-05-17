@@ -46,8 +46,18 @@ public class GalaxyStarlitController {
         return ResponseResult.success(starlitService.progressByUser(userId));
     }
 
+    /** 推荐：query 传 packKey，避免路径中 `:` 被网关/容器误解析 */
+    @GetMapping("/questions")
+    public ResponseResult<List<StarlitQuestionDto>> questionsByQuery(@RequestParam String packKey) {
+        return questionsInternal(packKey);
+    }
+
     @GetMapping("/pack/{packKey}/questions")
     public ResponseResult<List<StarlitQuestionDto>> questions(@PathVariable String packKey) {
+        return questionsInternal(packKey);
+    }
+
+    private ResponseResult<List<StarlitQuestionDto>> questionsInternal(String packKey) {
         try {
             return ResponseResult.success(starlitService.questionsByPackKey(packKey));
         } catch (IllegalArgumentException ex) {

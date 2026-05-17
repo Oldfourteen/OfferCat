@@ -56,10 +56,11 @@ public class GalaxyPersonalController {
             return ResponseResult.success(List.of());
         }
         JsonNode fusions = galaxy.get("fusions");
+        JsonNode majors = galaxy.get("majors");
         List<String> keys = new ArrayList<>();
         if (fusions.isArray()) {
             for (JsonNode f : fusions) {
-                String pk = PackKeyUtil.fromFusionNode(f);
+                String pk = PackKeyUtil.fromFusionNode(f, majors);
                 if (pk != null && !keys.contains(pk)) {
                     keys.add(pk);
                 }

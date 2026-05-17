@@ -39,9 +39,11 @@ export function hyperedgesContainingNode(
   const hyperedgeIds: string[] = []
   const memberIds = new Set<string>()
   for (const he of hyperedges) {
-    if (he.member_node_ids.includes(nodeId)) {
+    const members = he.member_node_ids
+    if (!members?.length) continue
+    if (members.includes(nodeId)) {
       hyperedgeIds.push(he.id)
-      for (const m of he.member_node_ids) memberIds.add(m)
+      for (const m of members) memberIds.add(m)
     }
   }
   return { hyperedgeIds, memberIds }

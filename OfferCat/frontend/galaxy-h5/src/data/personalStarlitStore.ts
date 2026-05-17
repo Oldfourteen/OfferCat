@@ -55,7 +55,7 @@ async function syncFusionProgressToServer(fusionId: string, record: StarlitFusio
   if (!userId) return
   const galaxy = loadPersonalGalaxyFromStorage()
   if (!galaxy) return
-  const packKey = packKeyFromFusionId(fusionId, galaxy.fusions)
+  const packKey = packKeyFromFusionId(fusionId, galaxy.fusions, galaxy.majors)
   if (!packKey) return
   try {
     const { upsertStarlitProgress } = await import('@/api/galaxyBackend')
@@ -71,12 +71,14 @@ export async function hydrateStarlitFromServer(fusions?: readonly PersonalFusion
   const userId = galaxyUserId()
   if (!userId) return
 
-  const fusionList = fusions ?? loadPersonalGalaxyFromStorage()?.fusions ?? []
+  const stored = loadPersonalGalaxyFromStorage()
+  const fusionList = fusions ?? stored?.fusions ?? []
+  const majors = stored?.majors ?? []
   if (!fusionList.length) return
 
   const packKeyToFusionId = new Map<string, string>()
   for (const f of fusionList) {
-    const pk = packKeyFromFusion(f)
+    const pk = packKeyFromFusion(f, majors)
     if (pk) packKeyToFusionId.set(pk, f.id)
   }
 

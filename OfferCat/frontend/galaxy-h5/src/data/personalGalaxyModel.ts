@@ -1,6 +1,8 @@
 import type { CrossJobRow } from '@/data/crossJobCatalog'
+import { loadCrossJobCatalog, threeJobsForMajorPair } from '@/data/crossJobCatalog'
 import type { RawEdge, RawHE, RawNode } from '@/lib/galaxyThree'
 import { galaxyApiReady, galaxyUserId } from '@/utils/galaxySession'
+import { packKeyFromFusion, resolveMajorCode } from '@/utils/packKey'
 
 export const PERSONAL_GALAXY_STORAGE_KEY = 'offercat_personal_galaxy_v1'
 
@@ -13,7 +15,11 @@ export type PersonalFusionInst = {
   title: string
   majorA: string
   majorB: string
-  row: CrossJobRow
+  row?: CrossJobRow
+  /** 三选一岗位在该组合中的 0~2 序号，与 starlit_pack.pack_key 末位一致 */
+  jobSlot?: number
+  /** 建 fusion 时写入，避免仅靠 major 实例 id 推导 pack_key */
+  packKey?: string
 }
 
 export type PersonalGalaxyV1 = {
@@ -85,7 +91,7 @@ export function buildPersonalGalaxyMountBundle(majors: PersonalMajorInst[], fusi
       id: f.id,
       type: 'fusion',
       label: f.title,
-      meta: rowToFusionMeta(f.row),
+      meta: f.row ? rowToFusionMeta(f.row) : { tagline: '个人星系 · 小行星' },
     })
   }
 
@@ -96,7 +102,7 @@ export function buildPersonalGalaxyMountBundle(majors: PersonalMajorInst[], fusi
 
   const hyperedges: RawHE[] = fusions.map((f) => ({
     id: `he_${f.id}`,
-    members: [f.majorA, f.majorB, f.id],
+    member_node_ids: [f.majorA, f.majorB, f.id],
     style_hint: 'personal',
   }))
 
@@ -132,15 +138,61 @@ function isPersonalGalaxyV1(data: unknown): data is PersonalGalaxyV1 {
   return !!p && p.v === 1 && Array.isArray(p.majors) && Array.isArray(p.fusions)
 }
 
+/** 为旧数据补全 row / jobSlot / packKey（云端存档可能只有 title + 连线 id） */
+async function normalizePersonalGalaxyAsync(galaxy: PersonalGalaxyV1): Promise<PersonalGalaxyV1> {
+  try {
+    await loadCrossJobCatalog()
+  } catch {
+    /* 无岗位表时仍尝试用 row.pair 推导 pack_key */
+  }
+  const majors = galaxy.majors
+  let changed = false
+  const fusions: PersonalFusionInst[] = []
+  for (const f of galaxy.fusions) {
+    let next = f
+    const codeA = resolveMajorCode(f.majorA, majors)
+    const codeB = resolveMajorCode(f.majorB, majors)
+    if (codeA && codeB && (!f.row || f.jobSlot == null || !f.packKey)) {
+      try {
+        const jobs = await threeJobsForMajorPair(codeA, codeB)
+        if (jobs.length > 0) {
+          let jobSlot = f.jobSlot ?? 0
+          let row = f.row
+          if (f.title?.trim()) {
+            const i = jobs.findIndex((j) => j.title === f.title)
+            if (i >= 0) {
+              jobSlot = i
+              row = jobs[i]
+            }
+          }
+          if (!row) row = jobs[jobSlot] ?? jobs[0]
+          next = { ...next, row, jobSlot }
+          changed = true
+        }
+      } catch {
+        /* 岗位表未加载则跳过 */
+      }
+    }
+    const packKey = packKeyFromFusion(next, majors) ?? next.packKey
+    if (packKey && packKey !== next.packKey) {
+      next = { ...next, packKey }
+      changed = true
+    }
+    fusions.push(next)
+  }
+  return changed ? { ...galaxy, fusions, updatedAt: Date.now() } : galaxy
+}
+
 /**
  * 加载个人星图：有 API 时优先服务端（新于本地则覆盖本地），否则仅本地。
  */
 export async function loadPersonalGalaxyHydrated(): Promise<PersonalGalaxyV1 | null> {
   const local = loadPersonalGalaxyFromStorage()
-  if (!galaxyApiReady()) return local
+  const wrap = async (g: PersonalGalaxyV1 | null) => (g ? normalizePersonalGalaxyAsync(g) : null)
+  if (!galaxyApiReady()) return wrap(local)
 
   const userId = galaxyUserId()
-  if (!userId) return local
+  if (!userId) return wrap(local)
 
   try {
     const { loadPersonalGalaxy } = await import('@/api/galaxyBackend')
@@ -151,14 +203,15 @@ export async function loadPersonalGalaxyHydrated(): Promise<PersonalGalaxyV1 | n
         updatedAt: remote.updatedAt ?? Date.now(),
       }
       if (!local || (merged.updatedAt ?? 0) >= (local.updatedAt ?? 0)) {
-        savePersonalGalaxyToStorage(merged)
-        return merged
+        const normalized = await normalizePersonalGalaxyAsync(merged)
+        savePersonalGalaxyToStorage(normalized)
+        return normalized
       }
     }
   } catch {
     /* 离线回退本地 */
   }
-  return local
+  return wrap(local)
 }
 
 export async function syncPersonalGalaxyToServer(

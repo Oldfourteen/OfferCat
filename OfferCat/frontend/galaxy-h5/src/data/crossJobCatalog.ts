@@ -1,4 +1,4 @@
-import { pairKeysFromMajorIds } from '@/data/majorTxtMap'
+import { majorCodesFromPairLabel, pairKeysFromMajorIds, unorderedPairKey } from '@/data/majorTxtMap'
 
 export type CrossJobRow = {
   idx: number
@@ -43,6 +43,30 @@ export function parseCrossJobTsv(raw: string): CrossJobRow[] {
 }
 
 let cache: CrossJobRow[] | null = null
+/** 无序学科对 → starlit 用的 [major_a, major_b] 顺序（来自岗位表 pair 列） */
+const canonicalOrderByPair = new Map<string, [string, string]>()
+
+function indexCanonicalOrders(rows: CrossJobRow[]) {
+  canonicalOrderByPair.clear()
+  for (const row of rows) {
+    const codes = majorCodesFromPairLabel(row.pair)
+    if (!codes) continue
+    const key = unorderedPairKey(codes[0], codes[1])
+    if (!canonicalOrderByPair.has(key)) {
+      canonicalOrderByPair.set(key, codes)
+    }
+  }
+}
+
+export function getCanonicalMajorCodes(codeA: string, codeB: string, pairHint?: string): [string, string] {
+  if (pairHint) {
+    const fromHint = majorCodesFromPairLabel(pairHint)
+    if (fromHint) return fromHint
+  }
+  const hit = canonicalOrderByPair.get(unorderedPairKey(codeA, codeB))
+  if (hit) return hit
+  return codeA <= codeB ? [codeA, codeB] : [codeB, codeA]
+}
 
 export async function loadCrossJobCatalog(): Promise<CrossJobRow[]> {
   if (cache) return cache
@@ -51,6 +75,7 @@ export async function loadCrossJobCatalog(): Promise<CrossJobRow[]> {
   if (!r.ok) throw new Error(`无法加载岗位表: ${r.status}`)
   const text = await r.text()
   cache = parseCrossJobTsv(text)
+  indexCanonicalOrders(cache)
   return cache
 }
 

@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
-import { loadPersonalGalaxyFromStorage } from '@/data/personalGalaxyModel'
+import { loadPersonalGalaxyFromStorage, loadPersonalGalaxyHydrated } from '@/data/personalGalaxyModel'
 import {
   incrementStarlit,
   hydrateStarlitFromServer,
@@ -9,14 +9,20 @@ import {
   STARLIT_QUESTION_COUNT,
   getStarsLit,
 } from '@/data/personalStarlitStore'
-import { galaxyApiReady } from '@/utils/galaxySession'
-import { packKeyFromFusionId } from '@/utils/packKey'
+import { getGalaxyApiBase } from '@/utils/galaxySession'
+import { packKeyFromFusion, resolveMajorCode } from '@/utils/packKey'
+import { threeJobsForMajorPair } from '@/data/crossJobCatalog'
+import type { PersonalFusionInst, PersonalMajorInst } from '@/data/personalGalaxyModel'
 import { goExitFromStarlitQuiz } from '@/utils/navigation'
 
 const route = useRoute()
 const router = useRouter()
 
 const fusionId = computed(() => String(route.query.fusionId || ''))
+const packKeyFromRoute = computed(() => {
+  const q = route.query.packKey
+  return typeof q === 'string' && q.trim() ? q.trim() : ''
+})
 
 const fusionTitle = computed(() => {
   const q = route.query.title
@@ -48,15 +54,73 @@ const toast = ref('')
 const finished = ref(false)
 const loadingQuestions = ref(false)
 const questionsSource = ref<'api' | 'mock'>('mock')
+const loadError = ref('')
+const activePackKey = ref('')
+
+const maxStarsForQuiz = computed(() => {
+  const n = questions.value.length
+  if (n > 0) return Math.min(STARLIT_MAX_STARS_PER_FUSION, n)
+  return STARLIT_MAX_STARS_PER_FUSION
+})
+
+async function resolvePackKey(
+  fusion: PersonalFusionInst,
+  majors: readonly PersonalMajorInst[],
+): Promise<string | null> {
+  let pk = packKeyFromFusion(fusion, majors)
+  if (pk) return pk
+  const codeA = resolveMajorCode(fusion.majorA, majors)
+  const codeB = resolveMajorCode(fusion.majorB, majors)
+  if (!codeA || !codeB) return null
+  try {
+    const jobs = await threeJobsForMajorPair(codeA, codeB)
+    if (!jobs.length) return null
+    let jobSlot = fusion.jobSlot ?? 0
+    let row = fusion.row
+    if (fusion.title?.trim()) {
+      const i = jobs.findIndex((j) => j.title === fusion.title)
+      if (i >= 0) {
+        jobSlot = i
+        row = jobs[i]
+      }
+    }
+    if (!row) row = jobs[jobSlot] ?? jobs[0]
+    pk = packKeyFromFusion({ ...fusion, row, jobSlot }, majors)
+    return pk
+  } catch {
+    return null
+  }
+}
 
 async function loadQuestionsForFusion(id: string, title: string) {
   loadingQuestions.value = true
+  loadError.value = ''
+  activePackKey.value = ''
   questions.value = []
   try {
-    const galaxy = loadPersonalGalaxyFromStorage()
-    if (galaxyApiReady() && galaxy) {
-      const packKey = packKeyFromFusionId(id, galaxy.fusions)
-      if (packKey) {
+    const galaxy = await loadPersonalGalaxyHydrated()
+    const apiOn = getGalaxyApiBase().length > 0
+    if (!apiOn) {
+      loadError.value = '未注入星图 API（请从 App 星图入口进入并确认网关地址）'
+    } else if (!galaxy?.fusions?.length) {
+      loadError.value = '未找到个人星图数据，请先在「设计专属星图」保存后再答题'
+    } else {
+      const fusion = galaxy.fusions.find((x) => x.id === id)
+      if (!fusion) {
+        loadError.value = '当前小行星不在已保存星图中，请返回展示页重试'
+      } else {
+      const packKey =
+        packKeyFromRoute.value ||
+        (await resolvePackKey(fusion, galaxy.majors)) ||
+        ''
+      if (!packKey) {
+        const a = resolveMajorCode(fusion.majorA, galaxy.majors)
+        const b = resolveMajorCode(fusion.majorB, galaxy.majors)
+        loadError.value = !a || !b
+          ? '无法识别两颗大行星学科，请回设计页重新放入星空并连边保存'
+          : '无法解析本题库 pack_key，请重新连边选择岗位后保存星系'
+      } else {
+        activePackKey.value = packKey
         const { fetchStarlitQuestions } = await import('@/api/galaxyBackend')
         const rows = await fetchStarlitQuestions(packKey)
         if (rows.length > 0) {
@@ -67,12 +131,19 @@ async function loadQuestionsForFusion(id: string, title: string) {
             correct: r.correctIndex,
           }))
           questionsSource.value = 'api'
+          const cap = maxStarsForQuiz.value
+          if (starsLit.value > cap) starsLit.value = cap
           return
         }
+        loadError.value = `题库包「${packKey}」暂无题目，请确认已导入 starlit_question_bank.sql`
+      }
       }
     }
-  } catch {
-    /* fallback mock */
+  } catch (e) {
+    const base = e instanceof Error ? e.message : '加载题库失败'
+    loadError.value = activePackKey.value
+      ? `${base}（pack_key: ${activePackKey.value}）`
+      : base
   } finally {
     if (!questions.value.length) {
       questions.value = buildMockQuestions(title)
@@ -86,7 +157,7 @@ watch(
   [fusionId, fusionTitle],
   async ([id]) => {
     if (!id) return
-    const galaxy = loadPersonalGalaxyFromStorage()
+    const galaxy = await loadPersonalGalaxyHydrated()
     if (galaxy?.fusions?.length) {
       await hydrateStarlitFromServer(galaxy.fusions)
     }
@@ -113,7 +184,7 @@ function pick(choiceIndex: number) {
   if (choiceIndex === q.correct) {
     starsLit.value = incrementStarlit(fusionId.value)
     showToast('点亮 +1 星')
-    if (cursor.value >= questions.value.length - 1 || starsLit.value >= STARLIT_MAX_STARS_PER_FUSION) {
+    if (cursor.value >= questions.value.length - 1 || starsLit.value >= maxStarsForQuiz.value) {
       finished.value = true
       return
     }
@@ -128,7 +199,11 @@ function goExit() {
 }
 
 function goQuestionBankPlaceholder() {
-  showToast('对接题库：uni.navigateTo 刷题页（占位）')
+  if (questionsSource.value === 'api') {
+    showToast('当前已是服务端题库')
+    return
+  }
+  showToast(loadError.value || '题库未接通，请检查网关与 SQL 导入')
 }
 </script>
 
@@ -151,10 +226,10 @@ function goQuestionBankPlaceholder() {
 
     <template v-else>
       <section class="star-strip" aria-label="已点亮星数">
-        <div class="star-label">已点亮 {{ starsLit }} / {{ STARLIT_MAX_STARS_PER_FUSION }} 星</div>
+        <div class="star-label">已点亮 {{ starsLit }} / {{ maxStarsForQuiz }} 星</div>
         <div class="star-dots" role="list">
           <span
-            v-for="i in STARLIT_MAX_STARS_PER_FUSION"
+            v-for="i in maxStarsForQuiz"
             :key="i"
             class="dot"
             :class="{ on: i <= starsLit }"
@@ -164,6 +239,8 @@ function goQuestionBankPlaceholder() {
       </section>
 
       <div v-if="loadingQuestions" class="loading">加载题目…</div>
+
+      <p v-else-if="loadError && questionsSource === 'mock'" class="load-err">{{ loadError }}</p>
 
       <section v-else-if="finished" class="done">
         <p>本套题目已完成或已达星数上限。</p>
@@ -188,7 +265,9 @@ function goQuestionBankPlaceholder() {
       <p v-if="toast" class="toast" role="status">{{ toast }}</p>
 
       <footer class="foot">
-        <button type="button" class="ghost wide" @click="goQuestionBankPlaceholder">去题库刷题（占位）</button>
+        <button type="button" class="ghost wide" @click="goQuestionBankPlaceholder">
+          {{ questionsSource === 'api' ? '题库已接通' : '题库未接通 · 查看原因' }}
+        </button>
       </footer>
     </template>
   </div>
@@ -232,6 +311,17 @@ function goQuestionBankPlaceholder() {
 
 .api-tag {
   color: rgba(180, 230, 180, 0.9);
+}
+
+.load-err {
+  margin: 0 16px 8px;
+  padding: 10px 12px;
+  border-radius: 10px;
+  font-size: 12px;
+  line-height: 1.45;
+  color: #ffdcb4;
+  background: rgba(120, 60, 20, 0.35);
+  border: 1px solid rgba(240, 200, 140, 0.35);
 }
 
 .spacer {

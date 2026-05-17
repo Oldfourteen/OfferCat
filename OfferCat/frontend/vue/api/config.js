@@ -38,3 +38,23 @@ export const BASE_URL = {
 		return getApiBase()
 	},
 }
+
+/**
+ * 星图 H5（iframe）用的 Galaxy 服务前缀，勿带末尾 /。
+ * 优先 `App.vue` → `globalData.galaxyApiBase`；未配置时与全站一致：`getApiBase() + /api/galaxy`。
+ */
+export function getGalaxyApiBase() {
+	try {
+		if (typeof getApp === 'function') {
+			const app = getApp()
+			const raw = app && app.globalData && app.globalData.galaxyApiBase
+			if (raw != null && String(raw).trim() !== '') {
+				const t = String(raw).trim().replace(/\/+$/, '')
+				// 显式 mock：不注入 apiBase，星图 H5 使用 static/galaxy-h5/mock
+				if (t.toLowerCase() === 'mock') return ''
+				return t
+			}
+		}
+	} catch (_) {}
+	return `${getApiBase()}/api/galaxy`
+}

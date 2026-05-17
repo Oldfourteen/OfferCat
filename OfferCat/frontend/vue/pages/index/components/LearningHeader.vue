@@ -1,5 +1,5 @@
 <template>
-	<view class="learning-header" :class="themeClass" :key="refreshSeed">
+	<view class="learning-header" :class="[themeClass, switchAnimClass]" :key="refreshSeed">
 		<!-- 主题切换提示框 -->
 		<view class="theme-toast" :class="{ 'toast-show': toastVisible }">
 			<text class="toast-text">{{ toastMessage }}</text>
@@ -82,6 +82,9 @@
 				toastVisible: false,
 				toastMessage: '',
 				toastTimer: null,
+				switchAnimatingTo: '',
+				switchAnimTimer: null,
+				themeApplyTimer: null,
 				quoteUserKey: 'guest',
 				// 与设备本地时间同步的时段问候，由定时器与 onShow 刷新。
 				timeGreeting: '早上好',
@@ -103,6 +106,12 @@
 			if (this.toastTimer) {
 				clearTimeout(this.toastTimer)
 			}
+			if (this.switchAnimTimer) {
+				clearTimeout(this.switchAnimTimer)
+			}
+			if (this.themeApplyTimer) {
+				clearTimeout(this.themeApplyTimer)
+			}
 			this.clearGreetingTimer()
 		},
 		beforeUnmount() {
@@ -112,6 +121,12 @@
 			}
 			if (this.toastTimer) {
 				clearTimeout(this.toastTimer)
+			}
+			if (this.switchAnimTimer) {
+				clearTimeout(this.switchAnimTimer)
+			}
+			if (this.themeApplyTimer) {
+				clearTimeout(this.themeApplyTimer)
 			}
 			this.clearGreetingTimer()
 		},
@@ -130,6 +145,11 @@
 			themeClass() {
 				// 根据全局主题切换头部背景和按钮样式。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			switchAnimClass() {
+				if (this.switchAnimatingTo === 'dark') return 'switch-anim-to-dark'
+				if (this.switchAnimatingTo === 'light') return 'switch-anim-to-light'
+				return ''
 			},
 			copyStyle() {
 				// 根据折叠进度动态调整文案区的透明度、位移和高度。
@@ -165,7 +185,15 @@
 			toggleTheme() {
 				// 在浅色/深色主题间切换，并给出短暂提示反馈。
 				const nextTheme = this.theme === 'dark' ? 'light' : 'dark'
-				setTheme(nextTheme)
+				this.switchAnimatingTo = nextTheme
+				if (this.switchAnimTimer) clearTimeout(this.switchAnimTimer)
+				this.switchAnimTimer = setTimeout(() => {
+					this.switchAnimatingTo = ''
+				}, 560)
+				if (this.themeApplyTimer) clearTimeout(this.themeApplyTimer)
+				this.themeApplyTimer = setTimeout(() => {
+					setTheme(nextTheme)
+				}, 120)
 				this.showThemeToast(nextTheme === 'dark' ? '已切换至深色模式' : '已切换至浅色模式')
 			},
 			showThemeToast(message) {
@@ -293,20 +321,73 @@
 	}
 
 	.header-action {
-		width: 76rpx;
-		height: 76rpx;
-		min-width: 76rpx;
-		min-height: 76rpx;
+		width: 112rpx;
+		height: 60rpx;
+		min-width: 112rpx;
+		min-height: 60rpx;
 		flex-shrink: 0;
-		border-radius: 50%;
+		border-radius: 999rpx;
 		overflow: hidden;
-		background: rgba(255, 255, 255, 0.9);
-		color: #1b1b1b;
-		font-size: 54rpx;
+		position: relative;
+		padding: 4rpx;
+		background: linear-gradient(180deg, rgba(90, 176, 255, 0.98) 0%, rgba(170, 219, 255, 0.98) 100%);
+		border: 2rpx solid rgba(255, 255, 255, 0.9);
 		display: flex;
 		align-items: center;
-		justify-content: center;
-		box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.06);
+		justify-content: flex-start;
+		box-shadow:
+			0 12rpx 26rpx rgba(0, 0, 0, 0.1),
+			inset 0 2rpx 0 rgba(255, 255, 255, 0.55);
+
+		image {
+			display: none;
+		}
+
+		&::before {
+			content: '';
+			position: absolute;
+			inset: 0;
+			border-radius: 999rpx;
+			opacity: 1;
+			background-image:
+				radial-gradient(circle at 58% 64%, rgba(255, 255, 255, 0.92) 0 20rpx, transparent 21rpx),
+				radial-gradient(circle at 74% 64%, rgba(255, 255, 255, 0.86) 0 18rpx, transparent 19rpx),
+				radial-gradient(circle at 86% 60%, rgba(255, 255, 255, 0.8) 0 15rpx, transparent 16rpx),
+				radial-gradient(circle at 70% 46%, rgba(255, 255, 255, 0.72) 0 10rpx, transparent 11rpx),
+				linear-gradient(180deg, rgba(255, 255, 255, 0.14), rgba(255, 255, 255, 0));
+			filter: blur(0.2px);
+			transform: translate3d(0, 0, 0);
+			z-index: 0;
+			pointer-events: none;
+		}
+
+		&::after {
+			content: '';
+			position: absolute;
+			top: 50%;
+			margin-top: -26rpx;
+			left: 4rpx;
+			width: 52rpx;
+			height: 52rpx;
+			border-radius: 50%;
+			background: radial-gradient(circle at 30% 28%, rgba(255, 250, 205, 1) 0%, rgba(255, 214, 74, 1) 52%, rgba(255, 176, 40, 1) 100%);
+			box-shadow:
+				0 12rpx 22rpx rgba(0, 0, 0, 0.18),
+				0 0 0 6rpx rgba(255, 220, 120, 0.22),
+				0 0 18rpx rgba(255, 208, 80, 0.22);
+			transform: translateX(0);
+			transition: transform 0.22s ease;
+			will-change: transform;
+			z-index: 2;
+		}
+	}
+
+	.learning-header.switch-anim-to-dark .header-action::after {
+		animation: themeThumbToDark 560ms cubic-bezier(0.18, 1.35, 0.32, 1) both;
+	}
+
+	.learning-header.switch-anim-to-light .header-action::after {
+		animation: themeThumbToLight 560ms cubic-bezier(0.18, 1.35, 0.32, 1) both;
 	}
 
 	.header-copy {
@@ -358,9 +439,40 @@
 		background: linear-gradient(180deg, rgba(35, 42, 63, 0.96) 0%, rgba(35, 42, 63, 0) 100%);
 
 		.header-action {
-			background: rgba(39, 41, 49, 0.92);
-			color: #f1f4fa;
-			box-shadow: 0 10rpx 24rpx rgba(0, 0, 0, 0.2);
+			background: linear-gradient(180deg, rgba(14, 20, 42, 0.98) 0%, rgba(36, 45, 86, 0.98) 100%);
+			border-color: rgba(255, 255, 255, 0.28);
+			box-shadow:
+				0 12rpx 26rpx rgba(0, 0, 0, 0.22),
+				inset 0 2rpx 0 rgba(255, 255, 255, 0.08);
+		}
+
+		.header-action::after {
+			transform: translateX(52rpx);
+			background:
+				radial-gradient(circle at 36% 34%, rgba(245, 247, 255, 0.98) 0%, rgba(205, 210, 226, 0.98) 55%, rgba(164, 172, 196, 0.98) 100%),
+				radial-gradient(circle at 64% 50%, rgba(155, 163, 186, 0.45) 0 7rpx, transparent 8rpx),
+				radial-gradient(circle at 44% 62%, rgba(155, 163, 186, 0.42) 0 6rpx, transparent 7rpx),
+				radial-gradient(circle at 56% 36%, rgba(155, 163, 186, 0.4) 0 4.8rpx, transparent 6rpx);
+			box-shadow:
+				0 12rpx 24rpx rgba(0, 0, 0, 0.32),
+				0 0 0 6rpx rgba(200, 210, 235, 0.14),
+				0 0 18rpx rgba(210, 220, 245, 0.18),
+				inset -3rpx -3rpx 0 rgba(255, 255, 255, 0.22),
+				inset 3rpx 3rpx 0 rgba(0, 0, 0, 0.08);
+		}
+
+		.header-action::before {
+			background-image:
+				radial-gradient(circle at 18% 30%, rgba(255, 255, 255, 0.95) 0 2.2rpx, transparent 3rpx),
+				radial-gradient(circle at 30% 54%, rgba(255, 255, 255, 0.82) 0 1.6rpx, transparent 2.4rpx),
+				radial-gradient(circle at 42% 40%, rgba(255, 255, 255, 0.9) 0 1.8rpx, transparent 2.6rpx),
+				radial-gradient(circle at 26% 70%, rgba(255, 255, 255, 0.76) 0 1.4rpx, transparent 2.2rpx),
+				radial-gradient(circle at 46% 62%, rgba(255, 255, 255, 0.72) 0 1.3rpx, transparent 2.2rpx),
+				radial-gradient(circle at 10% 58%, rgba(255, 255, 255, 0.7) 0 1.2rpx, transparent 2.1rpx),
+				radial-gradient(circle at 52% 26%, rgba(255, 255, 255, 0.66) 0 1.3rpx, transparent 2.2rpx),
+				radial-gradient(circle at 36% 22%, rgba(255, 255, 255, 0.78) 0 1.4rpx, transparent 2.2rpx),
+				linear-gradient(180deg, rgba(255, 255, 255, 0.1), rgba(255, 255, 255, 0));
+			opacity: 1;
 		}
 
 		.header-title,
@@ -377,6 +489,36 @@
 
 		.menu-line {
 			background: #f1f4fa;
+		}
+	}
+
+	@keyframes themeThumbToDark {
+		0% {
+			transform: translateX(0);
+		}
+		58% {
+			transform: translateX(60rpx);
+		}
+		78% {
+			transform: translateX(48rpx);
+		}
+		100% {
+			transform: translateX(52rpx);
+		}
+	}
+
+	@keyframes themeThumbToLight {
+		0% {
+			transform: translateX(52rpx);
+		}
+		58% {
+			transform: translateX(-8rpx);
+		}
+		78% {
+			transform: translateX(6rpx);
+		}
+		100% {
+			transform: translateX(0);
 		}
 	}
 

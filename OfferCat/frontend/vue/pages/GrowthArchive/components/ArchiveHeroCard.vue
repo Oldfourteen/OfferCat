@@ -115,6 +115,16 @@
 			}
 		},
 		methods: {
+			formatStatValue(value) {
+				const n = Number(value)
+				if (!Number.isFinite(n) || n <= 0) {
+					return '0'
+				}
+				if (n > 99) {
+					return '99+'
+				}
+				return String(Math.floor(n))
+			},
 			handleRetakeSurvey() {
 				// 清除已评估标记后重新进入问卷，允许用户重做能力测评。
 				const user = getUser()
@@ -132,10 +142,10 @@
 				// 网络不可用时回退到本地聚合数据，保证首页有可展示内容。
 				const metrics = getDashboardMetrics()
 				this.stats = [
-					{ label: '我的简历', value: String(metrics.resumeCount) },
-					{ label: '面试记录', value: String(metrics.interviewCount) },
-					{ label: '题库练习', value: String(metrics.historyCount) },
-					{ label: '题库收藏', value: String(metrics.favoritesCount) }
+					{ label: '我的简历', value: this.formatStatValue(metrics.resumeCount) },
+					{ label: '面试记录', value: this.formatStatValue(metrics.interviewCount) },
+					{ label: '题库练习', value: this.formatStatValue(metrics.historyCount) },
+					{ label: '题库收藏', value: this.formatStatValue(metrics.favoritesCount) }
 				]
 			},
 			async fetchStats() {
@@ -159,10 +169,10 @@
 						return
 					}
 					this.stats = [
-						{ label: '我的简历', value: String(d.resumeCount ?? 0) },
-						{ label: '面试记录', value: String(d.interviewCount ?? 0) },
-						{ label: '题库练习', value: String(d.practiceCount ?? 0) },
-						{ label: '题库收藏', value: String(d.collectionCount ?? 0) }
+						{ label: '我的简历', value: this.formatStatValue(d.resumeCount) },
+						{ label: '面试记录', value: this.formatStatValue(d.interviewCount) },
+						{ label: '题库练习', value: this.formatStatValue(d.practiceCount) },
+						{ label: '题库收藏', value: this.formatStatValue(d.collectionCount) }
 					]
 				} catch (e) {
 					console.warn('[ArchiveHeroCard] growth/stats 失败，使用本地统计', e)

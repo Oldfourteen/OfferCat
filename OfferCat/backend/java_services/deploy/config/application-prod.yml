@@ -42,3 +42,6 @@ radar:
   python:
     # Python 雷达图生成服务 端口15000
     base-url: http://127.0.0.1:15000
+
+file:
+  resume-avatars-dir: D:/offercat/photo/resume-avatars

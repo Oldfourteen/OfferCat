@@ -61,12 +61,16 @@ public interface ForumPostMapper {
      */
     void insertLike(@Param("postId") Long postId, @Param("userId") Integer userId);
 
+    void incrementLikeCount(@Param("postId") Long postId);
+
     /**
      * 删除点赞记录
      * @param postId 帖子ID
      * @param userId 用户ID
      */
     void deleteLike(@Param("postId") Long postId, @Param("userId") Integer userId);
+
+    void decrementLikeCount(@Param("postId") Long postId);
 
     /**
      * 增加评论数

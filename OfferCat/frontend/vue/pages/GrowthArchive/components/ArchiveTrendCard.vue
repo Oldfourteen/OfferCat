@@ -4,13 +4,13 @@
 			<!-- 标题区配合时间范围切换，控制趋势图展示粒度。 -->
 			<text class="section-title">能力成长轨迹</text>
 			<view class="range-tabs">
-				<text
+				<view
 					v-for="item in ranges"
 					:key="item.value"
 					class="range-tab"
 					:class="{ active: activeRange === item.value }"
 					@click="handleRangeChange(item.value)"
-				>{{ item.label }}</text>
+				>{{ item.label }}</view>
 			</view>
 		</view>
 
@@ -41,8 +41,7 @@
 		buildWeekTrend,
 		buildMonthTrend,
 		buildQuarterTrend,
-		collectNumericPoints,
-		getRadarTop5Average
+		collectNumericPoints
 	} from '@/utils/growthTrendScore.js'
 
 	export default {
@@ -187,12 +186,6 @@
 		methods: {
 			refreshTrendChart() {
 				const radar = this.radarData
-				const basis1 = getRadarTop5Average(radar)
-				if (basis1 == null) {
-					this.showChart = false
-					return
-				}
-
 				const history = getQuestionHistory()
 				const now = new Date()
 				const weekPayload = buildWeekTrend(radar, history, now)
@@ -266,16 +259,25 @@
 				gap: 12rpx;
 
 				.range-tab {
-					padding: 8rpx 18rpx;
+					display: inline-flex;
+					align-items: center;
+					justify-content: center;
+					min-width: 72rpx;
+					height: 52rpx;
+					padding: 0 22rpx;
 					border-radius: 999rpx;
+					border: 1rpx solid transparent;
 					background: #f2f4f7;
 					font-size: 22rpx;
 					color: #667085;
+					line-height: 1;
 
 					&.active {
 						background: rgba(74, 103, 247, 0.12);
+						border-color: rgba(74, 103, 247, 0.35);
 						color: #3165D7;
 						font-weight: 700;
+						box-shadow: 0 4rpx 10rpx rgba(74, 103, 247, 0.1);
 					}
 				}
 			}
@@ -302,8 +304,17 @@
 	}
 
 	.section-card.theme-dark .range-tab {
-		background: rgba(255, 255, 255, 0.08);
-		color: rgba(255, 255, 255, 0.58);
+		background: rgba(255, 255, 255, 0.06);
+		border-color: rgba(255, 255, 255, 0.08);
+		color: rgba(255, 255, 255, 0.7);
+		font-weight: 600;
+	}
+
+	.section-card.theme-dark .range-tab.active {
+		background: rgba(74, 103, 247, 0.22);
+		border-color: rgba(119, 146, 255, 0.55);
+		color: #afc3ff;
+		box-shadow: 0 4rpx 12rpx rgba(74, 103, 247, 0.22);
 	}
 
 	.trend-intro {

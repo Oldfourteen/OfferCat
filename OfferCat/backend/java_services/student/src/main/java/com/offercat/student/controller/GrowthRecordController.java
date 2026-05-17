@@ -98,6 +98,31 @@ public class GrowthRecordController {
         return ResponseResult.success(null);
     }
 
+    @PostMapping("/uncollect")
+    public ResponseResult<Void> uncollectQuestion(@RequestParam(value = "studentId", required = false) Long studentId,
+                                                  @RequestParam(value = "userId", required = false) Long userId,
+                                                  @RequestParam("questionId") Long questionId,
+                                                  @RequestParam("questionType") Integer questionType) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        growthRecordService.uncollectQuestion(sid, questionId, questionType);
+        return ResponseResult.success(null);
+    }
+
+    @GetMapping("/collect/list")
+    public ResponseResult<List<Long>> listCollectedQuestions(@RequestParam(value = "studentId", required = false) Long studentId,
+                                                             @RequestParam(value = "userId", required = false) Long userId,
+                                                             @RequestParam(value = "questionType", required = false) Integer questionType) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        List<Long> ids = growthRecordService.listCollectedQuestionIds(sid, questionType);
+        return ResponseResult.success(ids);
+    }
+
     @PostMapping("/practice/submit")
     public ResponseResult<Void> submitPractice(@RequestBody SubmitPracticeDTO dto) {
         if (dto == null) {

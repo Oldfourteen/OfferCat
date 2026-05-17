@@ -3,6 +3,7 @@
 -- 与 starlit_question_bank.sql 中的 user_starlit_progress 配合使用
 -- ======================================================
 
+CREATE DATABASE IF NOT EXISTS `offercat` DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
 USE `offercat`;
 
 CREATE TABLE IF NOT EXISTS `user_personal_galaxy` (

@@ -39,6 +39,10 @@ public interface GrowthRecordService {
      * @param questionType 题目类型
      */
     void collectQuestion(Long studentId, Long questionId, Integer questionType);
+
+    void uncollectQuestion(Long studentId, Long questionId, Integer questionType);
+
+    java.util.List<Long> listCollectedQuestionIds(Long studentId, Integer questionType);
     /**
      * 获取学生本周的打卡状态
      * @param studentId 学生ID

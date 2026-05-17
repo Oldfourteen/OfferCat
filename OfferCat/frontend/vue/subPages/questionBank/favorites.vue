@@ -90,6 +90,8 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	// 收藏工具类
 	import { getQuestionFavorites, removeQuestionFavorite } from '@/utils/questionFavorites.js'
+	import { getCollectedQuestionIds, uncollectQuestion } from '@/api/growth.js'
+	import { getQuestionDetail } from './data'
 
 	const FAVORITES_BACK_ICON =
 		'data:image/svg+xml;charset=utf-8,' +
@@ -138,12 +140,57 @@
 		},
 		onShow() {
 			// 页面显示：重新加载收藏数据
-			this.loadFavorites()
+			void this.loadFavorites()
 		},
 		methods: {
 			// 加载收藏列表
-			loadFavorites() {
-				this.favorites = getQuestionFavorites()
+			async loadFavorites() {
+				const localFavorites = getQuestionFavorites()
+				try {
+					const tasks = []
+					if (this.activeType === 'all' || this.activeType === 'written') {
+						tasks.push(getCollectedQuestionIds(3))
+					}
+					if (this.activeType === 'all' || this.activeType === 'interview') {
+						tasks.push(getCollectedQuestionIds(4))
+					}
+					if (!tasks.length) {
+						this.favorites = localFavorites
+						return
+					}
+					const results = await Promise.allSettled(tasks)
+					const ids = results
+						.filter(r => r.status === 'fulfilled')
+						.flatMap(r => (r.value && r.value.data) || [])
+						.filter(v => v != null)
+					if (!ids.length) {
+						this.favorites = localFavorites
+						return
+					}
+					const mapped = ids
+						.map((qid) => {
+							const setId = `set_${qid}`
+							const detail = getQuestionDetail(setId)
+							if (!detail) return null
+							return {
+								paperId: detail.id,
+								type: detail.category === '面试' ? 'interview' : 'written',
+								title: detail.title,
+								company: detail.company,
+								companyShort: detail.companyShort,
+								category: detail.category,
+								total: detail.total,
+								summary: detail.summary,
+								highlights: detail.highlights,
+								timestamp: Date.now(),
+								favoritedAt: ''
+							}
+						})
+						.filter(Boolean)
+					this.favorites = mapped.length ? mapped : localFavorites
+				} catch (e) {
+					this.favorites = localFavorites
+				}
 			},
 			// 返回上一页（智能判断路由）
 			goBack() {
@@ -159,7 +206,8 @@
 			// 取消收藏
 			removeFavorite(item) {
 				removeQuestionFavorite(item.paperId)
-				this.loadFavorites()
+				void uncollectQuestion(item.paperId, item.type === 'interview' ? 4 : 3).catch(() => {})
+				void this.loadFavorites()
 				uni.showToast({ title: '已取消收藏', icon: 'none' })
 			},
 			// 打开题单详情

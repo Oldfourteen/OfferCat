@@ -262,4 +262,15 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
          */
         getGrowthRecordStats(studentId);
     }
+
+    @Override
+    public void uncollectQuestion(Long studentId, Long questionId, Integer questionType) {
+        growthRecordMapper.deleteQuestionCollect(studentId, questionId, questionType);
+        getGrowthRecordStats(studentId);
+    }
+
+    @Override
+    public List<Long> listCollectedQuestionIds(Long studentId, Integer questionType) {
+        return growthRecordMapper.listQuestionCollectIds(studentId, questionType);
+    }
 }

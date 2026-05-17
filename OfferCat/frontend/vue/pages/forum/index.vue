@@ -68,15 +68,6 @@
 		display: flex;
 		flex-direction: column;
 		background-color: #fff;
-		
-		&.theme-dark {
-			background-color: #111216;
-			.forum-header-sticky {
-				background: rgba(30, 32, 36, 0.8);
-				.page-title { color: #f4f7fb; }
-				.action-btn { background: rgba(255, 255, 255, 0.05); }
-			}
-		}
 	}
 
 	.forum-header-sticky {
@@ -115,6 +106,24 @@
 						height: 40rpx;
 					}
 				}
+			}
+		}
+	}
+
+	.forum-page.theme-dark {
+		background-color: #111216;
+
+		.forum-header-sticky {
+			background: rgba(17, 18, 22, 0.8);
+
+			.page-title {
+				color: #f4f7fb;
+			}
+
+			.action-btn {
+				background: rgba(255, 255, 255, 0.08);
+				border: 1rpx solid rgba(255, 255, 255, 0.08);
+				box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.35);
 			}
 		}
 	}

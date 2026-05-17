@@ -63,9 +63,9 @@ export function basis2FromAttempts(correct, attempted) {
 
 /** 综合能力（50–100），保留一位小数 */
 export function comprehensiveAbility(basis1, basis2) {
-	if (basis1 == null || !Number.isFinite(basis1)) return null
+	const b1 = Number.isFinite(Number(basis1)) ? Number(basis1) : 50
 	const b2 = Number.isFinite(basis2) ? basis2 : 50
-	const raw = 0.5 * basis1 + 0.5 * b2
+	const raw = 0.5 * b1 + 0.5 * b2
 	const clamped = Math.min(100, Math.max(50, raw))
 	return Math.round(clamped * 10) / 10
 }
@@ -103,6 +103,14 @@ function seriesColor() {
 	return '#4A67F7'
 }
 
+function radarEffectiveMs(radarData) {
+	if (!radarData) return null
+	const v = radarData.createTime || radarData.updateTime || radarData.updatedAt || radarData.createdAt
+	if (!v) return null
+	const ms = new Date(v).getTime()
+	return Number.isFinite(ms) ? ms : null
+}
+
 /**
  * 本周：周一至周日；未到之日数据为 null，折线断开。
  * 每个数据点：从当周周一 0 点累积到该日结束（不超过当前时刻），便于周内练习带动曲线变化。
@@ -110,12 +118,7 @@ function seriesColor() {
 export function buildWeekTrend(radarData, history, now = new Date()) {
 	const basis1 = getRadarTop5Average(radarData)
 	const categories = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
-	if (basis1 == null) {
-		return {
-			categories,
-			series: [{ name: '综合能力', data: categories.map(() => null), color: seriesColor() }]
-		}
-	}
+	const effectiveMs = radarEffectiveMs(radarData)
 	const weekStart = startOfWeekMondayMs(now)
 	const todayEnd = endOfDayMs(now)
 	const data = []
@@ -128,7 +131,8 @@ export function buildWeekTrend(radarData, history, now = new Date()) {
 		const dayEnd = Math.min(endOfDayMs(dayStart), todayEnd)
 		const { correct, attempted } = aggregateQuestionAttempts(history, weekStart, dayEnd)
 		const b2 = basis2FromAttempts(correct, attempted)
-		data.push(comprehensiveAbility(basis1, b2))
+		const b1 = effectiveMs != null && dayEnd < effectiveMs ? 50 : basis1
+		data.push(comprehensiveAbility(b1, b2))
 	}
 	return {
 		categories,
@@ -142,12 +146,7 @@ export function buildWeekTrend(radarData, history, now = new Date()) {
 export function buildMonthTrend(radarData, history, now = new Date()) {
 	const basis1 = getRadarTop5Average(radarData)
 	const categories = ['第1周', '第2周', '第3周', '第4周']
-	if (basis1 == null) {
-		return {
-			categories,
-			series: [{ name: '综合能力', data: categories.map(() => null), color: seriesColor() }]
-		}
-	}
+	const effectiveMs = radarEffectiveMs(radarData)
 	const y = now.getFullYear()
 	const m = now.getMonth()
 	const daysInMonth = new Date(y, m + 1, 0).getDate()
@@ -169,7 +168,8 @@ export function buildMonthTrend(radarData, history, now = new Date()) {
 		const segEnd = Math.min(endOfDayMs(new Date(y, m, endDay)), todayEnd)
 		const { correct, attempted } = aggregateQuestionAttempts(history, monthStart, segEnd)
 		const b2 = basis2FromAttempts(correct, attempted)
-		data.push(comprehensiveAbility(basis1, b2))
+		const b1 = effectiveMs != null && segEnd < effectiveMs ? 50 : basis1
+		data.push(comprehensiveAbility(b1, b2))
 	}
 	return {
 		categories,
@@ -186,12 +186,7 @@ export function buildQuarterTrend(radarData, history, now = new Date()) {
 	const m = now.getMonth()
 	const qStartMonth = Math.floor(m / 3) * 3
 	const categories = [`${qStartMonth + 1}月`, `${qStartMonth + 2}月`, `${qStartMonth + 3}月`]
-	if (basis1 == null) {
-		return {
-			categories,
-			series: [{ name: '综合能力', data: categories.map(() => null), color: seriesColor() }]
-		}
-	}
+	const effectiveMs = radarEffectiveMs(radarData)
 	const quarterStart = startOfDayMs(new Date(y, qStartMonth, 1))
 	const todayEnd = endOfDayMs(now)
 	const data = []
@@ -206,7 +201,8 @@ export function buildQuarterTrend(radarData, history, now = new Date()) {
 		const windowEnd = Math.min(monthEnd, todayEnd)
 		const { correct, attempted } = aggregateQuestionAttempts(history, quarterStart, windowEnd)
 		const b2 = basis2FromAttempts(correct, attempted)
-		data.push(comprehensiveAbility(basis1, b2))
+		const b1 = effectiveMs != null && windowEnd < effectiveMs ? 50 : basis1
+		data.push(comprehensiveAbility(b1, b2))
 	}
 	return {
 		categories,

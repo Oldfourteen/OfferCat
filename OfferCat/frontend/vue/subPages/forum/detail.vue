@@ -204,15 +204,22 @@
 
 <script>
 	import { BASE_URL } from '@/api/config.js'
+	import {
+		getForumPostDetail,
+		getForumComments,
+		addForumComment,
+		likeForumPost,
+		unlikeForumPost,
+		deleteForumPost
+	} from '@/api/forum.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
-	import { incrementForumViewCount, syncForumPostViews } from '@/utils/forumViewCount.js'
+	import { syncForumPostViews } from '@/utils/forumViewCount.js'
 	import {
 		getForumMockPostDetail,
 		getForumMockComments,
 		toggleForumMockPostLike,
 		toggleForumMockPostCollect,
-		toggleForumMockCommentLike,
 		createForumMockComment,
 		deleteForumMockPost,
 		syncForumMockPostCache
@@ -297,20 +304,12 @@
 			const id = options.id || options.postId;
 			if (id && id !== 'undefined' && id !== 'null') {
 				this.postId = id
-				const shouldIncrementView = options.viewIncremented !== '1'
-				// 尝试从缓存读取帖子详情，绕开后端崩溃的 /detail 接口
 				const cachedPost = uni.getStorageSync('currentPost_' + id)
 				if (cachedPost) {
 					this.post = syncForumPostViews(Object.assign({}, cachedPost))
 					this.parseImages()
-					if (shouldIncrementView) {
-						this.recordPostView()
-					}
 				}
-				// 为了彻底屏蔽线上 500 弹出的“网络错误”，如果缓存里有数据，就不再去请求坏掉的后端接口
-				if (!cachedPost) {
-					this.loadPostDetail(shouldIncrementView)
-				}
+				this.loadPostDetail()
 				this.loadComments()
 			} else {
 				console.error('没有获取到有效的帖子ID参数，当前 options:', options)
@@ -326,20 +325,48 @@
 					uni.navigateBack()
 				}, 240)
 			},
-			loadPostDetail(shouldIncrementView = false) {
+			async loadPostDetail() {
+				try {
+					const res = await getForumPostDetail(this.postId)
+					const raw = res && res.data
+					if (raw) {
+						const normalized = syncForumPostViews({
+							...raw,
+							views: Number(raw.views != null ? raw.views : raw.viewCount || 0),
+							viewCount: Number(raw.views != null ? raw.views : raw.viewCount || 0),
+							isLiked: Boolean(raw.isLiked),
+							isCollected: Boolean(raw.isCollected),
+							favoriteCount: Number(raw.favoriteCount || 0),
+						})
+						this.post = normalized
+						syncForumMockPostCache(normalized)
+						this.parseImages()
+						return
+					}
+				} catch (_) {}
+
 				const postDetail = getForumMockPostDetail(this.postId)
 				if (postDetail) {
-					this.post = syncForumPostViews(Object.assign({}, postDetail))
+					const normalized = syncForumPostViews(Object.assign({}, postDetail))
+					this.post = normalized
+					syncForumMockPostCache(normalized)
 					this.parseImages()
-					if (shouldIncrementView) {
-						this.recordPostView()
-					}
-				} else if (!uni.getStorageSync('currentPost_' + this.postId)) {
+					return
+				}
+				if (!uni.getStorageSync('currentPost_' + this.postId)) {
 					uni.showToast({ title: '帖子不存在或已被删除', icon: 'none' })
 					setTimeout(() => this.goBack(), 1500)
 				}
 			},
-			loadComments() {
+			async loadComments() {
+				try {
+					const res = await getForumComments(this.postId)
+					const list = res && res.data
+					if (Array.isArray(list)) {
+						this.comments = this.normalizeComments(list)
+						return
+					}
+				} catch (_) {}
 				this.comments = this.normalizeComments(getForumMockComments(this.postId))
 			},
 			getEntityId(item) {
@@ -645,21 +672,7 @@
 			},
 			toggleCommentLike(item) {
 				if (!item) return
-				const updated = toggleForumMockCommentLike(this.postId, this.getCommentId(item))
-				if (!updated) return
-				this.loadComments()
-				uni.showToast({
-					title: updated.isLiked ? '点赞成功' : '取消点赞',
-					icon: 'none'
-				})
-			},
-			recordPostView() {
-				const basePost = this.post && Object.keys(this.post).length
-					? this.post
-					: { postId: this.postId, id: this.postId }
-				this.post = incrementForumViewCount(basePost)
-				syncForumMockPostCache(this.post)
-				uni.$emit('refreshForumListViews')
+				uni.showToast({ title: '评论点赞敬请期待', icon: 'none' })
 			},
 			parseImages() {
 				let imagesStr = this.post.images
@@ -781,19 +794,34 @@
 				})
 				uni.$emit('refreshForumList')
 			},
-			likePost() {
+			async likePost() {
 				const user = uni.getStorageSync('user_v2') || {};
 				const userId = user.userId || user.id;
 				if (!userId) {
 					uni.showToast({ title: '请先登录', icon: 'none' });
 					return;
 				}
-
-				const updatedPost = toggleForumMockPostLike(this.postId)
-				if (!updatedPost) return
-				this.post = syncForumPostViews(updatedPost)
-				uni.showToast({ title: updatedPost.isLiked ? '点赞成功' : '取消点赞', icon: 'none' });
-				uni.$emit('refreshForumList')
+				const prev = this.post
+				const nextLiked = !Boolean(prev && prev.isLiked)
+				this.post = syncForumPostViews({
+					...(prev || {}),
+					isLiked: nextLiked,
+					likeCount: Math.max(0, Number((prev && prev.likeCount) || 0) + (nextLiked ? 1 : -1)),
+				})
+				syncForumMockPostCache(this.post)
+				try {
+					if (nextLiked) {
+						await likeForumPost(this.postId, userId)
+					} else {
+						await unlikeForumPost(this.postId, userId)
+					}
+					uni.showToast({ title: nextLiked ? '点赞成功' : '取消点赞', icon: 'none' });
+					uni.$emit('refreshForumList')
+				} catch (e) {
+					this.post = prev
+					syncForumMockPostCache(this.post)
+					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
+				}
 			},
 			deletePost() {
 				uni.showModal({
@@ -803,17 +831,29 @@
 						if (res.confirm) {
 							const user = uni.getStorageSync('user') || {}
 							const currentUserId = user.userId || user.id || 1
-							const ok = deleteForumMockPost(this.postId, currentUserId)
-							if (ok) {
-								uni.showToast({ title: '删除成功', icon: 'success' })
-								uni.$emit('refresh')
-								uni.$emit('refreshForumList')
-								setTimeout(() => {
-									this.goBack()
-								}, 1500)
-							} else {
+							;(async () => {
+								try {
+									await deleteForumPost(this.postId, currentUserId)
+									uni.showToast({ title: '删除成功', icon: 'success' })
+									uni.$emit('refresh')
+									uni.$emit('refreshForumList')
+									setTimeout(() => {
+										this.goBack()
+									}, 1500)
+									return
+								} catch (_) {}
+								const ok = deleteForumMockPost(this.postId, currentUserId)
+								if (ok) {
+									uni.showToast({ title: '已本地删除', icon: 'success' })
+									uni.$emit('refresh')
+									uni.$emit('refreshForumList')
+									setTimeout(() => {
+										this.goBack()
+									}, 1500)
+									return
+								}
 								uni.showToast({ title: '删除失败', icon: 'none' })
-							}
+							})()
 						}
 					}
 				})
@@ -828,29 +868,50 @@
 				}
 				
 				const user = uni.getStorageSync('user') || {}
-				const userId = user.userId || user.id || 1
-				
-				const updatedComments = createForumMockComment({
-					postId: this.postId,
-					content: this.commentText,
-					userId: userId,
-					parentCommentId: this.replyContext ? this.replyContext.rootCommentId : undefined,
-					replyToCommentId: this.replyContext ? this.replyContext.targetCommentId : undefined,
-					replyToUserId: this.replyContext ? this.replyContext.targetUserId : undefined
-				})
-				if (updatedComments) {
+				const userId = user.userId || user.id
+				if (!userId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				const currentReplyContext = this.replyContext
+				const content = currentReplyContext && currentReplyContext.targetUserName
+					? `回复 ${currentReplyContext.targetUserName}：${this.commentText}`
+					: this.commentText
+				try {
+					await addForumComment({
+						postId: this.postId,
+						userId,
+						content,
+					})
 					this.commentText = ''
 					this.showEmojiPanel = false
-					const currentReplyContext = this.replyContext
 					this.replyContext = null
-					this.loadComments()
-					const refreshedPost = getForumMockPostDetail(this.postId)
-					if (refreshedPost) {
-						this.post = syncForumPostViews(refreshedPost)
-					}
+					await this.loadComments()
+					await this.loadPostDetail()
 					uni.$emit('refreshForumList')
 					uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
+					return
+				} catch (_) {}
+
+				const updatedComments = createForumMockComment({
+					postId: this.postId,
+					content,
+					userId,
+					parentCommentId: currentReplyContext ? currentReplyContext.rootCommentId : undefined,
+					replyToCommentId: currentReplyContext ? currentReplyContext.targetCommentId : undefined,
+					replyToUserId: currentReplyContext ? currentReplyContext.targetUserId : undefined,
+				})
+				if (!updatedComments) return
+				this.commentText = ''
+				this.showEmojiPanel = false
+				this.replyContext = null
+				this.loadComments()
+				const refreshedPost = getForumMockPostDetail(this.postId)
+				if (refreshedPost) {
+					this.post = syncForumPostViews(refreshedPost)
 				}
+				uni.$emit('refreshForumList')
+				uni.showToast({ title: currentReplyContext ? '已本地回复' : '已本地评论', icon: 'none' })
 			}
 		}
 	}

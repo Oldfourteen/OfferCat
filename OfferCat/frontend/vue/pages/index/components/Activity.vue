@@ -164,19 +164,6 @@
 				radial-gradient(circle at top right, rgba(255, 255, 255, 0.22) 0, rgba(255, 255, 255, 0.22) 1rpx, transparent 2rpx) 0 0 / 100% 100% no-repeat;
 			opacity: 0.9;
 		}
-
-		&::after {
-			left: -28rpx;
-			bottom: -34rpx;
-			width: 110rpx;
-			height: 110rpx;
-			border-radius: 32rpx;
-			background:
-				radial-gradient(circle at 50% 50%, rgba(255, 255, 255, 0.16) 0, rgba(255, 255, 255, 0.08) 56%, rgba(255, 255, 255, 0) 57%),
-				linear-gradient(135deg, rgba(255, 255, 255, 0.06), rgba(255, 255, 255, 0.16));
-			clip-path: polygon(8% 72%, 34% 18%, 70% 68%);
-			transform: rotate(-10deg);
-		}
 	}
 
 	.banner-graphic {
@@ -310,6 +297,13 @@
 
 	.banner-card.theme-dark {
 		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.24);
+
+		.banner-action {
+			background: rgba(12, 16, 26, 0.76);
+			border-color: rgba(255, 255, 255, 0.22);
+			color: rgba(255, 255, 255, 0.9);
+			box-shadow: 0 10rpx 26rpx rgba(0, 0, 0, 0.38), 0 4rpx 10rpx rgba(0, 0, 0, 0.22);
+		}
 	}
 
 	

@@ -66,6 +66,10 @@ public interface GrowthRecordMapper {
      */
     void insertQuestionCollect(@Param("studentId") Long studentId, @Param("questionId") Long questionId, @Param("questionType") Integer questionType);
 
+    int deleteQuestionCollect(@Param("studentId") Long studentId, @Param("questionId") Long questionId, @Param("questionType") Integer questionType);
+
+    java.util.List<Long> listQuestionCollectIds(@Param("studentId") Long studentId, @Param("questionType") Integer questionType);
+
     /**
      * 插入每日打卡记录
      */

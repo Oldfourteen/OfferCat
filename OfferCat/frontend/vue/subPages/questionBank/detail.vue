@@ -62,7 +62,7 @@
 	import { getQuestionDetail } from './data'
 	// 收藏工具类
 	import { isQuestionFavorited, saveQuestionFavorite, removeQuestionFavorite } from '@/utils/questionFavorites.js'
-	import { collectQuestion } from '@/api/growth.js'
+	import { collectQuestion, uncollectQuestion } from '@/api/growth.js'
 	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
 
@@ -116,6 +116,7 @@
 				if (this.isFavorite) {
 					removeQuestionFavorite(this.detail.id)
 					this.isFavorite = false
+					void uncollectQuestion(this.detail.id, this.type === 'interview' ? 4 : 3).catch(() => {})
 					uni.showToast({ title: '已取消收藏', icon: 'none' })
 					return
 				}

@@ -173,12 +173,11 @@ CREATE TABLE `ai_consult` (
   `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '对话ID', 
   `user_id` BIGINT NOT NULL COMMENT '用户ID', 
   `user_content` TEXT NOT NULL COMMENT '用户提问内容', 
-  `ai_content` TEXT NOT NULL COMMENT 'AI回复内容', 
+  `ai_content` LONGTEXT NOT NULL COMMENT 'AI回复内容', 
   `ai_avatar` VARCHAR(255) DEFAULT NULL COMMENT 'AI头像URL', 
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '对话时间', 
   `user_images` JSON DEFAULT NULL COMMENT '用户发送的图片列表',
   `ai_images` JSON DEFAULT NULL COMMENT 'AI生成的图片列表',
-  `retained` TINYINT NOT NULL DEFAULT 0 COMMENT '1=用户保留不参与每月15日清理',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '对话时间', 
   INDEX `idx_user_id` (`user_id`), 
   FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='AI顾问对话表'; 
@@ -327,6 +326,7 @@ CREATE TABLE `forum_post` (
   `like_count` INT DEFAULT 0 COMMENT '获赞数量(用于排序)', 
   `collect_count` INT DEFAULT 0 COMMENT '收藏数量', 
   `comment_count` INT DEFAULT 0 COMMENT '评论数量', 
+  `view_count` INT DEFAULT 0 COMMENT '浏览数量', 
   `status` TINYINT DEFAULT 1 COMMENT '状态 1正常 0隐藏/删除', 
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间', 
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间', 
@@ -551,6 +551,23 @@ CREATE TABLE `student_question_collect` (
   FOREIGN KEY (`student_id`) REFERENCES `student`(`student_id`) ON DELETE CASCADE 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生题目收藏表'; 
 
+-- ----------------------------
+-- 27.1 学生刷题会话汇总表
+-- ----------------------------
+DROP TABLE IF EXISTS `student_practice_session`;
+CREATE TABLE `student_practice_session` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '会话ID',
+  `student_id` BIGINT NOT NULL COMMENT '学生ID',
+  `paper_id` VARCHAR(64) NOT NULL COMMENT '题单/套卷ID（前端使用的 paperId）',
+  `paper_type` TINYINT DEFAULT NULL COMMENT '题单类型 1-笔试 2-面试',
+  `total_count` INT DEFAULT 0 COMMENT '题目总数',
+  `answered_count` INT DEFAULT 0 COMMENT '已答题数',
+  `correct_count` INT DEFAULT 0 COMMENT '正确题数',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+  INDEX `idx_student_time` (`student_id`, `create_time`),
+  FOREIGN KEY (`student_id`) REFERENCES `student`(`student_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生刷题会话汇总表';
+
 
 -- ---------------------------- 
 -- 28. 学生套卷答题总分记录表 
@@ -580,6 +597,7 @@ CREATE TABLE `growth_record` (
   `practice_count` INT DEFAULT 0 COMMENT '题库练习次数(面试题和笔试题作答总和)', 
   `collection_count` INT DEFAULT 0 COMMENT '题库收藏数', 
   `continuous_checkin_days` INT DEFAULT 0 COMMENT '连续打卡时间(天数)', 
+  `total_checkin_days` INT DEFAULT 0 COMMENT '累计打卡时间(天数)',
   `last_checkin_date` DATE DEFAULT NULL COMMENT '最后打卡日期',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间', 
   `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间', 
@@ -879,121 +897,11 @@ INSERT INTO questionnaire_question (section, question_order, question_text, opti
 -- ---------------------------- 
 INSERT INTO `role` VALUES 
 (1,'学生','普通学生'), 
-(4,'管理员','系统管理员');
-
--- ---------------------------- 
--- 初始化测试数据 
--- ---------------------------- 
--- 测试账号：手机号 13800000000，密码 123456（明文仅便于本地初始化；首次密码登录成功后会由后端自动升级为 BCrypt）
-INSERT INTO `user` (user_id, nickname, password, phone, user_role, user_status) VALUES (1, '测试用户', '123456', '13800000000', 1, 1);
-INSERT INTO `forum_post` (post_id, user_id, title, content) VALUES (1, 1, '这是一个测试帖子', '这是帖子的内容');
- 
+(4,'管理员','系统管理员'); 
  
 SET FOREIGN_KEY_CHECKS = 1;
- 
 
--- 为 localhost  
+
+-- 为 localhost 创建同名用户
 GRANT ALL PRIVILEGES ON *.* TO 'vx_admin'@'localhost' WITH GRANT OPTION;
 FLUSH PRIVILEGES;
-
-USE offercat;
-
--- 将保存内容的字段修改为 TEXT（支持65535个字符）或 LONGTEXT（支持42亿个字符）
-ALTER TABLE ai_consult MODIFY COLUMN ai_content LONGTEXT;
-ALTER TABLE ai_consult MODIFY COLUMN user_content TEXT;
-
-USE offercat;
-
-CREATE TABLE `ai_consult` (
-  `id` bigint(20) NOT NULL AUTO_INCREMENT COMMENT '主键ID',
-  `user_id` bigint(20) NOT NULL COMMENT '用户ID',
-  `user_content` text COLLATE utf8mb4_unicode_ci COMMENT '用户内容',
-  `ai_content` longtext COLLATE utf8mb4_unicode_ci COMMENT 'AI内容',
-  `ai_avatar` varchar(255) COLLATE utf8mb4_unicode_ci DEFAULT NULL COMMENT 'AI头像',
-  `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
-  PRIMARY KEY (`id`),
-  KEY `idx_user_id` (`user_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI顾问对话表';
-
-USE offercat;
-ALTER TABLE ai_consult 
-ADD COLUMN user_images JSON DEFAULT NULL COMMENT '用户发送的图片列表',
-ADD COLUMN ai_images JSON DEFAULT NULL COMMENT 'AI生成的图片列表';
-
-ALTER TABLE ai_consult 
-ADD COLUMN retained TINYINT NOT NULL DEFAULT 0 COMMENT '1=用户保留不参与每月15日清理';
-
-
-USE offercat;
-DROP TABLE IF EXISTS `ai_consult`;
-
--- 选择你正在使用的 offercat 数据库
-USE offercat;
-
--- 1. 创建论坛帖子表
-CREATE TABLE IF NOT EXISTS `forum_post` (
-  `post_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '帖子ID',
-  `user_id` BIGINT NOT NULL COMMENT '发布人用户ID',
-  `title` VARCHAR(100) NOT NULL COMMENT '帖子标题',
-  `content` TEXT NOT NULL COMMENT '帖子文本内容',
-  `images` VARCHAR(2000) DEFAULT NULL COMMENT '帖子图片(最多9张，存储JSON数组或逗号分隔的URL)',
-  `like_count` INT DEFAULT 0 COMMENT '获赞数量(用于排序)',
-  `collect_count` INT DEFAULT 0 COMMENT '收藏数量',
-  `comment_count` INT DEFAULT 0 COMMENT '评论数量',
-  `view_count` INT DEFAULT 0 COMMENT '浏览数量',
-  `status` TINYINT DEFAULT 1 COMMENT '状态 1正常 0隐藏/删除',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发布时间',
-  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
-  INDEX `idx_user_id` (`user_id`),
-  INDEX `idx_like_count` (`like_count` DESC),
-  INDEX `idx_create_time` (`create_time` DESC)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛帖子表';
-
--- 2. 创建帖子收藏表
-CREATE TABLE IF NOT EXISTS `forum_post_collect` (
-  `collect_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '收藏ID',
-  `user_id` BIGINT NOT NULL COMMENT '收藏人ID',
-  `post_id` BIGINT NOT NULL COMMENT '帖子ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '收藏时间',
-  UNIQUE KEY `uk_user_post` (`user_id`, `post_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子收藏表';
-
--- 3. 创建帖子点赞表
-CREATE TABLE IF NOT EXISTS `forum_post_like` (
-  `like_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞ID',
-  `user_id` BIGINT NOT NULL COMMENT '点赞人ID',
-  `post_id` BIGINT NOT NULL COMMENT '帖子ID',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间',
-  UNIQUE KEY `uk_user_post_like` (`user_id`, `post_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='帖子点赞记录表';
-
--- 4. 创建论坛评论表
-CREATE TABLE IF NOT EXISTS `forum_comment` (
-  `comment_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评论ID',
-  `post_id` BIGINT NOT NULL COMMENT '归属帖子ID',
-  `user_id` BIGINT NOT NULL COMMENT '评论人ID',
-  `parent_id` BIGINT DEFAULT 0 COMMENT '父评论ID(0表示直接评论帖子，非0表示回复某条评论)',
-  `reply_to_user_id` BIGINT DEFAULT NULL COMMENT '被回复人ID(如果是追评的话)',
-  `content` TEXT NOT NULL COMMENT '评论内容',
-  `like_count` INT DEFAULT 0 COMMENT '评论点赞数',
-  `status` TINYINT DEFAULT 1 COMMENT '状态 1正常 0删除',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '评论时间',
-  INDEX `idx_post_id` (`post_id`),
-  INDEX `idx_parent_id` (`parent_id`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛评论表(支持父子层级)';
-
--- 5. 创建互动消息提醒表（用于点赞/评论通知）
-CREATE TABLE IF NOT EXISTS `sys_message` (
-  `msg_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID',
-  `receiver_id` BIGINT NOT NULL COMMENT '消息接收人ID',
-  `sender_id` BIGINT NOT NULL COMMENT '动作触发人ID',
-  `msg_type` TINYINT NOT NULL COMMENT '消息类型 1-点赞帖子 2-评论帖子 3-回复评论',
-  `target_id` BIGINT NOT NULL COMMENT '目标ID(如帖子ID或评论ID，用于跳转)',
-  `content` VARCHAR(255) DEFAULT NULL COMMENT '消息附带内容(如评论的截取文本)',
-  `is_read` TINYINT DEFAULT 0 COMMENT '是否已读 0未读 1已读',
-  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '消息产生时间',
-  INDEX `idx_receiver_read` (`receiver_id`, `is_read`)
-) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='互动消息提醒表';
-
-USE offercat;
-

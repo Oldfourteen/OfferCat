@@ -81,10 +81,10 @@
 
 <script>
 	import { BASE_URL } from '@/api/config.js'
+	import { searchForumPosts, likeForumPost, unlikeForumPost } from '@/api/forum.js'
 	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 	import {
 		getForumMockPosts,
-		toggleForumMockPostLike,
 		toggleForumMockPostCollect,
 		syncForumMockPostCache
 	} from '@/utils/forumLocalData.js'
@@ -167,19 +167,50 @@
 				this.currentTab = index;
 				this.fetchPosts();
 			},
-			fetchPosts() {
+			async fetchPosts() {
+				const pageNum = 1
+				const pageSize = 1000
+				const payload = {
+					keyword: '',
+					pageNum,
+					pageSize,
+				}
+				if (this.currentTab === 1) {
+					payload.sortBy = 'like_count'
+					payload.sortDirection = 'desc'
+				}
+				try {
+					const res = await searchForumPosts(payload)
+					const page = (res && res.data) || {}
+					const records = Array.isArray(page.records) ? page.records : []
+					this.postList = syncForumPostsViews(
+						records.map((item) => ({
+							...item,
+							views: Number(item.views != null ? item.views : item.viewCount || 0),
+							viewCount: Number(item.views != null ? item.views : item.viewCount || 0),
+							isLiked: Boolean(item.isLiked),
+							isCollected: Boolean(item.isCollected),
+							favoriteCount: Number(item.favoriteCount || 0),
+						}))
+					)
+					this.total = page.total || records.length
+					return
+				} catch (_) {}
+
 				const result = getForumMockPosts({
-					pageNum: 1,
-					pageSize: 1000,
-					currentTab: this.currentTab
+					pageNum,
+					pageSize,
+					currentTab: this.currentTab,
 				})
-				let records = result.records || []
-				this.postList = syncForumPostsViews(records.map(item => ({
-					...item,
-					isLiked: Boolean(item.isLiked),
-					isCollected: Boolean(item.isCollected),
-					favoriteCount: Number(item.favoriteCount || 0)
-				})))
+				const records = result.records || []
+				this.postList = syncForumPostsViews(
+					records.map((item) => ({
+						...item,
+						isLiked: Boolean(item.isLiked),
+						isCollected: Boolean(item.isCollected),
+						favoriteCount: Number(item.favoriteCount || 0),
+					}))
+				)
 				this.total = result.total || records.length
 			},
 			goToDetail(item) {
@@ -291,7 +322,7 @@
 				}
 				return String(timeStr)
 			},
-			likePost(item) {
+			async likePost(item) {
 				const user = uni.getStorageSync('user_v2') || {};
 				const userId = user.userId || user.id;
 				if (!userId) {
@@ -299,12 +330,28 @@
 					return;
 				}
 
-				const postIndex = this.postList.findIndex(p => p.postId === item.postId);
+				const postId = item.postId || item.id
+				const postIndex = this.postList.findIndex(p => String(p.postId || p.id) === String(postId));
 				if (postIndex === -1) return;
-				const updatedPost = toggleForumMockPostLike(item.postId)
-				if (!updatedPost) return
-				this.$set(this.postList, postIndex, syncForumPostViews(updatedPost))
-				uni.showToast({ title: updatedPost.isLiked ? '点赞成功' : '取消点赞', icon: 'none' })
+				const current = this.postList[postIndex] || item
+				const nextLiked = !current.isLiked
+				const next = syncForumPostViews({
+					...current,
+					isLiked: nextLiked,
+					likeCount: Math.max(0, Number(current.likeCount || 0) + (nextLiked ? 1 : -1)),
+				})
+				this.$set(this.postList, postIndex, next)
+				try {
+					if (nextLiked) {
+						await likeForumPost(postId, userId)
+					} else {
+						await unlikeForumPost(postId, userId)
+					}
+					uni.showToast({ title: nextLiked ? '点赞成功' : '取消点赞', icon: 'none' })
+				} catch (e) {
+					this.$set(this.postList, postIndex, current)
+					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
+				}
 			}
 		}
 	}

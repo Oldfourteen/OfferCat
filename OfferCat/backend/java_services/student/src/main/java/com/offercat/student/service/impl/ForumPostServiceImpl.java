@@ -100,6 +100,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         Integer count = forumPostMapper.findLike(postId, userId);
         if (count == null || count == 0) {
             forumPostMapper.insertLike(postId, userId);
+            forumPostMapper.incrementLikeCount(postId);
         }
     }
     /**
@@ -116,6 +117,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         Integer count = forumPostMapper.findLike(postId, userId);
         if (count != null && count > 0) {
             forumPostMapper.deleteLike(postId, userId);
+            forumPostMapper.decrementLikeCount(postId);
         }
     }
     /**

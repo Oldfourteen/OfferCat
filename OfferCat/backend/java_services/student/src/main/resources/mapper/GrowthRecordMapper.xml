@@ -137,6 +137,23 @@
         VALUES (#{studentId}, #{questionId}, #{questionType})
     </insert>
 
+    <delete id="deleteQuestionCollect">
+        DELETE FROM student_question_collect
+        WHERE student_id = #{studentId}
+          AND question_id = #{questionId}
+          AND question_type = #{questionType}
+    </delete>
+
+    <select id="listQuestionCollectIds" resultType="java.lang.Long">
+        SELECT question_id
+        FROM student_question_collect
+        WHERE student_id = #{studentId}
+        <if test="questionType != null">
+            AND question_type = #{questionType}
+        </if>
+        ORDER BY create_time DESC
+    </select>
+
     <insert id="insertCheckinRecord">
         INSERT IGNORE INTO growth_checkin_record (student_id, checkin_date)
         VALUES (#{studentId}, #{checkinDate})

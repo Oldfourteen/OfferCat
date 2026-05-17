@@ -92,6 +92,9 @@ public class ForumPostController {
     @GetMapping("/detail/{postId}")
     public ResponseResult<ForumPostVO> getPostDetail(@PathVariable("postId") Long postId) {
         ForumPostVO result = forumPostService.getPostDetail(postId);
+        if (result == null) {
+            return ResponseResult.error(404, "帖子不存在或已被删除");
+        }
         return ResponseResult.success(result);
     }
 

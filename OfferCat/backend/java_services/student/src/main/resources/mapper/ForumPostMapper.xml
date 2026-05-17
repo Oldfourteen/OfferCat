@@ -79,10 +79,22 @@
         VALUES(#{postId}, #{userId})
     </insert>
 
+    <update id="incrementLikeCount">
+        UPDATE forum_post
+        SET like_count = like_count + 1
+        WHERE post_id = #{postId}
+    </update>
+
     <delete id="deleteLike">
         DELETE FROM forum_post_like
         WHERE post_id = #{postId} AND user_id = #{userId}
     </delete>
+
+    <update id="decrementLikeCount">
+        UPDATE forum_post
+        SET like_count = CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END
+        WHERE post_id = #{postId}
+    </update>
 
     <update id="incrementViewCount">
         UPDATE forum_post

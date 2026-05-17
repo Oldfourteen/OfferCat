@@ -30,6 +30,7 @@ import com.offercat.resume.entity.dto.ResumeStatsResponse;
 import com.offercat.resume.service.ResumeService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.web.multipart.MultipartFile;
 
@@ -56,7 +57,8 @@ public class ResumeServiceImplement implements ResumeService {
     /**
      * 头像存储目录
      */
-    private static final String AVATAR_STORAGE_DIR = "g:/uploads/resume-avatars/";
+    @Value("${file.resume-avatars-dir:D:/offercat/photo/resume-avatars}")
+    private String avatarStorageDir;
 
     /**
      * 简历数据访问层
@@ -756,14 +758,14 @@ public class ResumeServiceImplement implements ResumeService {
 
         /** 验证文件类型 */
         String contentType = file.getContentType();
-        if (!contentType.startsWith("image/")) {
+        if (contentType == null || !contentType.startsWith("image/")) {
             throw new IllegalArgumentException("只支持图片格式的文件");
         }
 
         /** 生成文件存储路径 */
         String extension = getFileExtension(file.getOriginalFilename());
         String fileName = "avatar_" + resumeId + "_" + System.currentTimeMillis() + extension;
-        String uploadDir = AVATAR_STORAGE_DIR;
+        String uploadDir = avatarStorageDir;
         File dir = new File(uploadDir);
 
         /** 创建目录（如果不存在） */
@@ -808,7 +810,7 @@ public class ResumeServiceImplement implements ResumeService {
         }
 
         /** 读取头像文件 */
-        String filePath = AVATAR_STORAGE_DIR + "/" + resume.getPhoto();
+        String filePath = avatarStorageDir + "/" + resume.getPhoto();
         Path path = Paths.get(filePath);
 
         try {

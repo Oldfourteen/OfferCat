@@ -1,1 +1,192 @@
-import { request } from './request'import { getApiBase } from './config'import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'function growthIdentityParams() {	const studentId = resolveStoredStudentId()	const userId = resolveStoredUserId(getUser())	return { studentId, userId }}function growthIdentityQuery() {	const { studentId, userId } = growthIdentityParams()	const parts = []	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)	return parts.length ? `?${parts.join('&')}` : ''}const GROWTH_PREFIXES = ['/api/growth', '/api/student/profile/growth', '/api/student/growth', '/growth']function isHttpNotFound(err) {	if (!err) return false	if (err.statusCode === 404 || err.bizCode === 404) return true	const m = String(err.message || '')	return /^\s*Not Found\b/i.test(m) || /\b404\b/i.test(m)}async function growthRequest(buildOptions) {	const base = getApiBase()	const attemptLog = []	let lastErr	for (const prefix of GROWTH_PREFIXES) {		const opts = buildOptions(prefix)		const fullUrl = `${base}${opts.url}`		try {			return await request(opts)		} catch (e) {			lastErr = e			attemptLog.push({				path: opts.url,				fullUrl: (e && e.requestUrl) || fullUrl,				statusCode: e && e.statusCode,				bizCode: e && e.bizCode,			})			if (isHttpNotFound(e) && prefix !== GROWTH_PREFIXES[GROWTH_PREFIXES.length - 1]) {				continue			}			const err = e instanceof Error ? e : new Error(String(e))			err.growthAttemptLog = attemptLog			const line = attemptLog				.map((a) => `[${a.statusCode ?? a.bizCode ?? '—'}] ${a.fullUrl}`)				.join(' | ')			err.message = `${err.message}\n[growth 已尝试 URL] ${line}`			throw err		}	}	if (lastErr instanceof Error) {		lastErr.growthAttemptLog = attemptLog	}	throw lastErr}export function getGrowthRecordStats() {	const q = growthIdentityQuery()	return growthRequest((prefix) => ({		url: `${prefix}/stats${q}`,		method: 'GET',	}))}export function checkIn() {	const q = growthIdentityQuery()	if (!q) {		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))	}	return growthRequest((prefix) => ({		url: `${prefix}/checkin${q}`,		method: 'POST',	}))}export function getWeeklyCheckinStatus() {	const q = growthIdentityQuery()	return growthRequest((prefix) => ({		url: `${prefix}/checkin/weekly${q}`,		method: 'GET',	}))}export function collectQuestion(questionId, questionType) {	const { studentId, userId } = growthIdentityParams()	if (!studentId && !userId) {		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))	}	if (questionId == null || questionId === '') {		return Promise.reject(new Error('缺少 questionId'))	}	if (questionType == null || questionType === '') {		return Promise.reject(new Error('缺少 questionType'))	}	let qid = questionId	if (typeof qid !== 'number') {		const m = String(qid).match(/(\d+)\s*$/)		qid = m ? Number(m[1]) : NaN	}	if (!Number.isFinite(qid) || qid <= 0) {		return Promise.reject(new Error('questionId 需为数字'))	}	const parts = []	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)	parts.push(`questionId=${encodeURIComponent(String(qid))}`)	parts.push(`questionType=${encodeURIComponent(String(questionType))}`)	const q = `?${parts.join('&')}`	return growthRequest((prefix) => ({		url: `${prefix}/collect${q}`,		method: 'POST',	}))}export function submitPracticeSession(payload) {	const { studentId, userId } = growthIdentityParams()	if (!studentId && !userId) {		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))	}	if (!payload || typeof payload !== 'object') {		return Promise.reject(new Error('缺少提交数据'))	}	const body = {		studentId: studentId || null,		userId: userId || null,		paperId: payload.paperId,		paperType: payload.paperType,		totalCount: payload.totalCount,		answeredCount: payload.answeredCount,		correctCount: payload.correctCount,	}	return growthRequest((prefix) => ({		url: `${prefix}/practice/submit`,		method: 'POST',		data: body,	}))}
+import { request } from './request'
+import { getApiBase } from './config'
+import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
+
+function growthIdentityParams() {
+	const studentId = resolveStoredStudentId()
+	const userId = resolveStoredUserId(getUser())
+	return { studentId, userId }
+}
+
+function growthIdentityQuery() {
+	const { studentId, userId } = growthIdentityParams()
+	const parts = []
+	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)
+	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)
+	return parts.length ? `?${parts.join('&')}` : ''
+}
+
+const GROWTH_PREFIXES = ['/api/growth', '/api/student/profile/growth', '/api/student/growth', '/growth']
+
+function isHttpNotFound(err) {
+	if (!err) return false
+	if (err.statusCode === 404 || err.bizCode === 404) return true
+	const m = String(err.message || '')
+	return /^\s*Not Found\b/i.test(m) || /\b404\b/i.test(m)
+}
+
+async function growthRequest(buildOptions) {
+	const base = getApiBase()
+	const attemptLog = []
+	let lastErr
+	for (const prefix of GROWTH_PREFIXES) {
+		const opts = buildOptions(prefix)
+		const fullUrl = `${base}${opts.url}`
+		try {
+			return await request(opts)
+		} catch (e) {
+			lastErr = e
+			attemptLog.push({
+				path: opts.url,
+				fullUrl: (e && e.requestUrl) || fullUrl,
+				statusCode: e && e.statusCode,
+				bizCode: e && e.bizCode,
+			})
+			if (isHttpNotFound(e) && prefix !== GROWTH_PREFIXES[GROWTH_PREFIXES.length - 1]) {
+				continue
+			}
+			const err = e instanceof Error ? e : new Error(String(e))
+			err.growthAttemptLog = attemptLog
+			const line = attemptLog
+				.map((a) => `[${a.statusCode ?? a.bizCode ?? '—'}] ${a.fullUrl}`)
+				.join(' | ')
+			err.message = `${err.message}\n[growth 已尝试 URL] ${line}`
+			throw err
+		}
+	}
+	if (lastErr instanceof Error) {
+		lastErr.growthAttemptLog = attemptLog
+	}
+	throw lastErr
+}
+
+export function getGrowthRecordStats() {
+	const q = growthIdentityQuery()
+	return growthRequest((prefix) => ({
+		url: `${prefix}/stats${q}`,
+		method: 'GET',
+	}))
+}
+
+export function checkIn() {
+	const q = growthIdentityQuery()
+	if (!q) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	return growthRequest((prefix) => ({
+		url: `${prefix}/checkin${q}`,
+		method: 'POST',
+	}))
+}
+
+export function getWeeklyCheckinStatus() {
+	const q = growthIdentityQuery()
+	return growthRequest((prefix) => ({
+		url: `${prefix}/checkin/weekly${q}`,
+		method: 'GET',
+	}))
+}
+
+export function collectQuestion(questionId, questionType) {
+	const { studentId, userId } = growthIdentityParams()
+	if (!studentId && !userId) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	if (questionId == null || questionId === '') {
+		return Promise.reject(new Error('缺少 questionId'))
+	}
+	if (questionType == null || questionType === '') {
+		return Promise.reject(new Error('缺少 questionType'))
+	}
+
+	let qid = questionId
+	if (typeof qid !== 'number') {
+		const m = String(qid).match(/(\d+)\s*$/)
+		qid = m ? Number(m[1]) : NaN
+	}
+	if (!Number.isFinite(qid) || qid <= 0) {
+		return Promise.reject(new Error('questionId 需为数字'))
+	}
+
+	const parts = []
+	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)
+	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)
+	parts.push(`questionId=${encodeURIComponent(String(qid))}`)
+	parts.push(`questionType=${encodeURIComponent(String(questionType))}`)
+	const q = `?${parts.join('&')}`
+
+	return growthRequest((prefix) => ({
+		url: `${prefix}/collect${q}`,
+		method: 'POST',
+	}))
+}
+
+export function uncollectQuestion(questionId, questionType) {
+	const { studentId, userId } = growthIdentityParams()
+	if (!studentId && !userId) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	if (questionId == null || questionId === '') {
+		return Promise.reject(new Error('缺少 questionId'))
+	}
+	if (questionType == null || questionType === '') {
+		return Promise.reject(new Error('缺少 questionType'))
+	}
+
+	let qid = questionId
+	if (typeof qid !== 'number') {
+		const m = String(qid).match(/(\d+)\s*$/)
+		qid = m ? Number(m[1]) : NaN
+	}
+	if (!Number.isFinite(qid) || qid <= 0) {
+		return Promise.reject(new Error('questionId 需为数字'))
+	}
+
+	const parts = []
+	if (studentId) parts.push(`studentId=${encodeURIComponent(String(studentId))}`)
+	if (userId) parts.push(`userId=${encodeURIComponent(String(userId))}`)
+	parts.push(`questionId=${encodeURIComponent(String(qid))}`)
+	parts.push(`questionType=${encodeURIComponent(String(questionType))}`)
+	const q = `?${parts.join('&')}`
+
+	return growthRequest((prefix) => ({
+		url: `${prefix}/uncollect${q}`,
+		method: 'POST',
+	}))
+}
+
+export function getCollectedQuestionIds(questionType) {
+	const qBase = growthIdentityQuery()
+	if (!qBase) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	const q = questionType ? `${qBase}&questionType=${encodeURIComponent(String(questionType))}` : qBase
+	return growthRequest((prefix) => ({
+		url: `${prefix}/collect/list${q}`,
+		method: 'GET',
+	}))
+}
+
+export function submitPracticeSession(payload) {
+	const { studentId, userId } = growthIdentityParams()
+	if (!studentId && !userId) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	if (!payload || typeof payload !== 'object') {
+		return Promise.reject(new Error('缺少提交数据'))
+	}
+	const body = {
+		studentId: studentId || null,
+		userId: userId || null,
+		paperId: payload.paperId,
+		paperType: payload.paperType,
+		totalCount: payload.totalCount,
+		answeredCount: payload.answeredCount,
+		correctCount: payload.correctCount,
+	}
+	return growthRequest((prefix) => ({
+		url: `${prefix}/practice/submit`,
+		method: 'POST',
+		data: body,
+	}))
+}

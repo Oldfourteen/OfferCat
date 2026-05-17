@@ -102,6 +102,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getUserProfile } from '@/utils/userProfile.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { createForumPost, uploadForumImage } from '@/api/forum.js'
 	import { createForumMockPost } from '@/utils/forumLocalData.js'
 
 	const PUBLISH_BACK_ICON =
@@ -170,11 +171,25 @@
 					success: (res) => {
 						const tempFilePaths = res.tempFilePaths
 						tempFilePaths.forEach(path => {
-							const imgObj = { url: path, remoteUrl: path, uploading: false }
+							const imgObj = { url: path, remoteUrl: '', uploading: true }
 							this.images.push(imgObj)
+							const index = this.images.length - 1
+							this.uploadImageAt(index)
 						})
 					}
 				})
+			},
+			async uploadImageAt(index) {
+				const target = this.images[index]
+				if (!target || !target.url) return
+				this.$set(this.images, index, { ...target, uploading: true })
+				try {
+					const remoteUrl = await uploadForumImage(target.url)
+					this.$set(this.images, index, { ...target, remoteUrl: remoteUrl || '', uploading: false })
+				} catch (e) {
+					this.$set(this.images, index, { ...target, remoteUrl: '', uploading: false })
+					uni.showToast({ title: (e && e.message) || '图片上传失败', icon: 'none' })
+				}
 			},
 			deleteImage(index) {
 				this.images.splice(index, 1)
@@ -240,15 +255,37 @@
 				const title = this.content.substring(0, 20) + (this.content.length > 20 ? '...' : '')
 				const remoteImages = this.images.filter(img => img.remoteUrl).map(img => img.remoteUrl)
 				const user = uni.getStorageSync('user') || {}
-				const userId = user.userId || user.id || 1
+				const userId = user.userId || user.id
+				if (!userId) {
+					uni.hideLoading()
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				try {
+					await createForumPost({
+						userId,
+						title: title || '无标题分享',
+						content: this.content,
+						images: remoteImages
+					})
+					uni.hideLoading()
+					uni.showToast({ title: '发布成功', icon: 'success' })
+					uni.$emit('refresh')
+					uni.$emit('refreshForumList')
+					setTimeout(() => {
+						uni.navigateBack()
+					}, 800)
+					return
+				} catch (_) {}
+
 				createForumMockPost({
-					userId: userId,
+					userId,
 					title: title || '无标题分享',
 					content: this.content,
 					images: remoteImages
 				})
 				uni.hideLoading()
-				uni.showToast({ title: '发布成功', icon: 'success' })
+				uni.showToast({ title: '已本地发布', icon: 'success' })
 				uni.$emit('refresh')
 				uni.$emit('refreshForumList')
 				setTimeout(() => {

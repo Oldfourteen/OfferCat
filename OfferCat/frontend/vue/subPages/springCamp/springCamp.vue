@@ -293,10 +293,10 @@
 		left: 0;
 		right: 0;
 		z-index: 999;
-		background: linear-gradient(135deg, #4AA9FE, #415b9c);
+		background: linear-gradient(90deg, #4AA9FE, #415b9c);
 		
 		.nav-content {
-			height: 44px;
+			height: 60px;
 			display: flex;
 			align-items: center;
 			justify-content: space-between;

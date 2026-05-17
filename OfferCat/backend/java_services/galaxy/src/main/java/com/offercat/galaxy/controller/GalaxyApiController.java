@@ -8,6 +8,7 @@ import com.offercat.galaxy.integration.GalaxyCppGraphClient;
 import com.offercat.galaxy.service.GalaxyGraphDataService;
 import com.offercat.galaxy.service.GalaxyHyperedgeQueryService;
 import com.offercat.galaxy.service.GalaxyPathShortestService;
+import com.offercat.galaxy.service.GalaxyRecommendService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -39,6 +40,7 @@ public class GalaxyApiController {
     private final GalaxyGraphDataService graphData;
     private final GalaxyHyperedgeQueryService hyperedgeQuery;
     private final GalaxyPathShortestService pathShortestService;
+    private final GalaxyRecommendService recommendService;
     private final GalaxyCppGraphClient cppGraphClient;
     private final ObjectMapper objectMapper;
     private final RestTemplate galaxyRestTemplate;
@@ -50,6 +52,9 @@ public class GalaxyApiController {
     /** 兼容旧配置：仅推荐转发时使用 */
     @Value("${galaxy.python.recommend-base-url:}")
     private String pythonRecommendLegacyUrl;
+
+    @Value("${galaxy.recommend.use-java:true}")
+    private boolean recommendUseJava;
 
     private String pythonRoot() {
         if (pythonBaseUrl != null && !pythonBaseUrl.isBlank()) {
@@ -87,24 +92,45 @@ public class GalaxyApiController {
     }
 
     @GetMapping(value = "/recommend.json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<byte[]> recommendGet() {
-        return rawJson(graphData.recommend());
+    public ResponseEntity<byte[]> recommendGet(@RequestParam(required = false) String selectedNodeId)
+            throws Exception {
+        return rawJson(recommendBytes(selectedNodeId, null));
     }
 
     @PostMapping(value = "/recommend", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)
     public ResponseEntity<byte[]> recommendPost(@RequestBody(required = false) JsonNode body) throws Exception {
+        return rawJson(recommendBytes(extractSelectedNodeId(body), body));
+    }
+
+    private byte[] recommendBytes(String selectedNodeId, JsonNode body) throws Exception {
+        if (recommendUseJava) {
+            return objectMapper.writeValueAsBytes(recommendService.recommend(selectedNodeId));
+        }
         String root = pythonRoot();
         if (!root.isEmpty()) {
             try {
                 byte[] proxied = postPython(root + "/galaxy/recommend", body);
                 if (proxied != null) {
-                    return rawJson(proxied);
+                    return proxied;
                 }
             } catch (RestClientException ex) {
                 log.warn("galaxy recommend python fallback: {}", ex.toString());
             }
         }
-        return rawJson(graphData.recommend());
+        return objectMapper.writeValueAsBytes(recommendService.recommend(selectedNodeId));
+    }
+
+    private static String extractSelectedNodeId(JsonNode body) {
+        if (body == null) {
+            return null;
+        }
+        if (body.has("selectedNodeId")) {
+            return body.get("selectedNodeId").asText(null);
+        }
+        if (body.has("selected_node_id")) {
+            return body.get("selected_node_id").asText(null);
+        }
+        return null;
     }
 
     @PostMapping(value = "/embed/neighbors", consumes = MediaType.APPLICATION_JSON_VALUE, produces = MediaType.APPLICATION_JSON_VALUE)

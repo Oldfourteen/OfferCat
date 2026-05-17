@@ -9,22 +9,15 @@ export interface Manifest {
   compat?: Record<string, string | number>
 }
 
+import { getGalaxyApiBase } from '@/utils/galaxySession'
+
 /**
  * 图数据根路径（无末尾 /）。
- * 优先级：壳页注入 `window.__GALAXY_API_BASE__`（如网关 `.../api/galaxy`）→ `VITE_GALAXY_API_BASE` → 本地 `./mock`。
+ * 优先级：壳页注入 `window.__GALAXY_API_BASE__` → `VITE_GALAXY_API_BASE` → 本地 `./mock`。
  */
 export function getGalaxyDataBase(): string {
-  if (typeof window !== 'undefined') {
-    const injected = window.__GALAXY_API_BASE__
-    if (injected != null && String(injected).trim() !== '') {
-      return String(injected).trim().replace(/\/+$/, '')
-    }
-  }
-  const env = import.meta.env.VITE_GALAXY_API_BASE as string | undefined
-  if (env != null && String(env).trim() !== '') {
-    return String(env).trim().replace(/\/+$/, '')
-  }
-  return './mock'
+  const base = getGalaxyApiBase()
+  return base || './mock'
 }
 
 /** manifest 内 URL 若以 / 开头则相对站点根；否则拼在 mockBase 下 */
@@ -68,8 +61,18 @@ export async function fetchGalaxyBundle(mockBase = '/mock') {
   return { manifest, nodes, edges, hyperedges, layout } as const
 }
 
-export async function fetchRecommendMock(mockBase = '/mock') {
-  const url = resolveAssetUrl('recommend.json', mockBase)
+export async function fetchRecommendMock(mockBase = '/mock', selectedNodeId?: string | null) {
+  const api = getGalaxyApiBase()
+  if (api && mockBase === api) {
+    try {
+      const { fetchRecommend } = await import('@/api/galaxyBackend')
+      return fetchRecommend(selectedNodeId)
+    } catch {
+      /* fallback static */
+    }
+  }
+  const qs = selectedNodeId ? `?selectedNodeId=${encodeURIComponent(selectedNodeId)}` : ''
+  const url = resolveAssetUrl(`recommend.json${qs}`, mockBase)
   const r = await fetch(url)
   if (!r.ok) throw new Error(`recommend ${r.status}`)
   return r.json() as Promise<{ suggestions: { nodeId: string; reason: string }[] }>

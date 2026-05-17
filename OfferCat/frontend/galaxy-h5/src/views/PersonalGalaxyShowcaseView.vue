@@ -4,10 +4,13 @@ import { useRoute, useRouter } from 'vue-router'
 import { hyperedgesContainingNode } from '@/utils/graph'
 import {
   buildPersonalGalaxyMountBundle,
-  loadPersonalGalaxyFromStorage,
+  loadPersonalGalaxyHydrated,
   type PersonalGalaxyV1,
   type PersonalFusionInst,
 } from '@/data/personalGalaxyModel'
+import { hydrateStarlitFromServer } from '@/data/personalStarlitStore'
+import { galaxyUserId } from '@/utils/galaxySession'
+import { packKeyFromFusion } from '@/utils/packKey'
 import StarlitLeaderboardPanel from '@/components/StarlitLeaderboardPanel.vue'
 import {
   computeAmbientStarBoost,
@@ -28,6 +31,8 @@ const saved = shallowRef<PersonalGalaxyV1 | null>(null)
 const selectedId = ref<string | null>(null)
 const leaderboardOpen = ref(false)
 const starlitTick = ref(0)
+const packKeysForLb = ref<string[]>([])
+const galaxyUser = computed(() => galaxyUserId())
 
 const canvasHost = ref<HTMLElement | null>(null)
 const rt = shallowRef<ReturnType<typeof mountGalaxyThree> | null>(null)
@@ -84,8 +89,10 @@ function refreshStarlitProgress() {
   if (phase.value === 'ready') remount()
 }
 
-function openLeaderboard() {
+async function openLeaderboard() {
   refreshStarlitProgress()
+  const fusions = saved.value?.fusions ?? []
+  packKeysForLb.value = fusions.map((f) => packKeyFromFusion(f)).filter((k): k is string => !!k)
   leaderboardOpen.value = true
 }
 
@@ -131,7 +138,11 @@ watch(
     if (route.name !== 'personalShowcase') return
     refreshStarlitProgress()
     if (phase.value !== 'ready') return
-    saved.value = loadPersonalGalaxyFromStorage()
+    saved.value = await loadPersonalGalaxyHydrated()
+    if (saved.value?.fusions?.length) {
+      await hydrateStarlitFromServer(saved.value.fusions)
+    }
+    refreshStarlitProgress()
     await nextTick()
     remount()
   },
@@ -150,8 +161,11 @@ onMounted(async () => {
     err.value = '当前环境不支持 WebGL'
     return
   }
-  const p = loadPersonalGalaxyFromStorage()
+  const p = await loadPersonalGalaxyHydrated()
   saved.value = p
+  if (p?.fusions?.length) {
+    await hydrateStarlitFromServer(p.fusions)
+  }
   if (!p || (p.majors.length === 0 && p.fusions.length === 0)) {
     phase.value = 'empty'
     return
@@ -246,6 +260,8 @@ onBeforeUnmount(() => {
     <StarlitLeaderboardPanel
       :open="leaderboardOpen"
       :fusion-ids="fusionIdsOnCanvas"
+      :user-id="galaxyUser ?? undefined"
+      :pack-keys="packKeysForLb"
       @close="leaderboardOpen = false"
     />
   </div>

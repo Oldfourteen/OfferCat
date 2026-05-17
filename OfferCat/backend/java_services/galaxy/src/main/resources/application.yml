@@ -1,28 +1,46 @@
-server:
-  port: 14140
-
-spring:
-  application:
-    name: galaxy-service
-
-galaxy:
-  # C++ galaxy-graph（可选）。须与 resume-pdf 服务错开端口；默认 22571。示例: http://127.0.0.1:22571
-  cpp:
-    graph-base-url: ""
-  # Python galaxy 聚合（可选）。示例: http://127.0.0.1:15100
-  python:
-    base-url: ""
-    # 兼容：仅配置了推荐旧地址时仍可用
-    recommend-base-url: ""
-
-eureka:
-  client:
-    service-url:
-      defaultZone: http://localhost:8761/eureka/
-  instance:
-    prefer-ip-address: true
-
-logging:
-  level:
-    root: INFO
-    com.offercat.galaxy: INFO
+server:
+  port: 14140
+
+spring:
+  application:
+    name: galaxy-service
+  datasource:
+    url: jdbc:mysql://127.0.0.1:3306/offercat?useUnicode=true&characterEncoding=utf-8&useSSL=false&serverTimezone=Asia/Shanghai&connectTimeout=10000&socketTimeout=60000
+    username: root
+    password: 1029384756
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    type: com.alibaba.druid.pool.DruidDataSource
+    druid:
+      initial-size: 3
+      min-idle: 3
+      max-active: 20
+      validation-query: SELECT 1
+      test-while-idle: true
+
+mybatis:
+  mapper-locations: classpath:mapper/*.xml
+  configuration:
+    map-underscore-to-camel-case: true
+
+galaxy:
+  cpp:
+    graph-base-url: ""
+  python:
+    base-url: ""
+    recommend-base-url: ""
+  # true：推荐走 Java 图邻接算法；false 且配置了 python 时走 Python
+  recommend:
+    use-java: true
+
+eureka:
+  client:
+    service-url:
+      defaultZone: http://localhost:8761/eureka/
+  instance:
+    prefer-ip-address: true
+
+logging:
+  level:
+    root: INFO
+    com.offercat.galaxy: INFO
+

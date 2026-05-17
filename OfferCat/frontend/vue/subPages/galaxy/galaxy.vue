@@ -25,6 +25,8 @@
 </template>
 
 <script>
+	import { getUser, resolveStoredUserId } from '@/utils/user'
+
 	export default {
 		data() {
 			return {
@@ -55,6 +57,12 @@
 						if (trimmed) {
 							qs.push(`apiBase=${encodeURIComponent(trimmed.replace(/\/+$/, ''))}`)
 						}
+					}
+				} catch (_) {}
+				try {
+					const uid = resolveStoredUserId(getUser())
+					if (uid != null) {
+						qs.push(`userId=${encodeURIComponent(String(uid))}`)
 					}
 				} catch (_) {}
 				qs.push(`v=${this.galaxyAssetVersion}`)

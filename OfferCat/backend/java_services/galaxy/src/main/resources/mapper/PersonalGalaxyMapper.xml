@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.galaxy.mapper.PersonalGalaxyMapper">
+
+    <select id="selectGalaxyJson" resultType="string">
+        SELECT galaxy_json
+        FROM user_personal_galaxy
+        WHERE user_id = #{userId}
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO user_personal_galaxy (user_id, galaxy_json)
+        VALUES (#{userId}, CAST(#{galaxyJson} AS JSON))
+        ON DUPLICATE KEY UPDATE
+            galaxy_json = CAST(#{galaxyJson} AS JSON),
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <delete id="delete">
+        DELETE FROM user_personal_galaxy WHERE user_id = #{userId}
+    </delete>
+</mapper>

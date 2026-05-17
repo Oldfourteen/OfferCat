@@ -10,14 +10,17 @@
     <script>
       ;(function () {
         try {
-          var q = new URLSearchParams(location.search || '').get('apiBase')
-          if (q) window.__GALAXY_API_BASE__ = decodeURIComponent(q).replace(/\/+$/, '')
+          var sp = new URLSearchParams(location.search || '')
+          var apiBase = sp.get('apiBase')
+          if (apiBase) window.__GALAXY_API_BASE__ = decodeURIComponent(apiBase).replace(/\/+$/, '')
+          var userId = sp.get('userId')
+          if (userId) window.__GALAXY_USER_ID__ = userId
         } catch (_) {}
       })()
     </script>
     <script src="./assets/uni.webview.js"></script>
-    <script type="module" crossorigin src="./assets/galaxy-app.js?v=20260516-galaxy-starlit-leaderboard-v2"></script>
-    <link rel="stylesheet" crossorigin href="./assets/galaxy.css?v=20260516-galaxy-starlit-leaderboard-v2" />
+    <script type="module" crossorigin src="./assets/galaxy-app.js?v=20260516-galaxy-fullstack-v3"></script>
+    <link rel="stylesheet" crossorigin href="./assets/galaxy.css?v=20260516-galaxy-fullstack-v3" />
   </head>
   <body>
     <div id="app"></div>

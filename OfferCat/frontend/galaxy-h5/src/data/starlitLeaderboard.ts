@@ -1,4 +1,5 @@
 import { getTotalStarsLit, loadStarlitStore } from '@/data/personalStarlitStore'
+import { galaxyUserId } from '@/utils/galaxySession'
 
 export const STARLIT_LEADERBOARD_KEY = 'offercat_starlit_leaderboard_v1'
 const SELF_NAME_KEY = 'offercat_starlit_self_name_v1'
@@ -58,7 +59,31 @@ export function setSelfDisplayName(name: string): void {
   }
 }
 
-/** 演示用榜：无服务端时合并本机进度与占位条目（后续改 API 即可替换） */
+/** 优先请求服务端；失败则回退本机演示榜 */
+export async function buildLeaderboardRowsAsync(
+  userId?: number,
+  packKeys?: string[],
+): Promise<StarlitLeaderboardEntry[]> {
+  const uid = userId ?? galaxyUserId() ?? 0
+  if (uid > 0) {
+    try {
+      const { fetchStarlitLeaderboard } = await import('@/api/galaxyBackend')
+      const data = await fetchStarlitLeaderboard(uid, packKeys)
+      return data.rows.map((r) => ({
+        id: r.self ? '__self__' : `u_${r.userId}`,
+        displayName: r.displayName,
+        totalStars: r.totalStars,
+        updatedAt: Date.now(),
+        isSelf: r.self,
+      }))
+    } catch {
+      /* fallback local */
+    }
+  }
+  return buildLeaderboardRows()
+}
+
+/** 演示用榜：无服务端时合并本机进度与占位条目 */
 export function buildLeaderboardRows(): StarlitLeaderboardEntry[] {
   const total = getTotalStarsLit()
   const selfName = getSelfDisplayName()

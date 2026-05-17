@@ -1,5 +1,6 @@
 import type { CrossJobRow } from '@/data/crossJobCatalog'
 import type { RawEdge, RawHE, RawNode } from '@/lib/galaxyThree'
+import { galaxyApiReady, galaxyUserId } from '@/utils/galaxySession'
 
 export const PERSONAL_GALAXY_STORAGE_KEY = 'offercat_personal_galaxy_v1'
 
@@ -88,15 +89,14 @@ export function buildPersonalGalaxyMountBundle(majors: PersonalMajorInst[], fusi
     })
   }
 
-  const edges: RawEdge[] = []
-  for (const f of fusions) {
-    edges.push({ u: f.id, v: f.majorA, kind: 'fusion-major' })
-    edges.push({ u: f.id, v: f.majorB, kind: 'fusion-major' })
-  }
+  const edges: RawEdge[] = fusions.flatMap((f) => [
+    { u: f.id, v: f.majorA },
+    { u: f.id, v: f.majorB },
+  ])
 
   const hyperedges: RawHE[] = fusions.map((f) => ({
     id: `he_${f.id}`,
-    member_node_ids: [f.id, f.majorA, f.majorB],
+    members: [f.majorA, f.majorB, f.id],
     style_hint: 'personal',
   }))
 
@@ -127,10 +127,52 @@ export function savePersonalGalaxyToStorage(payload: PersonalGalaxyV1): void {
   }
 }
 
+function isPersonalGalaxyV1(data: unknown): data is PersonalGalaxyV1 {
+  const p = data as PersonalGalaxyV1
+  return !!p && p.v === 1 && Array.isArray(p.majors) && Array.isArray(p.fusions)
+}
+
 /**
- * 预留：用户星图同步到服务端（实现时替换为真实 POST）。
- * body 与 {@link PersonalGalaxyV1} 一致即可复用本地模型。
+ * 加载个人星图：有 API 时优先服务端（新于本地则覆盖本地），否则仅本地。
  */
-export async function syncPersonalGalaxyToServer(_payload: PersonalGalaxyV1): Promise<{ ok: boolean }> {
-  return { ok: false }
+export async function loadPersonalGalaxyHydrated(): Promise<PersonalGalaxyV1 | null> {
+  const local = loadPersonalGalaxyFromStorage()
+  if (!galaxyApiReady()) return local
+
+  const userId = galaxyUserId()
+  if (!userId) return local
+
+  try {
+    const { loadPersonalGalaxy } = await import('@/api/galaxyBackend')
+    const remote = await loadPersonalGalaxy(userId)
+    if (remote && isPersonalGalaxyV1(remote)) {
+      const merged: PersonalGalaxyV1 = {
+        ...remote,
+        updatedAt: remote.updatedAt ?? Date.now(),
+      }
+      if (!local || (merged.updatedAt ?? 0) >= (local.updatedAt ?? 0)) {
+        savePersonalGalaxyToStorage(merged)
+        return merged
+      }
+    }
+  } catch {
+    /* 离线回退本地 */
+  }
+  return local
+}
+
+export async function syncPersonalGalaxyToServer(
+  payload: PersonalGalaxyV1,
+  userId?: number | null,
+): Promise<{ ok: boolean }> {
+  const uid = userId ?? galaxyUserId()
+  if (uid == null || uid <= 0) return { ok: false }
+  if (!galaxyApiReady()) return { ok: false }
+  try {
+    const { savePersonalGalaxy } = await import('@/api/galaxyBackend')
+    await savePersonalGalaxy(uid, payload)
+    return { ok: true }
+  } catch {
+    return { ok: false }
+  }
 }

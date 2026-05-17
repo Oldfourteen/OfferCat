@@ -5,11 +5,12 @@ import { MAJORS } from '@/data/majors'
 import { threeJobsForMajorPair, type CrossJobRow } from '@/data/crossJobCatalog'
 import {
   buildPersonalGalaxyMountBundle,
-  loadPersonalGalaxyFromStorage,
+  loadPersonalGalaxyHydrated,
   savePersonalGalaxyToStorage,
   syncPersonalGalaxyToServer,
   toPersistedPayload,
 } from '@/data/personalGalaxyModel'
+import { galaxyApiReady } from '@/utils/galaxySession'
 import { hyperedgesContainingNode } from '@/utils/graph'
 import { goBackOrReplace } from '@/utils/navigation'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
@@ -156,7 +157,13 @@ async function saveGalaxy() {
   const payload = toPersistedPayload(majorsOnCanvas.value, fusions.value)
   savePersonalGalaxyToStorage(payload)
   const remote = await syncPersonalGalaxyToServer(payload)
-  saveHint.value = remote.ok ? '已保存到本地，并已尝试同步服务端。' : '已保存到本机（服务端同步接口待接入）。'
+  if (remote.ok) {
+    saveHint.value = '已保存到本地，并已同步服务端。'
+  } else if (galaxyApiReady()) {
+    saveHint.value = '已保存到本地（同步服务端失败，请稍后重试）。'
+  } else {
+    saveHint.value = '已保存到本机（未配置 galaxyApiBase / 未登录，未同步云端）。'
+  }
   window.setTimeout(() => {
     saveHint.value = ''
   }, 3200)
@@ -180,7 +187,7 @@ onMounted(async () => {
     return
   }
 
-  const stored = loadPersonalGalaxyFromStorage()
+  const stored = await loadPersonalGalaxyHydrated()
   if (stored?.majors?.length) {
     majorsOnCanvas.value = [...stored.majors]
     fusions.value = [...stored.fusions]

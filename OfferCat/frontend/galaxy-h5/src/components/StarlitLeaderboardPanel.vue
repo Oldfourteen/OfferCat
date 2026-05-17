@@ -1,11 +1,19 @@
 <script setup lang="ts">
 import { computed, ref, watch } from 'vue'
-import { buildLeaderboardRows, getSelfDisplayName, setSelfDisplayName } from '@/data/starlitLeaderboard'
+import {
+  buildLeaderboardRows,
+  buildLeaderboardRowsAsync,
+  getSelfDisplayName,
+  setSelfDisplayName,
+} from '@/data/starlitLeaderboard'
 import { getTotalStarsLitForFusions, STARLIT_MAX_STARS_PER_FUSION } from '@/data/personalStarlitStore'
 
 const props = defineProps<{
   open: boolean
   fusionIds: string[]
+  /** 登录用户 id；>0 时请求服务端排行榜 */
+  userId?: number
+  packKeys?: string[]
 }>()
 
 const emit = defineEmits<{
@@ -17,8 +25,12 @@ const selfNameDraft = ref(getSelfDisplayName())
 
 const canvasTotal = computed(() => getTotalStarsLitForFusions(props.fusionIds))
 
-function refresh() {
-  rows.value = buildLeaderboardRows()
+async function refresh() {
+  const uid = props.userId ?? 0
+  rows.value =
+    uid > 0
+      ? await buildLeaderboardRowsAsync(uid, props.packKeys)
+      : buildLeaderboardRows()
   selfNameDraft.value = getSelfDisplayName()
 }
 
@@ -76,7 +88,7 @@ watch(
         </div>
 
         <p class="lb-hint">
-          总星数 = 各小行星点亮之和（每颗最多 {{ STARLIT_MAX_STARS_PER_FUSION }}）。当前为本机演示榜，接入后端后同步全站数据。
+          总星数 = 各小行星点亮之和（每颗最多 {{ STARLIT_MAX_STARS_PER_FUSION }}）。已配置网关时从服务端拉取全站排行。
         </p>
 
         <ol class="lb-list">

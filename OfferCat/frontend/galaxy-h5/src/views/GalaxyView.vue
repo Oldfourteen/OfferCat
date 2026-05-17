@@ -14,6 +14,7 @@ const phase = ref<'loading' | 'ready' | 'error'>('loading')
 const errorMessage = ref('')
 const selectedNodeId = ref<string | null>(null)
 const recommend = ref<{ nodeId: string; reason: string }[]>([])
+const recommendNote = ref('')
 const showRecommend = ref(false)
 /** 首次进入大星图时展示「个人星图」引导，可关闭 */
 const showEntryHint = ref(true)
@@ -80,10 +81,26 @@ watch(visual, (v) => {
 })
 
 watch(selectedNodeId, () => {
-  // 切换节点后默认收起推荐，避免首次点选就占据过多空间。
   showRecommend.value = false
   resetSideChrome()
+  if (phase.value === 'ready') void refreshRecommend()
 })
+
+async function refreshRecommend() {
+  try {
+    const primary = getGalaxyDataBase()
+    const rec = await fetchRecommendMock(primary, selectedNodeId.value)
+    recommend.value = rec.suggestions ?? []
+    recommendNote.value = rec.algorithm || rec.note || ''
+  } catch {
+    /* 保留上一轮推荐 */
+  }
+}
+
+function toggleRecommend() {
+  showRecommend.value = !showRecommend.value
+  if (showRecommend.value) void refreshRecommend()
+}
 
 function readPayload(): GalaxyMajorsPayload | null {
   try {
@@ -129,6 +146,7 @@ async function bootstrap() {
       }
     }
     recommend.value = rec.suggestions ?? []
+    recommendNote.value = rec.algorithm || rec.note || ''
     graph.value = {
       nodes: bundle.nodes as RawNode[],
       edges: bundle.edges as { u: string; v: string }[],
@@ -357,8 +375,8 @@ function goPractice() {
 
         <section class="panel-card rec">
           <div class="rec-head">
-            <p class="block-label">推荐下一步（mock）</p>
-            <button type="button" class="btn rec-toggle" @click="showRecommend = !showRecommend">
+            <p class="block-label">推荐下一步{{ recommendNote ? `（${recommendNote}）` : '' }}</p>
+            <button type="button" class="btn rec-toggle" @click="toggleRecommend">
               {{ showRecommend ? '收起' : '展开' }}
             </button>
           </div>

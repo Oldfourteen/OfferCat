@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.galaxy.mapper.StarlitMapper">
+
+    <select id="selectPackIdByKey" resultType="long">
+        SELECT id FROM starlit_pack WHERE pack_key = #{packKey} LIMIT 1
+    </select>
+
+    <insert id="upsertProgress">
+        INSERT INTO user_starlit_progress (user_id, pack_id, stars_lit, last_question_no)
+        VALUES (#{userId}, #{packId}, #{starsLit}, #{lastQuestionNo})
+        ON DUPLICATE KEY UPDATE
+            stars_lit = #{starsLit},
+            last_question_no = #{lastQuestionNo},
+            update_time = CURRENT_TIMESTAMP
+    </insert>
+
+    <select id="sumStarsByUser" resultType="long">
+        SELECT COALESCE(SUM(stars_lit), 0)
+        FROM user_starlit_progress
+        WHERE user_id = #{userId}
+    </select>
+
+    <select id="sumStarsByUserAndPackKeys" resultType="long">
+        SELECT COALESCE(SUM(p.stars_lit), 0)
+        FROM user_starlit_progress p
+        INNER JOIN starlit_pack k ON k.id = p.pack_id
+        WHERE p.user_id = #{userId}
+        <if test="packKeys != null and packKeys.size() > 0">
+            AND k.pack_key IN
+            <foreach collection="packKeys" item="pk" open="(" separator="," close=")">
+                #{pk}
+            </foreach>
+        </if>
+    </select>
+
+    <select id="selectLeaderboard" resultType="com.offercat.galaxy.dto.StarlitLeaderboardRowDto">
+        SELECT
+            u.user_id AS userId,
+            COALESCE(NULLIF(TRIM(u.nickname), ''), CONCAT('用户', u.user_id)) AS displayName,
+            COALESCE(SUM(p.stars_lit), 0) AS totalStars
+        FROM user u
+        INNER JOIN user_starlit_progress p ON p.user_id = u.user_id
+        <if test="packKeys != null and packKeys.size() > 0">
+            INNER JOIN starlit_pack k ON k.id = p.pack_id
+            AND k.pack_key IN
+            <foreach collection="packKeys" item="pk" open="(" separator="," close=")">
+                #{pk}
+            </foreach>
+        </if>
+        GROUP BY u.user_id, u.nickname
+        HAVING totalStars > 0
+        ORDER BY totalStars DESC, u.user_id ASC
+        LIMIT #{limit}
+    </select>
+
+    <select id="selectQuestionsByPackId" resultType="com.offercat.galaxy.dto.StarlitQuestionRow">
+        SELECT
+            question_no AS questionNo,
+            stem AS stem,
+            option_a AS optionA,
+            option_b AS optionB,
+            option_c AS optionC,
+            option_d AS optionD,
+            correct_answer AS correctAnswer
+        FROM starlit_question
+        WHERE pack_id = #{packId} AND is_enabled = 1
+        ORDER BY question_no ASC
+    </select>
+
+    <select id="selectProgressByUser" resultType="com.offercat.galaxy.dto.StarlitProgressRowDto">
+        SELECT
+            k.pack_key AS packKey,
+            p.stars_lit AS starsLit,
+            p.last_question_no AS lastQuestionNo
+        FROM user_starlit_progress p
+        INNER JOIN starlit_pack k ON k.id = p.pack_id
+        WHERE p.user_id = #{userId}
+    </select>
+</mapper>

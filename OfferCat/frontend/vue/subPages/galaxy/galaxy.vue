@@ -39,7 +39,7 @@
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260518-majorselect-ui-v1'
+				return '20260518-galaxy-enterbtn-5d76bd-v1'
 			},
 			/**
 			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。

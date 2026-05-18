@@ -359,10 +359,10 @@ function goBack() {
 
 .btn.primary {
   color: #fff;
-  background: #3165d7;
-  border: 1px solid rgba(40, 65, 130, 0.35);
+  background: #5d76bd;
+  border: 1px solid rgba(56, 74, 132, 0.4);
   box-shadow:
-    0 11px 28px rgba(49, 101, 215, 0.34),
+    0 11px 28px rgba(93, 118, 189, 0.34),
     inset 0 2px 0 rgba(255, 255, 255, 0.2);
 }
 
@@ -370,7 +370,7 @@ function goBack() {
   opacity: 0.4;
   cursor: not-allowed;
   box-shadow: 0 4px 12px rgba(40, 60, 100, 0.1);
-  background: #7a8eb8;
+  background: #9aa8d4;
   border-color: transparent;
 }
 

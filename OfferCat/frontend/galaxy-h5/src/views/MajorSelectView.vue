@@ -147,7 +147,7 @@ function goBack() {
   left: 0;
   right: 0;
   z-index: 5;
-  height: calc(44px + var(--gx-safe-top));
+  height: calc(60px + var(--gx-safe-top));
   padding-top: var(--gx-safe-top);
   display: flex;
   align-items: center;
@@ -155,14 +155,17 @@ function goBack() {
   padding-left: 12px;
   padding-right: 12px;
   box-sizing: border-box;
-  /* 与 OfferCat 首页星图入口一致的紫 → 靛渐变 */
-  background: linear-gradient(135deg, #5c35af 0%, #3f55c7 100%);
+  background: linear-gradient(180deg, rgba(93, 143, 223, 0.82) 0%, rgba(154, 205, 250, 0.72) 48%, rgba(155, 204, 249, 0.62) 100%);
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+  box-shadow: 0 6px 20px rgba(93, 143, 223, 0.14);
 }
 
 .nav-btn {
   box-sizing: border-box;
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
   padding: 0;
   border: none;
   border-radius: 50%;
@@ -179,8 +182,8 @@ function goBack() {
 }
 
 .nav-btn-img {
-  width: 19px;
-  height: 19px;
+  width: 20px;
+  height: 20px;
   display: block;
   object-fit: contain;
   pointer-events: none;
@@ -188,19 +191,19 @@ function goBack() {
 }
 
 .nav-title {
-  font-size: 16px;
+  font-size: 17px;
   font-weight: 700;
   color: #fff;
   text-shadow: 0 1px 3px rgba(0, 0, 0, 0.15);
 }
 
 .nav-right {
-  width: 36px;
-  height: 36px;
+  width: 40px;
+  height: 40px;
 }
 
 .nav-spacer {
-  height: calc(52px + var(--gx-safe-top));
+  height: calc(68px + var(--gx-safe-top));
 }
 
 .bg-gradient {

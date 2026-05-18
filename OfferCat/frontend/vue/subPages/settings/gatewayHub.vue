@@ -22,7 +22,7 @@
 					<view class="root-block">
 						<text class="root-label">星图数据根（galaxyApiBase）</text>
 						<text class="root-value mono small" selectable>{{ galaxyBaseLine }}</text>
-						<text class="root-hint">未配置时使用 App 内置 static/mock，不经网关。</text>
+						<text class="root-hint">App.vue 未单独配置时，与 getApiBase 相同网关 + /api/galaxy。</text>
 					</view>
 				</view>
 
@@ -58,7 +58,7 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
-	import { getApiBase } from '@/api/config.js'
+	import { getApiBase, getGalaxyApiBase } from '@/api/config.js'
 	import { GATEWAY_GROUPS, GATEWAY_PORT_HINT } from '@/api/gatewayHubData.js'
 
 	const HUB_BACK_ICON =
@@ -82,11 +82,7 @@
 		computed: {
 			galaxyBaseLine() {
 				try {
-					if (typeof getApp !== 'function') return '—'
-					const app = getApp()
-					const raw = app && app.globalData && app.globalData.galaxyApiBase
-					const t = raw != null ? String(raw).trim() : ''
-					return t !== '' ? t.replace(/\/+$/, '') : '（未配置）'
+					return getGalaxyApiBase() || '—'
 				} catch (_) {
 					return '—'
 				}

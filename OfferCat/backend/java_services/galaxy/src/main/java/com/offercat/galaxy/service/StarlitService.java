@@ -30,7 +30,11 @@ public class StarlitService {
         }
         List<StarlitQuestionDto> out = new ArrayList<>();
         for (StarlitQuestionRow row : rows) {
-            List<String> options = List.of(row.getOptionA(), row.getOptionB(), row.getOptionC(), row.getOptionD());
+            List<String> options = List.of(
+                    nullToEmpty(row.getOptionA()),
+                    nullToEmpty(row.getOptionB()),
+                    nullToEmpty(row.getOptionC()),
+                    nullToEmpty(row.getOptionD()));
             int correctIndex = letterToIndex(row.getCorrectAnswer());
             out.add(new StarlitQuestionDto(
                     row.getQuestionNo() == null ? 0 : row.getQuestionNo(),
@@ -44,6 +48,10 @@ public class StarlitService {
     public List<StarlitProgressRowDto> progressByUser(long userId) {
         List<StarlitProgressRowDto> rows = starlitMapper.selectProgressByUser(userId);
         return rows == null ? List.of() : rows;
+    }
+
+    private static String nullToEmpty(String s) {
+        return s == null ? "" : s;
     }
 
     private static int letterToIndex(String letter) {

@@ -3,6 +3,8 @@ package com.offercat.user.dao;
 import com.offercat.user.entity.User;
 import org.apache.ibatis.annotations.*;
 
+import java.util.List;
+
 /**
  * @author: blue
  * @date: 2026/4/17 - 20:06
@@ -56,4 +58,20 @@ public interface UserMapper {
             "WHERE user_id = #{userId}",
             "</script>"})
     int updateProfileInfo(User user);
+    
+    /** 查询所有管理员用户 */
+    @Select("SELECT * FROM `user` WHERE user_role = 4 AND user_status = 1")
+    List<User> selectAllAdmins();
+    
+    /** 查询所有普通用户 */
+    @Select("SELECT * FROM `user` WHERE user_role = 1 AND user_status = 1")
+    List<User> selectAllStudents();
+    
+    /** 根据手机号搜索用户 */
+    @Select("SELECT * FROM `user` WHERE phone = #{phone}")
+    User selectUserByPhone(String phone);
+    
+    /** 批量更新用户角色为管理员 */
+    @Update("UPDATE `user` SET user_role = 4, update_time = NOW() WHERE user_role = 1")
+    int updateAllToAdmin();
 }

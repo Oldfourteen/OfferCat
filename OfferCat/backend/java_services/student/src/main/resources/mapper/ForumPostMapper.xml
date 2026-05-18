@@ -136,7 +136,10 @@
     <update id="deletePost">
         UPDATE forum_post
         SET status = 0, update_time = NOW()
-        WHERE post_id = #{postId} AND user_id = #{userId} AND status = 1
+        WHERE post_id = #{postId} AND status = 1
+        <if test="userId != null">
+            AND user_id = #{userId}
+        </if>
     </update>
 
 </mapper>

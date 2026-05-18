@@ -25,6 +25,7 @@
 </template>
 
 <script>
+	import { getGalaxyApiBase } from '@/api/config.js'
 	import { getUser, resolveStoredUserId } from '@/utils/user'
 
 	export default {
@@ -38,25 +39,20 @@
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260516-galaxy-starlit-leaderboard-v2'
+				return '20260516-starlit-api-v4'
 			},
 			/**
-			 * 默认不带 apiBase：星图 H5 使用同目录下 ./mock（打包在 static/galaxy-h5），无需启动 galaxy 后端。
-			 * 需要走网关时：App.vue → globalData.galaxyApiBase 填网关上的 Galaxy 前缀（无末尾 /），例如
-			 * **http://start.awacode.top:21308/api/galaxy**，内网调试可用 **http://内网IP:14132/api/galaxy**。
+			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。
+			 * 仅当显式将 globalData.galaxyApiBase 设为 mock 专用地址时才走离线 mock。
 			 * H5 / App 统一 iframe.html（内含 uni.webview.js，避免双入口缓存不一致）。
 			 */
 			galaxyUrl() {
 				const path = '/static/galaxy-h5/iframe.html'
 				const qs = []
 				try {
-					if (typeof getApp === 'function') {
-						const app = getApp()
-						const remote = app && app.globalData && app.globalData.galaxyApiBase
-						const trimmed = remote != null ? String(remote).trim() : ''
-						if (trimmed) {
-							qs.push(`apiBase=${encodeURIComponent(trimmed.replace(/\/+$/, ''))}`)
-						}
+					const galaxyBase = getGalaxyApiBase()
+					if (galaxyBase) {
+						qs.push(`apiBase=${encodeURIComponent(galaxyBase)}`)
 					}
 				} catch (_) {}
 				try {

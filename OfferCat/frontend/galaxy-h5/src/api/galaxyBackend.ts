@@ -14,9 +14,15 @@ function url(path: string): string {
 type ApiResult<T> = { code: number; msg: string; data: T }
 
 async function parseJson<T>(r: Response): Promise<T> {
-  const j = (await r.json()) as ApiResult<T>
+  let j: ApiResult<T> & { message?: string; error?: string }
+  try {
+    j = (await r.json()) as ApiResult<T> & { message?: string; error?: string }
+  } catch {
+    throw new Error(r.ok ? '响应不是合法 JSON' : `HTTP ${r.status}`)
+  }
   if (j.code !== 200) {
-    throw new Error(j.msg || `HTTP ${r.status}`)
+    const msg = j.msg || j.message || j.error
+    throw new Error(msg || `HTTP ${r.status}`)
   }
   return j.data
 }
@@ -97,7 +103,8 @@ export type StarlitQuestionDto = {
 }
 
 export async function fetchStarlitQuestions(packKey: string): Promise<StarlitQuestionDto[]> {
-  const r = await fetch(url(`/starlit/pack/${encodeURIComponent(packKey)}/questions`))
+  const qs = new URLSearchParams({ packKey })
+  const r = await fetch(url(`/starlit/questions?${qs}`))
   return parseJson<StarlitQuestionDto[]>(r)
 }
 

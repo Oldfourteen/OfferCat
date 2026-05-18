@@ -10,9 +10,10 @@ import {
   syncPersonalGalaxyToServer,
   toPersistedPayload,
 } from '@/data/personalGalaxyModel'
-import { galaxyApiReady } from '@/utils/galaxySession'
+import { galaxyApiReady, galaxyUserId } from '@/utils/galaxySession'
 import { hyperedgesContainingNode } from '@/utils/graph'
 import { goBackOrReplace } from '@/utils/navigation'
+import { packKeyFromFusion } from '@/utils/packKey'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
 import { computeAmbientStarBoost } from '@/data/personalStarlitStore'
 
@@ -123,14 +124,21 @@ async function openJobModal(a: { id: string; majorId: string }, b: { id: string;
 }
 
 function confirmJob(row: CrossJobRow) {
-  const { aId, bId } = jobModal.value
+  const { aId, bId, options } = jobModal.value
   const id = `f_${Date.now()}`
-  fusions.value.push({
+  const jobSlot = options.findIndex((o) => o.idx === row.idx)
+  const draft = {
     id,
     title: row.title,
     majorA: aId,
     majorB: bId,
     row,
+    jobSlot: jobSlot >= 0 ? jobSlot : undefined,
+  }
+  const packKey = packKeyFromFusion(draft, majorsOnCanvas.value)
+  fusions.value.push({
+    ...draft,
+    packKey: packKey ?? undefined,
   })
   jobModal.value.open = false
   jobModal.value.options = []
@@ -161,8 +169,10 @@ async function saveGalaxy() {
     saveHint.value = '已保存到本地，并已同步服务端。'
   } else if (galaxyApiReady()) {
     saveHint.value = '已保存到本地（同步服务端失败，请稍后重试）。'
+  } else if (!galaxyUserId()) {
+    saveHint.value = '已保存到本机（未识别登录用户，未同步云端）。'
   } else {
-    saveHint.value = '已保存到本机（未配置 galaxyApiBase / 未登录，未同步云端）。'
+    saveHint.value = '已保存到本机（星图 API 未注入，未同步云端）。'
   }
   window.setTimeout(() => {
     saveHint.value = ''

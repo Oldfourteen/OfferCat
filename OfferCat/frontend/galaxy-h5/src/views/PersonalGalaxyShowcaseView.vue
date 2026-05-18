@@ -92,7 +92,9 @@ function refreshStarlitProgress() {
 async function openLeaderboard() {
   refreshStarlitProgress()
   const fusions = saved.value?.fusions ?? []
-  packKeysForLb.value = fusions.map((f) => packKeyFromFusion(f)).filter((k): k is string => !!k)
+  packKeysForLb.value = fusions
+    .map((f) => packKeyFromFusion(f, saved.value?.majors))
+    .filter((k): k is string => !!k)
   leaderboardOpen.value = true
 }
 
@@ -129,7 +131,14 @@ function closeFusionSheet() {
 function goStarlit() {
   const f = selectedFusion.value
   if (!f) return
-  void router.push({ name: 'personalStarlit', query: { fusionId: f.id } })
+  const pk =
+    f.packKey ??
+    packKeyFromFusion(f, saved.value?.majors) ??
+    ''
+  void router.push({
+    name: 'personalStarlit',
+    query: { fusionId: f.id, title: f.title, ...(pk ? { packKey: pk } : {}) },
+  })
 }
 
 watch(

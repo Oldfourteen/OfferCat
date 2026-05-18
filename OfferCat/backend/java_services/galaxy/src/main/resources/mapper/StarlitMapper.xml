@@ -65,7 +65,7 @@
             option_d AS optionD,
             correct_answer AS correctAnswer
         FROM starlit_question
-        WHERE pack_id = #{packId} AND is_enabled = 1
+        WHERE pack_id = #{packId}
         ORDER BY question_no ASC
     </select>
 

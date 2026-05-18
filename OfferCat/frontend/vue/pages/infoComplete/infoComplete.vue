@@ -328,6 +328,7 @@
 					'/pages/index/index',
 					'/pages/GrowthArchive/GrowthArchive',
 					'/pages/AI/AI',
+					'/pages/forum/index',
 					'/pages/my/my'
 				])
 				return tabs.has(url)

@@ -26,6 +26,12 @@ export const LIQUID_TAB_ITEMS = [
 		iconActive: '/static/tabbar/archive_active.png'
 	},
 	{
+		pagePath: 'pages/AI/AI',
+		text: 'AI',
+		icon: '/static/tabbar/ai.png',
+		iconActive: '/static/tabbar/ai_active.png'
+	},
+	{
 		pagePath: 'pages/forum/index',
 		text: '论坛',
 		icon: '/static/tabbar/forum.png',
@@ -36,12 +42,6 @@ export const LIQUID_TAB_ITEMS = [
 		text: '我的',
 		icon: '/static/tabbar/my.png',
 		iconActive: '/static/tabbar/my_active.png'
-	},
-	{
-		pagePath: 'pages/AI/AI',
-		text: 'AI',
-		icon: '/static/tabbar/ai.png',
-		iconActive: '/static/tabbar/ai_active.png'
 	}
 ]
 

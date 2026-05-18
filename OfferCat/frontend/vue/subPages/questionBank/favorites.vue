@@ -159,14 +159,15 @@
 						return
 					}
 					const results = await Promise.allSettled(tasks)
-					const ids = results
-						.filter(r => r.status === 'fulfilled')
-						.flatMap(r => (r.value && r.value.data) || [])
-						.filter(v => v != null)
-					if (!ids.length) {
+					const fulfilled = results.filter(r => r.status === 'fulfilled')
+					if (fulfilled.length === 0) {
 						this.favorites = localFavorites
 						return
 					}
+					const ids = fulfilled
+						.flatMap(r => (r.value && r.value.data) || [])
+						.filter(v => v != null)
+					
 					const mapped = ids
 						.map((qid) => {
 							const setId = `set_${qid}`
@@ -187,7 +188,7 @@
 							}
 						})
 						.filter(Boolean)
-					this.favorites = mapped.length ? mapped : localFavorites
+					this.favorites = mapped
 				} catch (e) {
 					this.favorites = localFavorites
 				}

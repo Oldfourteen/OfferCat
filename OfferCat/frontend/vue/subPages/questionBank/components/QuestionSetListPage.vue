@@ -52,6 +52,7 @@
 	import { bankTabs } from '../data'
 	import { getQuestionHistorySummary } from '@/utils/questionHistory.js'
 	import { getQuestionFavoritesSummary } from '@/utils/questionFavorites.js'
+	import { getCollectedQuestionIds } from '@/api/growth.js'
 
 	export default {
 		name: 'QuestionSetListPage',
@@ -159,9 +160,29 @@
 			}
 		},
 		methods: {
-			loadHistorySummary() {
+			async loadHistorySummary() {
 				this.historySummary = getQuestionHistorySummary(this.pageType)
 				this.favoriteSummary = getQuestionFavoritesSummary(this.pageType)
+				
+				try {
+					const qType = this.pageType === 'interview' ? 4 : 3
+					const res = await getCollectedQuestionIds(qType)
+					if (res && res.data && Array.isArray(res.data)) {
+						const ids = res.data
+						this.favoriteSummary.count = ids.length
+						this.favoriteSummary.ids = ids.map(id => `set_${id}`)
+						if (ids.length > 0) {
+							this.favoriteSummary.latest = {
+								type: this.pageType,
+								favoritedAt: '最新'
+							}
+						} else {
+							this.favoriteSummary.latest = null
+						}
+					}
+				} catch (e) {
+					console.error('Failed to load remote favorites summary', e)
+				}
 			},
 			formatSetItem(item) {
 				return {

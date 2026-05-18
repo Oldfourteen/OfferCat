@@ -5,6 +5,7 @@
 				<text class="section-title">工作经历</text>
 				<view class="action-btn" @click="goToEdit">
 					<text class="btn-text">添加</text>
+					<text class="chevron" aria-hidden="true">›</text>
 				</view>
 			</view>
 			<view class="divider"></view>
@@ -54,32 +55,52 @@
 <style lang="scss" scoped>
 	.section-wrapper {
 		.section-block {
-			padding: 20px 20px 0;
+			padding: 22px 20px 0;
 
 			.section-header {
 				display: flex;
 				justify-content: space-between;
 				align-items: center;
-				margin-bottom: 15px;
+				gap: 12px;
+				margin-bottom: 14px;
 
 				.section-title {
-					font-size: 20px;
-					font-weight: bold;
+					font-size: 18px;
+					font-weight: 600;
 					color: #111827;
+					letter-spacing: -0.01em;
+					line-height: 1.3;
+					flex: 1;
+					min-width: 0;
 				}
 
 				.action-btn {
-					padding: 4px 12px;
-					border-radius: 14px;
-					background: #f0f2f9;
+					padding: 6px 4px 6px 10px;
+					border-radius: 8px;
+					background: transparent;
 					display: flex;
+					flex-direction: row;
 					align-items: center;
-					justify-content: center;
+					flex-shrink: 0;
+
+					&:active {
+						opacity: 0.72;
+					}
 
 					.btn-text {
-						font-size: 13px;
+						font-size: 14px;
 						color: #5d76bd;
-						font-weight: 500;
+						font-weight: 600;
+						letter-spacing: 0.02em;
+					}
+
+					.chevron {
+						margin-left: 1px;
+						font-size: 18px;
+						line-height: 1;
+						color: #5d76bd;
+						font-weight: 400;
+						opacity: 0.88;
 					}
 				}
 			}
@@ -91,14 +112,20 @@
 		}
 
 		.section-preview {
-			padding: 15px 20px 0;
+			padding: 12px 20px 8px;
 			
 			.preview-item {
-				padding: 8px 0;
+				padding: 10px 0;
+
+				&:first-child {
+					padding-top: 4px;
+				}
 			}
 			
 			.rich-text-wrap {
 				width: 100%;
+				line-height: 1.65;
+				letter-spacing: 0.01em;
 			}
 		}
 	}

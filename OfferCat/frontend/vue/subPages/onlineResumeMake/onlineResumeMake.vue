@@ -576,11 +576,12 @@
 	.online-resume-page {
 		min-height: 100vh;
 		background-color: #ffffff;
-		padding-bottom: calc(80px + env(safe-area-inset-bottom)); /* Add space for bottom actions */
+		padding-bottom: calc(88px + env(safe-area-inset-bottom)); /* Add space for bottom actions */
 
 		.page-content {
 			/* Assuming top nav bar takes approx 88px (44px + statusbar) */
 			padding-top: calc(44px + var(--status-bar-height));
+			padding-bottom: 12px;
 		}
 		
 		&.theme-dark {
@@ -602,11 +603,17 @@
 						0 12px 32px -8px rgba(0, 0, 0, 0.5),
 						0 4px 12px rgba(0, 0, 0, 0.28);
 				}
-				.completion-rate .label {
+				.completion-top .label {
 					color: rgba(255, 255, 255, 0.58);
 				}
-				.completion-rate .value {
+				.completion-top .value {
 					color: #a8b4e8;
+				}
+				.progress-track {
+					background: rgba(255, 255, 255, 0.12);
+				}
+				.progress-fill {
+					background: #5d76bd;
 				}
 				.hint {
 					color: #8f9fd4;
@@ -621,9 +628,10 @@
 					color: #f4f7fb;
 				}
 				.action-btn {
-					background: rgba(93, 118, 189, 0.18);
+					background: transparent;
 				}
-				.action-btn .btn-text {
+				.action-btn .btn-text,
+				.action-btn .chevron {
 					color: #c5cde8;
 				}
 				.user-details .info-row .info-item {
@@ -658,9 +666,10 @@
 					color: #f4f7fb;
 				}
 				.section-header .action-btn {
-					background: rgba(93, 118, 189, 0.18);
+					background: transparent;
 				}
-				.section-header .action-btn .btn-text {
+				.section-header .action-btn .btn-text,
+				.section-header .action-btn .chevron {
 					color: #c5cde8;
 				}
 				.section-block .divider {

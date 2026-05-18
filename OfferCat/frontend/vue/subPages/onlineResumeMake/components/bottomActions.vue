@@ -36,20 +36,21 @@
 		.bottom-actions {
 			display: flex;
 			justify-content: space-between;
-			padding: 10px 20px;
-			gap: 15px;
+			padding: 12px 20px 10px;
+			gap: 14px;
 
 			.action-btn {
 				flex: 1;
-				height: 44px;
-				border-radius: 22px;
+				height: 48px;
+				border-radius: 24px;
 				background-color: #f3f4f6;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				font-size: 15px;
 				color: #374151;
-				font-weight: 500;
+				font-weight: 600;
+				letter-spacing: 0.02em;
 				transition: all 0.2s;
 
 				&:active {

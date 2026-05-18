@@ -52,16 +52,33 @@ function normalizeProfile(source = {}) {
 // 获取当前用户资料，并优先兼容嵌套的 profile 字段结构。
 export function getUserProfile() {
 	const user = getUser() || {}
-	const source = user.profile ? { ...user, ...user.profile } : user
+	if (!user.profile) return normalizeProfile(user)
+	const userSafe = { ...user }
+	delete userSafe.profile
+	for (const key of Object.keys(userSafe)) {
+		if (userSafe[key] === '' || userSafe[key] === null || userSafe[key] === undefined) {
+			delete userSafe[key]
+		}
+	}
+	const source = { ...user.profile, ...userSafe }
 	return normalizeProfile(source)
 }
 
 // 保存用户资料并同步更新到用户缓存中。
 export function saveUserProfile(profile = {}) {
 	const currentUser = getUser() || {}
-	const nextProfile = normalizeProfile({ ...currentUser, ...profile })
+	const currentFlat = currentUser && currentUser.profile ? { ...currentUser.profile, ...currentUser } : currentUser
+	const incomingFlat = profile && profile.profile ? { ...profile.profile, ...profile } : profile
+	const incomingSafe = { ...(incomingFlat || {}) }
+	delete incomingSafe.profile
+	for (const key of Object.keys(incomingSafe)) {
+		if (incomingSafe[key] === '' || incomingSafe[key] === null || incomingSafe[key] === undefined) {
+			delete incomingSafe[key]
+		}
+	}
+	const nextProfile = normalizeProfile({ ...(currentFlat || {}), ...incomingSafe })
 	// 每次保存资料后，`profile` 会变成扁平结构；必须把 studentId 提到可视层，否则签到/成长接口读不到（原在 user.profile.studentId 的旧数据会「丢」一层）。
-	const mergedForSid = { ...currentUser, ...profile, ...nextProfile }
+	const mergedForSid = { ...currentUser, ...incomingSafe, ...nextProfile }
 	const sid = resolveStoredStudentId(mergedForSid)
 	const profileForStore = {
 		...nextProfile,

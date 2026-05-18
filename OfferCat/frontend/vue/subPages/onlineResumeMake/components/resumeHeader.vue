@@ -8,9 +8,12 @@
 		</view>
 		<view class="completion-card">
 			<view class="card-left">
-				<view class="completion-rate">
+				<view class="completion-top">
 					<text class="label">完善度</text>
 					<text class="value">{{ completionStatus.rate }}%</text>
+				</view>
+				<view class="progress-track">
+					<view class="progress-fill" :style="{ width: progressWidth }"></view>
 				</view>
 				<text class="hint">{{ completionStatus.hint }}</text>
 			</view>
@@ -104,6 +107,11 @@
 					rate,
 					hint: missingHint
 				};
+			},
+			progressWidth() {
+				const r = this.completionStatus && typeof this.completionStatus.rate === 'number' ? this.completionStatus.rate : 0
+				const clamped = Math.min(100, Math.max(0, r))
+				return `${clamped}%`
 			}
 		},
 		data() {
@@ -235,40 +243,42 @@
 
 <style lang="scss" scoped>
 	.resume-header {
-		padding: 20px 20px 0;
+		padding: 22px 20px 8px;
 
 		.title-row {
 			display: flex;
 			align-items: center;
-			margin-bottom: 20px;
-			min-height: 24px;
+			margin-bottom: 18px;
+			min-height: 26px;
 
 			.title {
-				font-size: 16px;
+				font-size: 15px;
 				color: #9ca3af;
-				margin-right: 6px;
+				margin-right: 8px;
+				letter-spacing: 0.02em;
 			}
 
 			.edit-icon-placeholder {
-				padding: 2px 8px;
+				padding: 4px 10px;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				background-color: rgba(93, 118, 189, 0.12);
-				border-radius: 12px;
+				border-radius: 999px;
 
 				.btn-text {
 					font-size: 12px;
 					color: #5d76bd;
-					font-weight: 500;
+					font-weight: 600;
+					letter-spacing: 0.04em;
 				}
 			}
 		}
 
 		.completion-card {
 			background: linear-gradient(to right, #eef0f8, #e2e6f4);
-			border-radius: 12px;
-			padding: 16px 20px;
+			border-radius: 16px;
+			padding: 18px 18px 18px 20px;
 			display: flex;
 			justify-content: space-between;
 			align-items: center;
@@ -280,40 +290,66 @@
 				0 2px 4px rgba(93, 118, 189, 0.06);
 
 			.card-left {
+				flex: 1;
+				min-width: 0;
 				display: flex;
 				flex-direction: column;
+				padding-right: 16px;
 
-				.completion-rate {
+				.completion-top {
 					display: flex;
-					align-items: baseline;
-					margin-bottom: 4px;
+					align-items: center;
+					justify-content: space-between;
+					margin-bottom: 10px;
 
 					.label {
 						font-size: 13px;
 						color: #6b7280;
-						margin-right: 6px;
+						font-weight: 600;
+						letter-spacing: 0.06em;
 					}
 
 					.value {
-						font-size: 24px;
-						font-weight: bold;
+						font-size: 16px;
+						font-weight: 600;
 						color: #5d76bd;
+						letter-spacing: 0.02em;
+						font-variant-numeric: tabular-nums;
 					}
 				}
 
+				.progress-track {
+					width: 100%;
+					height: 6px;
+					border-radius: 999px;
+					background: rgba(93, 118, 189, 0.15);
+					overflow: hidden;
+					margin-bottom: 10px;
+				}
+
+				.progress-fill {
+					height: 100%;
+					border-radius: 999px;
+					background: #5d76bd;
+					transition: width 0.25s ease;
+				}
+
 				.hint {
-					font-size: 13px;
+					font-size: 12px;
+					line-height: 1.45;
 					color: #4a5f99;
+					letter-spacing: 0.01em;
 				}
 			}
 
 			.card-right {
 				position: relative;
+				flex-shrink: 0;
 
 				.avatar-wrap {
-					width: 66px;
-					height: 84px;
-					border-radius: 6px;
+					width: 72px;
+					height: 92px;
+					border-radius: 10px;
 					background: #f3f4f6;
 					display: flex;
 					flex-direction: column;
@@ -340,13 +376,15 @@
 						display: flex;
 						justify-content: center;
 						align-items: center;
-						padding: 4px 0;
+						padding: 5px 4px;
 						z-index: 2;
 						
 						/* 在内层控制文字大小，确保背景盒子本身依然是 100% 宽度 */
 						text {
-							font-size: 8px;
-							transform: scale(0.9);
+							font-size: 10px;
+							line-height: 1.2;
+							font-weight: 500;
+							letter-spacing: 0.02em;
 						}
 					}
 				}

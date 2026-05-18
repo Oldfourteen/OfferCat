@@ -8,6 +8,7 @@
 				</view>
 				<view class="action-btn" @click="goToEdit">
 					<text class="btn-text">编辑</text>
+					<text class="chevron" aria-hidden="true">›</text>
 				</view>
 			</view>
 
@@ -92,72 +93,99 @@
 <style lang="scss" scoped>
 	.basic-info-wrapper {
 		.basic-info {
-			padding: 20px 20px 0;
+			padding: 24px 20px 4px;
 			position: relative;
 
 			/* 统一和教育背景相同的 section-header 样式 */
 			.section-header {
 				display: flex;
 				justify-content: space-between;
-				align-items: center;
-				margin-bottom: 10px;
+				align-items: flex-start;
+				gap: 12px;
+				margin-bottom: 12px;
 
 				.name-row {
 					display: flex;
 					align-items: center;
+					min-width: 0;
+					flex: 1;
 
 					.name {
-						font-size: 24px;
-						font-weight: bold;
+						font-size: 22px;
+						font-weight: 600;
 						color: #333;
+						letter-spacing: -0.02em;
+						line-height: 1.25;
 					}
 				}
 
 				.action-btn {
-					padding: 4px 12px;
-					border-radius: 14px;
-					background: #f0f2f9;
+					padding: 6px 4px 6px 10px;
+					border-radius: 8px;
+					background: transparent;
 					display: flex;
+					flex-direction: row;
 					align-items: center;
-					justify-content: center;
+					flex-shrink: 0;
+
+					&:active {
+						opacity: 0.72;
+					}
 
 					.btn-text {
-						font-size: 13px;
+						font-size: 14px;
 						color: #5d76bd;
-						font-weight: 500;
+						font-weight: 600;
+						letter-spacing: 0.02em;
+					}
+
+					.chevron {
+						margin-left: 1px;
+						font-size: 18px;
+						line-height: 1;
+						color: #5d76bd;
+						font-weight: 400;
+						opacity: 0.88;
 					}
 				}
 			}
 
 			.user-details {
-				margin-bottom: 15px;
+				margin-bottom: 18px;
 
 				.info-row {
 					display: flex;
 					align-items: center;
+					flex-wrap: wrap;
 					margin-bottom: 6px;
+					line-height: 1.5;
 
 					.info-item {
 						font-size: 14px;
 						color: #666;
+						letter-spacing: 0.01em;
 					}
 
 					.separator {
-						margin: 0 8px;
+						margin: 0 10px;
 						color: #ccc;
-						font-size: 12px;
+						font-size: 11px;
+						font-weight: 300;
+						opacity: 0.85;
 					}
 				}
 			}
 
 			.job-intention-row {
-				margin-bottom: 12px;
+				margin-bottom: 14px;
 				display: flex;
-				align-items: center;
+				align-items: flex-start;
+				line-height: 1.45;
 
 				.job-intention-label {
 					font-size: 14px;
 					color: #666;
+					flex-shrink: 0;
 				}
 
 				.job-intention-value {
@@ -168,7 +196,7 @@
 			}
 
 			.certificates-section {
-				margin-bottom: 12px;
+				margin-bottom: 14px;
 
 				.certificates-label {
 					font-size: 14px;
@@ -180,18 +208,19 @@
 				.certificates-list {
 					display: flex;
 					flex-direction: column;
-					gap: 4px;
+					gap: 6px;
 				}
 
 				.cert-line {
 					font-size: 14px;
 					color: #374151;
-					line-height: 1.5;
+					line-height: 1.55;
 				}
 			}
 
 			.divider {
 				height: 1px;
+				margin-top: 4px;
 				background-color: #f3f4f6;
 			}
 		}

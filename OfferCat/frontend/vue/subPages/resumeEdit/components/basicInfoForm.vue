@@ -225,7 +225,7 @@
 						.form-chevron {
 							font-size: 22px;
 							line-height: 1;
-							color: #9ca3af;
+							color: #5d76bd;
 							flex-shrink: 0;
 						}
 					}
@@ -257,7 +257,7 @@
 						}
 
 						.form-picker .form-chevron {
-							color: rgba(255, 255, 255, 0.38);
+							color: #5d76bd;
 						}
 					}
 				}

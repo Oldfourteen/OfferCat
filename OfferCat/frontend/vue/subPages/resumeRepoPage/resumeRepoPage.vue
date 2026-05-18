@@ -36,6 +36,7 @@
           :theme="theme"
           :isManageMode="isManageMode"
           :isSelected="selectedResumes.includes(item.resume_id)"
+          :isSelectBlocked="isCardSelectBlocked(item.resume_id)"
           @clickCard="handleCardClick" 
         />
       </view>
@@ -82,6 +83,9 @@ const RESUME_REPO_BACK_ICON =
       '</svg>'
   )
 
+/** 管理模式下单次删除上限 */
+const MAX_DELETE_PER_BATCH = 5
+
 export default {
   mixins: [themeMixin],
   components: {
@@ -96,9 +100,16 @@ export default {
     }
   },
   computed: {
-    // 是否全选
+    // 是否处于「全选」状态：列表不超过上限时须全部选中；超过上限时须恰好选中列表中的前 MAX_DELETE_PER_BATCH 条
     isAllSelected() {
-      return this.resumeList.length > 0 && this.selectedResumes.length === this.resumeList.length;
+      const n = this.resumeList.length;
+      if (n === 0) return false;
+      if (n <= MAX_DELETE_PER_BATCH) {
+        return this.selectedResumes.length === n;
+      }
+      const firstIds = this.resumeList.slice(0, MAX_DELETE_PER_BATCH).map((r) => r.resume_id);
+      if (this.selectedResumes.length !== MAX_DELETE_PER_BATCH) return false;
+      return firstIds.every((id) => this.selectedResumes.includes(id));
     }
   },
   onLoad() {
@@ -133,6 +144,13 @@ export default {
         this.selectedResumes = [];
       }
     },
+    isCardSelectBlocked(resumeId) {
+      return (
+        this.isManageMode &&
+        this.selectedResumes.length >= MAX_DELETE_PER_BATCH &&
+        !this.selectedResumes.includes(resumeId)
+      );
+    },
     // 卡片点击事件
     handleCardClick(resume) {
       if (this.isManageMode) {
@@ -142,6 +160,13 @@ export default {
         if (index > -1) {
           this.selectedResumes.splice(index, 1);
         } else {
+          if (this.selectedResumes.length >= MAX_DELETE_PER_BATCH) {
+            uni.showToast({
+              title: `单次最多选择${MAX_DELETE_PER_BATCH}份简历`,
+              icon: 'none'
+            });
+            return;
+          }
           this.selectedResumes.push(id);
         }
       } else {
@@ -154,13 +179,30 @@ export default {
       if (this.isAllSelected) {
         this.selectedResumes = [];
       } else {
-        this.selectedResumes = this.resumeList.map(r => r.resume_id);
+        const ids = this.resumeList.map((r) => r.resume_id);
+        if (ids.length <= MAX_DELETE_PER_BATCH) {
+          this.selectedResumes = [...ids];
+        } else {
+          this.selectedResumes = ids.slice(0, MAX_DELETE_PER_BATCH);
+          uni.showToast({
+            title: `单次最多${MAX_DELETE_PER_BATCH}份，已选中列表前${MAX_DELETE_PER_BATCH}份`,
+            icon: 'none',
+            duration: 2200
+          });
+        }
       }
     },
     // 删除选中简历
     handleDelete() {
       if (this.selectedResumes.length === 0) return;
-      
+      if (this.selectedResumes.length > MAX_DELETE_PER_BATCH) {
+        uni.showToast({
+          title: `单次最多删除${MAX_DELETE_PER_BATCH}份，请分批操作`,
+          icon: 'none'
+        });
+        return;
+      }
+
       uni.showModal({
         title: '提示',
         content: `确定要删除选中的 ${this.selectedResumes.length} 份简历吗？此操作不可恢复。`,
@@ -288,7 +330,6 @@ export default {
   border-radius: 12px;
   padding: 14px 16px;
   box-shadow: 0 2px 12px rgba(0, 0, 0, 0.045);
-  border-left: 3px solid #5d76bd;
   box-sizing: border-box;
 }
 .desc-text {
@@ -451,7 +492,6 @@ export default {
 .container.theme-dark .desc-card {
   background-color: #1a1c22;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
-  border-left-color: #5d76bd;
 }
 
 .container.theme-dark .empty-text {

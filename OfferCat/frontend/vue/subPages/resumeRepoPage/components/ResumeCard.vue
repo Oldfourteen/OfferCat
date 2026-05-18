@@ -1,5 +1,9 @@
 <template>
-  <view class="resume-card-wrapper" :class="themeClass" @click="handleClick">
+  <view
+    class="resume-card-wrapper"
+    :class="[themeClass, { 'is-select-blocked': isSelectBlocked }]"
+    @click="handleClick"
+  >
     <view class="checkbox-wrap" v-if="isManageMode">
       <view class="custom-checkbox" :class="{ 'is-checked': isSelected }">
         <view class="checkbox-inner" v-if="isSelected"></view>
@@ -45,6 +49,10 @@ export default {
     isSelected: {
       type: Boolean,
       default: false
+    },
+    isSelectBlocked: {
+      type: Boolean,
+      default: false
     }
   },
   computed: {
@@ -83,6 +91,9 @@ export default {
   display: flex;
   align-items: center;
   margin-bottom: 16px;
+}
+.resume-card-wrapper.is-select-blocked {
+  opacity: 0.55;
 }
 .checkbox-wrap {
   width: 40px;

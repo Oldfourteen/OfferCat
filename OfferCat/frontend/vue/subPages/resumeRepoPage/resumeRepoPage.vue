@@ -5,13 +5,13 @@
     <view class="nav-header">
       <view class="status-bar"></view>
       <view class="nav-bar">
-         <!-- 返回按钮 -->
-        <view class="back-btn" @click="goBack">
-          <image class="back-icon-img" :src="resumeRepoBackIcon" mode="aspectFit" />
+        <view class="nav-bar-side nav-bar-left">
+          <view class="back-btn" @click="goBack">
+            <image class="back-icon-img" :src="resumeRepoBackIcon" mode="aspectFit" />
+          </view>
         </view>
         <text class="nav-title">简历仓库</text>
-        <!-- 右侧管理按钮 -->
-        <view class="nav-right">
+        <view class="nav-bar-side nav-bar-right">
           <text v-if="resumeList.length > 0" class="manage-btn" @click="toggleManageMode">
             {{ isManageMode ? '完成' : '管理' }}
           </text>
@@ -22,7 +22,9 @@
     <!-- 页面主体内容 -->
     <view class="content-body" :class="{ 'has-bottom-bar': isManageMode }">
       <view class="header-desc">
-        <text class="desc-text">这里保存了你制作的全部简历</text>
+        <view class="desc-card">
+          <text class="desc-text">这里保存了你制作的全部简历</text>
+        </view>
       </view>
 
       <!-- 简历列表 -->
@@ -40,6 +42,10 @@
       
       <!-- 空状态 -->
       <view class="empty-state" v-else>
+        <view class="empty-visual">
+          <view class="empty-doc empty-doc--back"></view>
+          <view class="empty-doc empty-doc--front"></view>
+        </view>
         <text class="empty-text">暂无保存的简历</text>
         <button class="create-btn" @click="createResume">去制作简历</button>
       </view>
@@ -64,7 +70,7 @@
 // 简历卡片组件
 import ResumeCard from './components/ResumeCard.vue'
 // 简历仓库数据工具
-import { getResumeRepoList, deleteResumes } from '../../utils/resumeRepo.js'
+import { fetchResumeRepoListPreferServer, deleteResumes } from '../../utils/resumeRepo.js'
 // 主题混入
 import themeMixin from '@/utils/themeMixin.js'
 
@@ -96,11 +102,11 @@ export default {
     }
   },
   onLoad() {
-    this.fetchResumeList();
+    void this.fetchResumeList();
   },
   onShow() {
     // 页面显示时刷新列表
-    this.fetchResumeList();
+    void this.fetchResumeList();
   },
   methods: {
     // 返回上一页
@@ -108,8 +114,8 @@ export default {
       uni.navigateBack();
     },
     // 获取简历仓库列表
-    fetchResumeList() {
-      this.resumeList = getResumeRepoList()
+    async fetchResumeList() {
+      this.resumeList = await fetchResumeRepoListPreferServer()
       // 清理不再存在的选中项
       this.selectedResumes = this.selectedResumes.filter(id => 
         this.resumeList.some(r => r.resume_id === id)
@@ -158,12 +164,12 @@ export default {
       uni.showModal({
         title: '提示',
         content: `确定要删除选中的 ${this.selectedResumes.length} 份简历吗？此操作不可恢复。`,
-        success: (res) => {
+        success: async (res) => {
           if (res.confirm) {
-            deleteResumes(this.selectedResumes);
+            await deleteResumes(this.selectedResumes);
             uni.showToast({ title: '删除成功', icon: 'success' });
             this.selectedResumes = [];
-            this.fetchResumeList();
+            void this.fetchResumeList();
           }
         }
       });
@@ -209,7 +215,20 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 15px;
+  padding: 0 12px;
+  box-sizing: border-box;
+}
+.nav-bar-side {
+  width: 80px;
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+}
+.nav-bar-left {
+  justify-content: flex-start;
+}
+.nav-bar-right {
+  justify-content: flex-end;
 }
 .back-btn {
   box-sizing: border-box;
@@ -231,53 +250,120 @@ export default {
   flex-shrink: 0;
 }
 .nav-title {
-  font-size: 16px;
-  font-weight: bold;
-}
-.nav-right {
-  width: 40px;
-  display: flex;
-  justify-content: flex-end;
+  flex: 1;
+  min-width: 0;
+  font-size: 17px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  text-align: center;
+  line-height: 44px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 .manage-btn {
   font-size: 14px;
+  font-weight: 500;
   color: #ffffff;
+  padding: 6px 4px;
+  line-height: 1.2;
 }
 .content-body {
-  padding: 20px;
-  padding-top: calc(var(--status-bar-height) + 64px); 
+  padding: 16px 18px 24px;
+  padding-top: calc(var(--status-bar-height) + 64px);
   flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  box-sizing: border-box;
 }
 .content-body.has-bottom-bar {
   padding-bottom: 80px;
 }
 .header-desc {
-  margin-bottom: 20px;
+  margin-bottom: 18px;
+}
+.desc-card {
+  background-color: #ffffff;
+  border-radius: 12px;
+  padding: 14px 16px;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.045);
+  border-left: 3px solid #5d76bd;
+  box-sizing: border-box;
 }
 .desc-text {
   font-size: 14px;
+  line-height: 1.65;
   color: #666;
+  letter-spacing: 0.02em;
+}
+.resume-list {
+  flex: 1;
+  min-height: 0;
 }
 .empty-state {
+  flex: 1;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding-top: 100px;
+  padding: 8px 12px 32px;
+  min-height: 200px;
+}
+.empty-visual {
+  position: relative;
+  width: 120px;
+  height: 100px;
+  margin-bottom: 28px;
+}
+.empty-doc {
+  position: absolute;
+  border-radius: 10px;
+  border: 2px solid #5d76bd;
+  background-color: rgba(255, 255, 255, 0.95);
+  box-sizing: border-box;
+}
+.empty-doc--back {
+  width: 72px;
+  height: 88px;
+  left: 8px;
+  top: 8px;
+  opacity: 0.35;
+  transform: rotate(-8deg);
+}
+.empty-doc--front {
+  width: 76px;
+  height: 92px;
+  right: 6px;
+  bottom: 0;
+  opacity: 0.55;
+  transform: rotate(6deg);
+  box-shadow: 0 8px 24px rgba(93, 118, 189, 0.18);
 }
 .empty-text {
-  font-size: 16px;
+  font-size: 17px;
+  font-weight: 600;
   color: #999;
-  margin-bottom: 20px;
+  letter-spacing: 0.03em;
+  margin-bottom: 28px;
+  text-align: center;
 }
 .create-btn {
+  margin: 0;
   background-color: #5d76bd;
   color: #fff;
-  border-radius: 20px;
-  padding: 0 30px;
-  height: 40px;
-  line-height: 40px;
+  border: none;
+  border-radius: 999px;
+  padding: 0 40px;
+  height: 44px;
+  line-height: 44px;
   font-size: 15px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  box-shadow: 0 10px 22px rgba(93, 118, 189, 0.32);
+}
+.create-btn::after {
+  border: none;
 }
 .bottom-action-bar {
   position: fixed;
@@ -362,8 +448,27 @@ export default {
   color: rgba(255, 255, 255, 0.58);
 }
 
+.container.theme-dark .desc-card {
+  background-color: #1a1c22;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.25);
+  border-left-color: #5d76bd;
+}
+
 .container.theme-dark .empty-text {
   color: rgba(255, 255, 255, 0.38);
+}
+
+.container.theme-dark .empty-doc {
+  border-color: #5d76bd;
+}
+
+.container.theme-dark .empty-doc--back {
+  background-color: rgba(26, 28, 34, 0.9);
+}
+
+.container.theme-dark .empty-doc--front {
+  background-color: rgba(37, 40, 48, 0.98);
+  box-shadow: 0 8px 24px rgba(0, 0, 0, 0.35);
 }
 
 .container.theme-dark .create-btn {

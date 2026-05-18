@@ -1,24 +1,37 @@
 <template>
 	<view class="hero-card" :class="themeClass">
-		<view class="hero-copy">
-			<!-- 标题区显示档案名称、重新评估入口和最近更新时间。 -->
-			<view class="hero-header">
-				<text class="hero-title">求职成长总览</text>
-				<view class="re-evaluate-btn" @tap="handleRetakeSurvey">重新评估</view>
+		<!-- 背景装饰 -->
+		<view class="hero-bg-decor decor-1"></view>
+		<view class="hero-bg-decor decor-2"></view>
+		
+		<view class="hero-content">
+			<view class="hero-copy">
+				<!-- 标题区显示档案名称、重新评估入口和最近更新时间。 -->
+				<view class="hero-header">
+					<view class="title-wrap">
+						<text class="hero-title">求职成长总览</text>
+						<text class="hero-subtitle">记录你的每一步进步</text>
+					</view>
+					<view class="re-evaluate-btn" @tap="handleRetakeSurvey">
+						<text class="btn-text">重新评估</text>
+						<text class="btn-icon">></text>
+					</view>
+				</view>
+				
+				<view class="hero-date" v-if="radarData">
+					<text>已更新于 {{ formattedDate }}</text>
+				</view>
+				<view class="hero-date" v-else>暂未生成成长档案</view>
 			</view>
-			<text class="hero-subtitle">记录你的每一步进步</text>
-			<view class="hero-date" v-if="radarData">已更新于 {{ formattedDate }}</view>
-			<view class="hero-date" v-else>暂未生成成长档案</view>
-		</view>
 
-		<view class="stats-grid">
-			<!-- 四项核心统计展示简历、面试、练习和收藏数据。 -->
-			<view v-for="item in stats" :key="item.label" class="stat-item">
-				<text class="stat-value">{{ item.value }}</text>
-				<text class="stat-label">{{ item.label }}</text>
+			<view class="stats-grid">
+				<!-- 四项核心统计展示简历、面试、练习和收藏数据。 -->
+				<view v-for="item in stats" :key="item.label" class="stat-item">
+					<text class="stat-value">{{ item.value }}</text>
+					<text class="stat-label">{{ item.label }}</text>
+				</view>
 			</view>
 		</view>
-
 	</view>
 </template>
 
@@ -185,12 +198,41 @@
 
 <style lang="scss">
 	.hero-card {
+		position: relative;
 		margin-top: 40rpx;
-		padding: 28rpx;
-		border-radius: 32rpx;
-		background: linear-gradient(135deg, #2299e8 0%, #5d76bd 60%);
-		box-shadow: 0 18rpx 42rpx rgba(67, 76, 210, 0.2);
+		padding: 36rpx;
+		border-radius: 36rpx;
+		background: linear-gradient(135deg, #6b86c7 0%, #5b7bc0 100%);
+		box-shadow: 0 20rpx 40rpx rgba(91, 123, 192, 0.25);
 		color: #ffffff;
+		overflow: hidden;
+
+		/* 背景装饰元素，增加卡片深度 */
+		.hero-bg-decor {
+			position: absolute;
+			border-radius: 50%;
+			background: rgba(255, 255, 255, 0.1);
+			filter: blur(20px);
+			z-index: 0;
+			pointer-events: none;
+		}
+		.decor-1 {
+			width: 320rpx;
+			height: 320rpx;
+			top: -120rpx;
+			right: -60rpx;
+		}
+		.decor-2 {
+			width: 220rpx;
+			height: 220rpx;
+			bottom: -80rpx;
+			left: -40rpx;
+		}
+
+		.hero-content {
+			position: relative;
+			z-index: 1;
+		}
 
 		.hero-copy {
 			display: flex;
@@ -199,75 +241,110 @@
 			.hero-header {
 				display: flex;
 				justify-content: space-between;
-				align-items: center;
+				align-items: flex-start;
+			}
+			
+			.title-wrap {
+				display: flex;
+				flex-direction: column;
 			}
 
 			.hero-title {
-				font-size: 40rpx;
+				font-size: 44rpx;
 				font-weight: 800;
 				color: #ffffff;
-			}
-
-			.re-evaluate-btn {
-				font-size: 24rpx;
-				padding: 10rpx 24rpx;
-				border-radius: 30rpx;
-				background: rgba(255, 255, 255, 0.15);
-				border: 2rpx solid rgba(255, 255, 255, 0.3);
-				backdrop-filter: blur(4px);
-				transition: all 0.2s;
-				color: #ffffff;
-			}
-
-			.re-evaluate-btn:active {
-				background: rgba(255, 255, 255, 0.25);
-				transform: scale(0.95);
+				letter-spacing: 2rpx;
 			}
 
 			.hero-subtitle {
 				margin-top: 10rpx;
 				font-size: 26rpx;
-				color: rgba(255, 255, 255, 0.8);
+				color: rgba(255, 255, 255, 0.85);
+			}
+
+			.re-evaluate-btn {
+				display: flex;
+				align-items: center;
+				justify-content: center;
+				gap: 4rpx;
+				font-size: 24rpx;
+				font-weight: 500;
+				/* 使用不对称 padding：上小下大，强行把文字视觉往上推 */
+				padding: 8rpx 28rpx 14rpx;
+				border-radius: 40rpx;
+				background: rgba(255, 255, 255, 0.15);
+				border: 2rpx solid rgba(255, 255, 255, 0.3);
+				backdrop-filter: blur(8px);
+				color: #ffffff;
+				transition: all 0.2s ease;
+
+				&:active {
+					background: rgba(255, 255, 255, 0.25);
+					transform: scale(0.96);
+				}
+
+				.btn-text {
+					line-height: 1.2;
+				}
+
+				.btn-icon {
+					font-size: 24rpx;
+					line-height: 1.2;
+					transform: translateY(-1rpx);
+				}
 			}
 
 			.hero-date {
+				display: inline-flex;
+				align-items: center;
+				gap: 8rpx;
 				align-self: flex-start;
-				margin-top: 22rpx;
-				padding: 12rpx 20rpx;
-				border-radius: 999rpx;
+				margin-top: 24rpx;
+				padding: 10rpx 24rpx;
+				border-radius: 40rpx;
 				font-size: 22rpx;
-				background: linear-gradient(360deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
-				border: 2rpx solid rgba(255, 255, 255, 0.2);
+				background: rgba(0, 0, 0, 0.1);
+				backdrop-filter: blur(4px);
+				color: rgba(255, 255, 255, 0.95);
 			}
 		}
 
 		.stats-grid {
 			display: flex;
-			gap: 20rpx;
-			margin-top: 26rpx;
-			> view {
-			  flex: 1;
-			}
+			gap: 16rpx;
+			margin-top: 36rpx;
 
 			.stat-item {
-				padding: 28rpx 20rpx;
+				flex: 1;
+				padding: 24rpx 0;
 				border-radius: 24rpx;
-				background: linear-gradient(360deg, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.1));
+				background: rgba(255, 255, 255, 0.12);
 				border: 2rpx solid rgba(255, 255, 255, 0.2);
+				backdrop-filter: blur(10px);
 				display: flex;
 				flex-direction: column;
 				align-items: center;
+				justify-content: center;
+				transition: transform 0.2s ease;
+
+				&:active {
+					transform: translateY(4rpx);
+				}
 
 				.stat-value {
-					font-size: 54rpx;
+					font-size: 48rpx;
 					font-weight: 800;
 					color: #ffffff;
+					line-height: 1.2;
+					font-family: 'DIN Alternate', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
 				}
 
 				.stat-label {
-					margin-top: 10rpx;
+					margin-top: 8rpx;
 					font-size: 22rpx;
-					color: rgba(255, 255, 255, 0.85);
+					color: rgba(255, 255, 255, 0.9);
+					white-space: nowrap; /* 保证文字不换行 */
+					font-weight: 500;
 				}
 			}
 		}
@@ -275,22 +352,37 @@
 	}
 
 	.hero-card.theme-dark {
-		background: linear-gradient(145deg, #20242d 0%, #1a1d24 35%, #14161b 100%);
-		box-shadow: 0 18rpx 42rpx rgba(0, 0, 0, 0.22);
-	}
+		background: linear-gradient(135deg, #1C2230 0%, #252D40 100%);
+		box-shadow: 0 20rpx 40rpx rgba(0, 0, 0, 0.4);
 
-	.hero-card.theme-dark .hero-title,
-	.hero-card.theme-dark .stat-value {
-		color: #f4f7fb;
-	}
+		.hero-bg-decor {
+			background: rgba(255, 255, 255, 0.03);
+		}
 
-	.hero-card.theme-dark .hero-subtitle,
-	.hero-card.theme-dark .hero-date,
-	.hero-card.theme-dark .stat-label {
-		color: rgba(255, 255, 255, 0.78);
-	}
+		.hero-title,
+		.stat-value {
+			color: #f4f7fb;
+		}
 
-	.hero-card.theme-dark .re-evaluate-btn {
-		color: #f4f7fb;
+		.hero-subtitle,
+		.stat-label {
+			color: rgba(255, 255, 255, 0.78);
+		}
+
+		.re-evaluate-btn {
+			color: #f4f7fb;
+			background: rgba(255, 255, 255, 0.08);
+			border-color: rgba(255, 255, 255, 0.15);
+		}
+		
+		.hero-date {
+			background: rgba(0, 0, 0, 0.25);
+			color: rgba(255, 255, 255, 0.85);
+		}
+
+		.stats-grid .stat-item {
+			background: rgba(255, 255, 255, 0.06);
+			border-color: rgba(255, 255, 255, 0.1);
+		}
 	}
 </style>

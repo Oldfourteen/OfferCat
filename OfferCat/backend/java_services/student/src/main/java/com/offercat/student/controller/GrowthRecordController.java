@@ -5,10 +5,14 @@ import com.offercat.student.dto.SubmitPracticeDTO;
 import com.offercat.student.service.GrowthRecordService;
 import com.offercat.student.vo.GrowthRecordVO;
 import com.offercat.student.vo.CheckinResultVO;
+import com.offercat.student.vo.PracticeSessionVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.time.Instant;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
 
 /**
  * 成长档案控制器
@@ -132,14 +136,35 @@ public class GrowthRecordController {
         if (sid == null) {
             return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
         }
+        LocalDateTime submittedAt = null;
+        if (dto.getSubmittedAt() != null && dto.getSubmittedAt() > 0) {
+            submittedAt = LocalDateTime.ofInstant(Instant.ofEpochMilli(dto.getSubmittedAt()), ZoneId.systemDefault());
+        }
         growthRecordService.submitPracticeSession(
                 sid,
                 dto.getPaperId(),
                 dto.getPaperType(),
                 dto.getTotalCount(),
                 dto.getAnsweredCount(),
-                dto.getCorrectCount()
+                dto.getCorrectCount(),
+                dto.getSessionId(),
+                dto.getTitle(),
+                submittedAt
         );
         return ResponseResult.success(null);
+    }
+
+    @GetMapping("/practice/sessions")
+    public ResponseResult<List<PracticeSessionVO>> listPracticeSessions(
+            @RequestParam(value = "studentId", required = false) Long studentId,
+            @RequestParam(value = "userId", required = false) Long userId,
+            @RequestParam(value = "paperType", required = false) Integer paperType,
+            @RequestParam(value = "limit", required = false) Integer limit) {
+        Long sid = growthRecordService.resolveStudentId(studentId, userId);
+        if (sid == null) {
+            return ResponseResult.error(400, "缺少有效的 studentId 或 userId，或未找到对应学生档案");
+        }
+        List<PracticeSessionVO> items = growthRecordService.listPracticeSessions(sid, paperType, limit);
+        return ResponseResult.success(items);
     }
 }

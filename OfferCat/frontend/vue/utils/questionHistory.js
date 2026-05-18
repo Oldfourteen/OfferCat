@@ -1,8 +1,10 @@
 import { getUser } from '@/utils/user.js'
+import { getPracticeSessions } from '@/api/growth.js'
 
 // 题库练习历史的最大保留条数与更新事件名。
 const MAX_HISTORY_COUNT = 50
 export const QUESTION_HISTORY_UPDATED_EVENT = 'question-history-updated'
+let syncingPromise = null
 
 // 根据当前用户生成独立的做题历史缓存键（与登录缓存 user_v2 对齐）。
 function getQuestionHistoryKey() {
@@ -70,6 +72,54 @@ export function saveQuestionHistory(record) {
 		uni.$emit(QUESTION_HISTORY_UPDATED_EVENT)
 	}
 	return nextItem
+}
+
+export function saveQuestionHistoryBatch(records = []) {
+	if (!Array.isArray(records) || !records.length) return []
+	const nextItems = records.map(normalizeHistoryItem)
+	const existing = getQuestionHistory()
+	const map = new Map(existing.map(item => [item.sessionId, item]))
+	for (const item of nextItems) {
+		map.set(item.sessionId, item)
+	}
+	const merged = Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp).slice(0, MAX_HISTORY_COUNT)
+	const key = getQuestionHistoryKey()
+	uni.setStorageSync(key, merged)
+	if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+		uni.$emit(QUESTION_HISTORY_UPDATED_EVENT)
+	}
+	return nextItems
+}
+
+export function syncQuestionHistoryFromServer({ paperType, limit } = {}) {
+	if (syncingPromise) return syncingPromise
+	syncingPromise = (async () => {
+		const list = await getPracticeSessions({ paperType, limit: limit || MAX_HISTORY_COUNT })
+		const items = (Array.isArray(list) ? list : (list && list.data) ? list.data : []).map((row) => {
+			const submittedAt = row.submittedAt || row.createTime || ''
+			const ts = Date.parse(submittedAt) || Date.now()
+			const type = row.paperType === 2 ? 'interview' : 'written'
+			return {
+				sessionId: row.sessionId || `${row.paperId || 'paper'}_${ts}`,
+				paperId: row.paperId || '',
+				type,
+				title: row.title || '题单练习',
+				totalCount: Number(row.totalCount) || 0,
+				answeredCount: Number(row.answeredCount) || 0,
+				correctCount: Number(row.correctCount) || 0,
+				wrongCount: Number(row.wrongCount) || 0,
+				accuracy: Number(row.accuracy) || 0,
+				score: Number(row.accuracy) || 0,
+				timestamp: ts,
+				submittedAt: submittedAt || formatDateTime(ts),
+			}
+		})
+		saveQuestionHistoryBatch(items)
+		return items
+	})().finally(() => {
+		syncingPromise = null
+	})
+	return syncingPromise
 }
 
 // 根据练习会话 id 获取单条历史记录。

@@ -121,15 +121,39 @@
     </select>
 
     <insert id="insertPracticeSession">
-        INSERT INTO student_practice_session (
-            student_id, paper_id, paper_type, total_count, answered_count, correct_count
+        INSERT IGNORE INTO student_practice_session (
+            student_id, paper_id, paper_type, total_count, answered_count, correct_count,
+            wrong_count, accuracy, session_id, title, submitted_at
         ) VALUES (
-            #{studentId}, #{paperId}, #{paperType}, #{totalCount}, #{answeredCount}, #{correctCount}
+            #{studentId}, #{paperId}, #{paperType}, #{totalCount}, #{answeredCount}, #{correctCount},
+            #{wrongCount}, #{accuracy}, #{sessionId}, #{title}, #{submittedAt}
         )
     </insert>
 
     <select id="sumPracticeAnsweredCount" resultType="int">
         SELECT COALESCE(SUM(answered_count), 0) FROM student_practice_session WHERE student_id = #{studentId}
+    </select>
+
+    <select id="listPracticeSessions" resultType="com.offercat.student.vo.PracticeSessionVO">
+        SELECT
+            session_id AS sessionId,
+            paper_id AS paperId,
+            paper_type AS paperType,
+            title AS title,
+            total_count AS totalCount,
+            answered_count AS answeredCount,
+            correct_count AS correctCount,
+            wrong_count AS wrongCount,
+            accuracy AS accuracy,
+            submitted_at AS submittedAt,
+            create_time AS createTime
+        FROM student_practice_session
+        WHERE student_id = #{studentId}
+        <if test="paperType != null">
+            AND paper_type = #{paperType}
+        </if>
+        ORDER BY COALESCE(submitted_at, create_time) DESC
+        LIMIT #{limit}
     </select>
 
     <insert id="insertQuestionCollect">

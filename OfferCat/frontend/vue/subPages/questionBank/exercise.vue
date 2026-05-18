@@ -167,11 +167,14 @@
 				saveQuestionHistory(result)
 
 				void submitPracticeSession({
+					sessionId,
 					paperId: this.paperId,
 					paperType: this.type === 'interview' ? 2 : 1,
+					title: result.title,
 					totalCount: this.totalCount,
 					answeredCount: this.answeredCount,
 					correctCount,
+					submittedAt: timestamp,
 				}).catch((e) => {
 					console.warn('[exercise] submitPracticeSession 失败', e)
 				})

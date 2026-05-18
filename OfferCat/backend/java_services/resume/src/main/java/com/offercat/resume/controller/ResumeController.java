@@ -77,7 +77,7 @@ public class ResumeController {
      * 输出：是否删除成功
      */
     @DeleteMapping("/delete/{id}")
-    public ResponseEntity<Boolean> deleteResume(@PathVariable Long id) {
+    public ResponseEntity<Boolean> deleteResume(@PathVariable("id") Long id) {
         /**
          * 调用服务删除简历
          */
@@ -94,7 +94,7 @@ public class ResumeController {
      * 输出：简历对象
      */
     @GetMapping("/get/{id}")
-    public ResponseEntity<Resume> getResume(@PathVariable Long id) {
+    public ResponseEntity<Resume> getResume(@PathVariable("id") Long id) {
         /**
          * 调用服务获取简历
          */
@@ -111,7 +111,7 @@ public class ResumeController {
      * 输出：简历列表
      */
     @GetMapping("/list/{userId}")
-    public ResponseEntity<List<Resume>> getResumeList(@PathVariable Long userId) {
+    public ResponseEntity<List<Resume>> getResumeList(@PathVariable("userId") Long userId) {
         /**
          * 调用服务获取简历列表
          */
@@ -128,7 +128,7 @@ public class ResumeController {
      * 输出：更新后的简历对象
      */
     @PostMapping("/enable/{id}")
-    public ResponseEntity<Resume> enableResume(@PathVariable Long id) {
+    public ResponseEntity<Resume> enableResume(@PathVariable("id") Long id) {
         /**
          * 调用服务启用简历
          */
@@ -145,7 +145,7 @@ public class ResumeController {
      * 输出：更新后的简历对象
      */
     @PostMapping("/disable/{id}")
-    public ResponseEntity<Resume> disableResume(@PathVariable Long id) {
+    public ResponseEntity<Resume> disableResume(@PathVariable("id") Long id) {
         /**
          * 调用服务禁用简历
          */
@@ -196,7 +196,7 @@ public class ResumeController {
      * 输出：PDF文件字节数组
      */
     @GetMapping("/export/pdf/{id}")
-    public ResponseEntity<byte[]> exportResumeToPdf(@PathVariable Long id) {
+    public ResponseEntity<byte[]> exportResumeToPdf(@PathVariable("id") Long id) {
         /**
          * 调用服务导出PDF
          */
@@ -230,7 +230,7 @@ public class ResumeController {
      * 输出：简历统计响应对象
      */
     @GetMapping("/stats/{userId}")
-    public ResponseEntity<ResumeStatsResponse> getResumeStats(@PathVariable Long userId) {
+    public ResponseEntity<ResumeStatsResponse> getResumeStats(@PathVariable("userId") Long userId) {
         /**
          * 调用服务获取简历统计数据
          */
@@ -247,7 +247,7 @@ public class ResumeController {
      * 输出：上传的简历对象
      */
     @PostMapping("/upload")
-    public ResponseEntity<Resume> uploadResume(@RequestParam Long userId, @RequestParam MultipartFile file) {
+    public ResponseEntity<Resume> uploadResume(@RequestParam("userId") Long userId, @RequestParam("file") MultipartFile file) {
         /**
          * 调用服务上传简历
          */
@@ -265,8 +265,8 @@ public class ResumeController {
      */
     @GetMapping("/export/pdf/cpp/{id}")
     public ResponseEntity<byte[]> exportResumeToPdfWithCpp(
-            @PathVariable Long id,
-            @RequestParam(required = false) String keywords) {
+            @PathVariable("id") Long id,
+            @RequestParam(value = "keywords", required = false) String keywords) {
         /**
          * 解析关键词参数
          */
@@ -301,8 +301,8 @@ public class ResumeController {
      */
     @PostMapping("/highlight/{id}")
     public ResponseEntity<ResumeHighlightResponse> highlightResume(
-            @PathVariable Long id,
-            @RequestParam(required = false) String keywords) {
+            @PathVariable("id") Long id,
+            @RequestParam(value = "keywords", required = false) String keywords) {
         /**
          * 解析关键词参数
          */
@@ -333,8 +333,8 @@ public class ResumeController {
      */
     @PostMapping("/{id}/avatar")
     public ResponseEntity<Resume> uploadResumeAvatar(
-            @PathVariable Long id,
-            @RequestParam MultipartFile file) {
+            @PathVariable("id") Long id,
+            @RequestParam("file") MultipartFile file) {
         /**
          * 调用服务上传头像
          */
@@ -351,7 +351,7 @@ public class ResumeController {
      * 输出：头像文件字节数组
      */
     @GetMapping("/{id}/avatar")
-    public ResponseEntity<byte[]> getResumeAvatar(@PathVariable Long id) {
+    public ResponseEntity<byte[]> getResumeAvatar(@PathVariable("id") Long id) {
         /**
          * 调用服务获取头像
          */

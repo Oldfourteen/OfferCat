@@ -1,6 +1,7 @@
 package com.offercat.student.dao;
 
 import com.offercat.student.entity.GrowthRecord;
+import com.offercat.student.vo.PracticeSessionVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
@@ -57,9 +58,18 @@ public interface GrowthRecordMapper {
                                @Param("paperType") Integer paperType,
                                @Param("totalCount") Integer totalCount,
                                @Param("answeredCount") Integer answeredCount,
-                               @Param("correctCount") Integer correctCount);
+                               @Param("correctCount") Integer correctCount,
+                               @Param("wrongCount") Integer wrongCount,
+                               @Param("accuracy") Integer accuracy,
+                               @Param("sessionId") String sessionId,
+                               @Param("title") String title,
+                               @Param("submittedAt") java.time.LocalDateTime submittedAt);
 
     int sumPracticeAnsweredCount(@Param("studentId") Long studentId);
+
+    java.util.List<PracticeSessionVO> listPracticeSessions(@Param("studentId") Long studentId,
+                                                          @Param("paperType") Integer paperType,
+                                                          @Param("limit") Integer limit);
 
     /**
      * 收藏题库

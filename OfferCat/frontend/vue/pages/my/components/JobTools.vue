@@ -83,7 +83,7 @@
 	import { getDashboardMetrics, ARCHIVE_DATA_UPDATED_EVENT, saveGrowthStats } from '@/utils/archiveData.js'
 	import { QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
-	import { getCheckInKey, getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 	import { getGrowthRecordStats, checkIn, getWeeklyCheckinStatus } from '@/api/growth.js'
 
 	export default {
@@ -180,10 +180,7 @@
 						checked: false
 					})
 				}
-				
-				// 累计打卡次数从本地存储计算
-				this.calculateTotalCheckIns()
-				
+
 				// 今日状态和周打卡状态从后端获取
 				await this.fetchCheckInData()
 			},
@@ -205,6 +202,7 @@
 					if (statsRes && statsRes.data) {
 						const sd = statsRes.data
 						this.todayChecked = sd.checkedInToday || false
+						this.totalCheckIns = Number(sd.totalCheckinDays) || 0
 						// 后端字段为 continuousCheckinDays（兼容旧误用 consecutiveDays）
 						const streak =
 							sd.continuousCheckinDays != null ? sd.continuousCheckinDays : sd.consecutiveDays
@@ -224,18 +222,6 @@
 					console.error('获取打卡数据失败:', error)
 				}
 			},
-			isChecked(dateStr) {
-				// 从用户维度的本地签到缓存中读取某天是否已打卡。
-				const checkInKey = getCheckInKey()
-				const checkIns = uni.getStorageSync(checkInKey) || {}
-				return checkIns[dateStr] || false
-			},
-			calculateTotalCheckIns() {
-				// 统计本地所有已打卡记录数量，作为累计天数展示。
-				const checkInKey = getCheckInKey()
-				const checkIns = uni.getStorageSync(checkInKey) || {}
-				this.totalCheckIns = Object.values(checkIns).filter(Boolean).length
-			},
 			async checkIn() {
 				if (this.todayChecked) return
 				
@@ -243,16 +229,11 @@
 					const res = await checkIn()
 					if (res && res.data) {
 						this.todayChecked = true
-						
-						// 更新本地存储的打卡记录
-						const checkInKey = getCheckInKey()
-						const checkIns = uni.getStorageSync(checkInKey) || {}
-						const todayStr = new Date().toISOString().split('T')[0]
-						checkIns[todayStr] = true
-						uni.setStorageSync(checkInKey, checkIns)
-						
-						// 累计打卡次数从本地存储重新计算
-						this.calculateTotalCheckIns()
+						this.totalCheckIns = Number(res.data.totalCheckinDays) || this.totalCheckIns
+						const streak = Number(res.data.continuousCheckinDays)
+						if (Number.isFinite(streak)) {
+							saveGrowthStats({ consecutiveDays: streak })
+						}
 						
 						this.weekDays = this.weekDays.map(day => {
 							if (day.isToday) {
@@ -613,13 +594,15 @@
 		/* 每日打卡组件样式 */
 		.check-in-container {
 			margin-top: 24rpx;
-			padding: 24rpx;
-			border-radius: 28rpx;
-			background: linear-gradient(135deg, #fff8f0 0%, #fff 100%);
-			border: 2rpx solid rgba(245, 158, 11, 0.2);
+			padding: 26rpx;
+			border-radius: 32rpx;
+			background: linear-gradient(135deg, rgba(255, 248, 235, 1) 0%, rgba(255, 255, 255, 1) 55%, rgba(245, 249, 255, 1) 100%);
+			border: 1rpx solid rgba(245, 158, 11, 0.22);
 			box-shadow:
-				0 2rpx 8rpx rgba(15, 23, 42, 0.045),
-				0 10rpx 26rpx rgba(245, 158, 11, 0.09);
+				0 2rpx 10rpx rgba(15, 23, 42, 0.045),
+				0 14rpx 34rpx rgba(245, 158, 11, 0.1);
+			position: relative;
+			overflow: hidden;
 		}
 		
 		.check-in-header {
@@ -633,8 +616,8 @@
 			display: flex;
 			align-items: center;
 			gap: 12rpx;
-			font-size: 28rpx;
-			font-weight: 700;
+			font-size: 30rpx;
+			font-weight: 800;
 			color: #2a385c;
 		}
 		
@@ -645,67 +628,94 @@
 			border-radius: 20rpx;
 			font-size: 22rpx;
 			font-weight: 600;
+			box-shadow: 0 10rpx 22rpx rgba(245, 158, 11, 0.22);
 		}
 		
 		.check-in-stats {
 			font-size: 22rpx;
-			color: #666;
+			font-weight: 600;
+			color: rgba(42, 56, 92, 0.72);
 		}
 		
 		.check-in-week {
-			display: flex;
-			justify-content: space-between;
+			display: grid;
+			grid-template-columns: repeat(7, minmax(0, 1fr));
 			gap: 12rpx;
-			margin-bottom: 24rpx;
+			margin-bottom: 22rpx;
 		}
 		
 		.check-in-day {
 			flex: 1;
-			padding: 20rpx 12rpx;
-			background: #f8f9fa;
-			border-radius: 16rpx;
+			padding: 18rpx 10rpx;
+			background: rgba(255, 255, 255, 0.76);
+			border-radius: 18rpx;
+			border: 1rpx solid rgba(15, 23, 42, 0.06);
+			box-shadow: 0 10rpx 22rpx rgba(15, 23, 42, 0.06);
 			display: flex;
 			flex-direction: column;
 			align-items: center;
-			gap: 12rpx;
+			gap: 10rpx;
 			position: relative;
 			transition: all 0.3s ease;
 		}
 		
 		.check-in-day.today {
-			background: rgba(245, 158, 11, 0.1);
-			border: 2rpx solid rgba(245, 158, 11, 0.3);
+			background: linear-gradient(180deg, rgba(245, 158, 11, 0.14), rgba(255, 255, 255, 0.78));
+			border-color: rgba(245, 158, 11, 0.3);
+			box-shadow:
+				0 10rpx 22rpx rgba(15, 23, 42, 0.06),
+				0 16rpx 38rpx rgba(245, 158, 11, 0.14);
 		}
 		
 		.check-in-day.checked {
-			background: rgba(16, 185, 129, 0.1);
+			background: linear-gradient(180deg, rgba(5, 150, 105, 0.18), rgba(255, 255, 255, 0.78));
+			border-color: rgba(5, 150, 105, 0.32);
+			box-shadow:
+				0 10rpx 22rpx rgba(15, 23, 42, 0.06),
+				0 16rpx 38rpx rgba(5, 150, 105, 0.16);
 		}
 		
 		.day-name {
-			font-size: 22rpx;
-			color: #333;
-			font-weight: 500;
+			font-size: 20rpx;
+			color: rgba(42, 56, 92, 0.78);
+			font-weight: 700;
+			white-space: nowrap;
+			overflow: hidden;
+			text-overflow: ellipsis;
 		}
 		
 		.day-status {
-			width: 40rpx;
-			height: 40rpx;
+			width: 38rpx;
+			height: 38rpx;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			border-radius: 50%;
-			font-size: 24rpx;
-			font-weight: bold;
+			font-size: 22rpx;
+			font-weight: 800;
+			background: rgba(148, 163, 184, 0.14);
 		}
 		
 		.status-check {
-			color: #10b981;
-			background: rgba(16, 185, 129, 0.1);
+			width: 100%;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
+			color: #047857;
+			background: rgba(5, 150, 105, 0.18);
 		}
 		
 		.status-cross {
+			width: 100%;
+			height: 100%;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			border-radius: 50%;
 			color: #ef4444;
-			background: rgba(239, 68, 68, 0.1);
+			background: rgba(239, 68, 68, 0.14);
 		}
 		
 		.check-in-footer {
@@ -716,7 +726,7 @@
 		
 		.check-in-tip {
 			font-size: 20rpx;
-			color: #666;
+			color: rgba(42, 56, 92, 0.66);
 			flex: 1;
 		}
 		
@@ -733,12 +743,13 @@
 			font-weight: bold;
 			transition: all 0.3s ease;
 			cursor: pointer;
-			box-shadow: 0 8rpx 20rpx rgba(245, 158, 11, 0.3);
+			box-shadow:
+				0 10rpx 22rpx rgba(245, 158, 11, 0.18),
+				0 18rpx 40rpx rgba(245, 158, 11, 0.26);
 		}
 		
-		.check-in-button:hover {
-			transform: scale(1.05);
-			box-shadow: 0 12rpx 28rpx rgba(245, 158, 11, 0.4);
+		.check-in-button:active {
+			transform: scale(0.98);
 		}
 		
 		.check-in-button.checked {
@@ -746,9 +757,11 @@
 			height: 60rpx;
 			padding: 0 24rpx;
 			border-radius: 30rpx;
-			background: linear-gradient(135deg, #10b981, #059669);
+			background: linear-gradient(135deg, #059669, #047857);
 			font-size: 22rpx;
-			box-shadow: 0 6rpx 16rpx rgba(16, 185, 129, 0.3);
+			box-shadow:
+				0 10rpx 22rpx rgba(5, 150, 105, 0.22),
+				0 18rpx 40rpx rgba(5, 150, 105, 0.2);
 		}
 		
 		.button-text {
@@ -802,8 +815,8 @@
 			
 			/* 深色模式下的打卡组件 */
 			.check-in-container {
-				background: linear-gradient(135deg, #2d2a25 0%, #23211d 100%);
-				border-color: rgba(245, 158, 11, 0.3);
+				background: linear-gradient(135deg, rgba(45, 42, 37, 1) 0%, rgba(35, 33, 29, 1) 55%, rgba(28, 28, 30, 1) 100%);
+				border-color: rgba(245, 158, 11, 0.28);
 				box-shadow:
 					0 3rpx 12rpx rgba(0, 0, 0, 0.34),
 					0 12rpx 32rpx rgba(0, 0, 0, 0.2);
@@ -818,7 +831,9 @@
 			}
 			
 			.check-in-day {
-				background: #2a2c32;
+				background: rgba(255, 255, 255, 0.06);
+				border-color: rgba(255, 255, 255, 0.08);
+				box-shadow: 0 10rpx 22rpx rgba(0, 0, 0, 0.2);
 			}
 			
 			.check-in-day.today {
@@ -827,11 +842,12 @@
 			}
 			
 			.check-in-day.checked {
-				background: rgba(16, 185, 129, 0.2);
+				background: linear-gradient(180deg, rgba(5, 150, 105, 0.24), rgba(255, 255, 255, 0.06));
+				border-color: rgba(5, 150, 105, 0.26);
 			}
 			
 			.day-name {
-				color: #eef2f8;
+				color: rgba(238, 242, 248, 0.88);
 			}
 			
 			.check-in-tip {

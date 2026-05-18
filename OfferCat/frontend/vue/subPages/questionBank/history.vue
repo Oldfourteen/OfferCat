@@ -90,7 +90,7 @@
 	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
 	// 做题历史工具类
-	import { getQuestionHistory } from '@/utils/questionHistory.js'
+	import { getQuestionHistory, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
 
 	const HISTORY_BACK_ICON =
 		'data:image/svg+xml;charset=utf-8,' +
@@ -150,7 +150,12 @@
 		},
 		methods: {
 			// 加载做题历史
-			loadHistory() {
+			async loadHistory() {
+				try {
+					await syncQuestionHistoryFromServer()
+				} catch (e) {
+					console.warn('[history] syncQuestionHistoryFromServer 失败', e)
+				}
 				this.historyList = getQuestionHistory()
 			},
 			// 返回上一页（智能路由处理）

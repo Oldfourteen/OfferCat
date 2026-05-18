@@ -192,14 +192,25 @@
 						header: hdr,
 						success: (uploadRes) => {
 							uni.hideLoading();
+							if (!uploadRes || (uploadRes.statusCode && uploadRes.statusCode >= 400)) {
+								console.error('头像上传失败:', uploadRes);
+								const code = uploadRes && uploadRes.statusCode ? `(${uploadRes.statusCode})` : ''
+								uni.showToast({ title: `上传失败${code}`, icon: 'none' });
+								return
+							}
 							try {
-								const data = JSON.parse(uploadRes.data);
+								const parsed = typeof uploadRes.data === 'string' ? JSON.parse(uploadRes.data) : uploadRes.data
+								const data =
+									parsed && typeof parsed === 'object'
+										? (parsed.data && typeof parsed.data === 'object' ? parsed.data : parsed)
+										: null
 								if (data && data.photo) {
 									uni.showToast({ title: '头像上传成功', icon: 'success' });
 									const avatarUrl = `${BASE_URL}/api/resume/${targetResumeId}/avatar`;
 									this.$emit('updatePhoto', avatarUrl);
 								} else {
-									uni.showToast({ title: '上传失败', icon: 'none' });
+									const msg = data && data.message ? String(data.message) : '上传失败'
+									uni.showToast({ title: msg, icon: 'none' });
 								}
 							} catch (e) {
 								console.error('解析上传结果失败:', e);

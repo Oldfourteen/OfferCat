@@ -21,7 +21,7 @@
 </template>
 
 <script>
-	import { getResumeRepoList } from '../../../utils/resumeRepo.js'
+	import { fetchResumeRepoListPreferServer, getResumeRepoList } from '../../../utils/resumeRepo.js'
 
 		export default {
 			name: 'ResumeRepo',
@@ -45,10 +45,13 @@
 			}
 			},
 			mounted() {
-				// 卡片只展示当前仓库中的简历数量，初始化时读取一次本地列表。
-				this.resumeCount = getResumeRepoList().length
+				void this.refreshCount()
 			},
 			methods: {
+				async refreshCount() {
+					const list = await fetchResumeRepoListPreferServer()
+					this.resumeCount = Array.isArray(list) ? list.length : getResumeRepoList().length
+				},
 				syncStats() {
 					// 预留给旧版统计方案的同步入口。
 					this.stats = getResumeRepoStats()

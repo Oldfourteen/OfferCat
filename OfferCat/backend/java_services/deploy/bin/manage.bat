@@ -43,6 +43,8 @@ echo Starting radar ...
 if exist "%APP%\radar_evaluation.jar" ( start "radar" cmd /k "title radar && java -jar %APP%\radar_evaluation.jar --spring.profiles.active=prod --spring.config.additional-location=%CFG%\ 1>>%LOG%\radar.log 2>>&1" ) else ( echo [WARN] radar_evaluation.jar not found )
 echo Starting ai ...
 if exist "%APP%\ai_evaluation.jar" ( start "ai" cmd /k "title ai && java -jar %APP%\ai_evaluation.jar --spring.profiles.active=prod --spring.config.additional-location=%CFG%\ 1>>%LOG%\ai.log 2>>&1" ) else ( echo [WARN] ai_evaluation.jar not found )
+echo Starting galaxy ...
+if exist "%APP%\galaxy.jar" ( start "galaxy" cmd /k "title galaxy && java -jar %APP%\galaxy.jar --spring.profiles.active=prod --spring.config.additional-location=%CFG%\ 1>>%LOG%\galaxy.log 2>>&1" ) else ( echo [WARN] galaxy.jar not found )
 timeout /t 6 >nul
 echo Starting gateway ...
 if exist "%APP%\api_gateway.jar" ( start "gateway" cmd /k "title gateway && java -jar %APP%\api_gateway.jar --spring.profiles.active=prod --spring.config.additional-location=%CFG%\ 1>>%LOG%\gateway.log 2>>&1" ) else ( echo [WARN] api_gateway.jar not found )
@@ -53,6 +55,7 @@ exit /b 0
 :STOP
 echo Stopping all ...
 taskkill /FI "WINDOWTITLE eq gateway" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq galaxy" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq ai" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq radar" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq resume" /T /F >nul 2>&1
@@ -66,6 +69,7 @@ exit /b 0
 :RESTART
 echo Stopping all ...
 taskkill /FI "WINDOWTITLE eq gateway" /T /F >nul 2>&1
+taskkill /FI "WINDOWTITLE eq galaxy" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq ai" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq radar" /T /F >nul 2>&1
 taskkill /FI "WINDOWTITLE eq resume" /T /F >nul 2>&1

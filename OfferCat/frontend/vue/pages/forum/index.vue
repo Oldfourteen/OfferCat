@@ -386,7 +386,7 @@
 							right: -4rpx;
 							min-width: 32rpx;
 							height: 32rpx;
-							background: linear-gradient(135deg, #ff4757 0%, #ff6b81 100%);
+							background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 							border-radius: 16rpx;
 							display: flex;
 							align-items: center;
@@ -476,7 +476,7 @@
 						width: 100%;
 						height: 100%;
 						border: 4rpx solid rgba(0, 0, 0, 0.1);
-						border-top-color: #4CAF50;
+						border-top-color: #ff0000;
 						border-radius: 50%;
 						animation: spin 0.8s linear infinite;
 					}
@@ -501,7 +501,7 @@
 			.refresh-content {
 				.spinner-ring {
 					border-color: rgba(255, 255, 255, 0.1);
-					border-top-color: #4CAF50;
+					border-top-color: #ff0000;
 				}
 				
 				.refresh-text {

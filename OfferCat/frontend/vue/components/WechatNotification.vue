@@ -218,7 +218,7 @@ export default {
 	}
 	
 	&.unread {
-		background: rgba(76, 175, 80, 0.05);
+		background: rgba(255, 0, 0, 0.05);
 	}
 	
 	.notification-icon {
@@ -237,19 +237,19 @@ export default {
 		}
 		
 		&.type-service {
-			background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+			background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		}
 		
 		&.type-feedback {
-			background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);
+			background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		}
 		
 		&.type-reply {
-			background: linear-gradient(135deg, #4facfe 0%, #00f2fe 100%);
+			background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		}
 		
 		&.type-default {
-			background: linear-gradient(135deg, #43e97b 0%, #38f9d7 100%);
+			background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		}
 	}
 	
@@ -282,7 +282,7 @@ export default {
 	.unread-dot {
 		width: 12rpx;
 		height: 12rpx;
-		background: #4CAF50;
+		background: #ff0000;
 		border-radius: 50%;
 	}
 }
@@ -306,7 +306,7 @@ export default {
 	.footer-btn {
 		width: 100%;
 		height: 72rpx;
-		background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+		background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		border-radius: 36rpx;
 		display: flex;
 		align-items: center;
@@ -344,7 +344,7 @@ export default {
 		}
 		
 		&.unread {
-			background: rgba(76, 175, 80, 0.1);
+			background: rgba(255, 0, 0, 0.1);
 		}
 		
 		.notification-content {

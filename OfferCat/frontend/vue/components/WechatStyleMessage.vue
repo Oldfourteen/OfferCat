@@ -175,7 +175,7 @@ export default {
 	&.is-admin {
 		.message-content {
 			.bubble.admin {
-				background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+				background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 				
 				.message-text {
 					color: #fff;
@@ -186,7 +186,7 @@ export default {
 				}
 				
 				&::after {
-					border-color: transparent transparent transparent #667eea;
+					border-color: transparent transparent transparent #000000;
 				}
 			}
 		}
@@ -195,7 +195,7 @@ export default {
 			.message-content {
 				.bubble.admin {
 					&::after {
-						border-color: transparent #764ba2 transparent transparent;
+						border-color: transparent #ff0000 transparent transparent;
 						left: auto;
 						right: -12rpx;
 					}
@@ -220,7 +220,7 @@ export default {
 	.admin-badge {
 		font-size: 20rpx;
 		color: #fff;
-		background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+		background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 		padding: 2rpx 12rpx;
 		border-radius: 20rpx;
 		margin-top: 4rpx;
@@ -379,7 +379,7 @@ export default {
 				}
 				
 				&.admin {
-					background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+					background: linear-gradient(135deg, #ff0000 0%, #000000 100%);
 					
 					.message-text {
 						color: #fff;
@@ -390,12 +390,12 @@ export default {
 					}
 					
 					&::after {
-						border-color: transparent transparent transparent #667eea;
+						border-color: transparent transparent transparent #000000;
 					}
 					
 					&.self {
 						&::after {
-							border-color: transparent #764ba2 transparent transparent;
+							border-color: transparent #ff0000 transparent transparent;
 						}
 					}
 				}

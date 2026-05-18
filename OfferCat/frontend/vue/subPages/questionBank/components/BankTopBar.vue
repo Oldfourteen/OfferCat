@@ -1,5 +1,5 @@
 <template>
-	<view class="bank-topbar" :class="themeClass">
+	<view class="bank-topbar" :class="[themeClass, pageTypeClass]">
 		<view class="search-row">
 			<view class="back-btn" @click="goBack">
 				<image class="back-icon-img" src="/static/icons/chevron-left.svg" mode="aspectFit" />
@@ -60,6 +60,10 @@
 				type: String,
 				default: ''
 			},
+			pageType: {
+				type: String,
+				default: 'written'
+			},
 			modelValue: {
 				type: String,
 				default: ''
@@ -72,6 +76,9 @@
 		computed: {
 			themeClass() {
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			pageTypeClass() {
+				return this.pageType === 'interview' ? 'page-interview' : 'page-written'
 			}
 		},
 		methods: {
@@ -113,8 +120,47 @@
 		position: relative;
 		z-index: 30;
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 18rpx;
-		background: linear-gradient(180deg, rgba(0, 122, 252, 0.7) 0%,rgba(1, 188, 255, 0) 100%);
-		backdrop-filter: blur(10rpx);
+		background: #f4f6fc;
+		box-shadow:
+			0 6rpx 22rpx rgba(24, 42, 92, 0.1),
+			0 1rpx 0 rgba(255, 255, 255, 0.75) inset;
+		border-bottom: 1rpx solid rgba(72, 98, 165, 0.12);
+	}
+
+	.bank-topbar.page-interview {
+		background: #f0f7f5;
+		box-shadow:
+			0 6rpx 22rpx rgba(28, 72, 68, 0.09),
+			0 1rpx 0 rgba(255, 255, 255, 0.78) inset;
+		border-bottom: 1rpx solid rgba(42, 130, 118, 0.16);
+	}
+
+	.bank-topbar.page-interview .back-btn {
+		border-color: rgba(42, 120, 110, 0.14);
+		box-shadow: 0 6rpx 16rpx rgba(28, 88, 80, 0.1), 0 2rpx 0 rgba(255, 255, 255, 0.9) inset;
+	}
+
+	.bank-topbar.page-interview .search-box {
+		border-color: rgba(42, 130, 118, 0.22);
+		box-shadow:
+			0 4rpx 14rpx rgba(24, 80, 72, 0.08),
+			0 1rpx 0 rgba(255, 255, 255, 0.88) inset;
+	}
+
+	.bank-topbar.page-interview .action-btn {
+		border-color: rgba(42, 120, 110, 0.18);
+		box-shadow:
+			0 6rpx 16rpx rgba(28, 88, 80, 0.1),
+			0 2rpx 0 rgba(255, 255, 255, 0.9) inset;
+	}
+
+	.bank-topbar.page-interview .bank-tab {
+		border-color: rgba(42, 120, 110, 0.12);
+		box-shadow: 0 4rpx 12rpx rgba(24, 70, 64, 0.06), 0 1rpx 0 rgba(255, 255, 255, 0.88) inset;
+	}
+
+	.bank-topbar.page-interview .search-icon {
+		background-color: #5a9e94;
 	}
 
 	.search-row {
@@ -128,12 +174,14 @@
 		width: 72rpx;
 		height: 72rpx;
 		border-radius: 50%;
-		background: rgba(255, 255, 255, 0.92);
+		background: #ffffff;
+		border: 1rpx solid rgba(55, 78, 130, 0.12);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		padding: 0;
 		flex-shrink: 0;
+		box-shadow: 0 6rpx 16rpx rgba(32, 52, 110, 0.12), 0 2rpx 0 rgba(255, 255, 255, 0.9) inset;
 	}
 
 	.back-icon-img {
@@ -149,8 +197,11 @@
 		height: 88rpx;
 		padding: 0 24rpx;
 		border-radius: 999rpx;
-		background: rgba(255, 255, 255, 0.9);
-		box-shadow: inset 0 0 0 2rpx rgba(20, 187, 172, 0.08);
+		background: #ffffff;
+		border: 1rpx solid rgba(72, 98, 165, 0.14);
+		box-shadow:
+			0 4rpx 14rpx rgba(24, 44, 90, 0.07),
+			0 1rpx 0 rgba(255, 255, 255, 0.85) inset;
 	}
 
 	.search-input {
@@ -171,11 +222,14 @@
 		width: 72rpx;
 		height: 72rpx;
 		border-radius: 22rpx;
-		background: rgba(255, 255, 255, 0.88);
+		background: #ffffff;
+		border: 1rpx solid rgba(72, 98, 165, 0.12);
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 12rpx 24rpx rgba(20, 120, 115, 0.08);
+		box-shadow:
+			0 6rpx 16rpx rgba(32, 52, 110, 0.1),
+			0 2rpx 0 rgba(255, 255, 255, 0.88) inset;
 	}
 	
 	.action-btn1 {
@@ -203,16 +257,23 @@
 		align-items: center;
 		padding: 16rpx 26rpx;
 		border-radius: 999rpx;
-		background: rgba(255, 255, 255, 0.88);
-		box-shadow: inset 0 0 0 2rpx rgba(0, 122, 252, 0.08);
+		background: #ffffff;
+		border: 1rpx solid rgba(72, 98, 165, 0.1);
+		box-shadow: 0 4rpx 12rpx rgba(26, 48, 100, 0.06), 0 1rpx 0 rgba(255, 255, 255, 0.85) inset;
 	}
 
-	.bank-tab.active {
-		box-shadow: inset 0 0 0 2rpx rgba(49, 101, 215, 0.5);
+	.bank-tab.written-tab.active {
+		border-color: rgba(93, 118, 189, 0.4);
+		box-shadow:
+			0 8rpx 20rpx rgba(73, 98, 170, 0.22),
+			0 2rpx 0 rgba(255, 255, 255, 0.35) inset;
 	}
 
 	.bank-tab.interview-tab.active {
-		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		border-color: rgba(31, 143, 126, 0.45);
+		box-shadow:
+			0 8rpx 22rpx rgba(28, 100, 90, 0.2),
+			0 2rpx 0 rgba(255, 255, 255, 0.4) inset;
 	}
 
 	.tab-label {
@@ -222,12 +283,12 @@
 		color: #2b354f;
 	}
 
-	.bank-tab.active .tab-label {
-		color: rgba(0, 122, 252, 0.7);
+	.bank-tab.written-tab.active .tab-label {
+		color: #5d76bd;
 	}
 
 	.bank-tab.interview-tab.active .tab-label {
-		color: #18bca6;
+		color: #17806f;
 	}
 
 	/* SVG Icon Styles */
@@ -271,12 +332,12 @@
 		background-color: #2b354f;
 	}
 
-	.bank-tab.active .tab-icon {
-		background-color: rgba(0, 122, 252, 0.7);
+	.bank-tab.written-tab.active .tab-icon {
+		background-color: #5d76bd;
 	}
 
 	.bank-tab.interview-tab.active .tab-icon {
-		background-color: #18bca6;
+		background-color: #17806f;
 	}
 
 	.written-icon {
@@ -290,23 +351,36 @@
 	}
 
 	.bank-topbar.theme-dark {
-		background: linear-gradient(180deg, rgba(74, 103, 247, 0.45) 0%, rgba(74, 103, 247, 0) 100%);
+		background: #1c1f28;
+		box-shadow:
+			0 6rpx 24rpx rgba(0, 0, 0, 0.35),
+			0 1rpx 0 rgba(255, 255, 255, 0.06) inset;
+		border-bottom-color: rgba(255, 255, 255, 0.08);
 	}
 
 	.bank-topbar.theme-dark .back-btn {
-		background: rgba(255, 255, 255, 0.92);
+		background: #2a2e38;
+		border-color: rgba(255, 255, 255, 0.12);
+		box-shadow:
+			0 6rpx 18rpx rgba(0, 0, 0, 0.32),
+			0 1rpx 0 rgba(255, 255, 255, 0.08) inset;
+	}
+
+	.bank-topbar.theme-dark .back-icon-img {
+		filter: brightness(0) invert(1);
+		opacity: 0.9;
 	}
 
 	.bank-topbar.theme-dark .search-box,
 	.bank-topbar.theme-dark .action-btn,
 	.bank-topbar.theme-dark .bank-tab {
-		background: rgba(35, 37, 43, 0.96);
-		box-shadow: 0 12rpx 24rpx rgba(0, 0, 0, 0.18);
+		background: #22262f;
+		border: 1rpx solid rgba(255, 255, 255, 0.08);
+		box-shadow: 0 5rpx 14rpx rgba(0, 0, 0, 0.25), 0 1rpx 0 rgba(255, 255, 255, 0.05) inset;
 	}
 
-	.bank-topbar.theme-dark .search-box,
-	.bank-topbar.theme-dark .bank-tab {
-		box-shadow: inset 0 0 0 2rpx rgba(255, 255, 255, 0.06);
+	.bank-topbar.theme-dark .search-box {
+		box-shadow: 0 4rpx 14rpx rgba(0, 0, 0, 0.22), 0 1rpx 0 rgba(255, 255, 255, 0.04) inset;
 	}
 
 	.bank-topbar.theme-dark .tab-label,
@@ -324,27 +398,49 @@
 		background-color: rgba(255, 255, 255, 0.4);
 	}
 
-	.bank-topbar.theme-dark .bank-tab.active {
-		box-shadow: inset 0 0 0 2rpx rgba(138, 183, 255, 0.5);
+	.bank-topbar.theme-dark.page-interview {
+		border-bottom-color: rgba(94, 200, 180, 0.14);
+	}
+
+	.bank-topbar.theme-dark.page-interview .search-icon {
+		background-color: rgba(110, 201, 184, 0.65);
+	}
+
+	.bank-topbar.theme-dark.page-written {
+		border-bottom-color: rgba(138, 183, 255, 0.2);
+	}
+
+	.bank-topbar.theme-dark.page-written .search-icon {
+		background-color: rgba(138, 183, 255, 0.55);
+	}
+
+	.bank-topbar.theme-dark .bank-tab.written-tab.active {
+		border-color: rgba(138, 183, 255, 0.45);
+		box-shadow:
+			0 8rpx 22rpx rgba(0, 0, 0, 0.35),
+			0 2rpx 0 rgba(255, 255, 255, 0.08) inset;
 	}
 
 	.bank-topbar.theme-dark .bank-tab.interview-tab.active {
-		box-shadow: inset 0 0 0 2rpx rgba(100, 232, 208, 0.16);
+		border-color: rgba(110, 201, 184, 0.48);
+		box-shadow:
+			0 8rpx 22rpx rgba(0, 0, 0, 0.35),
+			0 2rpx 0 rgba(255, 255, 255, 0.08) inset;
 	}
 
-	.bank-topbar.theme-dark .bank-tab.active .tab-label {
+	.bank-topbar.theme-dark .bank-tab.written-tab.active .tab-label {
 		color: #8ab7ff;
 	}
 
 	.bank-topbar.theme-dark .bank-tab.interview-tab.active .tab-label {
-		color: #45f9de;
+		color: #6ec9b8;
 	}
 
-	.bank-topbar.theme-dark .bank-tab.active .tab-icon {
+	.bank-topbar.theme-dark .bank-tab.written-tab.active .tab-icon {
 		background-color: #8ab7ff;
 	}
 
 	.bank-topbar.theme-dark .bank-tab.interview-tab.active .tab-icon {
-		background-color: #45f9de;
+		background-color: #6ec9b8;
 	}
 </style>

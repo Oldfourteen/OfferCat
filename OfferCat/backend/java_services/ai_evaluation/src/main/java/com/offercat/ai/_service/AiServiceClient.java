@@ -48,4 +48,10 @@ public interface AiServiceClient {
      * 输出：题目内容
      */
     String generateQuestions(String prompt);
+    /*
+     * 生成练习建议
+     * 输入：练习数据（包含练习次数、平均分、最高分等）
+     * 输出：练习建议内容
+     */
+    String generatePracticeAdvice(String practiceData);
 }

@@ -10,7 +10,7 @@
             <image class="back-icon-img" :src="resumeRepoBackIcon" mode="aspectFit" />
           </view>
         </view>
-        <text class="nav-title">简历仓库</text>
+        <text class="nav-title">在线简历仓库</text>
         <view class="nav-bar-side nav-bar-right">
           <text v-if="resumeList.length > 0" class="manage-btn" @click="toggleManageMode">
             {{ isManageMode ? '完成' : '管理' }}

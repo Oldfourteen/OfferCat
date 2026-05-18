@@ -133,6 +133,24 @@ public class AiServiceClientImplement implements AiServiceClient {
     }
     
     /*
+     * 生成练习建议
+     * 输入：练习数据（包含练习次数、平均分、最高分等）
+     * 输出：练习建议内容
+     * 实现：调用DeepSeek API生成练习建议
+     */
+    @Override
+    public String generatePracticeAdvice(String practiceData) {
+        log.info("生成练习建议 - 数据: {}", practiceData);
+        
+        String prompt = String.format(
+            "请根据以下用户的做题数据情况，给出一段针对性的复盘和练习建议：\n\n做题数据：%s\n\n要求：\n1. 字数在100字到200字之间\n2. 语气鼓励且专业\n3. 包含对目前状态的分析和后续改进的方向\n4. 直接输出建议文本，不要有多余的解释和前言。",
+            practiceData
+        );
+        
+        return callDeepSeekAPI(prompt, "你是一位专业的学习规划师，擅长根据用户的做题数据提供复盘分析和学习建议。");
+    }
+    
+    /*
      * 调用DeepSeek API
      * 输入：用户提示、系统提示
      * 输出：API响应结果

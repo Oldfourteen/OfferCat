@@ -14,11 +14,19 @@ function url(path: string): string {
 type ApiResult<T> = { code: number; msg: string; data: T }
 
 async function parseJson<T>(r: Response): Promise<T> {
-  let j: ApiResult<T> & { message?: string; error?: string }
+  let j: ApiResult<T> & { message?: string; error?: string; status?: number; timestamp?: string }
   try {
-    j = (await r.json()) as ApiResult<T> & { message?: string; error?: string }
+    j = (await r.json()) as ApiResult<T> & { message?: string; error?: string; status?: number; timestamp?: string }
   } catch {
     throw new Error(r.ok ? '响应不是合法 JSON' : `HTTP ${r.status}`)
+  }
+  if (typeof j.code !== 'number' && (j.status != null || j.timestamp != null)) {
+    const hint = j.error || j.message
+    throw new Error(
+      hint
+        ? `网关或服务错误（HTTP ${r.status}）: ${hint}`
+        : `网关或服务错误（HTTP ${r.status}），请确认 api-gateway、galaxy-service 已启动且已注册到 Eureka`,
+    )
   }
   if (j.code !== 200) {
     const msg = j.msg || j.message || j.error
@@ -50,7 +58,12 @@ export async function fetchRecommend(selectedNodeId?: string | null) {
 
 export async function loadPersonalGalaxy(userId: number): Promise<PersonalGalaxyV1 | null> {
   const r = await fetch(url(`/personal?userId=${userId}`))
-  const j = (await r.json()) as ApiResult<PersonalGalaxyV1>
+  const j = (await r.json()) as ApiResult<PersonalGalaxyV1> & { status?: number; error?: string }
+  if (typeof j.code !== 'number' && (j.status != null || (j as { timestamp?: string }).timestamp != null)) {
+    throw new Error(
+      j.error || `个人星图接口异常（HTTP ${r.status}），请确认 galaxy-service 与数据库可用`,
+    )
+  }
   if (j.code === 404) return null
   if (j.code !== 200) throw new Error(j.msg || `personal ${r.status}`)
   return j.data
@@ -104,7 +117,11 @@ export type StarlitQuestionDto = {
 
 export async function fetchStarlitQuestions(packKey: string): Promise<StarlitQuestionDto[]> {
   const qs = new URLSearchParams({ packKey })
-  const r = await fetch(url(`/starlit/questions?${qs}`))
+  let r = await fetch(url(`/starlit/questions?${qs}`))
+  if (r.status === 404) {
+    const enc = encodeURIComponent(packKey)
+    r = await fetch(url(`/starlit/pack/${enc}/questions`))
+  }
   return parseJson<StarlitQuestionDto[]>(r)
 }
 

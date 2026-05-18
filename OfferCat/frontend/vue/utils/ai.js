@@ -242,6 +242,56 @@ export function requestAiHistory() {
 	})
 }
 
+// 同步会话JSON到服务端
+export function syncAiConversationsToServer(conversations) {
+	if (!getApiBase()) return Promise.resolve()
+	const user = getStoredUser()
+	const userId = (user && user.userId) ? Number(user.userId) : 0
+	if (!userId) return Promise.resolve()
+
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${BASE_URL}/api/ai/sessions/sync`,
+			method: 'POST',
+			data: {
+				userId,
+				conversations: JSON.stringify(conversations)
+			},
+			success: res => resolve(res.data),
+			fail: err => reject(err)
+		})
+	})
+}
+
+// 从服务端获取会话JSON
+export function fetchAiConversationsFromServer() {
+	if (!getApiBase()) return Promise.resolve([])
+	const user = getStoredUser()
+	const userId = (user && user.userId) ? Number(user.userId) : 0
+	if (!userId) return Promise.resolve([])
+
+	return new Promise((resolve, reject) => {
+		uni.request({
+			url: `${BASE_URL}/api/ai/sessions/sync`,
+			method: 'GET',
+			data: { userId },
+			success: res => {
+				if (res.data && res.data.conversations) {
+					try {
+						const parsed = JSON.parse(res.data.conversations)
+						resolve(parsed)
+					} catch(e) {
+						resolve([])
+					}
+				} else {
+					resolve([])
+				}
+			},
+			fail: err => reject(err)
+		})
+	})
+}
+
 /**
  * 设置单条云端 AI 咨询是否保留（不参与每月 15 日清理）。每位用户最多保留 10 条。
  */

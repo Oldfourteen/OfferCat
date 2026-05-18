@@ -47,7 +47,7 @@ public class GalaxyStarlitController {
     }
 
     /** 推荐：query 传 packKey，避免路径中 `:` 被网关/容器误解析 */
-    @GetMapping("/questions")
+    @GetMapping(value = "/questions", params = "packKey")
     public ResponseResult<List<StarlitQuestionDto>> questionsByQuery(@RequestParam String packKey) {
         return questionsInternal(packKey);
     }

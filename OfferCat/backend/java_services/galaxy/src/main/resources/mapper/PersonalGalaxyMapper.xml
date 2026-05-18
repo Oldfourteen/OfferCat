@@ -11,9 +11,9 @@
 
     <insert id="upsert">
         INSERT INTO user_personal_galaxy (user_id, galaxy_json)
-        VALUES (#{userId}, CAST(#{galaxyJson} AS JSON))
+        VALUES (#{userId}, #{galaxyJson,jdbcType=VARCHAR})
         ON DUPLICATE KEY UPDATE
-            galaxy_json = CAST(#{galaxyJson} AS JSON),
+            galaxy_json = VALUES(galaxy_json),
             update_time = CURRENT_TIMESTAMP
     </insert>
 

@@ -3,7 +3,7 @@
 		<view class="card-content">
 			<view class="text-content">
 				<!-- 在线简历卡片展示入口说明，进度区当前预留给完善度能力。 -->
-				<text class="title">在线简历</text>
+				<text class="title">在线简历制作</text>
 				<text class="subtitle">丰富在线经历，提高匹配率</text>
 				<view class="desc-box">
 					<text class="desc">分模块维护基本信息、教育、工作与项目经历；与成长档案联动，信息越完整，岗位匹配与推荐越精准。点击进入编辑器继续完善，并可配合导出使用。</text>

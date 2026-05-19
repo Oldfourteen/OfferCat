@@ -4,7 +4,6 @@
 			<view>
 				<!-- 标题区说明该模块聚合设置、帮助和反馈入口。 -->
 				<text class="section-title">设置与帮助</text>
-				<text class="section-subtitle">账号、反馈和系统偏好统一从这里进入。</text>
 			</view>
 		</view>
 
@@ -110,9 +109,7 @@
 	}
 
 	.section-title,
-	.section-subtitle,
-	.setting-name,
-	.setting-desc {
+	.setting-name {
 		display: block;
 	}
 
@@ -122,47 +119,33 @@
 		color: #24345b;
 	}
 
-	.section-subtitle {
-		margin-top: 8rpx;
-		font-size: 22rpx;
-		line-height: 1.5;
-		color: #8390ad;
-	}
-
 	.settings-grid {
-		margin-top: 24rpx;
+		margin-top: 34rpx;
 		display: grid;
-		grid-template-columns: repeat(2, minmax(0, 1fr));
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 18rpx;
 	}
 
 	.setting-item {
-			padding: 24rpx 20rpx;
-			border-radius: 26rpx;
-			background: linear-gradient(180deg, #fbfcff 0%, #f4f7ff 100%);
-			border: 2rpx solid rgba(67, 76, 210, 0.1);
+			padding: 8rpx 0 0;
 			display: flex;
 			flex-direction: column;
-			align-items: flex-start;
-			box-shadow:
-				0 2rpx 8rpx rgba(15, 23, 42, 0.048),
-				0 8rpx 20rpx rgba(67, 76, 210, 0.065),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+			align-items: center;
 		}
 
 	.setting-icon {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 24rpx;
+		width: 88rpx;
+		height: 88rpx;
+		border-radius: 26rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 28rpx;
+		font-size: 38rpx;
 		font-weight: 800;
 		
 		.setting-icon-img {
-			width: 48rpx;
-			height: 48rpx;
+			width: 58rpx;
+			height: 58rpx;
 		}
 	}
 
@@ -187,17 +170,16 @@
 	}
 
 	.setting-name {
-		margin-top: 18rpx;
-		font-size: 28rpx;
-		font-weight: 700;
-		color: #2a385c;
+		margin-top: 14rpx;
+		font-size: 24rpx;
+		font-weight: 600;
+		color: #24345b;
+		line-height: 1.4;
+		text-align: center;
 	}
 
 	.setting-desc {
-		margin-top: 10rpx;
-		font-size: 20rpx;
-		line-height: 1.5;
-		color: #8a96af;
+		display: none;
 	}
 
 	.security-settings.theme-dark {
@@ -209,20 +191,6 @@
 
 		.section-title {
 			color: #f4f7fb;
-		}
-
-		.section-subtitle,
-		.setting-desc {
-			color: rgba(255, 255, 255, 0.52);
-		}
-
-		.setting-item {
-			background: linear-gradient(180deg, #2d3037 0%, #262930 100%);
-			border-color: rgba(255, 255, 255, 0.08);
-			box-shadow:
-				0 3rpx 12rpx rgba(0, 0, 0, 0.3),
-				0 10rpx 26rpx rgba(0, 0, 0, 0.16),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.04);
 		}
 
 		.setting-name {

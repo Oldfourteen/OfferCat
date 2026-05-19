@@ -19,7 +19,7 @@
 				<view class="forum-card" v-for="(item, index) in postList" :key="item.postId || item.id" @click="goToDetail(item)">
 					<view class="forum-card-content">
 						<!-- 上方信息 -->
-						<view class="card-user-info">
+						<view class="card-user-info" @click.stop="goToUserCard(item)">
 							<image class="user-avatar" :src="getAvatar(item.authorAvatar, item.userId)" mode="aspectFill"></image>
 							<view class="user-meta">
 								<text class="user-name">{{ getAuthorName(item.authorName, item.userId) }}</text>
@@ -230,6 +230,17 @@
 			refreshViewCounts() {
 				this.postList = syncForumPostsViews(this.postList)
 			},
+			goToUserCard(item) {
+				if (!item) return
+				const userId = item.userId || ''
+				const name = this.getAuthorName(item.authorName, item.userId)
+				const avatar = this.getAvatar(item.authorAvatar, item.userId)
+				const grade = item.grade || item.authorGrade || item.graduationYear || ''
+				const major = item.major || item.authorMajor || ''
+				uni.navigateTo({
+					url: `/subPages/userCard/userCard?userId=${encodeURIComponent(String(userId))}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}&grade=${encodeURIComponent(grade)}&major=${encodeURIComponent(major)}`
+				})
+			},
 			getAvatar(avatar, postUserId) {
 				// 当前用户自己的帖子优先使用本地资料头像，避免接口返回旧头像。
 				const currentUser = uni.getStorageSync('user') || {}
@@ -368,6 +379,11 @@
 		white-space: nowrap;
 		background: #fff;
 		border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+		position: fixed;
+		top: calc(var(--status-bar-height) + 112rpx);
+		left: 0;
+		right: 0;
+		z-index: 120;
 	}
 
 	.tabs-container {
@@ -422,6 +438,7 @@
 	.forum-list-container {
 		display: flex;
 		flex-direction: column;
+		padding-top: 88rpx;
 	}
 
 	.forum-list {

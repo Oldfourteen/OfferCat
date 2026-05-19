@@ -191,39 +191,35 @@
 	}
 
 	.main-grid {
-		margin-top: 24rpx;
+		margin-top: 34rpx;
 		display: grid;
-		grid-template-columns: repeat(3, minmax(0, 1fr));
+		grid-template-columns: repeat(4, minmax(0, 1fr));
 		gap: 18rpx;
 	}
 
 	.main-item {
-			padding: 24rpx 18rpx;
-			border-radius: 24rpx;
-			background: linear-gradient(180deg, #fbfcff 0%, #f5f7ff 100%);
-			border: 2rpx solid rgba(67, 76, 210, 0.1);
+			padding: 8rpx 0 0;
 			box-shadow:
-				0 2rpx 8rpx rgba(15, 23, 42, 0.048),
-				0 8rpx 20rpx rgba(67, 76, 210, 0.065);
+				none;
 			display: flex;
 			flex-direction: column;
-			align-items: flex-start;
+			align-items: center;
 			cursor: pointer;
 		}
 
 	.tool-icon {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 24rpx;
+		width: 88rpx;
+		height: 88rpx;
+		border-radius: 26rpx;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		font-size: 28rpx;
+		font-size: 38rpx;
 		font-weight: 800;
 
 		.tool-icon-img {
-			width: 48rpx;
-			height: 48rpx;
+			width: 58rpx;
+			height: 58rpx;
 		}
 	}
 
@@ -258,17 +254,16 @@
 	}
 
 	.tool-name {
-		margin-top: 16rpx;
-		font-size: 26rpx;
-		font-weight: 700;
-		color: #2a385c;
+		margin-top: 14rpx;
+		font-size: 24rpx;
+		font-weight: 600;
+		color: #24345b;
+		line-height: 1.4;
+		text-align: center;
 	}
 
 	.tool-meta {
-		margin-top: 8rpx;
-		font-size: 20rpx;
-		line-height: 1.5;
-		color: #8a96af;
+		display: none;
 	}
 
 	.stats-row {
@@ -362,16 +357,6 @@
 		.tool-meta,
 		.stat-label {
 			color: rgba(255, 255, 255, 0.56);
-		}
-
-		.main-item,
-		.stat-pill,
-		.sub-item {
-			background: linear-gradient(180deg, #2d3037 0%, #262930 100%);
-			border-color: rgba(255, 255, 255, 0.08);
-			box-shadow:
-				0 3rpx 12rpx rgba(0, 0, 0, 0.3),
-				0 10rpx 26rpx rgba(0, 0, 0, 0.16);
 		}
 
 		.stat-value {

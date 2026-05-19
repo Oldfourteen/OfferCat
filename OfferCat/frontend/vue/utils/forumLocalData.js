@@ -1,5 +1,6 @@
 const POSTS_KEY = 'forum_mock_posts_v1'
 const COMMENTS_KEY = 'forum_mock_comments_v1'
+const REPLY_INBOX_READ_KEY = 'forum_reply_inbox_read_keys_v1'
 const DEFAULT_PAGE_SIZE = 3
 
 function getCurrentUser() {
@@ -548,6 +549,133 @@ export function searchForumMockPosts(keyword) {
 		currentTab: 0
 	})
 	return records
+}
+
+function buildPostPreview(content) {
+	const text = String(content || '').replace(/\s+/g, ' ').trim()
+	if (!text) return '帖子内容暂不可用'
+	return text.length > 28 ? `${text.slice(0, 28)}...` : text
+}
+
+function includesMention(content, userName) {
+	const text = String(content || '').trim()
+	const name = String(userName || '').trim()
+	if (!text || !name) return false
+	return text.includes(`@${name}`) || text.includes(`＠${name}`)
+}
+
+function pushInboxItem(items, seen, payload) {
+	const uniqueKey = `${payload.postId}_${payload.commentId}_${payload.type}`
+	if (seen.has(uniqueKey)) return
+	seen.add(uniqueKey)
+	items.push({
+		...payload,
+		inboxKey: uniqueKey
+	})
+}
+
+export function getForumMockReplyInbox() {
+	const { posts, commentsMap } = ensureData()
+	const currentUser = getCurrentUser()
+	const currentUserId = String(currentUser.userId || '')
+	const currentUserName = currentUser.authorName || ''
+	const ownPostIds = new Set(
+		posts
+			.filter(post => String(post.userId || '') === currentUserId)
+			.map(post => String(post.postId || post.id || ''))
+	)
+	const items = []
+	const seen = new Set()
+
+	posts.forEach(post => {
+		const postId = String(post.postId || post.id || '')
+		const roots = commentsMap[postId] || []
+		roots.forEach(root => {
+			if (String(root.userId || '') !== currentUserId) {
+				const rootMention = includesMention(root.content, currentUserName)
+				if (ownPostIds.has(postId) || rootMention) {
+					pushInboxItem(items, seen, {
+						type: rootMention ? 'mention' : 'reply',
+						actionText: rootMention ? '@ 了你' : '回复了你的帖子',
+						postId,
+						postPreview: buildPostPreview(post.content),
+						postAuthorId: String(post.userId || ''),
+						commentId: String(root.commentId || ''),
+						rootCommentId: String(root.commentId || ''),
+						userId: String(root.userId || ''),
+						authorName: root.authorName || '匿名用户',
+						authorAvatar: root.authorAvatar || '',
+						grade: root.grade || '',
+						major: root.major || '',
+						content: root.content || '',
+						createTime: root.createTime
+					})
+				}
+			}
+
+			;(root.replies || []).forEach(reply => {
+				if (String(reply.userId || '') === currentUserId) return
+				const replyToCurrentUser = String(reply.replyToUserId || '') === currentUserId
+				const mentionCurrentUser = replyToCurrentUser || includesMention(reply.content, currentUserName)
+				const repliesToYourComment = String(root.userId || '') === currentUserId
+				const relatedToYou = ownPostIds.has(postId) || repliesToYourComment || mentionCurrentUser
+				if (!relatedToYou) return
+
+				const type = mentionCurrentUser ? 'mention' : 'reply'
+				let actionText = '@ 了你'
+				if (type === 'reply') {
+					actionText = ownPostIds.has(postId) && !repliesToYourComment ? '回复了你的帖子' : '回复了你'
+				}
+
+				pushInboxItem(items, seen, {
+					type,
+					actionText,
+					postId,
+					postPreview: buildPostPreview(post.content),
+					postAuthorId: String(post.userId || ''),
+					commentId: String(reply.commentId || ''),
+					rootCommentId: String(reply.parentCommentId || root.commentId || ''),
+					userId: String(reply.userId || ''),
+					authorName: reply.authorName || '匿名用户',
+					authorAvatar: reply.authorAvatar || '',
+					grade: reply.grade || '',
+					major: reply.major || '',
+					content: reply.content || '',
+					createTime: reply.createTime,
+					replyToUserId: String(reply.replyToUserId || ''),
+					replyToUserName: reply.replyToUserName || ''
+				})
+			})
+		})
+	})
+
+	return items.sort((a, b) => getTimeValue(b.createTime) - getTimeValue(a.createTime))
+}
+
+function readReplyInboxReadKeys() {
+	const stored = uni.getStorageSync(REPLY_INBOX_READ_KEY)
+	return Array.isArray(stored) ? stored : []
+}
+
+function writeReplyInboxReadKeys(keys) {
+	uni.setStorageSync(REPLY_INBOX_READ_KEY, Array.from(new Set(keys.filter(Boolean))))
+}
+
+export function getForumMockReplyInboxUnreadCount() {
+	const items = getForumMockReplyInbox()
+	const readKeys = new Set(readReplyInboxReadKeys())
+	return items.filter(item => !readKeys.has(item.inboxKey)).length
+}
+
+export function markForumMockReplyInboxRead() {
+	const items = getForumMockReplyInbox()
+	const readKeys = new Set(readReplyInboxReadKeys())
+	items.forEach(item => {
+		if (item && item.inboxKey) {
+			readKeys.add(item.inboxKey)
+		}
+	})
+	writeReplyInboxReadKeys(Array.from(readKeys))
 }
 
 export function syncForumMockPostCache(post) {

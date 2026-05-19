@@ -178,6 +178,16 @@
 					}
 				},
 				{
+					"path": "userCard/userCard",
+					"style": {
+						"navigationStyle": "custom",
+						"navigationBarTitleText": "个人主页",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
 					"path": "settings/system",
 					"style": {
 						"navigationStyle": "custom",
@@ -305,6 +315,56 @@
 					"path": "forum/detail",
 					"style": {
 						"navigationBarTitleText": "论坛详情",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/replyInbox",
+					"style": {
+						"navigationBarTitleText": "回复与@",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/messageCenter",
+					"style": {
+						"navigationBarTitleText": "消息",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/privateChat",
+					"style": {
+						"navigationBarTitleText": "私信",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/likeInbox",
+					"style": {
+						"navigationBarTitleText": "收到喜欢",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
+					"path": "forum/friendList",
+					"style": {
+						"navigationBarTitleText": "好友",
 						"navigationStyle": "custom",
 						"app-plus": {
 							"titleNView": false

@@ -16,14 +16,14 @@
 			<scroll-view class="detail-scroll" scroll-y :show-scrollbar="false">
 				<!-- 帖子正文块 -->
 				<view class="post-card">
-				<view class="author-info">
+				<view class="author-info" @click="goToUserCard(post)">
 					<image class="avatar" :src="getAvatar(post.authorAvatar, post.userId)" mode="aspectFill"></image>
 					<view class="author-meta">
 						<text class="name">{{ getAuthorName(post.authorName, post.userId) }}</text>
 						<text class="profile-text" v-if="getAuthorProfileText(post)">{{ getAuthorProfileText(post) }}</text>
 						<text class="time">{{ formatTime(post.createTime) }}</text>
 					</view>
-					<view class="delete-btn" v-if="isAuthor" @click="deletePost">删除</view>
+					<view class="delete-btn" v-if="isAuthor" @click.stop="deletePost">删除</view>
 				</view>
 
 				<view class="post-text text-wrap-safe">{{ post.content || '' }}</view>
@@ -51,13 +51,13 @@
 			</view>
 
 				<!-- 评论区 -->
-				<view class="comment-section">
+				<view class="comment-section" :class="{ 'is-empty': comments.length === 0 }">
 				<view class="comment-header">
 					<text class="title">全部评论 {{ comments.length > 0 ? `(${comments.length})` : '' }}</text>
 					<text class="sort-toggle-btn" @click="toggleCommentSortMode">{{ commentSortLabel }}</text>
 				</view>
 				
-				<view class="empty-comment" v-if="comments.length === 0">
+				<view class="empty-comment" v-if="comments.length === 0" :style="emptyCommentStyle">
 					<text>暂无评论，快来抢沙发吧~</text>
 				</view>
 
@@ -252,7 +252,8 @@
 				replySheetCloseTimer: null,
 				replySheetTransitionMs: 240,
 				isLeaving: false,
-				allowNativeBack: false
+				allowNativeBack: false,
+				emptyCommentMinHeight: 0
 			}
 		},
 		computed: {
@@ -291,6 +292,14 @@
 			},
 			sortedComments() {
 				return this.sortCommentList(this.comments, this.commentSortMode)
+			},
+			emptyCommentStyle() {
+				if (!this.emptyCommentMinHeight) {
+					return {}
+				}
+				return {
+					minHeight: `${this.emptyCommentMinHeight}px`
+				}
 			}
 		},
 		onBackPress() {
@@ -322,7 +331,10 @@
 				this.isLeaving = true
 				setTimeout(() => {
 					this.allowNativeBack = true
-					uni.navigateBack()
+					uni.navigateBack({
+						animationType: 'slide-out-right',
+						animationDuration: 300
+					})
 				}, 240)
 			},
 			async loadPostDetail() {
@@ -341,6 +353,7 @@
 						this.post = normalized
 						syncForumMockPostCache(normalized)
 						this.parseImages()
+						this.scheduleEmptyCommentMeasure()
 						return
 					}
 				} catch (_) {}
@@ -351,6 +364,7 @@
 					this.post = normalized
 					syncForumMockPostCache(normalized)
 					this.parseImages()
+					this.scheduleEmptyCommentMeasure()
 					return
 				}
 				if (!uni.getStorageSync('currentPost_' + this.postId)) {
@@ -364,10 +378,59 @@
 					const list = res && res.data
 					if (Array.isArray(list)) {
 						this.comments = this.normalizeComments(list)
+						this.scheduleEmptyCommentMeasure()
 						return
 					}
 				} catch (_) {}
 				this.comments = this.normalizeComments(getForumMockComments(this.postId))
+				this.scheduleEmptyCommentMeasure()
+			},
+			scheduleEmptyCommentMeasure() {
+				this.$nextTick(() => {
+					this.updateEmptyCommentMinHeight()
+					setTimeout(() => this.updateEmptyCommentMinHeight(), 80)
+					setTimeout(() => this.updateEmptyCommentMinHeight(), 220)
+				})
+			},
+			updateEmptyCommentMinHeight() {
+				if (!this.comments || this.comments.length > 0) {
+					this.emptyCommentMinHeight = 0
+					return
+				}
+				const query = uni.createSelectorQuery().in(this)
+				query.select('.detail-shell').boundingClientRect()
+				query.select('.nav-bar').boundingClientRect()
+				query.select('.post-card').boundingClientRect()
+				query.select('.comment-header').boundingClientRect()
+				query.select('.bottom-bar').boundingClientRect()
+				query.exec((res) => {
+					if (!Array.isArray(res) || res.length < 5) return
+					const shellRect = res[0] || {}
+					const navRect = res[1] || {}
+					const postRect = res[2] || {}
+					const headerRect = res[3] || {}
+					const bottomRect = res[4] || {}
+					const shellHeight = Number(shellRect.height || 0)
+					const navHeight = Number(navRect.height || 0)
+					const postHeight = Number(postRect.height || 0)
+					const headerHeight = Number(headerRect.height || 0)
+					const bottomHeight = Number(bottomRect.height || 0)
+					const verticalPadding = 60
+					const gapAllowance = 16
+					const computedHeight = shellHeight - navHeight - postHeight - bottomHeight - headerHeight - verticalPadding - gapAllowance
+					this.emptyCommentMinHeight = Math.max(220, Math.floor(computedHeight))
+				})
+			},
+			goToUserCard(item) {
+				if (!item) return
+				const userId = item.userId || ''
+				const name = this.getAuthorName(item.authorName, item.userId)
+				const avatar = this.getAvatar(item.authorAvatar, item.userId)
+				const grade = item.grade || item.authorGrade || item.graduationYear || ''
+				const major = item.major || item.authorMajor || ''
+				uni.navigateTo({
+					url: `/subPages/userCard/userCard?userId=${encodeURIComponent(String(userId))}&name=${encodeURIComponent(name)}&avatar=${encodeURIComponent(avatar)}&grade=${encodeURIComponent(grade)}&major=${encodeURIComponent(major)}`
+				})
 			},
 			getEntityId(item) {
 				if (!item || typeof item !== 'object') return ''
@@ -603,12 +666,7 @@
 				}
 				this.isReplySheetClosing = false
 				this.setupReplySheetMetrics(true)
-				this.replyContext = {
-					rootCommentId: this.getCommentId(comment),
-					targetCommentId: this.getCommentId(comment),
-					targetUserId: comment.userId || '',
-					targetUserName: this.getAuthorName(comment.authorName, comment.userId)
-				}
+				this.replyContext = this.buildRootReplyContext(comment)
 				this.activeReplyCommentId = this.getCommentId(comment)
 			},
 			closeReplyThread() {
@@ -630,13 +688,21 @@
 			insertEmoji(emoji) {
 				this.commentText = `${this.commentText || ''}${emoji}`
 			},
-			startReplyToComment(comment, keepThreadOpen = false) {
-				this.replyContext = {
+			buildRootReplyContext(comment) {
+				if (!comment) return null
+				return {
 					rootCommentId: this.getCommentId(comment),
 					targetCommentId: this.getCommentId(comment),
 					targetUserId: comment.userId || '',
 					targetUserName: this.getAuthorName(comment.authorName, comment.userId)
 				}
+			},
+			resetReplyContextForActiveThread() {
+				const activeComment = this.activeReplyComment
+				this.replyContext = activeComment ? this.buildRootReplyContext(activeComment) : null
+			},
+			startReplyToComment(comment, keepThreadOpen = false) {
+				this.replyContext = this.buildRootReplyContext(comment)
 				if (keepThreadOpen) {
 					this.activeReplyCommentId = this.getCommentId(comment)
 				}
@@ -651,6 +717,10 @@
 				this.activeReplyCommentId = this.getCommentId(rootComment)
 			},
 			clearReplyContext() {
+				if (this.activeReplyComment) {
+					this.resetReplyContextForActiveThread()
+					return
+				}
 				this.replyContext = null
 			},
 			toggleCommentSortMode() {
@@ -885,9 +955,16 @@
 					})
 					this.commentText = ''
 					this.showEmojiPanel = false
-					this.replyContext = null
-					await this.loadComments()
-					await this.loadPostDetail()
+					this.loadComments()
+					if (this.activeReplyCommentId) {
+						this.resetReplyContextForActiveThread()
+					} else {
+						this.replyContext = null
+					}
+					const refreshedPost = getForumMockPostDetail(this.postId)
+					if (refreshedPost) {
+						this.post = syncForumPostViews(refreshedPost)
+					}
 					uni.$emit('refreshForumList')
 					uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
 					return
@@ -1046,6 +1123,7 @@
 		background: #fff;
 		padding: 30rpx;
 		margin-bottom: 16rpx;
+		border-radius: 0;
 
 		.author-info {
 			display: flex;
@@ -1211,6 +1289,10 @@
 		padding: 30rpx;
 		min-height: 500rpx;
 
+		&.is-empty {
+			min-height: 0;
+		}
+
 		.comment-header {
 			display: flex;
 			align-items: center;
@@ -1238,6 +1320,9 @@
 			padding: 40rpx 0;
 			color: #999;
 			font-size: 28rpx;
+			display: flex;
+			align-items: center;
+			justify-content: center;
 		}
 
 		.comment-list {

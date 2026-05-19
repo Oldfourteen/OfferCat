@@ -265,9 +265,9 @@
 				}
 			},
 			goToProfile() {
-				// 点击头像后进入资料页继续编辑个人信息。
+				// 点击头像后进入个人主页。
 				uni.navigateTo({
-					url: '/subPages/profile/profile'
+					url: '/subPages/userCard/userCard'
 				})
 			},
 			updateCheckInDays() {}

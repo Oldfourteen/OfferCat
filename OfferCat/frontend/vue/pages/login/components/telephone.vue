@@ -58,10 +58,11 @@
 
 		.telephone {
 			font-size: 26px;
-			font-weight: bold;
+			font-weight: 700;
 			text-align: center;
-			color: #333;
-			letter-spacing: 0.6px;
+			color: #1e2333;
+			letter-spacing: 0.08em;
+			text-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
 		}
 	}
 </style>

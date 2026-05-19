@@ -138,7 +138,8 @@
 		overflow: hidden;
 		overscroll-behavior: none;
 		touch-action: none;
-		background-color: #fff;
+		/* 与星图主色 #5d76bd 同色相的淡底，避免整页纯白扁平 */
+		background: linear-gradient(165deg, #eef2fb 0%, #f8f9fd 38%, #ffffff 68%);
 	}
 	.logoin-container{
 		width: 100%;
@@ -147,12 +148,12 @@
 		flex-direction: column;
 		align-items: center;
 		position: relative;
-		padding-top: 12vh;
+		padding-top: 11vh;
 		box-sizing: border-box;
-		background-color: #fff;
-		border-top-left-radius: 20px;
-		border-top-right-radius: 20px;
-		box-shadow: 0 -5px 15px rgba(0,0,0,0.1);
+		background: transparent;
+		border-top-left-radius: 24px;
+		border-top-right-radius: 24px;
+		box-shadow: 0 -8px 28px rgba(45, 58, 95, 0.06);
 		
 		.content-wrapper {
 			width: 100%;

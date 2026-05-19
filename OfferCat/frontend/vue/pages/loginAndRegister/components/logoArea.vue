@@ -12,7 +12,7 @@
 <style lang="scss">
 	.logo-area {
 		width: 100%;
-		margin-bottom: 30px;
+		margin-bottom: 26px;
 		display: flex;
 		justify-content: center;
 		animation: fadeInUp 0.8s ease-out 0.1s both;
@@ -21,6 +21,8 @@
 	.logo-area .logo {
 		height: 180px;
 		width: 180px;
+		display: block;
+		border: none;
 		animation: scaleIn 0.6s ease-out 0.3s both;
 	}
 

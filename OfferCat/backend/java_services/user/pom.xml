@@ -67,12 +67,6 @@
             <scope>provided</scope>
         </dependency>
 
-        <!-- Apache HttpClient -->
-        <dependency>
-            <groupId>org.apache.httpcomponents.client5</groupId>
-            <artifactId>httpclient5</artifactId>
-        </dependency>
-
         <!-- Spring Cloud Eureka Client -->
         <dependency>
             <groupId>org.springframework.cloud</groupId>
@@ -118,6 +112,18 @@
             <plugin>
                 <groupId>org.springframework.boot</groupId>
                 <artifactId>spring-boot-maven-plugin</artifactId>
+                <configuration>
+                    <mainClass>com.offercat.user.UserServiceApplication</mainClass>
+                    <layout>ZIP</layout>
+                    <classifier>exec</classifier>
+                </configuration>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>repackage</goal>
+                        </goals>
+                    </execution>
+                </executions>
             </plugin>
         </plugins>
     </build>

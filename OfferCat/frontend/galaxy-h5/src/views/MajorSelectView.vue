@@ -167,7 +167,7 @@ function goBack() {
   width: 40px;
   height: 40px;
   padding: 0;
-  border: 1px solid rgba(55, 78, 120, 0.12);
+  border: none;
   border-radius: 50%;
   background: #fff;
   cursor: pointer;
@@ -402,7 +402,6 @@ function goBack() {
 
   .nav-btn {
     background: #2a3040;
-    border-color: rgba(255, 255, 255, 0.12);
     box-shadow:
       0 6px 18px rgba(0, 0, 0, 0.35),
       inset 0 1px 0 rgba(255, 255, 255, 0.1);

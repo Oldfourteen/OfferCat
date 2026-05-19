@@ -101,15 +101,19 @@
 		margin-top: 10px;
 
 		.btn {
-			width: 80%;
-			height: 45px;
-			border-radius: 25px;
+			width: 86%;
+			max-width: 340px;
+			height: 48px;
+			border: none;
+			border-radius: 999px;
 			display: flex;
 			justify-content: center;
 			align-items: center;
 			font-size: 16px;
-			margin-bottom: 16px;
-			transition: all 0.2s ease;
+			font-weight: 650;
+			letter-spacing: 0.02em;
+			margin-bottom: 18px;
+			transition: transform 0.18s ease, box-shadow 0.18s ease, background-color 0.18s ease;
 
 			&:active {
 				transform: scale(0.98);
@@ -119,21 +123,29 @@
 		.primary-btn {
 			background-color: #5d76bd;
 			color: #fff;
-			box-shadow: 0 4px 10px rgba(93, 118, 189, 0.3);
+			box-shadow:
+				0 11px 28px rgba(93, 118, 189, 0.34),
+				0 2px 8px rgba(45, 60, 110, 0.08),
+				inset 0 2px 0 rgba(255, 255, 255, 0.2);
 
 			&:active {
-				background-color: #4b609a;
+				background-color: #4f669f;
+				box-shadow:
+					0 6px 16px rgba(93, 118, 189, 0.28),
+					inset 0 2px 0 rgba(255, 255, 255, 0.14);
 			}
 		}
 
 		.text-link {
 			font-size: 14px;
-			color: #666;
-			padding: 8px 16px;
-			transition: opacity 0.2s ease;
+			font-weight: 500;
+			color: #5c6d96;
+			padding: 10px 20px;
+			transition: opacity 0.2s ease, color 0.2s ease;
 
 			&:active {
-				opacity: 0.6;
+				opacity: 0.65;
+				color: #5d76bd;
 			}
 		}
 	}

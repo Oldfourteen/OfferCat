@@ -103,19 +103,23 @@
 				position: relative; /* 相对定位供 mask 使用 */
 
 				.radio-icon {
-					width: 14px;
-					height: 14px;
-					border: 1px solid #ccc;
+					width: 16px;
+					height: 16px;
+					border: none;
+					background-color: rgba(92, 109, 150, 0.16);
 					border-radius: 50%;
 					display: flex;
 					align-items: center;
 					justify-content: center;
 					transition: all 0.2s;
 					box-sizing: border-box;
+					box-shadow: inset 0 1px 2px rgba(255, 255, 255, 0.5);
 
 					&.is-checked {
-						border-color: #5d76bd;
 						background-color: #5d76bd;
+						box-shadow:
+							0 2px 6px rgba(93, 118, 189, 0.35),
+							inset 0 1px 0 rgba(255, 255, 255, 0.25);
 					}
 
 					.radio-inner {
@@ -166,13 +170,17 @@
 
 		.modal-content {
 			position: relative;
-			width: 75%;
+			width: 78%;
+			max-width: 320px;
 			background-color: #fff;
-			border-radius: 8px;
+			border-radius: 16px;
 			display: flex;
 			flex-direction: column;
 			align-items: center;
 			overflow: hidden;
+			box-shadow:
+				0 20px 50px rgba(30, 35, 55, 0.2),
+				0 8px 20px rgba(93, 118, 189, 0.08);
 			animation: scaleIn 0.2s cubic-bezier(0.25, 0.46, 0.45, 0.94);
 
 			.modal-title {
@@ -224,6 +232,8 @@
 				.confirm-box {
 					background-color: #5d76bd;
 					color: #fff;
+					font-weight: 600;
+					box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.22);
 				}
 			}
 		}

@@ -1,4 +1,7 @@
 // 简历仓库本地缓存键与最大保留数量。
+import { request } from '@/api/request'
+import { getUser, resolveStoredUserId } from '@/utils/user.js'
+
 const RESUME_REPO_KEY = 'resume_repo_records'
 const MAX_RESUME_COUNT = 50
 
@@ -18,9 +21,22 @@ function formatDateTime(timestamp) {
 	return `${year}-${month}-${day} ${hour}:${minute}`
 }
 
+function parseTimeToTimestamp(value) {
+	if (!value) return null
+	if (typeof value === 'number') return Number.isFinite(value) ? value : null
+	const n = Number(value)
+	if (Number.isFinite(n) && n > 0) return n
+	const t = Date.parse(String(value))
+	return Number.isFinite(t) ? t : null
+}
+
 // 统一简历记录结构，并兼容技能字段的字符串/数组格式。
 function normalizeResumeRecord(record = {}) {
-	const timestamp = Number(record.timestamp || Date.now())
+	const timestamp =
+		parseTimeToTimestamp(record.timestamp) ||
+		parseTimeToTimestamp(record.update_time || record.updateTime) ||
+		parseTimeToTimestamp(record.create_time || record.createTime) ||
+		Date.now()
 	const resumeId = Number(record.resume_id || record.resumeId || timestamp)
 	let skillsItems = record.skills_items || record.skillsItems || []
 	if (typeof skillsItems === 'string') {
@@ -41,8 +57,8 @@ function normalizeResumeRecord(record = {}) {
 	return {
 		resume_id: resumeId,
 		student_id: Number(record.student_id || 0),
-		resume_name: record.resume_name || '未命名简历',
-		real_name: record.real_name || '',
+		resume_name: record.resume_name || record.resumeName || '未命名简历',
+		real_name: record.real_name || record.realName || '',
 		photo: record.photo || '',
 		gender: record.gender !== undefined ? Number(record.gender) : 0,
 		phone: record.phone || '',
@@ -57,8 +73,8 @@ function normalizeResumeRecord(record = {}) {
 		ai_score: record.ai_score || '',
 		ai_evaluation: record.ai_evaluation || '',
 		resume_status: Number(record.resume_status || 1),
-		create_time: record.create_time || formatDateTime(timestamp),
-		update_time: record.update_time || formatDateTime(timestamp),
+		create_time: record.create_time || record.createTime || formatDateTime(timestamp),
+		update_time: record.update_time || record.updateTime || formatDateTime(timestamp),
 		timestamp
 	}
 }
@@ -79,6 +95,30 @@ export function getResumeById(resumeId) {
 	return getResumeRepoList().find(item => Number(item.resume_id) === id) || null
 }
 
+export async function fetchResumeRepoListPreferServer() {
+	try {
+		const userId = resolveStoredUserId(getUser())
+		if (!userId) return getResumeRepoList()
+		const res = await request({
+			url: `/api/resume/list/${encodeURIComponent(String(userId))}`,
+			method: 'GET',
+		})
+		const serverList = Array.isArray(res) ? res : res && Array.isArray(res.data) ? res.data : []
+		const serverNormalized = serverList.map(normalizeResumeRecord)
+		const local = getResumeRepoList()
+		const map = new Map()
+		for (const item of [...serverNormalized, ...local]) {
+			map.set(Number(item.resume_id), item)
+		}
+		const merged = Array.from(map.values()).sort((a, b) => b.timestamp - a.timestamp)
+		uni.setStorageSync(RESUME_REPO_KEY, merged.slice(0, MAX_RESUME_COUNT))
+		return merged
+	} catch (e) {
+		console.warn('[resumeRepo] 拉取服务端简历失败，回退本地', e)
+		return getResumeRepoList()
+	}
+}
+
 // 保存或更新一份简历记录，并控制本地缓存数量上限。
 export function saveResumeRecord(record) {
 	const nextItem = normalizeResumeRecord(record)
@@ -93,11 +133,25 @@ export function saveResumeRecord(record) {
 }
 
 // 删除一个或多个简历记录。
-export function deleteResumes(resumeIds) {
+export async function deleteResumes(resumeIds) {
 	if (!Array.isArray(resumeIds)) {
 		resumeIds = [resumeIds];
 	}
 	const idsToDelete = resumeIds.map(id => Number(id));
+	try {
+		await Promise.all(
+			idsToDelete
+				.filter((id) => Number.isFinite(id) && id > 0)
+				.map((id) =>
+					request({
+						url: `/api/resume/delete/${encodeURIComponent(String(id))}`,
+						method: 'DELETE',
+					})
+				)
+		)
+	} catch (e) {
+		console.warn('[resumeRepo] 服务端删除失败，继续本地删除', e)
+	}
 	const repo = getResumeRepoList().filter(item => !idsToDelete.includes(Number(item.resume_id)));
 	uni.setStorageSync(RESUME_REPO_KEY, repo);
 }

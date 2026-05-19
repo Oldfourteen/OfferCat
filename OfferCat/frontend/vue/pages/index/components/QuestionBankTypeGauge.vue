@@ -136,6 +136,13 @@
 				return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 			}
 		},
+		watch: {
+			accuracyPercent(newVal) {
+				if (this.animationTriggered) {
+					this.triggerAnimation()
+				}
+			}
+		},
 		mounted() {
 			this.setupIntersectionObserver()
 		},
@@ -176,14 +183,16 @@
 				if (!this.hasValue) return
 				const duration = 500
 				const startTime = Date.now()
-				const startValue = 0
+				const startValue = this.animatedNum || 0
 				const endValue = this.numericPct
+				const startProgress = this.animatedProgress || 0
+				const targetProg = this.targetProgress
 				const animate = () => {
 					const elapsed = Date.now() - startTime
 					const progress = Math.min(elapsed / duration, 1)
 					const eased = 1 - Math.pow(1 - progress, 3)
 					this.animatedNum = startValue + (endValue - startValue) * eased
-					this.animatedProgress = eased * this.targetProgress
+					this.animatedProgress = startProgress + (targetProg - startProgress) * eased
 					if (progress < 1) {
 						requestAnimationFrame(animate)
 					}

@@ -563,8 +563,15 @@ CREATE TABLE `student_practice_session` (
   `total_count` INT DEFAULT 0 COMMENT '题目总数',
   `answered_count` INT DEFAULT 0 COMMENT '已答题数',
   `correct_count` INT DEFAULT 0 COMMENT '正确题数',
+  `wrong_count` INT DEFAULT 0 COMMENT '错误题数',
+  `accuracy` INT DEFAULT 0 COMMENT '正确率(0-100)',
+  `session_id` VARCHAR(64) DEFAULT NULL COMMENT '前端会话ID(用于跨设备同步)',
+  `title` VARCHAR(255) DEFAULT NULL COMMENT '题单标题/名称',
+  `submitted_at` DATETIME DEFAULT NULL COMMENT '前端上报提交时间',
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '提交时间',
+  UNIQUE KEY `uk_student_session` (`student_id`, `session_id`),
   INDEX `idx_student_time` (`student_id`, `create_time`),
+  INDEX `idx_student_type_time` (`student_id`, `paper_type`, `submitted_at`),
   FOREIGN KEY (`student_id`) REFERENCES `student`(`student_id`) ON DELETE CASCADE
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='学生刷题会话汇总表';
 

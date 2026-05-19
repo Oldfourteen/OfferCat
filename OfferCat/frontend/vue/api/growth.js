@@ -183,10 +183,28 @@ export function submitPracticeSession(payload) {
 		totalCount: payload.totalCount,
 		answeredCount: payload.answeredCount,
 		correctCount: payload.correctCount,
+		sessionId: payload.sessionId || null,
+		title: payload.title || null,
+		submittedAt: payload.submittedAt || null,
 	}
 	return growthRequest((prefix) => ({
 		url: `${prefix}/practice/submit`,
 		method: 'POST',
 		data: body,
+	}))
+}
+
+export function getPracticeSessions({ paperType, limit } = {}) {
+	const qBase = growthIdentityQuery()
+	if (!qBase) {
+		return Promise.reject(new Error('未获取用户信息（userId/studentId），请重新登录'))
+	}
+	const parts = [qBase.slice(1)]
+	if (paperType != null && paperType !== '') parts.push(`paperType=${encodeURIComponent(String(paperType))}`)
+	if (limit != null && limit !== '') parts.push(`limit=${encodeURIComponent(String(limit))}`)
+	const q = `?${parts.join('&')}`
+	return growthRequest((prefix) => ({
+		url: `${prefix}/practice/sessions${q}`,
+		method: 'GET',
 	}))
 }

@@ -97,7 +97,6 @@
 	.job-page {
 		height: 100vh;
 		box-sizing: border-box;
-		padding-bottom: calc(116rpx + env(safe-area-inset-bottom));
 		display: flex;
 		flex-direction: column;
 		background-color: #f8fafd;

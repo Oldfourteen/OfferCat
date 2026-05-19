@@ -60,7 +60,7 @@
 
 <script>
 	import QuestionBankTypeGauge from './QuestionBankTypeGauge.vue'
-	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT } from '@/utils/questionHistory.js'
+	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
 	import { cumulativeAccuracyPercentForKind } from '@/utils/growthTrendScore.js'
 
 	export default {
@@ -143,7 +143,12 @@
 			}
 		},
 		methods: {
-			refreshPracticeScores() {
+			async refreshPracticeScores() {
+				try {
+					await syncQuestionHistoryFromServer()
+				} catch (e) {
+					console.warn('[QuestionBankModules] syncQuestionHistoryFromServer 失败', e)
+				}
 				const history = getQuestionHistory()
 				this.writtenAccuracy = cumulativeAccuracyPercentForKind(history, 'written')
 				this.interviewAccuracy = cumulativeAccuracyPercentForKind(history, 'interview')

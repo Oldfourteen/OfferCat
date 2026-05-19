@@ -58,7 +58,7 @@ public class UserController {
             Student student = new Student();
             student.setUserId(request.getUserId());
             // 库表常见约束：school/college 非空；完善资料流程写在 user 表的学校需带到 student 行
-            student.setSchool(user.getSchool() != null ? user.getSchool() : "");
+            student.setSchool(request.getSchool() != null ? request.getSchool() : "");
             student.setCollege("");
             student.setGrade(request.getGrade());
             student.setMajor(request.getMajor());
@@ -74,6 +74,7 @@ public class UserController {
             studentMapper.insert(student);
             studentId = student.getStudentId();
         } else {
+            existing.setSchool(request.getSchool() != null ? request.getSchool() : existing.getSchool());
             existing.setGrade(request.getGrade());
             existing.setMajor(request.getMajor());
             if (request.getAge() != null) {
@@ -114,9 +115,8 @@ public class UserController {
             return ResponseResult.error("用户不存在");
         }
         
-        // 如果是学生角色，查询并挂载学生详细档案
-        if (user.getUserRole() != null && user.getUserRole() == 1) {
-            Student student = studentMapper.selectByUserId(userId);
+        Student student = studentMapper.selectByUserId(userId);
+        if (student != null) {
             user.setProfile(student);
         }
         

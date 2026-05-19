@@ -29,8 +29,9 @@
 </template>
 
 <script>
-	import { getCheckInKey } from '@/utils/user.js'
 	import { getRecruitmentSeason, getCurrentYear } from '@/utils/date.js'
+	import { getGrowthRecordStats } from '@/api/growth.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		name: 'GrowthHub',
@@ -68,16 +69,10 @@
 			themeClass() {
 				// 成长区按主题切换模块底色与文字配色。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
-			},
-			totalCheckInDays() {
-				// 打卡入口读取用户累计签到天数，用于弹窗反馈文案。
-				const checkInKey = getCheckInKey()
-				const checkIns = uni.getStorageSync(checkInKey) || {}
-				return Object.values(checkIns).filter(Boolean).length
 			}
 		},
 		methods: {
-			handleToolClick(item) {
+			async handleToolClick(item) {
 				// 不同成长入口分发到成长档案、历史记录、收藏和冲刺营等页面。
 				const actions = {
 					'成长档案': () => {
@@ -85,13 +80,41 @@
 							url: '/pages/GrowthArchive/GrowthArchive'
 						})
 					},
-					'打卡天数': () => {
-						uni.showModal({
-							title: '打卡提醒',
-							content: `你已经累计打卡 ${this.totalCheckInDays} 天了，继续保持这个节奏。`,
-							showCancel: false,
-							confirmText: '知道了'
-						})
+					'打卡天数': async () => {
+						let studentId = resolveStoredStudentId()
+						let userId = resolveStoredUserId(getUser())
+						if (!studentId && !userId) {
+							await syncUserProfileFromServer()
+							studentId = resolveStoredStudentId()
+							userId = resolveStoredUserId(getUser())
+						}
+						if (!studentId && !userId) {
+							uni.showModal({
+								title: '打卡提醒',
+								content: '未获取用户信息，请重新登录后再试。',
+								showCancel: false,
+								confirmText: '知道了'
+							})
+							return
+						}
+						try {
+							const res = await getGrowthRecordStats()
+							const d = res && res.data
+							const total = Number(d && d.totalCheckinDays) || 0
+							uni.showModal({
+								title: '打卡提醒',
+								content: `你已经累计打卡 ${total} 天了，继续保持这个节奏。`,
+								showCancel: false,
+								confirmText: '知道了'
+							})
+						} catch (e) {
+							uni.showModal({
+								title: '打卡提醒',
+								content: '暂无法获取打卡数据，请稍后再试。',
+								showCancel: false,
+								confirmText: '知道了'
+							})
+						}
 					},
 					'周末复盘': () => {
 						uni.navigateTo({
@@ -116,7 +139,7 @@
 				}
 
 				if (actions[item.name]) {
-					actions[item.name]()
+					await actions[item.name]()
 				}
 			}
 		}

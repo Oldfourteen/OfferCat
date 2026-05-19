@@ -285,7 +285,7 @@
 				}
 
 				.save-btn {
-					background-color: #1677ff;
+					background-color: #5d76bd;
 					color: #fff;
 				}
 
@@ -319,7 +319,7 @@
 					}
 
 					.save-btn {
-						background-color: #3165d7;
+						background-color: #5d76bd;
 						color: #fff;
 					}
 

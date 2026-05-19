@@ -109,8 +109,9 @@
 
 				.title {
 					font-size: 18px;
-					font-weight: bold;
+					font-weight: 600;
 					color: #000;
+					letter-spacing: -0.02em;
 					overflow: hidden;
 					text-overflow: ellipsis;
 					white-space: nowrap;
@@ -124,6 +125,7 @@
 					font-size: 15px;
 					font-weight: 600;
 					color: #5d76bd;
+					letter-spacing: 0.02em;
 				}
 
 				.right-spacer {

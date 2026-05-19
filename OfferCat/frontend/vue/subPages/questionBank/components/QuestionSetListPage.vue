@@ -2,6 +2,7 @@
 	<view class="bank-page" :class="[themeClass, pageTypeClass]">
 		<BankTopBar
 			:theme="theme"
+			:page-type="pageType"
 			:tabs="tabs"
 			:active="pageType"
 			:model-value="keyword"
@@ -52,6 +53,7 @@
 	import { bankTabs } from '../data'
 	import { getQuestionHistorySummary } from '@/utils/questionHistory.js'
 	import { getQuestionFavoritesSummary } from '@/utils/questionFavorites.js'
+	import { getCollectedQuestionIds } from '@/api/growth.js'
 
 	export default {
 		name: 'QuestionSetListPage',
@@ -159,9 +161,29 @@
 			}
 		},
 		methods: {
-			loadHistorySummary() {
+			async loadHistorySummary() {
 				this.historySummary = getQuestionHistorySummary(this.pageType)
 				this.favoriteSummary = getQuestionFavoritesSummary(this.pageType)
+				
+				try {
+					const qType = this.pageType === 'interview' ? 4 : 3
+					const res = await getCollectedQuestionIds(qType)
+					if (res && res.data && Array.isArray(res.data)) {
+						const ids = res.data
+						this.favoriteSummary.count = ids.length
+						this.favoriteSummary.ids = ids.map(id => `set_${id}`)
+						if (ids.length > 0) {
+							this.favoriteSummary.latest = {
+								type: this.pageType,
+								favoritedAt: '最新'
+							}
+						} else {
+							this.favoriteSummary.latest = null
+						}
+					}
+				} catch (e) {
+					console.error('Failed to load remote favorites summary', e)
+				}
 			},
 			formatSetItem(item) {
 				return {
@@ -207,11 +229,14 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 16%, #f7f8fb 100%);
+	}
+
+	.bank-page.page-written {
+		background: #e6ebf7;
 	}
 
 	.bank-page.page-interview {
-		background: linear-gradient(180deg, #cbfaf5 0%, #f6fbff 16%, #f7f8fb 100%);
+		background: #e8f4f0;
 	}
 
 	.page-scroll {
@@ -220,23 +245,43 @@
 	}
 
 	.page-content {
-		padding: 12rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
+		padding: 16rpx 24rpx calc(40rpx + env(safe-area-inset-bottom));
 	}
 
 	.history-card {
-		padding: 24rpx;
-		margin-bottom: 18rpx;
+		padding: 26rpx 28rpx;
+		margin-bottom: 22rpx;
 		border-radius: 34rpx;
-		background: rgba(93, 118, 189, 0.1);
-		box-shadow: 0 14rpx 32rpx rgba(16, 51, 117, 0.06);
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
 		gap: 20rpx;
 	}
 
-	.favorite-card {
-		background: linear-gradient(135deg, rgba(255, 181, 71, 0.16) 0%, rgba(255, 255, 255, 0.82) 100%);
+	.bank-page.page-written .history-card {
+		background: linear-gradient(135deg, rgba(80, 115, 190, 0.24) 0%, rgba(225, 234, 255, 0.88) 42%, #ffffff 100%);
+		border: 1rpx solid rgba(72, 98, 165, 0.14);
+		box-shadow:
+			0 14rpx 34rpx rgba(20, 40, 95, 0.12),
+			0 4rpx 14rpx rgba(20, 40, 95, 0.06),
+			0 1rpx 0 rgba(255, 255, 255, 0.8) inset;
+	}
+
+	.bank-page.page-interview .history-card {
+		background: linear-gradient(135deg, rgba(46, 132, 118, 0.22) 0%, rgba(220, 242, 236, 0.9) 42%, #ffffff 100%);
+		border: 1rpx solid rgba(42, 130, 118, 0.18);
+		box-shadow:
+			0 14rpx 34rpx rgba(24, 72, 64, 0.11),
+			0 4rpx 14rpx rgba(24, 72, 64, 0.06),
+			0 1rpx 0 rgba(255, 255, 255, 0.82) inset;
+	}
+
+	.bank-page.page-written .favorite-card {
+		background: linear-gradient(135deg, rgba(70, 125, 210, 0.22) 0%, rgba(227, 235, 255, 0.88) 42%, #ffffff 100%);
+	}
+
+	.bank-page.page-interview .favorite-card {
+		background: linear-gradient(135deg, rgba(38, 138, 122, 0.2) 0%, rgba(223, 244, 238, 0.9) 42%, #ffffff 100%);
 	}
 
 	.history-copy,
@@ -278,38 +323,86 @@
 		-webkit-mask-image: url("data:image/svg+xml;base64,PHN2ZyB2aWV3Qm94PSIwIDAgMjQgMjQiIGZpbGw9Im5vbmUiIHN0cm9rZT0iYmxhY2siIHN0cm9rZS13aWR0aD0iMi41IiBzdHJva2UtbGluZWNhcD0icm91bmQiIHN0cm9rZS1saW5lam9pbj0icm91bmQiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+PHBvbHlsaW5lIHBvaW50cz0iOSAxOCAxNSAxMiA5IDYiPjwvcG9seWxpbmU+PC9zdmc+");
 	}
 
+	.bank-page.page-written .history-arrow {
+		background-color: #5d76bd;
+	}
+
+	.bank-page.page-interview .history-arrow {
+		background-color: #1f8f82;
+	}
+
 	.history-arrow {
 		flex-shrink: 0;
 		width: 40rpx;
 		height: 40rpx;
-		background-color: #2b658f;
 	}
 
 	.list-wrap {
 		display: flex;
 		flex-direction: column;
-		gap: 18rpx;
+		gap: 22rpx;
+	}
+
+	.bank-page.page-written .empty-state {
+		border: 1rpx solid rgba(72, 98, 165, 0.1);
+		box-shadow:
+			0 10rpx 26rpx rgba(20, 40, 95, 0.07),
+			0 2rpx 8rpx rgba(20, 40, 95, 0.04);
+	}
+
+	.bank-page.page-interview .empty-state {
+		border: 1rpx solid rgba(42, 130, 118, 0.12);
+		box-shadow:
+			0 10rpx 26rpx rgba(24, 72, 64, 0.08),
+			0 2rpx 8rpx rgba(24, 72, 64, 0.05);
 	}
 
 	.empty-state {
-		margin-top: 24rpx;
-		padding: 36rpx 24rpx;
+		margin-top: 28rpx;
+		padding: 40rpx 28rpx;
 		text-align: center;
 		font-size: 24rpx;
-		color: #8d97aa;
+		color: #6c7a94;
+		background: rgba(255, 255, 255, 0.85);
+		border-radius: 28rpx;
 	}
 
 	.bank-page.theme-dark {
-		background: linear-gradient(180deg, #111216 0%, #17191f 24%, #111216 100%);
+		background: #14161c;
 	}
 
-	.bank-page.theme-dark .history-card {
-		background: linear-gradient(135deg, rgba(74, 103, 247, 0.18) 0%, rgba(33, 163, 242, 0.12) 100%);
-		box-shadow: 0 14rpx 32rpx rgba(0, 0, 0, 0.2);
+	.bank-page.theme-dark.page-written .history-card {
+		background: linear-gradient(135deg, rgba(93, 118, 189, 0.32) 0%, rgba(32, 38, 52, 0.96) 100%);
+		border-color: rgba(255, 255, 255, 0.1);
+		box-shadow:
+			0 16rpx 38rpx rgba(0, 0, 0, 0.35),
+			0 4rpx 14rpx rgba(0, 0, 0, 0.2),
+			0 1rpx 0 rgba(255, 255, 255, 0.06) inset;
 	}
 
-	.bank-page.theme-dark .favorite-card {
-		background: linear-gradient(135deg, rgba(255, 172, 77, 0.18) 0%, rgba(74, 103, 247, 0.12) 100%);
+	.bank-page.theme-dark.page-written .favorite-card {
+		background: linear-gradient(135deg, rgba(74, 120, 200, 0.28) 0%, rgba(32, 38, 52, 0.96) 100%);
+	}
+
+	.bank-page.theme-dark.page-interview .history-card {
+		background: linear-gradient(135deg, rgba(46, 140, 125, 0.35) 0%, rgba(32, 38, 52, 0.96) 100%);
+		border-color: rgba(110, 201, 184, 0.12);
+		box-shadow:
+			0 16rpx 38rpx rgba(0, 0, 0, 0.35),
+			0 4rpx 14rpx rgba(0, 0, 0, 0.2),
+			0 1rpx 0 rgba(255, 255, 255, 0.06) inset;
+	}
+
+	.bank-page.theme-dark.page-interview .favorite-card {
+		background: linear-gradient(135deg, rgba(38, 120, 108, 0.32) 0%, rgba(32, 38, 52, 0.96) 100%);
+	}
+
+	.bank-page.theme-dark.page-written .history-arrow {
+		background-color: #8ab7ff;
+	}
+
+	.bank-page.theme-dark.page-interview .history-arrow {
+		background-color: #6ec9b8;
 	}
 
 	.bank-page.theme-dark .history-label {
@@ -320,11 +413,10 @@
 		color: rgba(255, 255, 255, 0.62);
 	}
 
-	.bank-page.theme-dark .history-arrow {
-		background-color: #8ab7ff;
-	}
-
 	.bank-page.theme-dark .empty-state {
-		color: rgba(255, 255, 255, 0.5);
+		color: rgba(255, 255, 255, 0.52);
+		background: rgba(31, 35, 44, 0.92);
+		border-color: rgba(255, 255, 255, 0.08);
+		box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.28);
 	}
 </style>

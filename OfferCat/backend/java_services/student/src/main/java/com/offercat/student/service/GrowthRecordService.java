@@ -2,6 +2,7 @@ package com.offercat.student.service;
 
 import com.offercat.student.vo.GrowthRecordVO;
 import com.offercat.student.vo.CheckinResultVO;
+import com.offercat.student.vo.PracticeSessionVO;
 /**
  * 学生成长档案服务接口
  * 功能：提供学生成长档案的增删改查操作
@@ -50,5 +51,15 @@ public interface GrowthRecordService {
      */
     java.util.List<Boolean> getWeeklyCheckinStatus(Long studentId);
 
-    void submitPracticeSession(Long studentId, String paperId, Integer paperType, Integer totalCount, Integer answeredCount, Integer correctCount);
+    void submitPracticeSession(Long studentId,
+                               String paperId,
+                               Integer paperType,
+                               Integer totalCount,
+                               Integer answeredCount,
+                               Integer correctCount,
+                               String sessionId,
+                               String title,
+                               java.time.LocalDateTime submittedAt);
+
+    java.util.List<PracticeSessionVO> listPracticeSessions(Long studentId, Integer paperType, Integer limit);
 }

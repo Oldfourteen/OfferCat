@@ -27,8 +27,11 @@ set S5_JAR=radar_evaluation.jar
 set S6_NAME=ai
 set S6_JAR=ai_evaluation.jar
 
-set S7_NAME=gateway
-set S7_JAR=api_gateway.jar
+set S7_NAME=galaxy
+set S7_JAR=galaxy.jar
+
+set S8_NAME=gateway
+set S8_JAR=api_gateway.jar
 
 REM ====== 命令入口 ======
 if /I "%1"=="start"   goto START
@@ -51,15 +54,17 @@ call :startOne %S3_NAME% %S3_JAR%
 call :startOne %S4_NAME% %S4_JAR%
 call :startOne %S5_NAME% %S5_JAR%
 call :startOne %S6_NAME% %S6_JAR%
+call :startOne %S7_NAME% %S7_JAR%
 timeout /t 6 >nul
 
-call :startOne %S7_NAME% %S7_JAR%
+call :startOne %S8_NAME% %S8_JAR%
 
 echo All services started.
 exit /b 0
 
 
 :STOP
+call :stopOne %S8_NAME%
 call :stopOne %S7_NAME%
 call :stopOne %S6_NAME%
 call :stopOne %S5_NAME%

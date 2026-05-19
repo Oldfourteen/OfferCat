@@ -290,6 +290,10 @@ const saveProfile = async () => {
 		uni.showToast({ title: '手机号需为11位数字', icon: 'none' })
 		return
 	}
+	if (email.value && !/^[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}$/.test(email.value)) {
+		uni.showToast({ title: '邮箱格式不正确', icon: 'none' })
+		return
+	}
 	if (String(expectedSalary.value || '').length > 10) {
 		uni.showToast({ title: '期望薪资最多10个字', icon: 'none' })
 		return

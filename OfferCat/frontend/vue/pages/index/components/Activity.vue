@@ -5,7 +5,7 @@
 			<text class="banner-title">{{ currentYear }} {{ seasonText }}</text>
 			<text class="banner-title">AI 冲刺营</text>
 			<text class="banner-desc">提升拿到 Offer 的概率高达 80%</text>
-			<view class="banner-action">开始规划 →</view>
+			<view class="banner-action">开始规划</view>
 		</view>
 		<view class="banner-graphic">
 			<!-- 光晕在最底层；箭头置顶，避免被裁切与白点盖住 -->
@@ -21,7 +21,7 @@
 			<text class="banner-title">专业交叉星图</text>
 			<text class="banner-title">Galaxy H5</text>
 			<text class="banner-desc">选择主修与交叉意向，进入你的专属星域</text>
-			<view class="banner-action galaxy-action">开启星图 →</view>
+			<view class="banner-action galaxy-action">开启星图</view>
 		</view>
 		<view class="banner-graphic">
 			<view class="graphic-orbit orbit-1"></view>

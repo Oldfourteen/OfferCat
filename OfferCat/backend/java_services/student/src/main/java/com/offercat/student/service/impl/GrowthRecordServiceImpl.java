@@ -5,6 +5,7 @@ import com.offercat.student.entity.GrowthRecord;
 import com.offercat.student.service.GrowthRecordService;
 import com.offercat.student.vo.GrowthRecordVO;
 import com.offercat.student.vo.CheckinResultVO;
+import com.offercat.student.vo.PracticeSessionVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
@@ -28,12 +29,14 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
 
     @Override
     public Long resolveStudentId(Long studentId, Long userId) {
-        if (studentId != null && studentId > 0) {
-            return studentId;
-        }
         if (userId != null && userId > 0) {
             Long sid = growthRecordMapper.selectStudentIdByUserId(userId);
-            return sid != null && sid > 0 ? sid : null;
+            if (sid != null && sid > 0) {
+                return sid;
+            }
+        }
+        if (studentId != null && studentId > 0) {
+            return studentId;
         }
         return null;
     }
@@ -127,7 +130,15 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     }
 
     @Override
-    public void submitPracticeSession(Long studentId, String paperId, Integer paperType, Integer totalCount, Integer answeredCount, Integer correctCount) {
+    public void submitPracticeSession(Long studentId,
+                                      String paperId,
+                                      Integer paperType,
+                                      Integer totalCount,
+                                      Integer answeredCount,
+                                      Integer correctCount,
+                                      String sessionId,
+                                      String title,
+                                      java.time.LocalDateTime submittedAt) {
         if (studentId == null || studentId <= 0) {
             throw new IllegalArgumentException("studentId 无效");
         }
@@ -140,8 +151,31 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         if (t < 0 || a < 0 || c < 0) {
             throw new IllegalArgumentException("统计数据不能为负数");
         }
-        growthRecordMapper.insertPracticeSession(studentId, paperId.trim(), paperType, t, a, c);
+        int wrong = Math.max(a - c, 0);
+        int accuracy = t > 0 ? (int) Math.round((c * 100.0) / t) : 0;
+        growthRecordMapper.insertPracticeSession(
+                studentId,
+                paperId.trim(),
+                paperType,
+                t,
+                a,
+                c,
+                wrong,
+                accuracy,
+                sessionId,
+                title,
+                submittedAt
+        );
         getGrowthRecordStats(studentId);
+    }
+
+    @Override
+    public List<PracticeSessionVO> listPracticeSessions(Long studentId, Integer paperType, Integer limit) {
+        if (studentId == null || studentId <= 0) {
+            throw new IllegalArgumentException("studentId 无效");
+        }
+        int lim = (limit == null || limit <= 0) ? 50 : Math.min(limit, 200);
+        return growthRecordMapper.listPracticeSessions(studentId, paperType, lim);
     }
     /**
     /**

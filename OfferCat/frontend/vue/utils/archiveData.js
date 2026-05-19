@@ -1,6 +1,5 @@
 import { getQuestionFavoritesSummary } from './questionFavorites.js'
 import { getQuestionHistorySummary } from './questionHistory.js'
-import { getCheckInKey } from './user.js'
 
 // 成长档案相关数据变更时广播的全局事件名。
 export const ARCHIVE_DATA_UPDATED_EVENT = 'archive-data-updated'
@@ -100,9 +99,6 @@ export function getDashboardMetrics() {
 	const historySummary = getQuestionHistorySummary()
 	const interviewSummary = getQuestionHistorySummary('interview')
 	const archiveSummary = getArchiveSummary()
-	const checkInKey = getCheckInKey()
-	const checkIns = uni.getStorageSync(checkInKey) || {}
-	const totalCheckIns = Object.values(checkIns).filter(Boolean).length
 	
 	// 连续打卡天数从后端获取（存储在本地缓存中）
 	const growthStats = uni.getStorageSync('growth_stats') || {}
@@ -115,7 +111,7 @@ export function getDashboardMetrics() {
 		historyCount: historySummary.count,
 		interviewCount: interviewSummary.count,
 		favoritesCount: favoriteSummary.count,
-		totalCheckIns,
+		totalCheckIns: 0,
 		consecutiveDays,
 		archiveSummary
 	}

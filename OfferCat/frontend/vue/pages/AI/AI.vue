@@ -112,7 +112,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 	import { getLiquidTabBarOverlapPx } from '@/utils/appLiquidTabBar.js'
-	import { requestAiChat, requestAiChatStream, requestAiHistory, setAiConsultRetain, uploadVoiceAndTranscribe } from '@/utils/ai.js'
+	import { requestAiChat, requestAiChatStream, requestAiHistory, setAiConsultRetain, uploadVoiceAndTranscribe, syncAiConversationsToServer, fetchAiConversationsFromServer } from '@/utils/ai.js'
 	import { BASE_URL } from '@/api/config.js'
 	import { saveQuestionHistory } from '@/utils/questionHistory.js'
 
@@ -412,10 +412,12 @@
 				)
 			},
 			// 本地/云端历史：优先恢复缓存，再补充云端聊天记录。
-			loadLocalConversations() {
+			async loadLocalConversations() {
 				try {
 					const user = uni.getStorageSync('user')
 					const userId = user ? user.userId : 'guest'
+					
+					// 1. 先读取本地缓存作为兜底
 					const localData = uni.getStorageSync(`ai_conversations_${userId}`)
 					if (localData) {
 						const parsed = JSON.parse(localData)
@@ -424,8 +426,17 @@
 							this.activeConversationId = parsed[0].id
 						}
 					}
+					
+					// 2. 从服务端拉取同步的会话状态
+					if (userId !== 'guest') {
+						const serverData = await fetchAiConversationsFromServer()
+						if (serverData && serverData.length > 0) {
+							this.conversations = serverData
+							this.activeConversationId = serverData[0].id
+						}
+					}
 				} catch (e) {
-					console.error('加载本地会话失败', e)
+					console.error('加载本地/云端会话失败', e)
 				}
 			},
 			saveLocalConversations() {
@@ -434,6 +445,11 @@
 					const userId = user ? user.userId : 'guest'
 					// 只保存非空消息的会话或第一个会话
 					uni.setStorageSync(`ai_conversations_${userId}`, JSON.stringify(this.conversations))
+					
+					// 同步到服务端（跨设备漫游）
+					if (userId !== 'guest') {
+						syncAiConversationsToServer(this.conversations).catch(e => console.error('同步会话到服务端失败', e))
+					}
 				} catch (e) {
 					console.error('保存本地会话失败', e)
 				}

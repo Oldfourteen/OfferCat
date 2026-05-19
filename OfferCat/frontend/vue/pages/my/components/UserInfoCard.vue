@@ -62,9 +62,9 @@
 				</view>
 			</view>
 		</view>
-		<view class="PersonalBio" v-if="userProfile.bio" @click="showBioPopup = true">
+		<view class="PersonalBio" @click="showBioPopup = true">
 			<!-- 个人简介默认单行展示，点击后展开完整弹窗。 -->
-			<text class="bio-text">{{ userProfile.bio }}</text>
+			<text class="bio-text">{{ userProfile.bio || '点击这里添加个人简介，展示更好的自己...' }}</text>
 		</view>
 
 		<view class="StatsBar animate-float-up" :style="{ animationDelay: '0.15s' }">
@@ -87,7 +87,7 @@
 					<view class="bio-popup-close" @click="showBioPopup = false">×</view>
 				</view>
 				<view class="bio-popup-body">
-					<text class="bio-popup-text">{{ userProfile.bio }}</text>
+					<text class="bio-popup-text">{{ userProfile.bio || '暂无个人简介' }}</text>
 				</view>
 			</view>
 		</view>
@@ -173,13 +173,15 @@
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			profileSummary() {
-				// 将专业、毕业年份和求职状态压缩成一行摘要文案。
-				const school = this.userProfile.school
+				// 将专业和学校压缩成一行摘要文案，如果未填写则显示默认提示。
+				const school = this.userProfile.school || '暂未填写学校'
+				const major = this.userProfile.major || '暂未填写专业'
 				const idCard = this.userProfile.idCard
-				const studentInfo = school ? [school, idCard ? `学号${idCard}` : null].filter(Boolean) : []
-				return [...studentInfo, this.userProfile.major, this.userProfile.graduationYear, this.userProfile.jobStatus]
-					.filter(Boolean)
-					.join(' · ')
+				
+				const infoList = [school, major]
+				if (idCard) infoList.push(`学号${idCard}`)
+				
+				return infoList.join(' · ')
 			}
 		},
 		mounted() {

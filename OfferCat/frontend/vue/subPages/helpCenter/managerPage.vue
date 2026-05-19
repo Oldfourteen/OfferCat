@@ -134,51 +134,14 @@
 				uni.navigateBack()
 			},
 			loadPostList() {
-				this.postList = [
-					{
-						postId: 'mock_1',
-						title: '游戏角色抽取建议',
-						author: 'Wind',
-						authorName: 'Wind',
-						createTime: '2026-05-13 10:30',
-						content: '又麻烦大家帮我做选择了，这次的疑问是，我想抽扣扣酱，但是又看到这次传说级手办制作很棒，导致我很犹豫...'
-					},
-					{
-						postId: 'mock_2',
-						title: '猫咪日常分享',
-						author: '(ฅωฅ)',
-						authorName: '(ฅωฅ)',
-						createTime: '2026-05-12 18:45',
-						content: '雷霆*忧郁小猫不让我睡觉，还不让我发游戏，我要曝光你。每天晚上都在我键盘上跑酷，真的是太调皮了！...'
-					},
-					{
-						postId: 'mock_3',
-						title: '关于简历优化的建议',
-						author: '用户A',
-						authorName: '用户A',
-						createTime: '2026-05-11 14:20',
-						content: '大家好，分享一些简历优化的小技巧，帮助大家更好地展示自己的优势...'
-					},
-					{
-						postId: 'mock_4',
-						title: '面试经验分享',
-						author: '用户B',
-						authorName: '用户B',
-						createTime: '2026-05-10 09:30',
-						content: '上周参加了XX公司的面试，想分享一下经验，希望能帮助到大家...'
-					}
-				]
+				this.postList = []
 			},
 			searchUser() {
 				if (!this.searchKeyword.trim()) {
 					uni.showToast({ title: '请输入搜索内容', icon: 'none' })
 					return
 				}
-				this.searchResults = [
-					{ userId: 1, username: '张三' },
-					{ userId: 2, username: '李四' },
-					{ userId: 3, username: '王五' }
-				]
+				this.searchResults = []
 			},
 			showMuteOptions(user) {
 				this.currentUser = user
@@ -226,11 +189,6 @@
 					confirmColor: '#ff4d4f',
 					success: (res) => {
 						if (res.confirm) {
-							if (String(postId).startsWith('mock_')) {
-								this.postList = this.postList.filter(p => p.postId !== postId)
-								uni.showToast({ title: '删除成功', icon: 'success' })
-								return
-							}
 							const dh = {}
 							const dt = getToken()
 							if (dt) {

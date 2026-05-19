@@ -37,7 +37,7 @@
 
 		<view class="BasicInfo-content">
 		<view class="PageHeader">
-			<view class="logo">关于我的</view>
+			<view class="logo">个人中心</view>
 		</view>
 		<view class="UserInfo animate-float-up">
 			<!-- 头像区支持跳转到资料编辑页。 -->
@@ -755,13 +755,13 @@
 		.UserInfo {
 			display: flex;
 			align-items: center;
-			padding: 30rpx 36rpx 0;
+			padding: 24rpx 36rpx 0;
 			
 			.Avatar {
 					flex-shrink: 0;
-					width: 150rpx;
-					height: 150rpx;
-					padding: 8rpx;
+					width: 140rpx;
+					height: 140rpx;
+					padding: 6rpx;
 					background-color: rgba(255, 255, 255, 0.5);
 					border-radius: 50%;
 					box-shadow: 0 16rpx 32rpx rgba(34, 97, 193, 0.15);
@@ -821,8 +821,8 @@
 			.Profile {
 				flex: 1;
 				min-width: 0;
-				margin-left: 36rpx;
-				padding-top: 12rpx;
+				margin-left: 32rpx;
+				padding-top: 6rpx;
 				animation: slideInRight 0.8s ease-out 0.4s both;
 			}
 			
@@ -839,22 +839,22 @@
 
 				.Username {
 					display: block;
-					font-size: 50rpx;
+					font-size: 46rpx;
 					font-weight: 800;
-					line-height: 1.1;
+					line-height: 1.2;
 					color: #ffffff;
 					text-shadow: 0 6rpx 20rpx rgba(38, 96, 189, 0.2);
 					letter-spacing: 1rpx;
 				}
 
 				.Major {
-					margin-top: 24rpx;
+					margin-top: 12rpx;
 
 					.major {
 						display: block;
-						font-size: 26rpx;
+						font-size: 24rpx;
 						line-height: 1.4;
-						color: rgba(255, 255, 255, 0.8);
+						color: rgba(255, 255, 255, 0.9);
 						letter-spacing: 0.5rpx;
 					}
 				}
@@ -862,14 +862,14 @@
 				.JobInfo {
 					display: flex;
 					flex-wrap: wrap;
-					gap: 16rpx;
-					margin-top: 24rpx;
+					gap: 12rpx;
+					margin-top: 16rpx;
 
 					.jobInfo {
-						padding: 12rpx 28rpx;
+						padding: 8rpx 22rpx;
 						border-radius: 999rpx;
-						font-size: 20rpx;
-						font-weight: 600;
+						font-size: 22rpx;
+						font-weight: 500;
 						line-height: 1.2;
 						color: #ffffff;
 						background: rgba(255, 255, 255, 0.2);

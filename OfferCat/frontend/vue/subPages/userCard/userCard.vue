@@ -85,8 +85,8 @@
 				</view>
 
 				<view class="empty-state" v-else>
-					<text class="empty-title">{{ isSelf ? '你还没有发布帖子' : 'TA 还没有发布帖子' }}</text>
-					<text class="empty-subtitle">去论坛发一条动态，主页这里就会自动展示。</text>
+					<view class="empty-title">{{ isSelf ? '你还没有发布帖子' : 'TA 还没有发布帖子' }}</view>
+					<view class="empty-subtitle">去论坛发一条动态，主页这里就会自动展示。</view>
 				</view>
 			</view>
 		</scroll-view>
@@ -99,7 +99,7 @@
 	import { BASE_URL } from '@/api/config.js'
 	import { getUser } from '@/utils/user.js'
 	import { getUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
-	import { getForumMockPosts, syncForumMockPostCache } from '@/utils/forumLocalData.js'
+	import { searchForumPosts } from '@/api/forum.js'
 	import { syncForumPostsViews } from '@/utils/forumViewCount.js'
 
 	export default {
@@ -186,25 +186,40 @@
 					this.targetUserId = this.currentUserId
 				}
 			},
-			loadUserPosts() {
-				const result = getForumMockPosts({
-					pageNum: 1,
-					pageSize: 1000,
-					currentTab: 0
-				})
-				const records = Array.isArray(result.records) ? result.records : []
-				const filteredPosts = records.filter(item => String(item.userId || '') === String(this.targetUserId || ''))
-				const syncedPosts = syncForumPostsViews(filteredPosts)
+			async loadUserPosts() {
+				if (!this.targetUserId) return
+				try {
+					const tId = Number(this.targetUserId)
+					const vId = Number(this.currentUserId)
+					const res = await searchForumPosts({
+						pageNum: 1,
+						pageSize: 1000,
+						viewerUserId: !isNaN(vId) && vId > 0 ? vId : undefined
+					})
+					const records = (res && res.data && res.data.records) || []
+					let filteredPosts = Array.isArray(records) ? records : []
+					
+					// 本地过滤：仅保留目标用户的帖子
+					if (!isNaN(tId) && tId > 0) {
+						filteredPosts = filteredPosts.filter(
+							(p) => Number(p.userId) === tId || Number(p.authorId) === tId
+						)
+					}
+					
+					const syncedPosts = syncForumPostsViews(filteredPosts)
 
-				if ((!this.profileName || !this.profileAvatar || !this.profileGrade || !this.profileMajor) && syncedPosts.length > 0) {
-					const latestPost = syncedPosts[0]
-					this.profileName = this.profileName || latestPost.authorName || ''
-					this.profileAvatar = this.profileAvatar || latestPost.authorAvatar || DEFAULT_AVATAR
-					this.profileGrade = this.profileGrade || latestPost.grade || latestPost.authorGrade || latestPost.graduationYear || ''
-					this.profileMajor = this.profileMajor || latestPost.major || latestPost.authorMajor || ''
+					if ((!this.profileName || !this.profileAvatar || !this.profileGrade || !this.profileMajor) && syncedPosts.length > 0) {
+						const latestPost = syncedPosts[0]
+						this.profileName = this.profileName || latestPost.authorName || ''
+						this.profileAvatar = this.profileAvatar || latestPost.authorAvatar || DEFAULT_AVATAR
+						this.profileGrade = this.profileGrade || latestPost.grade || latestPost.authorGrade || latestPost.graduationYear || ''
+						this.profileMajor = this.profileMajor || latestPost.major || latestPost.authorMajor || ''
+					}
+
+					this.userPosts = syncedPosts
+				} catch (e) {
+					this.userPosts = []
 				}
-
-				this.userPosts = syncedPosts
 			},
 			refreshPostsViews() {
 				this.userPosts = syncForumPostsViews(this.userPosts)
@@ -220,7 +235,6 @@
 			goToDetail(item) {
 				const id = item.postId || item.id
 				if (!id) return
-				syncForumMockPostCache(item)
 				uni.navigateTo({
 					url: `/subPages/forum/detail?id=${id}`
 				})
@@ -600,28 +614,66 @@
 		color: #8b95aa;
 	}
 
+	/* 深色模式：与论坛首页 (#111216 / 磨砂顶栏) 同一套表面层次，避免高饱和蓝渐变与正文区割裂 */
 	.theme-dark.user-card-page {
-		background: linear-gradient(180deg, #111216 0%, #17181d 28%, #111216 100%);
+		background-color: #111216;
 
 		.page-header {
-			background:
-				linear-gradient(180deg, rgba(77, 108, 182, 0.38) 0%, rgba(35, 42, 63, 0.55) 50%, rgba(17, 18, 22, 0.3) 100%),
-				linear-gradient(180deg, rgba(74, 103, 247, 0.55) 0%, rgba(74, 103, 247, 0) 100%);
+			background: rgba(17, 18, 22, 0.88);
+			backdrop-filter: blur(20px);
+			-webkit-backdrop-filter: blur(20px);
 			border-bottom-color: rgba(255, 255, 255, 0.06);
 		}
 
+		.header-title {
+			color: #f4f7fb;
+		}
+
 		.back-btn {
-			background: rgba(35, 37, 43, 0.96);
+			background: rgba(255, 255, 255, 0.08);
+			border: 1rpx solid rgba(255, 255, 255, 0.08);
+			box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.35);
+		}
+
+		.back-icon-img {
+			filter: brightness(0) invert(1);
+			opacity: 0.88;
 		}
 
 		.profile-card {
-			background:
-				linear-gradient(145deg, rgba(59, 82, 145, 0.96) 0%, rgba(43, 61, 118, 0.94) 55%, rgba(38, 96, 156, 0.9) 100%);
-			box-shadow: 0 20rpx 50rpx rgba(0, 0, 0, 0.28);
+			background: linear-gradient(
+				160deg,
+				rgba(42, 45, 54, 0.98) 0%,
+				rgba(30, 33, 40, 0.98) 48%,
+				rgba(26, 28, 34, 0.99) 100%
+			);
+			border: 1rpx solid rgba(255, 255, 255, 0.07);
+			box-shadow:
+				0 1rpx 0 rgba(255, 255, 255, 0.05) inset,
+				0 20rpx 56rpx rgba(0, 0, 0, 0.42),
+				0 0 40rpx rgba(74, 103, 247, 0.06);
+		}
+
+		.profile-decor {
+			background: rgba(255, 255, 255, 0.045);
+		}
+
+		.avatar-shell {
+			background: rgba(255, 255, 255, 0.1);
+			box-shadow: 0 14rpx 36rpx rgba(0, 0, 0, 0.4);
+		}
+
+		.profile-meta {
+			color: rgba(244, 247, 251, 0.72);
+		}
+
+		.profile-bio {
+			background: rgba(255, 255, 255, 0.09);
+			color: rgba(244, 247, 251, 0.92);
 		}
 
 		.section-title {
-			color: #eef2f8;
+			color: #f4f7fb;
 		}
 
 		.section-count,
@@ -629,22 +681,23 @@
 		.post-views,
 		.post-stat,
 		.empty-subtitle {
-			color: #8090ad;
+			color: rgba(255, 255, 255, 0.5);
 		}
 
 		.post-card,
 		.empty-state {
-			background: #17191f;
-			box-shadow: 0 12rpx 32rpx rgba(0, 0, 0, 0.2);
+			background: rgba(35, 37, 43, 0.96);
+			border: 1rpx solid rgba(255, 255, 255, 0.06);
+			box-shadow: 0 16rpx 38rpx rgba(0, 0, 0, 0.22);
 		}
 
 		.post-content,
 		.empty-title {
-			color: #eef2f8;
+			color: #f4f7fb;
 		}
 
 		.post-images .image-wrapper {
-			background: #232834;
+			background: rgba(28, 31, 38, 0.95);
 		}
 
 		.post-footer {

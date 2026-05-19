@@ -55,7 +55,7 @@
 			"path": "pages/my/my",
 			"style": {
 				"navigationStyle": "custom",
-				"navigationBarTitleText": "关于我的"
+				"navigationBarTitleText": "个人中心"
 			}
 		},
 		{

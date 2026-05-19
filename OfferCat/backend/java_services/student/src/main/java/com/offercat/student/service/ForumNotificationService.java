@@ -27,10 +27,16 @@ public class ForumNotificationService {
             return;
         }
         String safe = shorten(snippet == null ? null : snippet.trim(), MAX_LEN);
-        forumSysMessageMapper.insert(receiverId, senderId, msgType,
-                targetId == null ? 0L : targetId,
-                postId == null ? null : postId,
-                safe);
+        
+        try {
+            forumSysMessageMapper.insert(receiverId, senderId, msgType,
+                    targetId == null ? 0L : targetId,
+                    postId == null ? null : postId,
+                    safe);
+        } catch (Exception e) {
+            // 忽略外键约束等错误，保证主业务（如发评论）不受通知失败的影响
+            System.err.println("Failed to insert notification: " + e.getMessage());
+        }
     }
 
     static String shorten(String raw, int maxChars) {

@@ -42,7 +42,6 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { BASE_URL } from '@/api/config.js'
 	import { getForumLikesInbox, forumMarkMessagesRead } from '@/api/forum.js'
-	import { getForumMockPostDetail, getForumMockPosts } from '@/utils/forumLocalData.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
 
@@ -93,42 +92,9 @@
 								avatar: it.avatar || it.senderAvatar || DEFAULT_AVATAR,
 								postPreview: it.postPreview || it.snippet || '',
 							}))
-							return
 						}
 					} catch (_) {}
 				}
-
-				const result = getForumMockPosts({ currentTab: 0, pageNum: 1, pageSize: 20 })
-				const posts = Array.isArray(result && result.records) ? result.records : []
-				const users = ['小满', '阿橘', '林同学', '晚风', '星野', '北海']
-				const times = ['刚刚', '5分钟前', '18分钟前', '1小时前', '昨天', '周日']
-				const mockItems = []
-				posts.forEach((item) => {
-					const postId = item.postId || item.id
-					if (Number(item.likeCount || 0) > 0) {
-						mockItems.push({
-							id: `like_${postId}`,
-							postId,
-							avatar: DEFAULT_AVATAR,
-							userName: users[mockItems.length % users.length],
-							time: times[mockItems.length % times.length],
-							actionText: '点赞了你',
-							postPreview: item.content || '暂无帖子内容',
-						})
-					}
-					if (Number(item.favoriteCount || 0) > 0) {
-						mockItems.push({
-							id: `favorite_${postId}`,
-							postId,
-							avatar: DEFAULT_AVATAR,
-							userName: users[mockItems.length % users.length],
-							time: times[mockItems.length % times.length],
-							actionText: '收藏了你',
-							postPreview: item.content || '暂无帖子内容',
-						})
-					}
-				})
-				this.items = mockItems.slice(0, 10)
 			},
 			goBack() {
 				uni.navigateBack({

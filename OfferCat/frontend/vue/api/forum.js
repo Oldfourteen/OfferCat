@@ -51,7 +51,6 @@ export function searchForumPosts(payload) {
 }
 
 export function getForumPostDetail(postId, viewerUserId) {
-	if (String(postId).startsWith('mock_')) return Promise.reject(new Error('Mock post'))
 	let q = ''
 	if (viewerUserId != null && viewerUserId !== '') {
 		q = `?viewerUserId=${encodeURIComponent(String(viewerUserId))}`
@@ -63,7 +62,7 @@ export function getForumPostDetail(postId, viewerUserId) {
 }
 
 export function recordForumPostView(postId) {
-	if (!postId || String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
+	if (!postId) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/view/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -71,7 +70,6 @@ export function recordForumPostView(postId) {
 }
 
 export function likeForumPost(postId, userId) {
-	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/like/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -80,7 +78,6 @@ export function likeForumPost(postId, userId) {
 }
 
 export function unlikeForumPost(postId, userId) {
-	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/unlike/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -89,7 +86,6 @@ export function unlikeForumPost(postId, userId) {
 }
 
 export function collectForumPost(postId, userId) {
-	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/collect/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -98,7 +94,6 @@ export function collectForumPost(postId, userId) {
 }
 
 export function uncollectForumPost(postId, userId) {
-	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/uncollect/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -107,7 +102,6 @@ export function uncollectForumPost(postId, userId) {
 }
 
 export function getForumComments(postId, viewerUserId) {
-	if (String(postId).startsWith('mock_')) return Promise.reject(new Error('Mock post'))
 	let q = ''
 	if (viewerUserId != null && viewerUserId !== '') {
 		q = `?viewerUserId=${encodeURIComponent(String(viewerUserId))}`
@@ -119,7 +113,6 @@ export function getForumComments(postId, viewerUserId) {
 }
 
 export function addForumComment(payload) {
-	if (String(payload.postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/comment`,
 		method: 'POST',
@@ -159,7 +152,6 @@ export function createForumPost(payload) {
 }
 
 export function deleteForumPost(postId, userId) {
-	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/delete/${encodeURIComponent(String(postId))}?userId=${encodeURIComponent(String(userId))}`,
 		method: 'DELETE',
@@ -284,4 +276,53 @@ export function uploadForumImage(filePath) {
 		}
 		throw lastErr || new Error('图片上传失败')
 	})()
+}
+
+export function generateForumCaption(filePath, length, style) {
+	const base = getApiBase()
+	const token = getToken()
+	const header = {
+		Accept: 'application/json',
+	}
+	if (token) {
+		header['Authorization'] = `Bearer ${token}`
+	}
+	const uploadUrl = `${base}/api/ai/ocr/generate-caption`
+	return new Promise((resolve, reject) => {
+		uni.uploadFile({
+			url: uploadUrl,
+			filePath,
+			name: 'file',
+			formData: {
+				length: length,
+				style: style
+			},
+			header,
+			success: (res) => {
+				const ok = res.statusCode >= 200 && res.statusCode < 300
+				let body = res.data
+				if (typeof body === 'string') {
+					try {
+						body = JSON.parse(body)
+					} catch (_) {}
+				}
+				if (!ok) {
+					const msg = body && body.error ? body.error : `配文生成失败（HTTP ${res.statusCode}）`
+					const err = new Error(msg)
+					err.statusCode = res.statusCode
+					err.response = res
+					reject(err)
+					return
+				}
+				if (body && body.caption) {
+					resolve(body.caption)
+				} else {
+					resolve(body)
+				}
+			},
+			fail: (e) => {
+				reject(e instanceof Error ? e : new Error(String((e && (e.errMsg || e.message)) || '配文生成请求失败')))
+			},
+		})
+	})
 }

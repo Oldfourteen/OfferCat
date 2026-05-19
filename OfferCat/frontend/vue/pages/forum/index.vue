@@ -38,7 +38,6 @@ import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 import themeMixin from '@/utils/themeMixin.js'
 import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 import { getForumUnreadCounts } from '@/api/forum.js'
-import { getForumMockReplyInboxUnreadCount } from '@/utils/forumLocalData.js'
 
 export default {
 	name: 'ForumIndexPage',
@@ -57,18 +56,25 @@ export default {
 	},
 	methods: {
 		async loadReplyInboxCount() {
+			this.replyInboxCount = 0
 			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 			const uid = u.userId || u.id
-			if (!uid) {
-				this.replyInboxCount = getForumMockReplyInboxUnreadCount()
-				return
-			}
-			try {
-				const res = await getForumUnreadCounts(uid)
-				const d = res && res.data
-				this.replyInboxCount = d != null ? Number(d.replies || 0) : 0
-			} catch (_) {
-				this.replyInboxCount = getForumMockReplyInboxUnreadCount()
+			if (uid) {
+				try {
+					const res = await getForumUnreadCounts(uid)
+					const d = res && res.data
+					if (d && typeof d === 'object') {
+						const replies = Number(d.replies != null ? d.replies : 0)
+						const likes = Number(d.likes != null ? d.likes : 0)
+						const friendRequests = Number(d.friendRequests != null ? d.friendRequests : 0)
+						const totalRaw = replies + likes + friendRequests
+						const state = uni.getStorageSync('forum_badge_state') || {}
+						const seenReplies = Number(state.replySeenCount || 0)
+						const actualReplies = Math.max(0, replies - seenReplies)
+						this.replyInboxCount = actualReplies + likes + friendRequests
+						return
+					}
+				} catch (_) {}
 			}
 		},
 		goMessageCenter() {

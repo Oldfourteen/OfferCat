@@ -63,7 +63,7 @@ public class ForumPostServiceImpl implements ForumPostService {
         int pageSize = searchDTO.getPageSize() != null && searchDTO.getPageSize() > 0 ? searchDTO.getPageSize() : 10;
         int offset = (pageNum - 1) * pageSize;
 
-        List<Long> friendIds = null;
+        List<Long> friendIds = searchDTO.getFriendIds();
         if ("friends".equalsIgnoreCase(String.valueOf(searchDTO.getFeedTab()))) {
             Long viewer = searchDTO.getViewerUserId();
             friendIds = viewer == null ? Collections.emptyList() : forumFriendMapper.listAcceptedFriendIds(viewer);

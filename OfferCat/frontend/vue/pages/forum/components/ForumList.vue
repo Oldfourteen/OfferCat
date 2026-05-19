@@ -55,15 +55,15 @@
 							<view class="action-right">
 								<view class="action-item" @click.stop="likePost(item)">
 									<image class="icon-svg" :src="item.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
-									<text class="count" :class="{ 'active-color': item.isLiked }">{{ item.likeCount || 0 }}</text>
+									<text class="count" :class="{ 'count--like-on': item.isLiked }">{{ item.likeCount || 0 }}</text>
 								</view>
 								<view class="action-item">
 									<image class="icon-svg" src="/static/icons/comment.svg"></image>
-									<text class="count">{{ item.commentCount || 0 }}</text>
+									<text class="count count--muted">{{ item.commentCount || 0 }}</text>
 								</view>
-								<view class="action-item collect-hint" @click.stop="toggleCollect(item, index)">
+								<view class="action-item" @click.stop="toggleCollect(item, index)">
 									<image class="icon-svg" :src="item.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
-									<text class="count" :class="{ 'active-color': item.isCollected }">{{ item.favoriteCount || 0 }}</text>
+									<text class="count" :class="{ 'count--star-on': item.isCollected }">{{ item.favoriteCount || 0 }}</text>
 								</view>
 							</view>
 						</view>
@@ -72,7 +72,7 @@
 
 				<!-- 空状态提示 -->
 				<view class="empty-state" v-if="postList.length === 0">
-					<text class="empty-text">暂无帖子可查看</text>
+					<text class="empty-text">{{ emptyPlaceholderText }}</text>
 				</view>
 			</view>
 		</view>
@@ -81,13 +81,15 @@
 
 <script>
 	import { BASE_URL } from '@/api/config.js'
-	import { searchForumPosts, likeForumPost, unlikeForumPost, collectForumPost, uncollectForumPost } from '@/api/forum.js'
-	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 	import {
-		getForumMockPosts,
-		toggleForumMockPostCollect,
-		syncForumMockPostCache
-	} from '@/utils/forumLocalData.js'
+		searchForumPosts,
+		likeForumPost,
+		unlikeForumPost,
+		collectForumPost,
+		uncollectForumPost,
+		getForumAcceptedFriends
+	} from '@/api/forum.js'
+	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 
 	export default {
 		props: {
@@ -102,13 +104,21 @@
 				currentTab: 0,
 				// 论坛帖子直接在当前页完整渲染，靠页面滚动浏览，不再做首页/尾页分页切换。
 				postList: [],
-				total: 0
+				total: 0,
+				// 好友 Tab：已拉取好友列表且长度为 0（与「好友无发帖」区分）
+				friendListEmpty: false,
+				// 防止快速切换 Tab / 重复刷新时旧请求晚返回触发误报
+				fetchSeq: 0
 			}
 		},
 		computed: {
 			themeClass() {
 				// 论坛区整体按主题切换毛玻璃背景和文字颜色。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			emptyPlaceholderText() {
+				if (this.currentTab === 2 && this.friendListEmpty) return '暂无好友'
+				return '暂无帖子可查看'
 			}
 		},
 		created() {
@@ -148,16 +158,6 @@
 			},
 			async toggleCollect(item, index) {
 				const pid = item.postId || item.id
-				if (String(pid).startsWith('mock_')) {
-					const updatedPost = toggleForumMockPostCollect(pid)
-					if (!updatedPost) return
-					this.$set(this.postList, index, syncForumPostViews(updatedPost))
-					uni.showToast({
-						title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
-						icon: 'success'
-					})
-					return
-				}
 				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const uid = user.userId || user.id
 				if (!uid) {
@@ -190,13 +190,41 @@
 			switchTab(index) {
 				if (this.currentTab === index) return
 				this.currentTab = index
+				// 切换 Tab 立即清空，避免接口失败时仍展示其它 Tab 的帖子并误报「获取失败」
+				this.postList = []
+				this.total = 0
+				this.friendListEmpty = false
 				this.fetchPosts()
 			},
+			/** 兼容不同端上 ResponseResult.data 形态 */
+			normalizeFriendList(res) {
+				const d = res && res.data
+				if (Array.isArray(d)) return d
+				if (d && Array.isArray(d.list)) return d.list
+				if (d && Array.isArray(d.records)) return d.records
+				return []
+			},
+			async resolveFriendTabEmptyState(viewerUserId, gen) {
+				try {
+					const fr = await getForumAcceptedFriends(viewerUserId)
+					if (gen !== this.fetchSeq) return
+					this.friendListEmpty = this.normalizeFriendList(fr).length === 0
+				} catch (_) {
+					if (gen !== this.fetchSeq) return
+					this.friendListEmpty = false
+				}
+			},
 			async fetchPosts() {
+				const gen = ++this.fetchSeq
 				const pageNum = 1
 				const pageSize = 1000
 				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const viewerUserId = user.userId || user.id
+
+				if (this.currentTab !== 2) {
+					this.friendListEmpty = false
+				}
+
 				const payload = {
 					keyword: '',
 					pageNum,
@@ -208,8 +236,19 @@
 					payload.sortBy = 'like_count'
 					payload.sortDirection = 'desc'
 				}
+
+				if (this.currentTab === 2 && !viewerUserId) {
+					if (gen !== this.fetchSeq) return
+					this.postList = []
+					this.total = 0
+					this.friendListEmpty = false
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+
 				try {
 					const res = await searchForumPosts(payload)
+					if (gen !== this.fetchSeq) return
 					const page = (res && res.data) || {}
 					const records = Array.isArray(page.records) ? page.records : []
 					this.postList = syncForumPostsViews(
@@ -224,25 +263,36 @@
 							),
 						}))
 					)
-					this.total = page.total || records.length
-					return
-				} catch (_) {}
-
-				const result = getForumMockPosts({
-					pageNum,
-					pageSize,
-					currentTab: this.currentTab,
-				})
-				const records = result.records || []
-				this.postList = syncForumPostsViews(
-					records.map((item) => ({
-						...item,
-						isLiked: Boolean(item.isLiked),
-						isCollected: Boolean(item.isCollected),
-						favoriteCount: Number(item.favoriteCount || 0),
-					}))
-				)
-				this.total = result.total || records.length
+					this.total = page.total != null ? page.total : records.length
+					if (this.currentTab === 2 && viewerUserId && records.length === 0) {
+						await this.resolveFriendTabEmptyState(viewerUserId, gen)
+					} else if (this.currentTab === 2) {
+						this.friendListEmpty = false
+					}
+				} catch (e) {
+					if (gen !== this.fetchSeq) return
+					this.postList = []
+					this.total = 0
+					// 好友 Tab：按你的要求 —— 这里不再弹「获取帖子失败」；仅靠文案区分「暂无好友 / 暂无帖子」
+					if (this.currentTab === 2) {
+						if (viewerUserId) {
+							try {
+								const fr = await getForumAcceptedFriends(viewerUserId)
+								if (gen !== this.fetchSeq) return
+								this.friendListEmpty = this.normalizeFriendList(fr).length === 0
+							} catch (_) {
+								if (gen !== this.fetchSeq) return
+								// 帖子与好友接口都失败时无法判断，只展示「暂无帖子可查看」，不弹 Toast
+								this.friendListEmpty = false
+							}
+						} else {
+							this.friendListEmpty = false
+						}
+						return
+					}
+					this.friendListEmpty = false
+					uni.showToast({ title: '获取帖子失败', icon: 'none' })
+				}
 			},
 			goToDetail(item) {
 				// 详情页先缓存完整帖子数据，规避后端详情接口异常时无法展示。
@@ -252,8 +302,6 @@
 				if (postIndex !== -1) {
 					this.$set(this.postList, postIndex, updatedPost)
 				}
-				// 缓存完整帖子数据，绕过后端崩溃的 detail 接口
-				syncForumMockPostCache(updatedPost)
 				uni.navigateTo({
 					url: `/subPages/forum/detail?id=${id}&viewIncremented=1`
 				});
@@ -481,11 +529,17 @@
 		display: flex;
 		justify-content: center;
 		align-items: center;
-		height: 100%;
-		
+		width: 100%;
+		box-sizing: border-box;
+		/* 父级无固定高度时 height:100% 不生效；用可视区域高度占位，便于在列表区垂直居中 */
+		min-height: calc(100vh - var(--status-bar-height, 0px) - 210rpx);
+		padding: 32rpx 24rpx 0;
+
 		.empty-text {
-			font-size: 26rpx;
+			font-size: 28rpx;
 			color: #999;
+			line-height: 1.5;
+			text-align: center;
 		}
 	}
 
@@ -655,8 +709,10 @@
 			display: flex;
 			align-items: center;
 			justify-content: space-between;
-			padding-top: 10rpx;
+			margin-top: 8rpx;
+			padding-top: 18rpx;
 			flex-shrink: 0;
+			border-top: 1rpx solid rgba(0, 0, 0, 0.06);
 			
 			.view-count {
 				font-size: 24rpx;
@@ -666,33 +722,43 @@
 			.action-right {
 				display: flex;
 				align-items: center;
-				gap: 36rpx;
+				gap: 48rpx;
 
 				.action-item {
 					display: flex;
 					align-items: center;
-					gap: 8rpx;
+					gap: 10rpx;
+					padding: 8rpx 4rpx;
+					box-sizing: border-box;
 
-					&.collect-hint {
-						/* TODO: 临时背景色提示，后期可在此处修改或删除 */
-						background-color: rgba(255, 193, 7, 0.3);
-						padding: 4rpx 20rpx;
-						border-radius: 30rpx;
-					}
-					
 					.icon-svg {
-						width: 36rpx;
-						height: 36rpx;
-						opacity: 0.6;
+						width: 44rpx;
+						height: 44rpx;
+						display: block;
+						flex-shrink: 0;
 					}
-					
-					.count {
-						font-size: 26rpx;
-						color: #999;
 
-						&.active-color {
-							color: rgb(250, 81, 81);
-						}
+					.count {
+						font-size: 28rpx;
+						font-weight: 500;
+						line-height: 1;
+						color: rgb(153, 153, 153);
+					}
+
+					.count--like-on {
+						color: rgb(250, 81, 81);
+						font-weight: 600;
+					}
+
+					.count--muted {
+						color: rgb(153, 153, 153);
+						font-weight: 500;
+					}
+
+					/* 与 star-active.svg 填充 rgb(255, 212, 59) 一致 */
+					.count--star-on {
+						color: rgb(255, 212, 59);
+						font-weight: 600;
 					}
 				}
 			}
@@ -728,7 +794,47 @@
 		.forum-card-content {
 			.card-user-info .user-meta .user-name { color: #f4f7fb; }
 			.card-user-info .user-meta .user-tag-row .user-tag { color: rgba(255, 255, 255, 0.4); }
-			.card-main .post-desc-container { color: rgba(255, 255, 255, 0.8); }
+			.card-main .post-desc-container { color: rgba(244, 247, 251, 0.94); }
+
+			/* <text> 在部分端上不继承父级 color，需覆盖组件内写死的 #333 */
+			.post-desc,
+			.suffix-inline {
+				color: rgba(244, 247, 251, 0.94);
+			}
+
+			.expand-btn-inline {
+				color: #8ab7ff;
+			}
+
+			.card-actions {
+				border-top-color: rgba(255, 255, 255, 0.08);
+
+				.view-count {
+					color: rgba(255, 255, 255, 0.62);
+				}
+
+				.action-right .action-item {
+					.icon-svg {
+						opacity: 1;
+					}
+
+					.count {
+						color: rgba(255, 255, 255, 0.5);
+					}
+
+					.count--like-on {
+						color: rgb(250, 81, 81);
+					}
+
+					.count--muted {
+						color: rgba(255, 255, 255, 0.5);
+					}
+
+					.count--star-on {
+						color: rgb(255, 212, 59);
+					}
+				}
+			}
 		}
 		.empty-text { color: rgba(255, 255, 255, 0.4); }
 	}

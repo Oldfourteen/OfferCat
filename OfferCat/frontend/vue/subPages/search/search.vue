@@ -92,7 +92,8 @@
 <script>
 	// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
-	import { searchForumMockPosts } from '@/utils/forumLocalData.js'
+	import { searchForumPosts } from '@/api/forum.js'
+	import { syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 
 	// 搜索历史存储配置
 	const SEARCH_HISTORY_KEY = 'home_search_history'
@@ -167,7 +168,7 @@
 				this.keyword = keyword
 				this.handleSearch()
 			},
-			// 执行搜索（本地论坛 mock 数据）
+			// 执行搜索
 			async handleSearch() {
 				const normalizedKeyword = this.keyword.trim().toLowerCase()
 				this.hasSearched = true
@@ -178,24 +179,34 @@
 				}
 
 				uni.showLoading({ title: '搜索中...' })
-
-				const forumResults = searchForumMockPosts(normalizedKeyword).map(post => {
-					const contentPreview = post.content ? post.content.replace(/\n/g, ' ') : '暂无内容'
-					return {
-						id: post.postId,
-						type: 'forum',
-						title: contentPreview.length > 20 ? contentPreview.substring(0, 20) + '...' : contentPreview,
-						summary: contentPreview,
-						company: post.authorName || '匿名用户',
-						category: '论坛帖子',
-						total: post.commentCount || 0,
-						rawPost: post
-					}
-				})
+				
+				try {
+					const res = await searchForumPosts({
+						keyword: normalizedKeyword,
+						pageNum: 1,
+						pageSize: 100
+					})
+					const records = (res && res.data && res.data.records) || []
+					const forumResults = records.map(post => {
+						const contentPreview = post.content ? post.content.replace(/\n/g, ' ') : '暂无内容'
+						return {
+							id: post.postId,
+							type: 'forum',
+							title: contentPreview.length > 20 ? contentPreview.substring(0, 20) + '...' : contentPreview,
+							summary: contentPreview,
+							company: post.authorName || '匿名用户',
+							category: '论坛帖子',
+							total: post.commentCount || 0,
+							rawPost: post
+						}
+					})
+					this.searchResults = forumResults
+				} catch (e) {
+					this.searchResults = []
+				}
+				
 				uni.hideLoading()
-
-				this.searchResults = forumResults
-
+				
 				// 保存到历史
 				this.saveHistory(this.keyword)
 			},

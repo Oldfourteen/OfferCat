@@ -13,7 +13,7 @@
 				<view class="nav-right"></view>
 			</view>
 
-			<scroll-view class="detail-scroll" scroll-y :show-scrollbar="false">
+			<scroll-view class="detail-scroll" scroll-y :show-scrollbar="false" scroll-with-animation :scroll-into-view="scrollIntoView">
 				<!-- 帖子正文块 -->
 				<view class="post-card">
 				<view class="author-info" @click="goToUserCard(post)">
@@ -42,16 +42,20 @@
 							<image class="icon-svg" :src="post.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
 							<text class="count" :class="{ 'active-color': post.isLiked }">{{ post.likeCount || 0 }}</text>
 						</view>
-						<view class="action-btn collect-hint" @click="toggleCollect">
+						<view class="action-btn" @click="scrollToComments">
+							<image class="icon-svg" src="/static/icons/comment.svg"></image>
+							<text class="count">{{ displayPostCommentCount }}</text>
+						</view>
+						<view class="action-btn" @click="toggleCollect">
 							<image class="icon-svg" :src="post.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
-							<text class="count" :class="{ 'active-color': post.isCollected }">{{ post.favoriteCount || 0 }}</text>
+							<text class="count" :class="{ 'collect-active-color': post.isCollected }">{{ post.favoriteCount || 0 }}</text>
 						</view>
 					</view>
 				</view>
 			</view>
 
 				<!-- 评论区 -->
-				<view class="comment-section" :class="{ 'is-empty': comments.length === 0 }">
+				<view class="comment-section" id="forum-detail-comment-anchor" :class="{ 'is-empty': comments.length === 0 }">
 				<view class="comment-header">
 					<text class="title">全部评论 {{ comments.length > 0 ? `(${comments.length})` : '' }}</text>
 					<text class="sort-toggle-btn" @click="toggleCommentSortMode">{{ commentSortLabel }}</text>
@@ -222,15 +226,6 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 	import { syncForumPostViews } from '@/utils/forumViewCount.js'
-	import {
-		getForumMockPostDetail,
-		getForumMockComments,
-		toggleForumMockPostLike,
-		toggleForumMockPostCollect,
-		createForumMockComment,
-		deleteForumMockPost,
-		syncForumMockPostCache
-	} from '@/utils/forumLocalData.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -261,7 +256,8 @@
 				isLeaving: false,
 				viewRecorded: false,
 				allowNativeBack: false,
-				emptyCommentMinHeight: 0
+				emptyCommentMinHeight: 0,
+				scrollIntoView: ''
 			}
 		},
 		computed: {
@@ -308,6 +304,12 @@
 				return {
 					minHeight: `${this.emptyCommentMinHeight}px`
 				}
+			},
+			displayPostCommentCount() {
+				const p = this.post || {}
+				const fromPost = p.commentCount
+				if (fromPost != null && fromPost !== '') return Number(fromPost) || 0
+				return Array.isArray(this.comments) ? this.comments.length : 0
 			}
 		},
 		onBackPress() {
@@ -345,6 +347,14 @@
 					})
 				}, 240)
 			},
+			scrollToComments() {
+				this.scrollIntoView = 'forum-detail-comment-anchor'
+				this.$nextTick(() => {
+					setTimeout(() => {
+						this.scrollIntoView = ''
+					}, 400)
+				})
+			},
 			getViewerUserId() {
 				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const id = u.userId || u.id
@@ -362,15 +372,17 @@
 							viewCount: Number(raw.views != null ? raw.views : raw.viewCount || 0),
 							isLiked: Boolean(raw.isLiked),
 							isCollected: Boolean(raw.isCollected),
+							commentCount: Number(
+								raw.commentCount != null ? raw.commentCount : raw.commentsCount || 0
+							),
 							favoriteCount: Number(
 								raw.favoriteCount != null ? raw.favoriteCount : raw.collectCount || 0
 							),
 						})
 						this.post = normalized
-						syncForumMockPostCache(normalized)
 						this.parseImages()
 						this.scheduleEmptyCommentMeasure()
-						if (!String(this.postId).startsWith('mock_') && !this.viewRecorded) {
+						if (!this.viewRecorded) {
 							this.viewRecorded = true
 							try {
 								await recordForumPostView(this.postId)
@@ -379,16 +391,7 @@
 						return
 					}
 				} catch (_) {}
-
-				const postDetail = getForumMockPostDetail(this.postId)
-				if (postDetail) {
-					const normalized = syncForumPostViews(Object.assign({}, postDetail))
-					this.post = normalized
-					syncForumMockPostCache(normalized)
-					this.parseImages()
-					this.scheduleEmptyCommentMeasure()
-					return
-				}
+				
 				if (!uni.getStorageSync('currentPost_' + this.postId)) {
 					uni.showToast({ title: '帖子不存在或已被删除', icon: 'none' })
 					setTimeout(() => this.goBack(), 1500)
@@ -405,7 +408,7 @@
 						return
 					}
 				} catch (_) {}
-				this.comments = this.normalizeComments(getForumMockComments(this.postId))
+				this.comments = []
 				this.scheduleEmptyCommentMeasure()
 			},
 			scheduleEmptyCommentMeasure() {
@@ -766,7 +769,7 @@
 			async toggleCommentLike(item) {
 				if (!item) return
 				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
-				const uid = user.userId || user.id
+				const uid = user.userId || user.id || user.studentId
 				const cid = this.getCommentId(item)
 				if (!uid) {
 					uni.showToast({ title: '请先登录', icon: 'none' })
@@ -898,18 +901,6 @@
 				const pid = this.post.postId || this.postId || this.post.id
 				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const uid = user.userId || user.id
-				if (String(pid || '').startsWith('mock_')) {
-					const updatedPost = toggleForumMockPostCollect(this.postId)
-					if (!updatedPost) return
-					this.post = syncForumPostViews(updatedPost)
-					this.parseImages()
-					uni.showToast({
-						title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
-						icon: 'success'
-					})
-					uni.$emit('refreshForumList')
-					return
-				}
 				if (!uid) {
 					uni.showToast({ title: '请先登录', icon: 'none' })
 					return
@@ -927,12 +918,10 @@
 				try {
 					if (nextCol) await collectForumPost(pid, uid)
 					else await uncollectForumPost(pid, uid)
-					syncForumMockPostCache(this.post)
 					uni.showToast({ title: nextCol ? '收藏成功' : '已取消收藏', icon: 'none' })
 					uni.$emit('refreshForumList')
 				} catch (e) {
 					this.post = syncForumPostViews(prevPost)
-					syncForumMockPostCache(this.post)
 					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
 				}
 			},
@@ -950,7 +939,6 @@
 					isLiked: nextLiked,
 					likeCount: Math.max(0, Number((prev && prev.likeCount) || 0) + (nextLiked ? 1 : -1)),
 				})
-				syncForumMockPostCache(this.post)
 				try {
 					if (nextLiked) {
 						await likeForumPost(this.postId, userId)
@@ -961,7 +949,6 @@
 					uni.$emit('refreshForumList')
 				} catch (e) {
 					this.post = prev
-					syncForumMockPostCache(this.post)
 					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
 				}
 			},
@@ -984,16 +971,6 @@
 									}, 1500)
 									return
 								} catch (_) {}
-								const ok = deleteForumMockPost(this.postId, currentUserId)
-								if (ok) {
-									uni.showToast({ title: '已本地删除', icon: 'success' })
-									uni.$emit('refresh')
-									uni.$emit('refreshForumList')
-									setTimeout(() => {
-										this.goBack()
-									}, 1500)
-									return
-								}
 								uni.showToast({ title: '删除失败', icon: 'none' })
 							})()
 						}
@@ -1042,8 +1019,9 @@
 					this.commentText = sensitiveResult.replacement || getRandomPoemPair()
 				}
 
+				// 修复：兼容本地 user_v2 缓存结构
 				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
-				const userId = user.userId || user.id
+				const userId = user.userId || user.id || user.studentId
 				if (!userId) {
 					uni.showToast({ title: '请先登录', icon: 'none' })
 					return
@@ -1053,17 +1031,29 @@
 				const trimmed = String(this.commentText || '').trim()
 				const payload = {
 					postId: this.postId,
-					userId,
+					userId: userId,
 					content: trimmed,
 					parentId: currentReplyContext ? Number(currentReplyContext.rootCommentId) || 0 : 0,
 					mentionUserIds: [],
+					parentCommentId: currentReplyContext ? Number(currentReplyContext.rootCommentId) || null : null,
+					replyToCommentId: currentReplyContext ? Number(currentReplyContext.targetCommentId) || null : null,
+					replyToUserId: currentReplyContext ? currentReplyContext.targetUserId || null : null
 				}
 				if (currentReplyContext) {
 					const rtc = Number(currentReplyContext.targetCommentId)
+					if (!Number.isNaN(rtc) && rtc > 0) {
+						payload.replyId = rtc
+					}
 					if (rtc) payload.replyToCommentId = rtc
 					const rtu = currentReplyContext.targetUserId
 					if (rtu !== undefined && rtu !== null && rtu !== '')
 						payload.replyToUserId = Number(rtu)
+				}
+				
+				// 判断是 mock 数据还是真实接口
+				if (String(this.postId).startsWith('mock_')) {
+					uni.showToast({ title: '演示帖子不支持评论', icon: 'none' })
+					return
 				}
 
 				const mockFallbackContent =
@@ -1072,40 +1062,32 @@
 						: trimmed
 
 				try {
-					await addForumComment(payload)
-					this.commentText = ''
-					this.showEmojiPanel = false
-					await this.loadComments()
-					await this.loadPostDetail()
-					if (this.activeReplyCommentId) {
-						this.resetReplyContextForActiveThread()
-					} else {
-						this.replyContext = null
-					}
-					uni.$emit('refreshForumList')
-					uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
-					return
-				} catch (_) {}
+					const res = await addForumComment(payload)
+					
+					// 兼容后端返回包装对象或直接返回数据的情况
+					const isSuccess = (res && (res.code === 200 || res.code === 0)) || 
+									  (res && typeof res === 'object' && res.commentId) ||
+									  (res && typeof res === 'number')
 
-				const updatedComments = createForumMockComment({
-					postId: this.postId,
-					content: mockFallbackContent,
-					userId,
-					parentCommentId: currentReplyContext ? currentReplyContext.rootCommentId : undefined,
-					replyToCommentId: currentReplyContext ? currentReplyContext.targetCommentId : undefined,
-					replyToUserId: currentReplyContext ? currentReplyContext.targetUserId : undefined,
-				})
-				if (!updatedComments) return
-				this.commentText = ''
-				this.showEmojiPanel = false
-				this.replyContext = null
-				this.loadComments()
-				const refreshedPost = getForumMockPostDetail(this.postId)
-				if (refreshedPost) {
-					this.post = syncForumPostViews(refreshedPost)
+					if (isSuccess || res == null) {
+						this.commentText = ''
+						this.showEmojiPanel = false
+						await this.loadComments()
+						await this.loadPostDetail()
+						if (this.activeReplyCommentId) {
+							this.resetReplyContextForActiveThread()
+						} else {
+							this.replyContext = null
+						}
+						uni.$emit('refreshForumList')
+						uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
+					} else {
+						throw new Error(res ? (res.msg || res.message || '评论失败') : '评论失败')
+					}
+				} catch (e) {
+					console.error('sendComment error:', e)
+					uni.showToast({ title: e.message || '评论出错了，请检查日志', icon: 'none' })
 				}
-				uni.$emit('refreshForumList')
-				uni.showToast({ title: currentReplyContext ? '已本地回复' : '已本地评论', icon: 'none' })
 			}
 		}
 	}
@@ -1368,24 +1350,16 @@
 
 			.actions {
 				display: flex;
-				gap: 40rpx;
+				gap: 44rpx;
 
 				.action-btn {
 					display: flex;
 					align-items: center;
-					gap: 8rpx;
-
-					&.collect-hint {
-						/* TODO: 临时背景色提示，后期可在此处修改或删除 */
-						background-color: rgba(255, 193, 7, 0.3);
-						padding: 4rpx 20rpx;
-						border-radius: 30rpx;
-					}
+					gap: 10rpx;
 
 					.icon-svg {
-						width: 36rpx;
-						height: 36rpx;
-						opacity: 0.6;
+						width: 48rpx;
+						height: 48rpx;
 					}
 
 					.count {
@@ -1394,6 +1368,10 @@
 						
 						&.active-color {
 							color: rgb(250, 81, 81);
+						}
+
+						&.collect-active-color {
+							color: rgb(255, 212, 59);
 						}
 					}
 				}
@@ -1516,8 +1494,8 @@
 					}
 
 					.mini-like-icon {
-						width: 24rpx;
-						height: 24rpx;
+						width: 30rpx;
+						height: 30rpx;
 					}
 
 					.reply-like-count {
@@ -1526,7 +1504,7 @@
 					}
 
 					.reply-like-count.active {
-						color: #5d76bd;
+						color: rgb(250, 81, 81);
 						font-weight: 600;
 					}
 
@@ -1668,7 +1646,7 @@
 			transition: all 0.3s;
 
 			&.active {
-				background: #4AA9FE;
+				background: #5d76bd;
 			}
 		}
 	}
@@ -1695,10 +1673,10 @@
 	}
 
 	.mini-like-icon {
-		width: 24rpx;
-		height: 24rpx;
-		min-width: 24rpx;
-		min-height: 24rpx;
+		width: 30rpx;
+		height: 30rpx;
+		min-width: 30rpx;
+		min-height: 30rpx;
 		display: block;
 		opacity: 0.9;
 	}
@@ -1710,7 +1688,7 @@
 	}
 
 	.reply-like-count.active {
-		color: #5d76bd;
+		color: rgb(250, 81, 81);
 		font-weight: 600;
 	}
 
@@ -1977,7 +1955,7 @@
 					.tag { background: #23252b; color: #8090ad; }
 				}
 			}
-			.post-text { color: #d1d8e5; }
+			.post-text { color: #e8ecf4; }
 			.expand-toggle { color: #8db6ff !important; }
 			
 			.post-images .image-wrapper {
@@ -1987,9 +1965,11 @@
 
 			.post-actions-line { 
 				border-top-color: rgba(255, 255, 255, 0.05); 
-				.view-count { color: #66758f; }
+				.view-count { color: rgba(255, 255, 255, 0.62); }
 				.actions .action-btn {
 					.count { color: #8090ad; }
+					.count.active-color { color: rgb(250, 81, 81); }
+					.count.collect-active-color { color: rgb(255, 212, 59); }
 				}
 			}
 		}
@@ -2026,13 +2006,13 @@
 				.reply-action { color: #8da4e6; }
 				.reply-preview-more { color: #8090ad; }
 				.reply-like-count { color: #7d8798; }
-				.reply-like-count.active { color: #8da4e6; }
+				.reply-like-count.active { color: rgb(250, 81, 81); }
 			}
 		}
 
 		.reply-action { color: #8da4e6; }
 		.reply-like-count { color: #7d8798; }
-		.reply-like-count.active { color: #8da4e6; }
+		.reply-like-count.active { color: rgb(250, 81, 81); }
 
 		.bottom-bar {
 			background: #17191f;
@@ -2114,5 +2094,14 @@
 		.sheet-target {
 			color: #8da4e6;
 		}
+	}
+
+	/* 部分运行时下正文仍为 #333（view/text 节点样式继承差异），用页面根抬高优先级 */
+	.forum-detail-page.theme-dark .post-card .post-text {
+		color: #e8ecf4;
+	}
+
+	.forum-detail-page.theme-dark .post-card .post-actions-line .view-count {
+		color: rgba(255, 255, 255, 0.62);
 	}
 </style>

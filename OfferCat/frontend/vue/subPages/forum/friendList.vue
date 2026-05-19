@@ -96,33 +96,10 @@
 				if (typeof t === 'string') return t.substring(0, 16).replace('T', ' ')
 				return ''
 			},
-			setOfflineMock() {
-				this.pendingFriends = [
-					{
-						requestId: 'mock_p1',
-						fromNickname: '朝阳',
-						fromAvatar: DEFAULT_AVATAR,
-						createTime: '',
-						desc: DEFAULT_REQ_DESC,
-					},
-				]
-				this.friends = [
-					{
-						userId: 'mock_f1',
-						name: '小橘同学',
-						nickname: '小橘同学',
-						avatar: DEFAULT_AVATAR,
-						tagText: '',
-						lastSeen: '',
-						bio: '离线模式示例数据。',
-					},
-				]
-			},
 			async reload() {
 				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const uid = u.userId || u.id
 				if (!uid) {
-					this.setOfflineMock()
 					return
 				}
 				try {

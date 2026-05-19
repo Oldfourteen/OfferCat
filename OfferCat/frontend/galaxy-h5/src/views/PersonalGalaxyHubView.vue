@@ -2,6 +2,15 @@
 import { inject } from 'vue'
 import { routerKey, type Router } from 'vue-router'
 
+/** WebView 内嵌：白色左箭头 SVG（与主站圆形返回键观感一致） */
+const HUB_BACK_ICON =
+  'data:image/svg+xml;charset=utf-8,' +
+  encodeURIComponent(
+    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
+      '<path d="M15 18 9 12l6-6" stroke="rgba(255,255,255,0.96)" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round"/>' +
+      '</svg>',
+  )
+
 /** 部分壳内 WebView 下 `useRouter()` 会报未定义；`inject(routerKey)` 与 useRouter 等价且更稳 */
 const router = inject(routerKey) as Router
 if (!router) {
@@ -25,7 +34,17 @@ function goGalaxy() {
 <template>
   <div class="hub">
     <header class="bar">
-      <button type="button" class="ghost" @click="goGalaxy">← 大星图</button>
+      <button type="button" class="hub-back-btn" aria-label="返回大星图" @click="goGalaxy">
+        <img
+          class="hub-back-icon"
+          :src="HUB_BACK_ICON"
+          alt=""
+          width="20"
+          height="20"
+          decoding="async"
+          draggable="false"
+        />
+      </button>
       <div class="bar-center">
         <p class="eyebrow">OfferCat · Galaxy</p>
         <h1 class="title">个人专业星图</h1>
@@ -68,7 +87,7 @@ function goGalaxy() {
 
 .bar {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   gap: 10px;
   margin-bottom: 22px;
 }
@@ -95,20 +114,47 @@ function goGalaxy() {
 }
 
 .spacer {
-  width: 72px;
+  width: 42px;
   flex-shrink: 0;
 }
 
-.ghost {
+/* 深色底圆形返回（与壳内通用圆形返回键一致，无「大星图」文案） */
+.hub-back-btn {
   flex-shrink: 0;
-  padding: 8px 12px;
-  border-radius: 11px;
+  box-sizing: border-box;
+  width: 42px;
+  height: 42px;
+  padding: 0;
+  border-radius: 50%;
   border: 1px solid rgba(255, 255, 255, 0.14);
-  background: rgba(255, 255, 255, 0.06);
-  color: #eaf2ff;
-  font-size: 13px;
-  font-weight: 600;
+  background: rgba(30, 38, 58, 0.92);
+  box-shadow:
+    0 5px 16px rgba(0, 0, 0, 0.38),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  appearance: none;
+  -webkit-appearance: none;
+  -webkit-tap-highlight-color: transparent;
+  transition:
+    transform 0.12s ease,
+    opacity 0.12s ease;
+}
+
+.hub-back-btn:active {
+  transform: scale(0.96);
+  opacity: 0.9;
+}
+
+.hub-back-icon {
+  width: 20px;
+  height: 20px;
+  display: block;
+  object-fit: contain;
+  pointer-events: none;
+  -webkit-user-drag: none;
 }
 
 .main {

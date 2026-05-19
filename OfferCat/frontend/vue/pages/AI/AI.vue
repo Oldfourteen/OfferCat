@@ -414,8 +414,8 @@
 			// 本地/云端历史：优先恢复缓存，再补充云端聊天记录。
 			async loadLocalConversations() {
 				try {
-					const user = uni.getStorageSync('user')
-					const userId = user ? user.userId : 'guest'
+					const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+					const userId = user.userId || user.id || user.studentId || 'guest'
 					
 					// 1. 先读取本地缓存作为兜底
 					const localData = uni.getStorageSync(`ai_conversations_${userId}`)
@@ -441,8 +441,8 @@
 			},
 			saveLocalConversations() {
 				try {
-					const user = uni.getStorageSync('user')
-					const userId = user ? user.userId : 'guest'
+					const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+					const userId = user.userId || user.id || user.studentId || 'guest'
 					// 只保存非空消息的会话或第一个会话
 					uni.setStorageSync(`ai_conversations_${userId}`, JSON.stringify(this.conversations))
 					

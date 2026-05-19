@@ -4,7 +4,7 @@ import { formatHttpErrorMessage } from '@/api/request'
 // 获取当前缓存中的用户信息，用于补齐 AI 接口的上下文参数。
 function getStoredUser() {
 	try {
-		return uni.getStorageSync('user') || null
+		return uni.getStorageSync('user_v2') || uni.getStorageSync('user') || null
 	} catch (e) {
 		return null
 	}

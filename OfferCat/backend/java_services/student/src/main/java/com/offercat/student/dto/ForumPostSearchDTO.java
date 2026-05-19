@@ -20,4 +20,7 @@ public class ForumPostSearchDTO {
 
     /** all：全部帖子；friends：仅好友帖子（需先有互相「同意」的申请记录） */
     private String feedTab = "all";
+
+    /** 用于指定查询某些用户的帖子（例如个人主页查询自己的帖子） */
+    private java.util.List<Long> friendIds;
 }

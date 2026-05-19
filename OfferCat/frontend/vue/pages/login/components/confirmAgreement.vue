@@ -149,27 +149,29 @@
 		position: fixed;
 		top: 0;
 		left: 0;
-		right: 0;
-		bottom: 0;
-		z-index: 9999;
+		width: 100vw;
+		height: 100vh;
+		z-index: 99999;
 		display: flex;
 		justify-content: center;
 		align-items: center;
 		pointer-events: auto;
 
 		.modal-mask {
-			position: absolute;
+			position: fixed;
 			top: 0;
 			left: 0;
-			right: 0;
-			bottom: 0;
+			width: 100vw;
+			height: 100vh;
 			background-color: rgba(0, 0, 0, 0.5);
 			animation: fadeIn 0.2s ease;
 			pointer-events: auto;
+			z-index: 99999;
 		}
 
 		.modal-content {
-			position: relative;
+			position: fixed;
+			z-index: 999999;
 			width: 78%;
 			max-width: 320px;
 			background-color: #fff;

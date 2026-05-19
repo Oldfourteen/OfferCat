@@ -34,12 +34,17 @@
 				_galaxyFrameWin: null,
 				/** App web-view 上叠原生按钮（H5 内页 fixed 在部分机型被挡） */
 				galaxyShowLbFab: false,
+				/**
+				 * 原生 web-view 常强缓存本地 static 下的 iframe / JS，壳层热更新后仍可能吃旧包。
+				 * 每次进入本页刷新一次，保证与 static/galaxy-h5 当前文件一致（H5 iframe 不反复换参，避免开发态闪烁）。
+				 */
+				galaxyWebCacheBust: Date.now(),
 			}
 		},
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260519-galaxy-navbtn-noborder-v1'
+				return '20260519-stamp-h6'
 			},
 			/**
 			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。
@@ -62,6 +67,7 @@
 					}
 				} catch (_) {}
 				qs.push(`v=${this.galaxyAssetVersion}`)
+				qs.push(`_cb=${this.galaxyWebCacheBust}`)
 				const rel = `${path}?${qs.join('&')}`
 				try {
 					if (typeof window !== 'undefined' && window.location) {
@@ -82,6 +88,11 @@
 			// #ifndef H5
 			// web-view 为原生层，内页 fixed 按钮常被挡；进入星图页即显示原生「排行榜」（仅展示页内 evalJS 会打开面板）
 			this.galaxyShowLbFab = true
+			// #endif
+		},
+		onShow() {
+			// #ifndef H5
+			this.galaxyWebCacheBust = Date.now()
 			// #endif
 		},
 		onUnload() {

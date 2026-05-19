@@ -46,7 +46,6 @@
 	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getForumRepliesInbox, forumMarkMessagesRead } from '@/api/forum.js'
-	import { getForumMockPostDetail, getForumMockReplyInbox, markForumMockReplyInboxRead } from '@/utils/forumLocalData.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -62,8 +61,6 @@
 				try {
 					await forumMarkMessagesRead({ userId: uid, scope: 'replies' })
 				} catch (_) {}
-			} else {
-				markForumMockReplyInboxRead()
 			}
 			await this.loadInbox()
 		},
@@ -77,11 +74,9 @@
 						const list = res && res.data
 						if (Array.isArray(list) && list.length) {
 							this.items = list
-							return
 						}
 					} catch (_) {}
 				}
-				this.items = getForumMockReplyInbox()
 			},
 			goBack() {
 				const pages = getCurrentPages()
@@ -98,10 +93,6 @@
 			},
 			goToPost(item) {
 				if (!item || !item.postId) return
-				const post = getForumMockPostDetail(item.postId)
-				if (post) {
-					uni.setStorageSync(`currentPost_${item.postId}`, post)
-				}
 				uni.navigateTo({
 					url: `/subPages/forum/detail?id=${encodeURIComponent(String(item.postId))}`,
 					animationType: 'slide-in-right',

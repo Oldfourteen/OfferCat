@@ -29,6 +29,9 @@ public class AiServiceClientImplement implements AiServiceClient {
     
     @Value("${deepseek.base-url}")
     private String apiUrl;
+
+    @Value("${deepseek.model:deepseek-chat}")
+    private String deepseekModel;
     
     @Autowired
     private RestTemplate restTemplate;
@@ -159,7 +162,7 @@ public class AiServiceClientImplement implements AiServiceClient {
         try {
             // 组装请求体
             Map<String, Object> requestBody = new HashMap<>();
-            requestBody.put("model", "deepseek-chat");
+            requestBody.put("model", deepseekModel);
             
             List<Map<String, String>> messages = new ArrayList<>();
             messages.add(Map.of("role", "system", "content", systemPrompt));

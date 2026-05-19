@@ -33,6 +33,15 @@
 					</view>
 				</view>
 
+				<!-- DeepSeek 练习复盘建议（与 generateAiAdvice 对应） -->
+				<view v-if="filteredHistory.length" class="ai-advice-card">
+					<text class="ai-advice-title">AI 复盘建议</text>
+					<view v-if="isGeneratingAdvice" class="ai-advice-loading">
+						<text class="loading-text">正在生成建议…</text>
+					</view>
+					<text v-else class="ai-advice-content">{{ aiAdvice || ' ' }}</text>
+				</view>
+
 				<!-- 筛选标签栏 -->
 				<view class="filter-row">
 					<view
@@ -110,9 +119,10 @@
 				historyList: [],
 				historyBackIcon: HISTORY_BACK_ICON,
 				aiAdvice: '',
-				isGeneratingAdvice: false,
-				// 筛选标签配置
-				filterTabs: [
+			isGeneratingAdvice: false,
+			adviceCache: {},
+			// 筛选标签配置
+			filterTabs: [
 					{ key: 'all', label: '全部' },
 					{ key: 'written', label: '笔试真题' },
 					{ key: 'interview', label: '面试真题' }
@@ -189,7 +199,11 @@
 						method: 'POST',
 						data: { practiceData }
 					})
-					this.aiAdvice = res || '暂无建议'
+					const text =
+						typeof res === 'string'
+							? res
+							: res && (res.data != null ? res.data : res.advice != null ? res.advice : '')
+					this.aiAdvice = String(text || '').trim() || '暂无建议'
 					this.adviceCache[currentType] = this.aiAdvice
 				} catch (e) {
 					console.error('获取 AI 建议失败', e)
@@ -359,6 +373,43 @@
 		margin-top: 8rpx;
 		font-size: 22rpx;
 		color: #8390a8;
+	}
+
+	.ai-advice-card {
+		padding: 28rpx;
+		border-radius: 30rpx;
+		background: #ffffff;
+		border: 1rpx solid rgba(72, 98, 165, 0.11);
+		box-shadow:
+			0 14rpx 32rpx rgba(20, 40, 95, 0.1),
+			0 4rpx 12rpx rgba(20, 40, 95, 0.05),
+			0 1rpx 0 rgba(255, 255, 255, 0.85) inset;
+	}
+
+	.ai-advice-title {
+		display: block;
+		font-size: 28rpx;
+		font-weight: 800;
+		color: #21304f;
+	}
+
+	.ai-advice-loading {
+		margin-top: 16rpx;
+	}
+
+	.ai-advice-content {
+		display: block;
+		margin-top: 16rpx;
+		font-size: 24rpx;
+		line-height: 1.75;
+		color: #3d4f72;
+		white-space: pre-wrap;
+		word-break: break-word;
+	}
+
+	.loading-text {
+		font-size: 24rpx;
+		color: #72819b;
 	}
 
 	.filter-row {
@@ -556,6 +607,7 @@
 
 	.history-page.theme-dark .topbar-title,
 	.history-page.theme-dark .summary-title,
+	.history-page.theme-dark .ai-advice-title,
 	.history-page.theme-dark .summary-value,
 	.history-page.theme-dark .item-title,
 	.history-page.theme-dark .empty-title {

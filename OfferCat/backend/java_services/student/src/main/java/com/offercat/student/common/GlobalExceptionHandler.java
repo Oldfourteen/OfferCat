@@ -44,12 +44,14 @@ public class GlobalExceptionHandler {
     @ExceptionHandler({java.sql.SQLException.class, DataAccessException.class})
     public ResponseResult<Void> handleDatabase(Exception ex) {
         log.error("[student-service] 数据库访问异常", ex);
-        return ResponseResult.error(500, "服务器繁忙，请稍后再试");
+        String detail = ex.getMessage() != null ? ex.getMessage() : "未知数据库错误";
+        return ResponseResult.error(500, "数据库错误: " + detail);
     }
 
     @ExceptionHandler(Exception.class)
     public ResponseResult<Void> handleOther(Exception ex) {
         log.error("[student-service] 未处理异常", ex);
-        return ResponseResult.error(500, "服务器繁忙，请稍后再试");
+        String detail = ex.getMessage() != null ? ex.getMessage() : "未知错误";
+        return ResponseResult.error(500, "服务器错误: " + detail);
     }
 }

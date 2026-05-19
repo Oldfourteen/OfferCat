@@ -109,6 +109,12 @@ spring:
           filters:
             - StripPrefix=1
 
+        # 消息通知（意见反馈等）：控制器为 @RequestMapping("/api/notification")，不能再 StripPrefix，否则会变成 /notification/** 无法匹配
+        - id: student-notification-api
+          uri: lb://student-service
+          predicates:
+            - Path=/api/notification/**
+
         - id: chat-service-api
           uri: lb://chat-service
           predicates:

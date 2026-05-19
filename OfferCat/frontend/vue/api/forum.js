@@ -32,6 +32,10 @@ async function forumRequest(buildOptions) {
 				continue
 			}
 			const err = e instanceof Error ? e : new Error(String(e))
+			if (e && e.statusCode !== undefined) err.statusCode = e.statusCode
+			if (e && e.bizCode !== undefined) err.bizCode = e.bizCode
+			if (e && e.requestUrl !== undefined) err.requestUrl = e.requestUrl
+			if (e && e.response !== undefined) err.response = e.response
 			err.forumAttemptLog = attemptLog
 			throw err
 		}

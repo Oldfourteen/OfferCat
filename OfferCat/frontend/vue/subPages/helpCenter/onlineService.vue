@@ -3,11 +3,15 @@
 		<!-- 顶部导航栏 -->
 		<view class="nav-bar">
 			<view class="nav-left" @click="goBack">
-				<text class="back-icon">‹</text>
+				<view class="nav-icon-btn">
+					<text class="back-icon">‹</text>
+				</view>
 			</view>
 			<text class="nav-title">在线客服</text>
 			<view class="nav-right" @click="showMenu">
-				<text class="menu-icon">⋮</text>
+				<view class="nav-icon-btn is-menu">
+					<text class="menu-icon">⋮</text>
+				</view>
 			</view>
 		</view>
 
@@ -55,69 +59,71 @@
 			</view>
 		</scroll-view>
 
-		<!-- 快捷问题区域 -->
-		<view class="quick-questions">
-			<view class="quick-header" @click="toggleQuickQuestions">
-				<text class="quick-title">猜你想问</text>
-				<view class="quick-header-right">
-					<text class="quick-refresh" @click.stop="refreshQuickQuestions">↻</text>
-					<text class="quick-arrow" :class="{ expanded: showQuickQuestions }">▼</text>
-				</view>
-			</view>
-			<view class="quick-list" v-show="showQuickQuestions">
-				<view 
-					class="quick-item" 
-					v-for="(item, index) in quickQuestions" 
-					:key="index"
-					@click="sendQuickQuestion(item)"
-				>
-					<text class="quick-text">{{ item }}</text>
-				</view>
-			</view>
-		</view>
-
-		<!-- 输入区域 -->
-		<view class="input-area">
-			<view class="input-wrapper">
-				<input 
-					class="message-input" 
-					type="text" 
-					v-model="inputMessage" 
-					placeholder="输入消息..."
-					@confirm="sendMessage"
-				/>
-				<view class="send-btn" :class="{ active: inputMessage.trim() }" @click="sendMessage">
-					<text class="send-text">发送</text>
-				</view>
-			</view>
-			<view class="bottom-links">
-				<text class="link-text">隐私政策</text>
-				<text class="link-divider">|</text>
-				<text class="link-text人工" @click="showContactOptions">联系管理员</text>
-			</view>
-
-			<!-- 联系选项弹窗 -->
-			<view class="contact-modal" v-if="showContactModal" @click="closeContactModal">
-				<view class="contact-modal-content" @click.stop>
-					<text class="contact-modal-title">联系管理员</text>
-					<view class="contact-options">
-						<view class="contact-option" @click="callAdmin">
-							<text class="contact-icon">📞</text>
-							<view class="contact-info">
-								<text class="contact-label">电话联系</text>
-								<text class="contact-value">150-92730328</text>
-							</view>
-						</view>
-						<view class="contact-option" @longpress="copyPhone">
-							<text class="contact-icon">📋</text>
-							<view class="contact-info">
-								<text class="contact-label">复制号码</text>
-								<text class="contact-value">长按复制</text>
-							</view>
-						</view>
+		<view class="bottom-sheet-stack">
+			<!-- 快捷问题区域 -->
+			<view class="quick-questions">
+				<view class="quick-header" @click="toggleQuickQuestions">
+					<text class="quick-title">猜你想问</text>
+					<view class="quick-header-right">
+						<text class="quick-refresh" @click.stop="refreshQuickQuestions">↻</text>
+						<text class="quick-arrow" :class="{ expanded: showQuickQuestions }">▼</text>
 					</view>
-					<view class="contact-modal-cancel" @click="closeContactModal">
-						<text class="cancel-text">取消</text>
+				</view>
+				<view class="quick-list" v-show="showQuickQuestions">
+					<view
+						class="quick-item"
+						v-for="(item, index) in quickQuestions"
+						:key="index"
+						@click="sendQuickQuestion(item)"
+					>
+						<text class="quick-text">{{ item }}</text>
+					</view>
+				</view>
+			</view>
+
+			<!-- 输入区域 -->
+			<view class="input-area">
+				<view class="input-wrapper">
+					<input
+						class="message-input"
+						type="text"
+						v-model="inputMessage"
+						placeholder="输入消息..."
+						@confirm="sendMessage"
+					/>
+					<view class="send-btn" :class="{ active: inputMessage.trim() }" @click="sendMessage">
+						<text class="send-text">发送</text>
+					</view>
+				</view>
+				<view class="bottom-links">
+					<text class="link-text">隐私政策</text>
+					<text class="link-divider">|</text>
+					<text class="link-text人工" @click="showContactOptions">联系管理员</text>
+				</view>
+
+				<!-- 联系选项弹窗 -->
+				<view class="contact-modal" v-if="showContactModal" @click="closeContactModal">
+					<view class="contact-modal-content" @click.stop>
+						<text class="contact-modal-title">联系管理员</text>
+						<view class="contact-options">
+							<view class="contact-option" @click="callAdmin">
+								<text class="contact-icon">📞</text>
+								<view class="contact-info">
+									<text class="contact-label">电话联系</text>
+									<text class="contact-value">150-92730328</text>
+								</view>
+							</view>
+							<view class="contact-option" @longpress="copyPhone">
+								<text class="contact-icon">📋</text>
+								<view class="contact-info">
+									<text class="contact-label">复制号码</text>
+									<text class="contact-value">长按复制</text>
+								</view>
+							</view>
+						</view>
+						<view class="contact-modal-cancel" @click="closeContactModal">
+							<text class="cancel-text">取消</text>
+						</view>
 					</view>
 				</view>
 			</view>
@@ -155,11 +161,6 @@
 				],
 				isHumanService: false,
 				adminPhone: '15092730328'
-			}
-		},
-		computed: {
-			themeClass() {
-				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
 		onLoad() {
@@ -436,45 +437,107 @@
 
 <style lang="scss" scoped>
 	.online-service-page {
+		min-height: 100vh;
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: #f5f6f8;
+		background: linear-gradient(
+			168deg,
+			#e4e9f5 0%,
+			#eceff8 38%,
+			#f2f4fb 72%,
+			#fafbfe 100%
+		);
+		box-sizing: border-box;
 	}
 
 	.nav-bar {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		height: 44px;
+		flex-shrink: 0;
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		background: #fff;
-		padding: 0 16px;
-		z-index: 100;
-		box-shadow: 0 2rpx 10rpx rgba(0, 0, 0, 0.05);
+		padding: calc(var(--status-bar-height) + 12rpx) 20rpx 16rpx;
+		background: linear-gradient(
+			180deg,
+			rgba(255, 255, 255, 0.96) 0%,
+			rgba(245, 247, 252, 0.94) 100%
+		);
+		backdrop-filter: blur(12px);
+		box-shadow:
+			0 8rpx 28rpx rgba(38, 51, 78, 0.07),
+			inset 0 -1rpx 0 rgba(93, 118, 189, 0.06);
 
-		.nav-left, .nav-right {
-			width: 60rpx;
-			height: 44px;
+		.nav-left,
+		.nav-right {
+			width: 72rpx;
+			height: 72rpx;
 			display: flex;
 			align-items: center;
 			justify-content: center;
-		}
-
-		.back-icon, .menu-icon {
-			font-size: 36rpx;
-			color: #333;
-			font-weight: bold;
+			flex-shrink: 0;
 		}
 
 		.nav-title {
-			font-size: 18px;
-			font-weight: 600;
-			color: #333;
+			flex: 1;
+			text-align: center;
+			font-size: 32rpx;
+			font-weight: 750;
+			letter-spacing: 0.04em;
+			color: #1e2638;
 		}
+
+		.nav-icon-btn {
+			width: 64rpx;
+			height: 64rpx;
+			border-radius: 50%;
+			background: #fff;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+			box-shadow:
+				0 6rpx 18rpx rgba(93, 118, 189, 0.14),
+				0 2rpx 6rpx rgba(45, 58, 95, 0.05),
+				inset 0 2rpx 0 rgba(255, 255, 255, 0.88);
+
+			&.is-menu .menu-icon {
+				margin-top: -6rpx;
+				letter-spacing: 2rpx;
+			}
+		}
+
+		.back-icon {
+			font-size: 40rpx;
+			line-height: 1;
+			color: #1e2638;
+			font-weight: 300;
+			margin-left: -4rpx;
+			margin-top: -4rpx;
+		}
+
+		.menu-icon {
+			font-size: 34rpx;
+			font-weight: 700;
+			color: #3d4760;
+			line-height: 1;
+		}
+	}
+
+	.chat-content {
+		flex: 1;
+		min-height: 0;
+		width: 100%;
+		box-sizing: border-box;
+		padding: 20rpx 22rpx 16rpx;
+	}
+
+	.bottom-sheet-stack {
+		flex-shrink: 0;
+		background: linear-gradient(180deg, rgba(253, 254, 255, 0.98) 0%, #f5f7fc 100%);
+		box-shadow:
+			0 -10rpx 36rpx rgba(93, 118, 189, 0.1),
+			0 -2rpx 12rpx rgba(38, 51, 78, 0.04);
+		border-radius: 24rpx 24rpx 0 0;
+		padding-bottom: env(safe-area-inset-bottom);
 	}
 
 	.menu-modal {

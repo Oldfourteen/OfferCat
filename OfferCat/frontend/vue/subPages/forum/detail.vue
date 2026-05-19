@@ -1085,7 +1085,17 @@
 						throw new Error(res ? (res.msg || res.message || '评论失败') : '评论失败')
 					}
 				} catch (e) {
-					console.error('sendComment error:', e)
+					const errDetail = {
+						message: e.message,
+						statusCode: e.statusCode,
+						bizCode: e.bizCode,
+						requestUrl: e.requestUrl,
+						forumAttemptLog: e.forumAttemptLog,
+						response: e.response,
+						cause: e.cause,
+						stack: e.stack,
+					}
+					console.error('sendComment error detail:', JSON.stringify(errDetail, null, 2))
 					uni.showToast({ title: e.message || '评论出错了，请检查日志', icon: 'none' })
 				}
 			}

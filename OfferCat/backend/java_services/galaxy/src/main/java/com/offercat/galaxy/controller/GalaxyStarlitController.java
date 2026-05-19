@@ -34,26 +34,26 @@ public class GalaxyStarlitController {
      */
     @GetMapping("/leaderboard")
     public ResponseResult<StarlitLeaderboardResponse> leaderboard(
-            @RequestParam long userId,
-            @RequestParam(defaultValue = "20") int limit,
-            @RequestParam(required = false) String packKeys) {
+            @RequestParam("userId") long userId,
+            @RequestParam(value = "limit", defaultValue = "20") int limit,
+            @RequestParam(value = "packKeys", required = false) String packKeys) {
         List<String> keys = parsePackKeys(packKeys);
         return ResponseResult.success(starlitService.leaderboard(userId, limit, keys));
     }
 
     @GetMapping("/progress")
-    public ResponseResult<List<StarlitProgressRowDto>> progress(@RequestParam long userId) {
+    public ResponseResult<List<StarlitProgressRowDto>> progress(@RequestParam("userId") long userId) {
         return ResponseResult.success(starlitService.progressByUser(userId));
     }
 
     /** 推荐：query 传 packKey，避免路径中 `:` 被网关/容器误解析 */
     @GetMapping(value = "/questions", params = "packKey")
-    public ResponseResult<List<StarlitQuestionDto>> questionsByQuery(@RequestParam String packKey) {
+    public ResponseResult<List<StarlitQuestionDto>> questionsByQuery(@RequestParam("packKey") String packKey) {
         return questionsInternal(packKey);
     }
 
     @GetMapping("/pack/{packKey}/questions")
-    public ResponseResult<List<StarlitQuestionDto>> questions(@PathVariable String packKey) {
+    public ResponseResult<List<StarlitQuestionDto>> questions(@PathVariable("packKey") String packKey) {
         return questionsInternal(packKey);
     }
 

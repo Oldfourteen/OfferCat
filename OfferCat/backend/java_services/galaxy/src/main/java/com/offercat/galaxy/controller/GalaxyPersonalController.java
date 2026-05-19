@@ -26,7 +26,7 @@ public class GalaxyPersonalController {
 
     private final PersonalGalaxyService personalGalaxyService;
     @GetMapping
-    public ResponseResult<JsonNode> get(@RequestParam long userId) throws Exception {
+    public ResponseResult<JsonNode> get(@RequestParam("userId") long userId) throws Exception {
         JsonNode data = personalGalaxyService.load(userId);
         if (data == null) {
             return ResponseResult.error(404, "尚未保存个人星图");
@@ -41,7 +41,7 @@ public class GalaxyPersonalController {
     }
 
     @DeleteMapping
-    public ResponseResult<Void> delete(@RequestParam long userId) {
+    public ResponseResult<Void> delete(@RequestParam("userId") long userId) {
         personalGalaxyService.delete(userId);
         return ResponseResult.success(null);
     }
@@ -50,7 +50,7 @@ public class GalaxyPersonalController {
      * 从已保存星图推导本题库包 pack_key 列表（供排行榜「本图合计」筛选）。
      */
     @GetMapping("/pack-keys")
-    public ResponseResult<List<String>> packKeys(@RequestParam long userId) throws Exception {
+    public ResponseResult<List<String>> packKeys(@RequestParam("userId") long userId) throws Exception {
         JsonNode galaxy = personalGalaxyService.load(userId);
         if (galaxy == null || !galaxy.has("fusions")) {
             return ResponseResult.success(List.of());

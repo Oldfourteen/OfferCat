@@ -93,7 +93,7 @@ public class GalaxyApiController {
     }
 
     @GetMapping(value = "/recommend.json", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<byte[]> recommendGet(@RequestParam(required = false) String selectedNodeId)
+    public ResponseEntity<byte[]> recommendGet(@RequestParam(value = "selectedNodeId", required = false) String selectedNodeId)
             throws Exception {
         return rawJson(recommendBytes(selectedNodeId, null));
     }

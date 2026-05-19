@@ -380,12 +380,15 @@ function goPractice() {
               {{ showRecommend ? '收起' : '展开' }}
             </button>
           </div>
-          <ul v-if="showRecommend" class="rec-list">
-            <li v-for="s in recommend" :key="s.nodeId">
-              <span class="rec-node">{{ labelForId(s.nodeId) }}</span>
-              <span class="rec-reason">{{ s.reason }}</span>
-            </li>
-          </ul>
+          <template v-if="showRecommend">
+            <ul v-if="recommend && recommend.length > 0" class="rec-list">
+              <li v-for="s in recommend" :key="s.nodeId">
+                <span class="rec-node">{{ labelForId(s.nodeId) }}</span>
+                <span class="rec-reason">{{ s.reason }}</span>
+              </li>
+            </ul>
+            <div v-else class="rec-empty">暂无推荐信息</div>
+          </template>
         </section>
       </aside>
 
@@ -774,6 +777,13 @@ function goPractice() {
   font-size: 11px;
   color: rgba(210, 220, 245, 0.72);
   margin-top: 2px;
+}
+
+.rec-empty {
+  font-size: 12px;
+  color: rgba(210, 220, 245, 0.65);
+  text-align: center;
+  padding: 16px 0 8px;
 }
 
 @media (max-width: 420px) {

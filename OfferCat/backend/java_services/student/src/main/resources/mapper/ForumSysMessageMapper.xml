@@ -1,0 +1,113 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.ForumSysMessageMapper">
+
+    <insert id="insert">
+        INSERT INTO sys_message (receiver_id, sender_id, msg_type, target_id, post_id, content, is_read, create_time)
+        VALUES (#{receiverId}, #{senderId}, #{msgType}, #{targetId}, #{postId}, #{content}, 0, NOW())
+    </insert>
+
+    <select id="countUnreadGrouped" resultType="com.offercat.student.vo.ForumUnreadCountVO">
+        SELECT
+            COALESCE(SUM(CASE WHEN is_read = 0 AND msg_type IN (2, 3, 4, 5) THEN 1 ELSE 0 END), 0) AS replies,
+            COALESCE(SUM(CASE WHEN is_read = 0 AND msg_type IN (1, 6) THEN 1 ELSE 0 END), 0) AS likes
+        FROM sys_message
+        WHERE receiver_id = #{receiverId}
+    </select>
+
+    <select id="countUnreadByTypes" resultType="int">
+        SELECT COUNT(*)
+        FROM sys_message
+        WHERE receiver_id = #{receiverId}
+          AND is_read = 0
+        <if test="types != null and types.size() > 0">
+            AND msg_type IN
+            <foreach collection="types" item="t" open="(" separator="," close=")">#{t}</foreach>
+        </if>
+    </select>
+
+    <select id="selectLikesInbox" resultType="com.offercat.student.vo.ForumInboxMsgVO">
+        SELECT
+            m.msg_id AS msgId,
+            m.sender_id AS senderId,
+            u.nickname AS senderName,
+            u.avatar AS senderAvatar,
+            m.msg_type AS msgType,
+            CASE m.msg_type
+                WHEN 1 THEN '点赞了你'
+                WHEN 6 THEN '收藏了你'
+                ELSE '与你互动'
+            END AS actionText,
+            CASE m.msg_type WHEN 6 THEN 'favorite' ELSE 'like' END AS type,
+            m.content AS snippet,
+            CAST(NULL AS UNSIGNED) AS commentId,
+            m.post_id AS postId,
+            LEFT(COALESCE(p.content, ''), 120) AS postPreview,
+            m.create_time AS createTime
+        FROM sys_message m
+        LEFT JOIN `user` u ON m.sender_id = u.user_id
+        LEFT JOIN forum_post p ON p.post_id = m.post_id AND p.status = 1
+        WHERE m.receiver_id = #{receiverId}
+          AND m.msg_type IN (1, 6)
+        ORDER BY m.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <select id="selectRepliesInbox" resultType="com.offercat.student.vo.ForumInboxMsgVO">
+        SELECT
+            m.msg_id AS msgId,
+            m.sender_id AS senderId,
+            u.nickname AS senderName,
+            u.avatar AS senderAvatar,
+            m.msg_type AS msgType,
+            CASE m.msg_type
+                WHEN 2 THEN '评论了你的帖子'
+                WHEN 3 THEN '回复了你的评论'
+                WHEN 4 THEN '@了你'
+                WHEN 5 THEN '赞了你的评论'
+                ELSE '与你互动'
+            END AS actionText,
+            CASE WHEN m.msg_type = 4 THEN 'mention' ELSE 'reply' END AS type,
+            COALESCE(m.content, '') AS snippet,
+            CASE WHEN m.msg_type IN (2, 3, 4, 5) THEN m.target_id ELSE NULL END AS commentId,
+            m.post_id AS postId,
+            LEFT(COALESCE(p.content, ''), 120) AS postPreview,
+            m.create_time AS createTime
+        FROM sys_message m
+        LEFT JOIN `user` u ON m.sender_id = u.user_id
+        LEFT JOIN forum_post p ON p.post_id = m.post_id AND p.status = 1
+        WHERE m.receiver_id = #{receiverId}
+          AND m.msg_type IN (2, 3, 4, 5)
+        ORDER BY m.create_time DESC
+        LIMIT #{offset}, #{limit}
+    </select>
+
+    <update id="markRead">
+        UPDATE sys_message SET is_read = 1
+        WHERE receiver_id = #{receiverId}
+        <if test="msgIds != null and msgIds.size() > 0">
+          AND msg_id IN
+          <foreach collection="msgIds" item="id" open="(" separator="," close=")">#{id}</foreach>
+        </if>
+        <if test="msgIds == null or msgIds.size() == 0">
+          AND 1 = 0
+        </if>
+    </update>
+
+    <update id="markReadByMsgTypes">
+        UPDATE sys_message SET is_read = 1
+        WHERE receiver_id = #{receiverId} AND is_read = 0
+        <if test="types != null and types.size() > 0">
+            AND msg_type IN
+            <foreach collection="types" item="t" open="(" separator="," close=")">#{t}</foreach>
+        </if>
+    </update>
+
+    <update id="markAllUnread">
+        UPDATE sys_message SET is_read = 1
+        WHERE receiver_id = #{receiverId} AND is_read = 0
+    </update>
+
+</mapper>

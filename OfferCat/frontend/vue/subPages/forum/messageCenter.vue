@@ -63,6 +63,7 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { getForumUnreadCounts } from '@/api/forum.js'
 	import { getForumMockReplyInboxUnreadCount } from '@/utils/forumLocalData.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
@@ -74,8 +75,9 @@
 			return {
 				rawReplyCount: 0,
 				replySeenCount: 0,
-				likeUnreadCount: 6,
-				friendUnreadCount: 2,
+				badgesServerBacked: false,
+				likeUnreadCount: 0,
+				friendUnreadCount: 0,
 				activeConversationId: '',
 				conversations: [
 					{
@@ -132,17 +134,37 @@
 				})
 			}
 		},
-		onShow() {
-			this.loadBadgeState()
-			this.rawReplyCount = getForumMockReplyInboxUnreadCount()
+		async onShow() {
+			await this.refreshUnreadBadges()
 		},
 		methods: {
+			async refreshUnreadBadges() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (uid) {
+					try {
+						const res = await getForumUnreadCounts(uid)
+						const d = res && res.data
+						if (d && typeof d === 'object') {
+							this.badgesServerBacked = true
+							this.replySeenCount = 0
+							this.rawReplyCount = Number(d.replies != null ? d.replies : 0)
+							this.likeUnreadCount = Number(d.likes != null ? d.likes : 0)
+							this.friendUnreadCount = Number(d.friendRequests != null ? d.friendRequests : 0)
+							return
+						}
+					} catch (_) {}
+				}
+				this.badgesServerBacked = false
+				this.rawReplyCount = getForumMockReplyInboxUnreadCount()
+				this.loadBadgeState()
+			},
 			loadBadgeState() {
 				const badgeState = uni.getStorageSync(BADGE_STORAGE_KEY)
 				if (!badgeState || typeof badgeState !== 'object') return
 				this.replySeenCount = Number(badgeState.replySeenCount || 0)
-				this.likeUnreadCount = Number(badgeState.likeUnreadCount ?? 6)
-				this.friendUnreadCount = Number(badgeState.friendUnreadCount ?? 2)
+				this.likeUnreadCount = Number(badgeState.likeUnreadCount ?? 0)
+				this.friendUnreadCount = Number(badgeState.friendUnreadCount ?? 0)
 			},
 			saveBadgeState() {
 				uni.setStorageSync(BADGE_STORAGE_KEY, {
@@ -166,8 +188,10 @@
 			},
 			handleFeatureClick(item) {
 				if (item.key === 'reply') {
-					this.replySeenCount = Number(this.rawReplyCount || 0)
-					this.saveBadgeState()
+					if (!this.badgesServerBacked) {
+						this.replySeenCount = Number(this.rawReplyCount || 0)
+						this.saveBadgeState()
+					}
 					uni.navigateTo({
 						url: '/subPages/forum/replyInbox',
 						animationType: 'slide-in-right',
@@ -176,8 +200,10 @@
 					return
 				}
 				if (item.key === 'like') {
-					this.likeUnreadCount = 0
-					this.saveBadgeState()
+					if (!this.badgesServerBacked) {
+						this.likeUnreadCount = 0
+						this.saveBadgeState()
+					}
 					uni.navigateTo({
 						url: '/subPages/forum/likeInbox',
 						animationType: 'slide-in-right',
@@ -185,8 +211,10 @@
 					})
 					return
 				}
-				this.friendUnreadCount = 0
-				this.saveBadgeState()
+				if (!this.badgesServerBacked) {
+					this.friendUnreadCount = 0
+					this.saveBadgeState()
+				}
 				uni.navigateTo({
 					url: '/subPages/forum/friendList',
 					animationType: 'slide-in-right',

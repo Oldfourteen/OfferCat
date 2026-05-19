@@ -45,6 +45,7 @@
 <script>
 	import { BASE_URL } from '@/api/config.js'
 	import themeMixin from '@/utils/themeMixin.js'
+	import { getForumRepliesInbox, forumMarkMessagesRead } from '@/api/forum.js'
 	import { getForumMockPostDetail, getForumMockReplyInbox, markForumMockReplyInboxRead } from '@/utils/forumLocalData.js'
 
 	export default {
@@ -54,12 +55,32 @@
 				items: []
 			}
 		},
-		onShow() {
-			markForumMockReplyInboxRead()
-			this.loadInbox()
+		async onShow() {
+			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const uid = u.userId || u.id
+			if (uid) {
+				try {
+					await forumMarkMessagesRead({ userId: uid, scope: 'replies' })
+				} catch (_) {}
+			} else {
+				markForumMockReplyInboxRead()
+			}
+			await this.loadInbox()
 		},
 		methods: {
-			loadInbox() {
+			async loadInbox() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (uid) {
+					try {
+						const res = await getForumRepliesInbox(uid)
+						const list = res && res.data
+						if (Array.isArray(list) && list.length) {
+							this.items = list
+							return
+						}
+					} catch (_) {}
+				}
 				this.items = getForumMockReplyInbox()
 			},
 			goBack() {

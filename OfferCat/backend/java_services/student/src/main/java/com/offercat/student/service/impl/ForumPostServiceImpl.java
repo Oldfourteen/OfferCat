@@ -1,47 +1,55 @@
 package com.offercat.student.service.impl;
 
-import com.offercat.student.common.PageResult;
-import com.offercat.student.dao.ForumPostMapper;
-import com.offercat.student.dto.ForumPostSearchDTO;
-import com.offercat.student.service.ForumPostService;
-import com.offercat.student.vo.ForumPostVO;
-import com.offercat.student.dto.ForumPostCreateDTO;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.offercat.student.common.PageResult;
+import com.offercat.student.dao.ForumFriendMapper;
+import com.offercat.student.dao.ForumPostMapper;
 import com.offercat.student.dto.ForumCommentDTO;
+import com.offercat.student.dto.ForumPostCreateDTO;
+import com.offercat.student.dto.ForumPostSearchDTO;
+import com.offercat.student.service.ForumNotificationService;
+import com.offercat.student.service.ForumPostService;
 import com.offercat.student.vo.ForumCommentVO;
+import com.offercat.student.vo.ForumPostVO;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
-/**
- * 论坛帖子服务实现类
- * 功能：提供论坛帖子相关的业务逻辑
- */
+import java.util.Map;
+
 @Service
 public class ForumPostServiceImpl implements ForumPostService {
-    /**
-     * 论坛帖子映射器
-     */
+
+    private static final int MSG_LIKE_POST = 1;
+    private static final int MSG_COMMENT_POST = 2;
+    private static final int MSG_REPLY_COMMENT = 3;
+    private static final int MSG_MENTION = 4;
+    private static final int MSG_LIKE_COMMENT = 5;
+    private static final int MSG_COLLECT_POST = 6;
+
     @Autowired
     private ForumPostMapper forumPostMapper;
-    /**
-     * 分页查询论坛帖子
-     * @param searchDTO 搜索参数DTO
-     * @return 分页结果VO
-     */
+
+    @Autowired
+    private ForumFriendMapper forumFriendMapper;
+
+    @Autowired
+    private ForumNotificationService forumNotificationService;
+
     @Override
     public PageResult<ForumPostVO> searchPosts(ForumPostSearchDTO searchDTO) {
-        /**
-         * 构建 orderBy
-         */
+        if (searchDTO == null) {
+            searchDTO = new ForumPostSearchDTO();
+        }
         String orderBy = "p.create_time DESC";
         if (searchDTO.getSortBy() != null) {
             String field = searchDTO.getSortBy();
             String direction = "asc".equalsIgnoreCase(searchDTO.getSortDirection()) ? "ASC" : "DESC";
-            /**
-             * 防止注入：只允许特定字段排序
-             */
             if ("like_count".equals(field)) {
                 orderBy = "p.like_count " + direction;
             } else if ("comment_count".equals(field)) {
@@ -51,68 +59,64 @@ public class ForumPostServiceImpl implements ForumPostService {
             }
         }
 
-        /**
-         * 处理分页
-         */
         int pageNum = searchDTO.getPageNum() != null && searchDTO.getPageNum() > 0 ? searchDTO.getPageNum() : 1;
         int pageSize = searchDTO.getPageSize() != null && searchDTO.getPageSize() > 0 ? searchDTO.getPageSize() : 10;
         int offset = (pageNum - 1) * pageSize;
 
-        /**
-         * 查询总数
-         */
-        long total = forumPostMapper.countSearchPosts(searchDTO.getKeyword());
+        List<Long> friendIds = null;
+        if ("friends".equalsIgnoreCase(String.valueOf(searchDTO.getFeedTab()))) {
+            Long viewer = searchDTO.getViewerUserId();
+            friendIds = viewer == null ? Collections.emptyList() : forumFriendMapper.listAcceptedFriendIds(viewer);
+            if (friendIds == null) {
+                friendIds = Collections.emptyList();
+            }
+        }
 
-        /**
-         * 查询数据
-         */
+        long total = forumPostMapper.countSearchPosts(searchDTO.getKeyword(), friendIds);
         List<ForumPostVO> records = forumPostMapper.searchPosts(
                 searchDTO.getKeyword(),
                 orderBy,
                 offset,
-                pageSize
+                pageSize,
+                friendIds,
+                searchDTO.getViewerUserId()
         );
-        /**
-         * 返回分页结果VO
-         */
         return new PageResult<>(total, records, pageNum, pageSize);
     }
-    /**
-     * 获取论坛帖子详情
-     * @param postId 帖子ID
-     * @return 帖子详情VO
-     */
+
     @Override
-    public ForumPostVO getPostDetail(Long postId) {
-        return forumPostMapper.getPostDetail(postId);
+    public ForumPostVO getPostDetail(Long postId, Long viewerUserId) {
+        return forumPostMapper.getPostDetail(postId, viewerUserId);
     }
-    /**
-     * 点赞论坛帖子
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     */
+
     @Override
     @Transactional
-    public void likePost(Long postId, Integer userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("用户ID不能为空");
+    public void recordView(Long postId) {
+        if (postId != null) {
+            forumPostMapper.incrementViewCount(postId);
+        }
+    }
+
+    @Override
+    @Transactional
+    public void likePost(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("用户或帖子不能为空");
         }
         Integer count = forumPostMapper.findLike(postId, userId);
         if (count == null || count == 0) {
             forumPostMapper.insertLike(postId, userId);
             forumPostMapper.incrementLikeCount(postId);
+            Long owner = forumPostMapper.selectPostOwnerId(postId);
+            forumNotificationService.notifyIfDistinct(owner, userId, MSG_LIKE_POST, postId, postId, null);
         }
     }
-    /**
-     * 取消点赞论坛帖子
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     */
+
     @Override
     @Transactional
-    public void unlikePost(Long postId, Integer userId) {
-        if (userId == null) {
-            throw new IllegalArgumentException("用户ID不能为空");
+    public void unlikePost(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("用户或帖子不能为空");
         }
         Integer count = forumPostMapper.findLike(postId, userId);
         if (count != null && count > 0) {
@@ -120,56 +124,221 @@ public class ForumPostServiceImpl implements ForumPostService {
             forumPostMapper.decrementLikeCount(postId);
         }
     }
-    /**
-     * 获取论坛帖子评论
-     * @param postId 帖子ID
-     * @return 评论列表VO
-     */
+
     @Override
-    public List<ForumCommentVO> getComments(Long postId) {
-        return forumPostMapper.getCommentsByPostId(postId);
+    @Transactional
+    public void collectPost(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("用户或帖子不能为空");
+        }
+        Integer cnt = forumPostMapper.findCollect(postId, userId);
+        if (cnt == null || cnt == 0) {
+            forumPostMapper.insertCollect(postId, userId);
+            forumPostMapper.incrementCollectCount(postId);
+            Long owner = forumPostMapper.selectPostOwnerId(postId);
+            forumNotificationService.notifyIfDistinct(owner, userId, MSG_COLLECT_POST, postId, postId, null);
+        }
     }
-    /**
-     * @param dto 评论DTO
-     */
+
+    @Override
+    @Transactional
+    public void uncollectPost(Long postId, Long userId) {
+        if (postId == null || userId == null) {
+            throw new IllegalArgumentException("用户或帖子不能为空");
+        }
+        Integer cnt = forumPostMapper.findCollect(postId, userId);
+        if (cnt != null && cnt > 0) {
+            forumPostMapper.deleteCollect(postId, userId);
+            forumPostMapper.decrementCollectCount(postId);
+        }
+    }
+
+    @Override
+    public List<ForumCommentVO> getComments(Long postId, Long viewerUserId) {
+        List<ForumCommentVO> flat = forumPostMapper.listCommentsFlat(postId, viewerUserId);
+        return buildCommentTree(flat);
+    }
+
+    private List<ForumCommentVO> buildCommentTree(List<ForumCommentVO> flat) {
+        if (flat == null || flat.isEmpty()) {
+            return Collections.emptyList();
+        }
+        Map<Long, ForumCommentVO> map = new HashMap<>();
+        for (ForumCommentVO c : flat) {
+            if (c.getReplies() == null) {
+                c.setReplies(new ArrayList<>());
+            }
+            if (c.getCommentId() != null) {
+                map.put(c.getCommentId(), c);
+            }
+        }
+        List<ForumCommentVO> roots = new ArrayList<>();
+        for (ForumCommentVO c : flat) {
+            Long pid = c.getParentId() == null ? 0L : c.getParentId();
+            if (pid == 0L) {
+                roots.add(c);
+                continue;
+            }
+            ForumCommentVO parent = map.get(pid);
+            if (parent != null) {
+                parent.getReplies().add(c);
+            } else {
+                roots.add(c);
+            }
+        }
+        return roots;
+    }
+
     @Override
     @Transactional
     public void addComment(ForumCommentDTO dto) {
-        // userId 默认给个1如果是空的话，方便测试
         if (dto.getUserId() == null) {
-            dto.setUserId(1L);
+            throw new IllegalArgumentException("用户ID不能为空");
+        }
+        if (dto.getParentId() == null) {
+            dto.setParentId(0L);
+        }
+        if (dto.getMentionUserIds() == null) {
+            dto.setMentionUserIds(Collections.emptyList());
         }
         forumPostMapper.insertComment(dto);
-        /**
-         * 增加帖子评论数
-         */ 
         forumPostMapper.incrementCommentCount(dto.getPostId());
+
+        Long commentId = dto.getCommentId();
+        Long postId = dto.getPostId();
+        Long postOwnerId = forumPostMapper.selectPostOwnerId(postId);
+        Long senderId = dto.getUserId();
+
+        boolean isTopLevel = dto.getParentId() == null || dto.getParentId() == 0L;
+        if (isTopLevel) {
+            forumNotificationService.notifyIfDistinct(
+                    postOwnerId,
+                    senderId,
+                    MSG_COMMENT_POST,
+                    commentId,
+                    postId,
+                    dto.getContent());
+        } else {
+            Long targetUser = dto.getReplyToUserId() != null ? dto.getReplyToUserId() : postOwnerId;
+            forumNotificationService.notifyIfDistinct(
+                    targetUser,
+                    senderId,
+                    MSG_REPLY_COMMENT,
+                    commentId,
+                    postId,
+                    dto.getContent());
+        }
+
+        LinkedHashSet<Long> mentions = new LinkedHashSet<>(dto.getMentionUserIds());
+        mentions.remove(senderId);
+        mentions.remove(postOwnerId);
+        if (!isTopLevel && dto.getReplyToUserId() != null) {
+            mentions.remove(dto.getReplyToUserId());
+        }
+        for (Long uid : mentions) {
+            if (uid != null && uid.longValue() > 0) {
+                forumNotificationService.notifyIfDistinct(
+                        uid,
+                        senderId,
+                        MSG_MENTION,
+                        commentId,
+                        postId,
+                        dto.getContent());
+            }
+        }
     }
-    /**
-     * 创建论坛帖子
-     */
+
+    @Override
+    @Transactional
+    public void deleteComment(Long commentId, Long userId) {
+        if (commentId == null || userId == null) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+        Long postId = forumPostMapper.selectCommentPostId(commentId);
+        if (postId == null) {
+            throw new IllegalArgumentException("评论不存在");
+        }
+        int affected = forumPostMapper.softDeleteComment(commentId, userId);
+        if (affected > 0) {
+            forumPostMapper.decrementCommentCount(postId);
+        } else {
+            throw new RuntimeException("删除失败，不是你的评论");
+        }
+    }
+
+    @Override
+    @Transactional
+    public void likeComment(Long commentId, Long userId) {
+        if (commentId == null || userId == null) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+        Integer c = forumPostMapper.findCommentLike(commentId, userId);
+        if (c == null || c == 0) {
+            forumPostMapper.insertCommentLike(commentId, userId);
+            forumPostMapper.incrementCommentLikeCount(commentId);
+
+            ForumCommentVO brief = forumPostMapper.selectCommentBrief(commentId);
+            if (brief != null && brief.getUserId() != null) {
+                forumNotificationService.notifyIfDistinct(
+                        brief.getUserId(),
+                        userId,
+                        MSG_LIKE_COMMENT,
+                        commentId,
+                        brief.getPostId(),
+                        brief.getContent());
+            }
+        }
+    }
+
+    @Override
+    @Transactional
+    public void unlikeComment(Long commentId, Long userId) {
+        if (commentId == null || userId == null) {
+            throw new IllegalArgumentException("参数不能为空");
+        }
+        Integer c = forumPostMapper.findCommentLike(commentId, userId);
+        if (c != null && c > 0) {
+            forumPostMapper.deleteCommentLike(commentId, userId);
+            forumPostMapper.decrementCommentLikeCount(commentId);
+        }
+    }
+
     @Override
     @Transactional
     public void createPost(ForumPostCreateDTO dto) {
         if (dto.getUserId() == null) {
-            dto.setUserId(1L);
+            throw new IllegalArgumentException("用户ID不能为空");
         }
-        String imagesStr = null;
+        if (dto.getMentionUserIds() == null) {
+            dto.setMentionUserIds(Collections.emptyList());
+        }
+        if (dto.getTitle() == null || dto.getTitle().isBlank()) {
+            dto.setTitle("校园动态");
+        }
+
+        String json = null;
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {
             try {
-                ObjectMapper mapper = new ObjectMapper();
-                imagesStr = mapper.writeValueAsString(dto.getImages());
+                json = new ObjectMapper().writeValueAsString(dto.getImages());
             } catch (Exception e) {
-                imagesStr = String.join(",", dto.getImages());
+                json = String.join(",", dto.getImages());
             }
         }
-        forumPostMapper.insertPost(dto.getUserId(), dto.getTitle(), dto.getContent(), imagesStr);
+        dto.setImagesJson(json);
+        forumPostMapper.insertPost(dto);
+        Long postId = dto.getPostId();
+        if (postId != null && !dto.getMentionUserIds().isEmpty()) {
+            LinkedHashSet<Long> mids = new LinkedHashSet<>(dto.getMentionUserIds());
+            mids.remove(dto.getUserId());
+            for (Long uid : mids) {
+                if (uid != null && uid > 0) {
+                    forumNotificationService.notifyIfDistinct(
+                            uid, dto.getUserId(), MSG_MENTION, postId, postId, dto.getContent());
+                }
+            }
+        }
     }
-    /**
-     * 删除论坛帖子
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     */
+
     @Override
     @Transactional
     public void deletePost(Long postId, Long userId) {

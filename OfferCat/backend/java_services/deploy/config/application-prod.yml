@@ -38,7 +38,7 @@ spring:
 radar:
   cpp:
     # c++ 雷达评分分析 端口：22565
-    base-url: http://[::1]:22565
+    base-url: http://127.0.0.1:22565
   python:
     # Python 雷达图生成服务 端口15000
     base-url: http://127.0.0.1:15000

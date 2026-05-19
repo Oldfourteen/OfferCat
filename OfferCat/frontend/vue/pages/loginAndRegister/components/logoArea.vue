@@ -1,8 +1,10 @@
 <template>
 	<!-- logo-area -->
 	<view class="logo-area">
-		<!-- Logo 图片作为欢迎页品牌识别的核心视觉元素。 -->
-		<image class="logo" src="/static/logo-nobg.png" mode="aspectFit"></image>
+		<!-- 柔和渐变衬底保留，不使用描边与外阴影，避免像套了一层白框 -->
+		<view class="logo-backdrop">
+			<image class="logo" src="/static/logo-nobg.png" mode="aspectFit"></image>
+		</view>
 	</view>
 </template>
 
@@ -18,9 +20,22 @@
 		animation: fadeInUp 0.8s ease-out 0.1s both;
 	}
 
+	.logo-backdrop {
+		padding: 14px 18px;
+		border-radius: 36px;
+		border: none;
+		box-shadow: none;
+		background: linear-gradient(
+			165deg,
+			rgba(93, 118, 189, 0.1) 0%,
+			rgba(255, 255, 255, 0.65) 55%,
+			rgba(255, 255, 255, 0.35) 100%
+		);
+	}
+
 	.logo-area .logo {
-		height: 180px;
-		width: 180px;
+		height: 160px;
+		width: 160px;
 		display: block;
 		border: none;
 		animation: scaleIn 0.6s ease-out 0.3s both;

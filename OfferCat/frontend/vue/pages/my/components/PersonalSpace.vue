@@ -10,7 +10,8 @@
 				@click="handleToolClick(item)"
 			>
 				<view class="space-icon" :class="item.uiClass">
-					<text>{{ item.iconText }}</text>
+					<image v-if="item.iconImage" :src="item.iconImage" class="space-icon-img" mode="aspectFit"></image>
+					<text v-else>{{ item.iconText }}</text>
 				</view>
 				<text class="space-name">{{ item.name }}</text>
 			</view>
@@ -34,11 +35,11 @@
 		data() {
 			return {
 				tools: [
-					{ name: '好友', iconText: '友', desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
-					{ name: '个人名片', iconText: '片', desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
-					{ name: '消息', iconText: '信', desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
-					{ name: '收到喜欢', iconText: '赞', desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
-					{ name: '收藏', iconText: '藏', desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
+					{ name: '好友', iconImage: '/static/好友.svg', desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
+					{ name: '个人名片', iconImage: '/static/个人名片.svg', desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
+					{ name: '消息', iconImage: '/static/消息.svg', desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
+					{ name: '收到喜欢', iconImage: '/static/点赞.svg', desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
+					{ name: '收藏', iconImage: '/static/收藏.svg', desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
 				]
 			}
 		},
@@ -139,6 +140,11 @@
 		justify-content: center;
 		font-size: 38rpx;
 		font-weight: 800;
+
+		.space-icon-img {
+			width: 58rpx;
+			height: 58rpx;
+		}
 	}
 
 	.ui-blue {

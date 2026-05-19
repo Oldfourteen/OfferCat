@@ -372,8 +372,9 @@ CREATE TABLE `forum_comment` (
   `comment_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '评论ID', 
   `post_id` BIGINT NOT NULL COMMENT '归属帖子ID', 
   `user_id` BIGINT NOT NULL COMMENT '评论人ID', 
-  `parent_id` BIGINT DEFAULT 0 COMMENT '父评论ID(0表示直接评论帖子，非0表示回复某条评论)', 
-  `reply_to_user_id` BIGINT DEFAULT NULL COMMENT '被回复人ID(如果是追评的话)', 
+  `parent_id` BIGINT DEFAULT 0 COMMENT '父评论ID(0表示直接评论帖子；回复楼中楼时为根评论ID)', 
+  `reply_to_comment_id` BIGINT DEFAULT NULL COMMENT '直接被回复的评论ID(楼中楼)', 
+  `reply_to_user_id` BIGINT DEFAULT NULL COMMENT '被回复人ID', 
   `content` TEXT NOT NULL COMMENT '评论内容', 
   `like_count` INT DEFAULT 0 COMMENT '评论点赞数', 
   `status` TINYINT DEFAULT 1 COMMENT '状态 1正常 0删除', 
@@ -385,6 +386,38 @@ CREATE TABLE `forum_comment` (
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛评论表(支持父子层级)'; 
  
 -- ---------------------------- 
+-- 19.1 评论点赞记录表 
+-- ---------------------------- 
+DROP TABLE IF EXISTS `forum_comment_like`; 
+CREATE TABLE `forum_comment_like` ( 
+  `like_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '点赞记录ID', 
+  `comment_id` BIGINT NOT NULL COMMENT '评论ID', 
+  `user_id` BIGINT NOT NULL COMMENT '点赞人ID', 
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '点赞时间', 
+  UNIQUE KEY `uk_user_comment` (`user_id`, `comment_id`), 
+  INDEX `idx_comment` (`comment_id`), 
+  FOREIGN KEY (`comment_id`) REFERENCES `forum_comment`(`comment_id`) ON DELETE CASCADE, 
+  FOREIGN KEY (`user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛评论点赞表'; 
+ 
+-- ---------------------------- 
+-- 19.2 论坛好友申请与关系 
+-- ---------------------------- 
+DROP TABLE IF EXISTS `forum_friend_request`; 
+CREATE TABLE `forum_friend_request` ( 
+  `request_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '申请记录ID', 
+  `from_user_id` BIGINT NOT NULL COMMENT '申请人ID', 
+  `to_user_id` BIGINT NOT NULL COMMENT '被申请人ID', 
+  `status` TINYINT NOT NULL DEFAULT 0 COMMENT '0待处理 1已同意 2已拒绝', 
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间', 
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间', 
+  UNIQUE KEY `uk_pair` (`from_user_id`, `to_user_id`), 
+  INDEX `idx_to_status` (`to_user_id`, `status`), 
+  FOREIGN KEY (`from_user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE, 
+  FOREIGN KEY (`to_user_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE 
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛好友申请表'; 
+ 
+-- ---------------------------- 
 -- 20. 互动消息提醒表 
 -- ---------------------------- 
 DROP TABLE IF EXISTS `sys_message`; 
@@ -392,12 +425,14 @@ CREATE TABLE `sys_message` (
   `msg_id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '消息ID', 
   `receiver_id` BIGINT NOT NULL COMMENT '消息接收人ID', 
   `sender_id` BIGINT NOT NULL COMMENT '动作触发人ID', 
-  `msg_type` TINYINT NOT NULL COMMENT '消息类型 1-点赞帖子 2-评论帖子 3-回复评论', 
-  `target_id` BIGINT NOT NULL COMMENT '目标ID(如帖子ID或评论ID，用于跳转)', 
-  `content` VARCHAR(255) DEFAULT NULL COMMENT '消息附带内容(如评论的截取文本)', 
+  `msg_type` TINYINT NOT NULL COMMENT '1点赞帖子 2评论帖子 3回复评论 4@提及 5点赞评论 6收藏帖子', 
+  `target_id` BIGINT NOT NULL COMMENT '关联目标ID', 
+  `post_id` BIGINT DEFAULT NULL COMMENT '冗余帖子ID(便于定位详情)', 
+  `content` VARCHAR(255) DEFAULT NULL COMMENT '附带内容预览', 
   `is_read` TINYINT DEFAULT 0 COMMENT '是否已读 0未读 1已读', 
   `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '消息产生时间', 
   INDEX `idx_receiver_read` (`receiver_id`, `is_read`), 
+  INDEX `idx_receiver_type_time` (`receiver_id`, `msg_type`, `create_time`), 
   FOREIGN KEY (`receiver_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE, 
   FOREIGN KEY (`sender_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE 
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='互动消息提醒表'; 

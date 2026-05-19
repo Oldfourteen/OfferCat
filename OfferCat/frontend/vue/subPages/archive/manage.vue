@@ -585,6 +585,7 @@
 	.form-input,
 	.form-textarea {
 		width: 100%;
+		box-sizing: border-box;
 		padding: 20rpx 22rpx;
 		border-radius: 20rpx;
 		background: #f7f9fc;

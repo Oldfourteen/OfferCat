@@ -68,6 +68,7 @@
 							<view class="c-name-time">
 								<text class="c-name">{{ getAuthorName(item.authorName, item.userId) }}</text>
 								<text class="c-time">{{ formatTime(item.createTime) }}</text>
+								<view class="delete-btn-mini" v-if="isCommentOwner(item)" @click.stop="deleteCommentConfirm(item)">删除</view>
 							</view>
 							<view class="expandable-text-block">
 								<view class="c-text text-wrap-safe">{{ getDisplayText(item.content, getExpandKey('comment', item.commentId)) }}</view>
@@ -210,7 +211,13 @@
 		addForumComment,
 		likeForumPost,
 		unlikeForumPost,
-		deleteForumPost
+		deleteForumPost,
+		recordForumPostView,
+		collectForumPost,
+		uncollectForumPost,
+		deleteForumComment,
+		likeForumComment,
+		unlikeForumComment
 	} from '@/api/forum.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
@@ -252,6 +259,7 @@
 				replySheetCloseTimer: null,
 				replySheetTransitionMs: 240,
 				isLeaving: false,
+				viewRecorded: false,
 				allowNativeBack: false,
 				emptyCommentMinHeight: 0
 			}
@@ -337,9 +345,15 @@
 					})
 				}, 240)
 			},
+			getViewerUserId() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const id = u.userId || u.id
+				return id != null && id !== '' ? id : ''
+			},
 			async loadPostDetail() {
+				const vu = this.getViewerUserId()
 				try {
-					const res = await getForumPostDetail(this.postId)
+					const res = await getForumPostDetail(this.postId, vu || undefined)
 					const raw = res && res.data
 					if (raw) {
 						const normalized = syncForumPostViews({
@@ -348,12 +362,20 @@
 							viewCount: Number(raw.views != null ? raw.views : raw.viewCount || 0),
 							isLiked: Boolean(raw.isLiked),
 							isCollected: Boolean(raw.isCollected),
-							favoriteCount: Number(raw.favoriteCount || 0),
+							favoriteCount: Number(
+								raw.favoriteCount != null ? raw.favoriteCount : raw.collectCount || 0
+							),
 						})
 						this.post = normalized
 						syncForumMockPostCache(normalized)
 						this.parseImages()
 						this.scheduleEmptyCommentMeasure()
+						if (!String(this.postId).startsWith('mock_') && !this.viewRecorded) {
+							this.viewRecorded = true
+							try {
+								await recordForumPostView(this.postId)
+							} catch (_e) {}
+						}
 						return
 					}
 				} catch (_) {}
@@ -373,8 +395,9 @@
 				}
 			},
 			async loadComments() {
+				const vu = this.getViewerUserId()
 				try {
-					const res = await getForumComments(this.postId)
+					const res = await getForumComments(this.postId, vu || undefined)
 					const list = res && res.data
 					if (Array.isArray(list)) {
 						this.comments = this.normalizeComments(list)
@@ -740,9 +763,27 @@
 				targetItem.isLiked = nextLiked
 				targetItem.likeCount = Math.max(0, Number(targetItem.likeCount || 0) + (nextLiked ? 1 : -1))
 			},
-			toggleCommentLike(item) {
+			async toggleCommentLike(item) {
 				if (!item) return
-				uni.showToast({ title: '评论点赞敬请期待', icon: 'none' })
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = user.userId || user.id
+				const cid = this.getCommentId(item)
+				if (!uid) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				if (!cid || String(this.postId).startsWith('mock_')) {
+					uni.showToast({ title: '评论点赞敬请期待', icon: 'none' })
+					return
+				}
+				const nextLiked = !this.isCommentLiked(item)
+				try {
+					if (nextLiked) await likeForumComment(cid, uid)
+					else await unlikeForumComment(cid, uid)
+					this.applyCommentLikeState(item, nextLiked)
+				} catch (e) {
+					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
+				}
 			},
 			parseImages() {
 				let imagesStr = this.post.images
@@ -853,16 +894,47 @@
 				if (images.length === 1) return 'layout-1';
 				return 'layout-multi';
 			},
-			toggleCollect() {
-				const updatedPost = toggleForumMockPostCollect(this.postId)
-				if (!updatedPost) return
-				this.post = syncForumPostViews(updatedPost)
-				this.parseImages()
-				uni.showToast({
-					title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
-					icon: 'success'
+			async toggleCollect() {
+				const pid = this.post.postId || this.postId || this.post.id
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = user.userId || user.id
+				if (String(pid || '').startsWith('mock_')) {
+					const updatedPost = toggleForumMockPostCollect(this.postId)
+					if (!updatedPost) return
+					this.post = syncForumPostViews(updatedPost)
+					this.parseImages()
+					uni.showToast({
+						title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
+						icon: 'success'
+					})
+					uni.$emit('refreshForumList')
+					return
+				}
+				if (!uid) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				const prevPost = JSON.parse(JSON.stringify(this.post || {}))
+				const nextCol = !Boolean(this.post && this.post.isCollected)
+				this.post = syncForumPostViews({
+					...(this.post || {}),
+					isCollected: nextCol,
+					favoriteCount: Math.max(
+						0,
+						Number((this.post && this.post.favoriteCount) || 0) + (nextCol ? 1 : -1)
+					),
 				})
-				uni.$emit('refreshForumList')
+				try {
+					if (nextCol) await collectForumPost(pid, uid)
+					else await uncollectForumPost(pid, uid)
+					syncForumMockPostCache(this.post)
+					uni.showToast({ title: nextCol ? '收藏成功' : '已取消收藏', icon: 'none' })
+					uni.$emit('refreshForumList')
+				} catch (e) {
+					this.post = syncForumPostViews(prevPost)
+					syncForumMockPostCache(this.post)
+					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
+				}
 			},
 			async likePost() {
 				const user = uni.getStorageSync('user_v2') || {};
@@ -928,42 +1000,87 @@
 					}
 				})
 			},
+
+			isCommentOwner(item) {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const id = u.userId || u.id
+				return !!(item && id != null && String(item.userId) === String(id))
+			},
+
+			deleteCommentConfirm(item) {
+				const cid = this.getCommentId(item)
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = user.userId || user.id
+				if (!cid || !uid) return
+				const that = this
+				uni.showModal({
+					title: '删除评论',
+					content: '确定删除这条评论吗？',
+					success(res) {
+						if (!res.confirm) return
+						;(async () => {
+							try {
+								await deleteForumComment(cid, uid)
+								await that.loadComments()
+								await that.loadPostDetail()
+								uni.showToast({ title: '已删除', icon: 'none' })
+								uni.$emit('refreshForumList')
+							} catch (e) {
+								uni.showToast({ title: (e && e.message) || '删除失败', icon: 'none' })
+							}
+						})()
+					},
+				})
+			},
+
 			async sendComment() {
 				if (!this.commentText.trim()) return
-				
+
 				const sensitiveResult = await checkContent(this.commentText)
 				if (sensitiveResult.hasSensitive) {
 					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
 					this.commentText = sensitiveResult.replacement || getRandomPoemPair()
 				}
-				
-				const user = uni.getStorageSync('user') || {}
+
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const userId = user.userId || user.id
 				if (!userId) {
 					uni.showToast({ title: '请先登录', icon: 'none' })
 					return
 				}
+
 				const currentReplyContext = this.replyContext
-				const content = currentReplyContext && currentReplyContext.targetUserName
-					? `回复 ${currentReplyContext.targetUserName}：${this.commentText}`
-					: this.commentText
+				const trimmed = String(this.commentText || '').trim()
+				const payload = {
+					postId: this.postId,
+					userId,
+					content: trimmed,
+					parentId: currentReplyContext ? Number(currentReplyContext.rootCommentId) || 0 : 0,
+					mentionUserIds: [],
+				}
+				if (currentReplyContext) {
+					const rtc = Number(currentReplyContext.targetCommentId)
+					if (rtc) payload.replyToCommentId = rtc
+					const rtu = currentReplyContext.targetUserId
+					if (rtu !== undefined && rtu !== null && rtu !== '')
+						payload.replyToUserId = Number(rtu)
+				}
+
+				const mockFallbackContent =
+					currentReplyContext && currentReplyContext.targetUserName
+						? `回复 ${currentReplyContext.targetUserName}：${trimmed}`
+						: trimmed
+
 				try {
-					await addForumComment({
-						postId: this.postId,
-						userId,
-						content,
-					})
+					await addForumComment(payload)
 					this.commentText = ''
 					this.showEmojiPanel = false
-					this.loadComments()
+					await this.loadComments()
+					await this.loadPostDetail()
 					if (this.activeReplyCommentId) {
 						this.resetReplyContextForActiveThread()
 					} else {
 						this.replyContext = null
-					}
-					const refreshedPost = getForumMockPostDetail(this.postId)
-					if (refreshedPost) {
-						this.post = syncForumPostViews(refreshedPost)
 					}
 					uni.$emit('refreshForumList')
 					uni.showToast({ title: currentReplyContext ? '回复成功' : '评论成功', icon: 'none' })
@@ -972,7 +1089,7 @@
 
 				const updatedComments = createForumMockComment({
 					postId: this.postId,
-					content,
+					content: mockFallbackContent,
 					userId,
 					parentCommentId: currentReplyContext ? currentReplyContext.rootCommentId : undefined,
 					replyToCommentId: currentReplyContext ? currentReplyContext.targetCommentId : undefined,
@@ -1349,19 +1466,26 @@
 
 					.c-name-time {
 						display: flex;
-						justify-content: space-between;
+						flex-wrap: wrap;
 						align-items: center;
+						gap: 8rpx 12rpx;
 						margin-bottom: 12rpx;
-						
+
 						.c-name {
 							font-size: 28rpx;
 							font-weight: bold;
 							color: #333;
 						}
-						
+
 						.c-time {
 							font-size: 22rpx;
 							color: #999;
+						}
+
+						.delete-btn-mini {
+							margin-left: auto;
+							font-size: 22rpx;
+							color: #94a3b8;
 						}
 					}
 
@@ -1882,8 +2006,18 @@
 			.comment-list .comment-item .c-content {
 				border-bottom-color: rgba(255, 255, 255, 0.03);
 				.c-name-time {
+					display: flex;
+					flex-wrap: wrap;
+					align-items: center;
+					gap: 8rpx 12rpx;
+					margin-bottom: 12rpx;
 					.c-name { color: #eef2f8; }
 					.c-time { color: #66758f; }
+					.delete-btn-mini {
+						margin-left: auto;
+						font-size: 22rpx;
+						color: #8090ad;
+					}
 				}
 				.c-text { color: #d1d8e5; }
 				.reply-preview-card { background: #232834; }

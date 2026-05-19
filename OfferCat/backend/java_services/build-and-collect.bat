@@ -20,11 +20,20 @@ echo [2/2] Collecting JARs to dist\
 if not exist "%DIST%" mkdir "%DIST%"
 
 for %%S in (registry api_gateway user student resume ai_evaluation radar_evaluation galaxy question_bank) do (
-    if exist "%SCRIPT_DIR%%%S\target\%%S.jar" (
-        copy /Y "%SCRIPT_DIR%%%S\target\%%S.jar" "%DIST%\" >nul
-        echo   Collected: %%S.jar
+    if "%%S"=="user" (
+        if exist "%SCRIPT_DIR%%%S\target\%%S-exec.jar" (
+            copy /Y "%SCRIPT_DIR%%%S\target\%%S-exec.jar" "%DIST%\" >nul
+            echo   Collected: %%S-exec.jar
+        ) else (
+            echo   [WARN] Not found: %%S\target\%%S-exec.jar
+        )
     ) else (
-        echo   [WARN] Not found: %%S\target\%%S.jar
+        if exist "%SCRIPT_DIR%%%S\target\%%S.jar" (
+            copy /Y "%SCRIPT_DIR%%%S\target\%%S.jar" "%DIST%\" >nul
+            echo   Collected: %%S.jar
+        ) else (
+            echo   [WARN] Not found: %%S\target\%%S.jar
+        )
     )
 )
 

@@ -13,7 +13,7 @@ set S1_NAME=registry
 set S1_JAR=registry.jar
 
 set S2_NAME=user
-set S2_JAR=user.jar
+set S2_JAR=user-exec.jar
 
 set S3_NAME=student
 set S3_JAR=student.jar

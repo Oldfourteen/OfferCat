@@ -14,17 +14,35 @@
             p.content,
             p.images,
             p.like_count AS likeCount,
+            p.collect_count AS collectCount,
             p.comment_count AS commentCount,
             p.view_count AS viewCount,
             p.status,
             p.create_time AS createTime,
-            p.update_time AS updateTime
+            p.update_time AS updateTime,
+            CASE WHEN pl.like_id IS NOT NULL THEN 1 ELSE 0 END AS isLiked,
+            CASE WHEN pc.collect_id IS NOT NULL THEN 1 ELSE 0 END AS isCollected
         FROM forum_post p
         LEFT JOIN `user` u ON p.user_id = u.user_id
+        LEFT JOIN forum_post_like pl ON pl.post_id = p.post_id AND pl.user_id = COALESCE(#{viewerUserId}, -1)
+        LEFT JOIN forum_post_collect pc ON pc.post_id = p.post_id AND pc.user_id = COALESCE(#{viewerUserId}, -1)
         <where>
-            p.status = 1 <!-- 只查询正常状态的帖子 -->
+            p.status = 1
             <if test="keyword != null and keyword != ''">
                 AND (p.title LIKE CONCAT('%', #{keyword}, '%') OR p.content LIKE CONCAT('%', #{keyword}, '%'))
+            </if>
+            <if test="friendIds != null">
+                <choose>
+                    <when test="friendIds.size() == 0">
+                        AND 1 = 0
+                    </when>
+                    <otherwise>
+                        AND p.user_id IN
+                        <foreach collection="friendIds" item="fid" open="(" separator="," close=")">
+                            #{fid}
+                        </foreach>
+                    </otherwise>
+                </choose>
             </if>
         </where>
         <if test="orderBy != null and orderBy != ''">
@@ -43,6 +61,19 @@
             <if test="keyword != null and keyword != ''">
                 AND (p.title LIKE CONCAT('%', #{keyword}, '%') OR p.content LIKE CONCAT('%', #{keyword}, '%'))
             </if>
+            <if test="friendIds != null">
+                <choose>
+                    <when test="friendIds.size() == 0">
+                        AND 1 = 0
+                    </when>
+                    <otherwise>
+                        AND p.user_id IN
+                        <foreach collection="friendIds" item="fid" open="(" separator="," close=")">
+                            #{fid}
+                        </foreach>
+                    </otherwise>
+                </choose>
+            </if>
         </where>
     </select>
 
@@ -56,38 +87,43 @@
             p.content,
             p.images,
             p.like_count AS likeCount,
+            p.collect_count AS collectCount,
             p.comment_count AS commentCount,
             p.view_count AS viewCount,
             p.status,
             p.create_time AS createTime,
-            p.update_time AS updateTime
+            p.update_time AS updateTime,
+            CASE WHEN pl.like_id IS NOT NULL THEN 1 ELSE 0 END AS isLiked,
+            CASE WHEN pc.collect_id IS NOT NULL THEN 1 ELSE 0 END AS isCollected
         FROM forum_post p
         LEFT JOIN `user` u ON p.user_id = u.user_id
+        LEFT JOIN forum_post_like pl ON pl.post_id = p.post_id AND pl.user_id = COALESCE(#{viewerUserId}, -1)
+        LEFT JOIN forum_post_collect pc ON pc.post_id = p.post_id AND pc.user_id = COALESCE(#{viewerUserId}, -1)
         WHERE p.post_id = #{postId} AND p.status = 1
     </select>
 
+    <select id="selectPostOwnerId" resultType="long">
+        SELECT user_id FROM forum_post WHERE post_id = #{postId} AND status = 1 LIMIT 1
+    </select>
 
+    <update id="incrementViewCount">
+        UPDATE forum_post SET view_count = view_count + 1 WHERE post_id = #{postId} AND status = 1
+    </update>
 
     <select id="findLike" resultType="java.lang.Integer">
-        SELECT COUNT(*)
-        FROM forum_post_like
-        WHERE post_id = #{postId} AND user_id = #{userId}
+        SELECT COUNT(*) FROM forum_post_like WHERE post_id = #{postId} AND user_id = #{userId}
     </select>
 
     <insert id="insertLike">
-        INSERT INTO forum_post_like(post_id, user_id)
-        VALUES(#{postId}, #{userId})
+        INSERT INTO forum_post_like (post_id, user_id) VALUES (#{postId}, #{userId})
     </insert>
 
     <update id="incrementLikeCount">
-        UPDATE forum_post
-        SET like_count = like_count + 1
-        WHERE post_id = #{postId}
+        UPDATE forum_post SET like_count = like_count + 1 WHERE post_id = #{postId}
     </update>
 
     <delete id="deleteLike">
-        DELETE FROM forum_post_like
-        WHERE post_id = #{postId} AND user_id = #{userId}
+        DELETE FROM forum_post_like WHERE post_id = #{postId} AND user_id = #{userId}
     </delete>
 
     <update id="decrementLikeCount">
@@ -96,41 +132,73 @@
         WHERE post_id = #{postId}
     </update>
 
-    <update id="incrementViewCount">
+    <select id="findCollect" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM forum_post_collect WHERE post_id = #{postId} AND user_id = #{userId}
+    </select>
+
+    <insert id="insertCollect">
+        INSERT INTO forum_post_collect (user_id, post_id) VALUES (#{userId}, #{postId})
+    </insert>
+
+    <update id="incrementCollectCount">
+        UPDATE forum_post SET collect_count = collect_count + 1 WHERE post_id = #{postId}
+    </update>
+
+    <delete id="deleteCollect">
+        DELETE FROM forum_post_collect WHERE post_id = #{postId} AND user_id = #{userId}
+    </delete>
+
+    <update id="decrementCollectCount">
         UPDATE forum_post
-        SET view_count = view_count + 1
+        SET collect_count = CASE WHEN collect_count > 0 THEN collect_count - 1 ELSE 0 END
         WHERE post_id = #{postId}
     </update>
 
     <update id="incrementCommentCount">
+        UPDATE forum_post SET comment_count = comment_count + 1 WHERE post_id = #{postId}
+    </update>
+
+    <update id="decrementCommentCount">
         UPDATE forum_post
-        SET comment_count = comment_count + 1
+        SET comment_count = CASE WHEN comment_count > 0 THEN comment_count - 1 ELSE 0 END
         WHERE post_id = #{postId}
     </update>
 
-    <select id="getCommentsByPostId" resultType="com.offercat.student.vo.ForumCommentVO">
+    <select id="listCommentsFlat" resultType="com.offercat.student.vo.ForumCommentVO">
         SELECT
             c.comment_id AS commentId,
             c.post_id AS postId,
             c.user_id AS userId,
             u.nickname AS authorName,
             u.avatar AS authorAvatar,
-            c.content,
+            c.content AS content,
+            c.parent_id AS parentId,
+            c.reply_to_comment_id AS replyToCommentId,
+            c.reply_to_user_id AS replyToUserId,
+            ru.nickname AS replyToUserName,
+            COALESCE(c.like_count, 0) AS likeCount,
+            CASE WHEN cl.like_id IS NOT NULL THEN 1 ELSE 0 END AS isLiked,
             c.create_time AS createTime
         FROM forum_comment c
         LEFT JOIN `user` u ON c.user_id = u.user_id
+        LEFT JOIN `user` ru ON c.reply_to_user_id = ru.user_id
+        LEFT JOIN forum_comment_like cl ON cl.comment_id = c.comment_id AND cl.user_id = COALESCE(#{viewerUserId}, -1)
         WHERE c.post_id = #{postId} AND c.status = 1
-        ORDER BY c.create_time DESC
+        ORDER BY c.create_time ASC
     </select>
 
-    <insert id="insertComment" parameterType="com.offercat.student.dto.ForumCommentDTO">
-        INSERT INTO forum_comment(post_id, user_id, content)
-        VALUES(#{postId}, #{userId}, #{content})
+    <insert id="insertComment" useGeneratedKeys="true" keyColumn="comment_id" keyProperty="commentId">
+        INSERT INTO forum_comment (post_id, user_id, parent_id, reply_to_comment_id, reply_to_user_id, content, status, create_time)
+        VALUES (#{postId}, #{userId},
+                #{parentId,jdbcType=BIGINT},
+                #{replyToCommentId,jdbcType=BIGINT},
+                #{replyToUserId,jdbcType=BIGINT},
+                #{content}, 1, NOW())
     </insert>
 
-    <insert id="insertPost">
-        INSERT INTO forum_post(user_id, title, content, images, status, create_time, update_time)
-        VALUES(#{userId}, #{title}, #{content}, #{images, jdbcType=VARCHAR}, 1, NOW(), NOW())
+    <insert id="insertPost" useGeneratedKeys="true" keyColumn="post_id" keyProperty="postId">
+        INSERT INTO forum_post (user_id, title, content, images, status, create_time, update_time)
+        VALUES (#{userId}, #{title}, #{content}, #{imagesJson, jdbcType=VARCHAR}, 1, NOW(), NOW())
     </insert>
 
     <update id="deletePost">
@@ -140,6 +208,41 @@
         <if test="userId != null">
             AND user_id = #{userId}
         </if>
+    </update>
+
+    <update id="softDeleteComment">
+        UPDATE forum_comment SET status = 0 WHERE comment_id = #{commentId} AND user_id = #{userId} AND status = 1
+    </update>
+
+    <select id="selectCommentPostId" resultType="long">
+        SELECT post_id FROM forum_comment WHERE comment_id = #{commentId} LIMIT 1
+    </select>
+
+    <select id="selectCommentBrief" resultType="com.offercat.student.vo.ForumCommentVO">
+        SELECT comment_id AS commentId, user_id AS userId, post_id AS postId, content
+        FROM forum_comment WHERE comment_id = #{commentId} AND status = 1 LIMIT 1
+    </select>
+
+    <select id="findCommentLike" resultType="java.lang.Integer">
+        SELECT COUNT(*) FROM forum_comment_like WHERE comment_id = #{commentId} AND user_id = #{userId}
+    </select>
+
+    <insert id="insertCommentLike">
+        INSERT INTO forum_comment_like (comment_id, user_id) VALUES (#{commentId}, #{userId})
+    </insert>
+
+    <update id="incrementCommentLikeCount">
+        UPDATE forum_comment SET like_count = like_count + 1 WHERE comment_id = #{commentId} AND status = 1
+    </update>
+
+    <delete id="deleteCommentLike">
+        DELETE FROM forum_comment_like WHERE comment_id = #{commentId} AND user_id = #{userId}
+    </delete>
+
+    <update id="decrementCommentLikeCount">
+        UPDATE forum_comment
+        SET like_count = CASE WHEN like_count > 0 THEN like_count - 1 ELSE 0 END
+        WHERE comment_id = #{commentId}
     </update>
 
 </mapper>

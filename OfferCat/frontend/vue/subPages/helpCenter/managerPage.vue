@@ -226,6 +226,11 @@
 					confirmColor: '#ff4d4f',
 					success: (res) => {
 						if (res.confirm) {
+							if (String(postId).startsWith('mock_')) {
+								this.postList = this.postList.filter(p => p.postId !== postId)
+								uni.showToast({ title: '删除成功', icon: 'success' })
+								return
+							}
 							const dh = {}
 							const dt = getToken()
 							if (dt) {

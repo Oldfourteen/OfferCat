@@ -81,6 +81,16 @@ public class RadarGapAgentService {
             );
 
             String content = extractAssistantContent(resp.getBody());
+            // 处理 Markdown 的 json 标签
+            if (content.startsWith("```json")) {
+                content = content.substring(7);
+            } else if (content.startsWith("```")) {
+                content = content.substring(3);
+            }
+            if (content.endsWith("```")) {
+                content = content.substring(0, content.length() - 3);
+            }
+            content = content.trim();
             // content 必须是 JSON：{ "gapPoints": [...], "improvementSuggestions": [...] }
             return objectMapper.readValue(content, RadarGapAgentResponse.class);
 

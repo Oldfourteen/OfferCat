@@ -40,7 +40,8 @@
             soft_skills = #{softSkills},
             industry_cognition = #{industryCognition},
             stress_execution = #{stressExecution},
-            total_score = #{totalScore}
+            total_score = #{totalScore},
+            create_time = #{createTime}
         WHERE radar_id = #{radarId}
     </update>
     

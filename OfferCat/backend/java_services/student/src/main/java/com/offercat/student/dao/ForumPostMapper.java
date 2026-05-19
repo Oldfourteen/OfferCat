@@ -3,104 +3,79 @@ package com.offercat.student.dao;
 import com.offercat.student.vo.ForumPostVO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
+
 import java.util.List;
 
 import com.offercat.student.dto.ForumCommentDTO;
+import com.offercat.student.dto.ForumPostCreateDTO;
 import com.offercat.student.vo.ForumCommentVO;
 
 @Mapper
 public interface ForumPostMapper {
 
-    /**
-     * 根据关键字搜索帖子并关联用户信息
-     * @param keyword 搜索关键字 (模糊匹配标题或内容)
-     * @param orderBy 排序的字段 (e.g. "create_time DESC")
-     * @param offset  分页偏移量
-     * @param limit   每页数量
-     * @return 帖子VO列表
-     */
     List<ForumPostVO> searchPosts(
             @Param("keyword") String keyword,
             @Param("orderBy") String orderBy,
             @Param("offset") Integer offset,
-            @Param("limit") Integer limit
-    );
+            @Param("limit") Integer limit,
+            @Param("friendIds") List<Long> friendIds,
+            @Param("viewerUserId") Long viewerUserId);
 
-    /**
-     * 统计满足搜索条件的帖子总数
-     * @param keyword 搜索关键字
-     * @return 总数
-     */
-    long countSearchPosts(@Param("keyword") String keyword);
+    long countSearchPosts(@Param("keyword") String keyword, @Param("friendIds") List<Long> friendIds);
 
-    /**
-     * 获取帖子详情
-     * @param postId 帖子ID
-     * @return 帖子详情
-     */
-    ForumPostVO getPostDetail(@Param("postId") Long postId);
+    ForumPostVO getPostDetail(@Param("postId") Long postId,
+                              @Param("viewerUserId") Long viewerUserId);
 
-    /**
-     * 增加浏览量
-     * @param postId 帖子ID
-     */
+    Long selectPostOwnerId(@Param("postId") Long postId);
+
     void incrementViewCount(@Param("postId") Long postId);
 
-    /**
-     * 查找用户是否点赞
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     * @return 匹配的记录数
-     */
-    Integer findLike(@Param("postId") Long postId, @Param("userId") Integer userId);
+    Integer findLike(@Param("postId") Long postId, @Param("userId") Long userId);
 
-    /**
-     * 插入点赞记录
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     */
-    void insertLike(@Param("postId") Long postId, @Param("userId") Integer userId);
+    void insertLike(@Param("postId") Long postId, @Param("userId") Long userId);
 
     void incrementLikeCount(@Param("postId") Long postId);
 
-    /**
-     * 删除点赞记录
-     * @param postId 帖子ID
-     * @param userId 用户ID
-     */
-    void deleteLike(@Param("postId") Long postId, @Param("userId") Integer userId);
+    void deleteLike(@Param("postId") Long postId, @Param("userId") Long userId);
 
     void decrementLikeCount(@Param("postId") Long postId);
 
-    /**
-     * 增加评论数
-     * @param postId 帖子ID
-     */
+    Integer findCollect(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    void insertCollect(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    void incrementCollectCount(@Param("postId") Long postId);
+
+    void deleteCollect(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    void decrementCollectCount(@Param("postId") Long postId);
+
     void incrementCommentCount(@Param("postId") Long postId);
 
-    /**
-     * 根据帖子ID获取评论
-     */
-    List<ForumCommentVO> getCommentsByPostId(@Param("postId") Long postId);
+    void decrementCommentCount(@Param("postId") Long postId);
 
-    /**
-     * 插入评论
-     */
+    List<ForumCommentVO> listCommentsFlat(@Param("postId") Long postId,
+                                            @Param("viewerUserId") Long viewerUserId);
+
     void insertComment(ForumCommentDTO dto);
 
-    /**
-     * 插入帖子
-     */
-    void insertPost(@Param("userId") Long userId, 
-                    @Param("title") String title, 
-                    @Param("content") String content, 
-                    @Param("images") String images);
+    void insertPost(ForumPostCreateDTO dto);
 
-    /**
-     * 删除帖子 (软删除)
-     * @param postId 帖子ID
-     * @param userId 用户ID (用于校验是否为本人的帖子)
-     * @return 影响的行数
-     */
     int deletePost(@Param("postId") Long postId, @Param("userId") Long userId);
+
+    int softDeleteComment(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    Long selectCommentPostId(@Param("commentId") Long commentId);
+
+    ForumCommentVO selectCommentBrief(@Param("commentId") Long commentId);
+
+    Integer findCommentLike(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    void insertCommentLike(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    void incrementCommentLikeCount(@Param("commentId") Long commentId);
+
+    void deleteCommentLike(@Param("commentId") Long commentId, @Param("userId") Long userId);
+
+    void decrementCommentLikeCount(@Param("commentId") Long commentId);
 }

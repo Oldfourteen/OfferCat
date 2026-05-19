@@ -37,6 +37,7 @@ import ForumList from '@/pages/forum/components/ForumList.vue'
 import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 import themeMixin from '@/utils/themeMixin.js'
 import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
+import { getForumUnreadCounts } from '@/api/forum.js'
 import { getForumMockReplyInboxUnreadCount } from '@/utils/forumLocalData.js'
 
 export default {
@@ -55,8 +56,20 @@ export default {
 		this.loadReplyInboxCount()
 	},
 	methods: {
-		loadReplyInboxCount() {
-			this.replyInboxCount = getForumMockReplyInboxUnreadCount()
+		async loadReplyInboxCount() {
+			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const uid = u.userId || u.id
+			if (!uid) {
+				this.replyInboxCount = getForumMockReplyInboxUnreadCount()
+				return
+			}
+			try {
+				const res = await getForumUnreadCounts(uid)
+				const d = res && res.data
+				this.replyInboxCount = d != null ? Number(d.replies || 0) : 0
+			} catch (_) {
+				this.replyInboxCount = getForumMockReplyInboxUnreadCount()
+			}
 		},
 		goMessageCenter() {
 			uni.navigateTo({

@@ -50,14 +50,28 @@ export function searchForumPosts(payload) {
 	}))
 }
 
-export function getForumPostDetail(postId) {
+export function getForumPostDetail(postId, viewerUserId) {
+	if (String(postId).startsWith('mock_')) return Promise.reject(new Error('Mock post'))
+	let q = ''
+	if (viewerUserId != null && viewerUserId !== '') {
+		q = `?viewerUserId=${encodeURIComponent(String(viewerUserId))}`
+	}
 	return forumRequest((prefix) => ({
-		url: `${prefix}/post/detail/${encodeURIComponent(String(postId))}`,
+		url: `${prefix}/post/detail/${encodeURIComponent(String(postId))}${q}`,
 		method: 'GET',
 	}))
 }
 
+export function recordForumPostView(postId) {
+	if (!postId || String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/view/${encodeURIComponent(String(postId))}`,
+		method: 'POST',
+	}))
+}
+
 export function likeForumPost(postId, userId) {
+	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/like/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -66,6 +80,7 @@ export function likeForumPost(postId, userId) {
 }
 
 export function unlikeForumPost(postId, userId) {
+	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/unlike/${encodeURIComponent(String(postId))}`,
 		method: 'POST',
@@ -73,18 +88,65 @@ export function unlikeForumPost(postId, userId) {
 	}))
 }
 
-export function getForumComments(postId) {
+export function collectForumPost(postId, userId) {
+	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
-		url: `${prefix}/post/${encodeURIComponent(String(postId))}/comments`,
+		url: `${prefix}/post/collect/${encodeURIComponent(String(postId))}`,
+		method: 'POST',
+		data: { userId },
+	}))
+}
+
+export function uncollectForumPost(postId, userId) {
+	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/uncollect/${encodeURIComponent(String(postId))}`,
+		method: 'POST',
+		data: { userId },
+	}))
+}
+
+export function getForumComments(postId, viewerUserId) {
+	if (String(postId).startsWith('mock_')) return Promise.reject(new Error('Mock post'))
+	let q = ''
+	if (viewerUserId != null && viewerUserId !== '') {
+		q = `?viewerUserId=${encodeURIComponent(String(viewerUserId))}`
+	}
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/${encodeURIComponent(String(postId))}/comments${q}`,
 		method: 'GET',
 	}))
 }
 
 export function addForumComment(payload) {
+	if (String(payload.postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/comment`,
 		method: 'POST',
 		data: payload,
+	}))
+}
+
+export function deleteForumComment(commentId, userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/comment/${encodeURIComponent(String(commentId))}?userId=${encodeURIComponent(String(userId))}`,
+		method: 'DELETE',
+	}))
+}
+
+export function likeForumComment(commentId, userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/comment/like/${encodeURIComponent(String(commentId))}`,
+		method: 'POST',
+		data: { userId },
+	}))
+}
+
+export function unlikeForumComment(commentId, userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/post/comment/unlike/${encodeURIComponent(String(commentId))}`,
+		method: 'POST',
+		data: { userId },
 	}))
 }
 
@@ -97,9 +159,69 @@ export function createForumPost(payload) {
 }
 
 export function deleteForumPost(postId, userId) {
+	if (String(postId).startsWith('mock_')) return Promise.resolve({ data: null })
 	return forumRequest((prefix) => ({
 		url: `${prefix}/post/delete/${encodeURIComponent(String(postId))}?userId=${encodeURIComponent(String(userId))}`,
 		method: 'DELETE',
+	}))
+}
+
+export function getForumUnreadCounts(userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/message/unread-counts?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+	}))
+}
+
+export function forumMarkMessagesRead(payload) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/message/mark-read`,
+		method: 'POST',
+		data: payload,
+	}))
+}
+
+export function getForumLikesInbox(userId, pageNum = 1, pageSize = 50) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/message/likes-inbox?userId=${encodeURIComponent(String(userId))}&pageNum=${encodeURIComponent(pageNum)}&pageSize=${encodeURIComponent(pageSize)}`,
+		method: 'GET',
+	}))
+}
+
+export function getForumRepliesInbox(userId, pageNum = 1, pageSize = 50) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/message/replies-inbox?userId=${encodeURIComponent(String(userId))}&pageNum=${encodeURIComponent(pageNum)}&pageSize=${encodeURIComponent(pageSize)}`,
+		method: 'GET',
+	}))
+}
+
+export function sendForumFriendRequest(fromUserId, toUserId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/request`,
+		method: 'POST',
+		data: { fromUserId, toUserId },
+	}))
+}
+
+export function respondForumFriendRequest(requestId, userId, accept) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/respond`,
+		method: 'POST',
+		data: { requestId, userId, accept },
+	}))
+}
+
+export function getForumIncomingFriendRequests(userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/incoming?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+	}))
+}
+
+export function getForumAcceptedFriends(userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/accepted?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
 	}))
 }
 

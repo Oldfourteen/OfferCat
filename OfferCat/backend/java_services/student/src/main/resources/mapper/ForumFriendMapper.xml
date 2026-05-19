@@ -1,0 +1,83 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.offercat.student.dao.ForumFriendMapper">
+
+    <select id="listAcceptedFriendIds" resultType="long">
+        SELECT CASE WHEN from_user_id = #{userId} THEN to_user_id ELSE from_user_id END
+        FROM forum_friend_request
+        WHERE status = 1 AND (from_user_id = #{userId} OR to_user_id = #{userId})
+    </select>
+
+    <select id="selectDirectional" resultType="com.offercat.student.vo.ForumFriendRequestVO">
+        SELECT request_id AS requestId, from_user_id AS fromUserId, to_user_id AS toUserId,
+               status, create_time AS createTime
+        FROM forum_friend_request
+        WHERE from_user_id = #{fromUserId} AND to_user_id = #{toUserId}
+    </select>
+
+    <select id="selectByRequestId" resultType="com.offercat.student.vo.ForumFriendRequestVO">
+        SELECT request_id AS requestId, from_user_id AS fromUserId, to_user_id AS toUserId,
+               status, create_time AS createTime
+        FROM forum_friend_request
+        WHERE request_id = #{requestId}
+    </select>
+
+    <insert id="insertRequest">
+        INSERT INTO forum_friend_request (from_user_id, to_user_id, status, create_time, update_time)
+        VALUES (#{fromUserId}, #{toUserId}, 0, NOW(), NOW())
+    </insert>
+
+    <update id="resetPendingSameDirection">
+        UPDATE forum_friend_request
+        SET status = 0, update_time = NOW()
+        WHERE from_user_id = #{fromUserId} AND to_user_id = #{toUserId} AND status = 2
+    </update>
+
+    <update id="updateStatus">
+        UPDATE forum_friend_request SET status = #{status}, update_time = NOW()
+        WHERE request_id = #{requestId}
+    </update>
+
+    <select id="listPendingIncoming" resultType="com.offercat.student.vo.ForumFriendRequestVO">
+        SELECT fr.request_id AS requestId,
+               fr.from_user_id AS fromUserId,
+               fr.to_user_id AS toUserId,
+               fr.status AS status,
+               u.nickname AS fromNickname,
+               u.avatar AS fromAvatar,
+               fr.create_time AS createTime
+        FROM forum_friend_request fr
+        LEFT JOIN `user` u ON fr.from_user_id = u.user_id
+        WHERE fr.to_user_id = #{userId} AND fr.status = 0
+        ORDER BY fr.create_time DESC
+    </select>
+
+    <select id="listAcceptedFriends" resultType="com.offercat.student.vo.ForumFriendUserVO">
+        SELECT
+            CASE WHEN fr.from_user_id = #{userId} THEN fr.to_user_id ELSE fr.from_user_id END AS userId,
+            u.nickname AS nickname,
+            COALESCE(st.bio, '') AS bio,
+            u.avatar AS avatar
+        FROM forum_friend_request fr
+        INNER JOIN `user` u ON u.user_id =
+            CASE WHEN fr.from_user_id = #{userId} THEN fr.to_user_id ELSE fr.from_user_id END
+        LEFT JOIN student st ON st.user_id = u.user_id
+        WHERE fr.status = 1 AND (fr.from_user_id = #{userId} OR fr.to_user_id = #{userId})
+        ORDER BY fr.update_time DESC
+    </select>
+
+    <select id="selectUserBrief" resultType="com.offercat.student.vo.ForumFriendUserVO">
+        SELECT u.user_id AS userId, u.nickname AS nickname, u.avatar AS avatar,
+               COALESCE(st.bio, '') AS bio
+        FROM `user` u
+        LEFT JOIN student st ON st.user_id = u.user_id
+        WHERE u.user_id = #{userId}
+    </select>
+
+    <select id="countPendingIncoming" resultType="int">
+        SELECT COUNT(*) FROM forum_friend_request WHERE to_user_id = #{userId} AND status = 0
+    </select>
+
+</mapper>

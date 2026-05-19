@@ -81,7 +81,7 @@
 
 <script>
 	import { BASE_URL } from '@/api/config.js'
-	import { searchForumPosts, likeForumPost, unlikeForumPost } from '@/api/forum.js'
+	import { searchForumPosts, likeForumPost, unlikeForumPost, collectForumPost, uncollectForumPost } from '@/api/forum.js'
 	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 	import {
 		getForumMockPosts,
@@ -146,35 +146,64 @@
 				const major = item.major || item.authorMajor || ''
 				return [grade, major].filter(Boolean).join(' · ')
 			},
-			toggleCollect(item, index) {
-				const updatedPost = toggleForumMockPostCollect(item.postId || item.id)
-				if (!updatedPost) return
-				this.$set(this.postList, index, syncForumPostViews(updatedPost))
-				uni.showToast({
-					title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
-					icon: 'success'
+			async toggleCollect(item, index) {
+				const pid = item.postId || item.id
+				if (String(pid).startsWith('mock_')) {
+					const updatedPost = toggleForumMockPostCollect(pid)
+					if (!updatedPost) return
+					this.$set(this.postList, index, syncForumPostViews(updatedPost))
+					uni.showToast({
+						title: updatedPost.isCollected ? '收藏成功' : '已取消收藏',
+						icon: 'success'
+					})
+					return
+				}
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = user.userId || user.id
+				if (!uid) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				const current = this.postList[index] || item
+				const nextCol = !Boolean(current.isCollected)
+				const next = syncForumPostViews({
+					...current,
+					isCollected: nextCol,
+					favoriteCount: Math.max(
+						0,
+						Number(current.favoriteCount || 0) + (nextCol ? 1 : -1)
+					),
 				})
+				this.$set(this.postList, index, next)
+				try {
+					if (nextCol) await collectForumPost(pid, uid)
+					else await uncollectForumPost(pid, uid)
+					uni.showToast({
+						title: nextCol ? '收藏成功' : '已取消收藏',
+						icon: 'none'
+					})
+				} catch (e) {
+					this.$set(this.postList, index, current)
+					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })
+				}
 			},
 			switchTab(index) {
-				if (this.currentTab === index) return;
-				if (index === 2) {
-					uni.showToast({
-						title: '敬请期待',
-						icon: 'none'
-					});
-					return;
-				}
-				this.currentTab = index;
-				this.fetchPosts();
+				if (this.currentTab === index) return
+				this.currentTab = index
+				this.fetchPosts()
 			},
 			async fetchPosts() {
 				const pageNum = 1
 				const pageSize = 1000
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const viewerUserId = user.userId || user.id
 				const payload = {
 					keyword: '',
 					pageNum,
 					pageSize,
+					feedTab: this.currentTab === 2 ? 'friends' : 'all',
 				}
+				if (viewerUserId) payload.viewerUserId = viewerUserId
 				if (this.currentTab === 1) {
 					payload.sortBy = 'like_count'
 					payload.sortDirection = 'desc'
@@ -190,7 +219,9 @@
 							viewCount: Number(item.views != null ? item.views : item.viewCount || 0),
 							isLiked: Boolean(item.isLiked),
 							isCollected: Boolean(item.isCollected),
-							favoriteCount: Number(item.favoriteCount || 0),
+							favoriteCount: Number(
+								item.favoriteCount != null ? item.favoriteCount : item.collectCount || 0
+							),
 						}))
 					)
 					this.total = page.total || records.length

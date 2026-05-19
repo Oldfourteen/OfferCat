@@ -13,17 +13,17 @@
 				<view
 					class="like-card"
 					v-for="item in items"
-					:key="item.id"
+					:key="item.msgId || item.id"
 					@click="goToPost(item)"
 				>
-					<image class="avatar" :src="item.avatar" mode="aspectFill"></image>
+					<image class="avatar" :src="getAvatarUrl(item)" mode="aspectFill"></image>
 					<view class="card-main">
 						<view class="card-head">
 							<view class="head-left">
-								<text class="user-name">{{ item.userName }}</text>
+								<text class="user-name">{{ item.userName || item.senderName }}</text>
 								<text class="action-tag">{{ item.actionText }}</text>
 							</view>
-							<text class="time-text">{{ item.time }}</text>
+							<text class="time-text">{{ formatListTime(item) }}</text>
 						</view>
 						<text class="post-line">帖子：{{ item.postPreview }}</text>
 					</view>
@@ -40,6 +40,8 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { BASE_URL } from '@/api/config.js'
+	import { getForumLikesInbox, forumMarkMessagesRead } from '@/api/forum.js'
 	import { getForumMockPostDetail, getForumMockPosts } from '@/utils/forumLocalData.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
@@ -51,42 +53,82 @@
 				items: []
 			}
 		},
-		onShow() {
-			this.loadItems()
+		async onShow() {
+			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const uid = u.userId || u.id
+			if (uid) {
+				try {
+					await forumMarkMessagesRead({ userId: uid, scope: 'likes' })
+				} catch (_) {}
+			}
+			await this.loadItems()
 		},
 		methods: {
-			loadItems() {
+			getAvatarUrl(item) {
+				const a = (item && (item.avatar || item.senderAvatar)) || ''
+				if (!a) return DEFAULT_AVATAR
+				if (a.startsWith('http') || a.startsWith('data:')) return a
+				return BASE_URL + a
+			},
+			formatListTime(item) {
+				const t = item && item.createTime
+				if (typeof t === 'string') {
+					return t.substring(0, 16).replace('T', ' ')
+				}
+				return String((item && item.time) || '')
+			},
+			async loadItems() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (uid) {
+					try {
+						const res = await getForumLikesInbox(uid)
+						const list = res && res.data
+						if (Array.isArray(list)) {
+							this.items = list.map((it) => ({
+								...it,
+								id: it.msgId,
+								postId: it.postId,
+								userName: it.userName || it.senderName,
+								avatar: it.avatar || it.senderAvatar || DEFAULT_AVATAR,
+								postPreview: it.postPreview || it.snippet || '',
+							}))
+							return
+						}
+					} catch (_) {}
+				}
+
 				const result = getForumMockPosts({ currentTab: 0, pageNum: 1, pageSize: 20 })
 				const posts = Array.isArray(result && result.records) ? result.records : []
 				const users = ['小满', '阿橘', '林同学', '晚风', '星野', '北海']
 				const times = ['刚刚', '5分钟前', '18分钟前', '1小时前', '昨天', '周日']
-				const items = []
+				const mockItems = []
 				posts.forEach((item) => {
 					const postId = item.postId || item.id
 					if (Number(item.likeCount || 0) > 0) {
-						items.push({
+						mockItems.push({
 							id: `like_${postId}`,
 							postId,
 							avatar: DEFAULT_AVATAR,
-							userName: users[items.length % users.length],
-							time: times[items.length % times.length],
+							userName: users[mockItems.length % users.length],
+							time: times[mockItems.length % times.length],
 							actionText: '点赞了你',
-							postPreview: item.content || '暂无帖子内容'
+							postPreview: item.content || '暂无帖子内容',
 						})
 					}
 					if (Number(item.favoriteCount || 0) > 0) {
-						items.push({
+						mockItems.push({
 							id: `favorite_${postId}`,
 							postId,
 							avatar: DEFAULT_AVATAR,
-							userName: users[items.length % users.length],
-							time: times[items.length % times.length],
+							userName: users[mockItems.length % users.length],
+							time: times[mockItems.length % times.length],
 							actionText: '收藏了你',
-							postPreview: item.content || '暂无帖子内容'
+							postPreview: item.content || '暂无帖子内容',
 						})
 					}
 				})
-				this.items = items.slice(0, 10)
+				this.items = mockItems.slice(0, 10)
 			},
 			goBack() {
 				uni.navigateBack({

@@ -15,18 +15,21 @@
 				</view>
 				<view
 					v-for="item in pendingFriends"
-					:key="item.id"
+					:key="item.requestId"
 					class="request-item"
 				>
-					<image class="avatar" :src="item.avatar" mode="aspectFill"></image>
+					<image class="avatar" :src="avatarUrl(item.fromAvatar)" mode="aspectFill"></image>
 					<view class="item-main">
 						<view class="item-head">
-							<text class="user-name">{{ item.name }}</text>
-							<text class="time-text">{{ item.time }}</text>
+							<text class="user-name">{{ item.fromNickname }}</text>
+							<text class="time-text">{{ formatTime(item.createTime) }}</text>
 						</view>
 						<text class="item-desc text-wrap-safe">{{ item.desc }}</text>
 					</view>
-					<view class="pill-btn">通过</view>
+					<view class="pill-actions">
+						<view class="pill-btn muted" @click.stop="respondIncoming(item, false)">忽略</view>
+						<view class="pill-btn" @click.stop="respondIncoming(item, true)">通过</view>
+					</view>
 				</view>
 			</view>
 
@@ -36,16 +39,16 @@
 				</view>
 				<view
 					v-for="item in friends"
-					:key="item.id"
+					:key="item.userId"
 					class="friend-item"
 					@click="goPrivateChat(item)"
 				>
-					<image class="avatar" :src="item.avatar" mode="aspectFill"></image>
+					<image class="avatar" :src="avatarUrl(item.avatar)" mode="aspectFill"></image>
 					<view class="item-main">
 						<view class="item-head">
 							<view class="name-row">
-								<text class="user-name">{{ item.name }}</text>
-								<text class="tag-text" v-if="item.tag">{{ item.tag }}</text>
+								<text class="user-name">{{ item.nickname }}</text>
+								<text class="tag-text" v-if="item.tagText">{{ item.tagText }}</text>
 							</view>
 							<text class="time-text">{{ item.lastSeen }}</text>
 						</view>
@@ -59,80 +62,127 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { BASE_URL } from '@/api/config.js'
+	import {
+		getForumIncomingFriendRequests,
+		getForumAcceptedFriends,
+		respondForumFriendRequest,
+	} from '@/api/forum.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
+	const DEFAULT_REQ_DESC = '在论坛发来好友申请。'
 
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
-				pendingFriends: [
-					{
-						id: 'p1',
-						name: '朝阳',
-						avatar: DEFAULT_AVATAR,
-						time: '3分钟前',
-						desc: '通过论坛互相关注后，发来好友申请。'
-					},
-					{
-						id: 'p2',
-						name: '鹿鸣',
-						avatar: DEFAULT_AVATAR,
-						time: '昨天',
-						desc: '想和你交流一下简历优化与实习投递经验。'
-					}
-				],
-				friends: [
-					{
-						id: 'f1',
-						name: '小橘同学',
-						avatar: DEFAULT_AVATAR,
-						tag: '互关',
-						lastSeen: '刚刚在线',
-						bio: '最近在准备前端面试，也在整理自己的作品集。'
-					},
-					{
-						id: 'f2',
-						name: '北海',
-						avatar: DEFAULT_AVATAR,
-						tag: '同专业',
-						lastSeen: '5分钟前',
-						bio: '主要关注校招资讯，平时会分享笔试真题和面经。'
-					},
-					{
-						id: 'f3',
-						name: '桃子学姐',
-						avatar: DEFAULT_AVATAR,
-						tag: '已加好友',
-						lastSeen: '今天',
-						bio: '简历修改和实习复盘经验很丰富，聊天很有帮助。'
-					},
-					{
-						id: 'f4',
-						name: '银河旅人',
-						avatar: DEFAULT_AVATAR,
-						tag: '',
-						lastSeen: '昨天',
-						bio: '常分享设计灵感、活动信息和作品集排版建议。'
-					}
-				]
+				pendingFriends: [],
+				friends: [],
 			}
 		},
+		onShow() {
+			this.reload()
+		},
 		methods: {
+			avatarUrl(raw) {
+				if (!raw) return DEFAULT_AVATAR
+				const s = String(raw)
+				if (s.startsWith('http') || s.startsWith('data:') || s.startsWith('/static')) return s
+				const base = String(BASE_URL || '').replace(/\/$/, '')
+				const path = s.startsWith('/') ? s : `/${s}`
+				return base + path
+			},
+			formatTime(t) {
+				if (typeof t === 'string') return t.substring(0, 16).replace('T', ' ')
+				return ''
+			},
+			setOfflineMock() {
+				this.pendingFriends = [
+					{
+						requestId: 'mock_p1',
+						fromNickname: '朝阳',
+						fromAvatar: DEFAULT_AVATAR,
+						createTime: '',
+						desc: DEFAULT_REQ_DESC,
+					},
+				]
+				this.friends = [
+					{
+						userId: 'mock_f1',
+						name: '小橘同学',
+						nickname: '小橘同学',
+						avatar: DEFAULT_AVATAR,
+						tagText: '',
+						lastSeen: '',
+						bio: '离线模式示例数据。',
+					},
+				]
+			},
+			async reload() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (!uid) {
+					this.setOfflineMock()
+					return
+				}
+				try {
+					const [incRes, accRes] = await Promise.all([
+						getForumIncomingFriendRequests(uid),
+						getForumAcceptedFriends(uid),
+					])
+					const inList = (incRes && incRes.data) || []
+					const okList = (accRes && accRes.data) || []
+					this.pendingFriends = Array.isArray(inList)
+						? inList.map((r) => ({
+							...r,
+							desc: DEFAULT_REQ_DESC,
+						}))
+						: []
+					this.friends = Array.isArray(okList)
+						? okList.map((f) => ({
+							...f,
+							nickname: f.nickname || f.name || '用户',
+						}))
+						: []
+				} catch (_) {
+					this.pendingFriends = []
+					this.friends = []
+				}
+			},
+			async respondIncoming(item, accept) {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (!uid || !item || item.requestId == null) return
+				if (String(item.requestId).startsWith('mock_')) {
+					const next = this.pendingFriends.filter((p) => p.requestId !== item.requestId)
+					this.pendingFriends = next
+					uni.showToast({ title: accept ? '已通过（离线）' : '已忽略（离线）', icon: 'none' })
+					return
+				}
+				try {
+					await respondForumFriendRequest(Number(item.requestId), Number(uid), accept)
+					uni.showToast({ title: accept ? '已添加好友' : '已忽略', icon: 'none' })
+					await this.reload()
+				} catch (e) {
+					const msg = (e && (e.message || e.errMsg)) || '操作失败'
+					uni.showToast({ title: String(msg), icon: 'none' })
+				}
+			},
 			goBack() {
 				uni.navigateBack({
 					animationType: 'slide-out-right',
-					animationDuration: 300
+					animationDuration: 300,
 				})
 			},
 			goPrivateChat(item) {
+				const nameParam = encodeURIComponent(item.name || item.nickname || '')
 				uni.navigateTo({
-					url: `/subPages/forum/privateChat?name=${encodeURIComponent(item.name)}`,
+					url: `/subPages/forum/privateChat?name=${nameParam}`,
 					animationType: 'slide-in-right',
-					animationDuration: 300
+					animationDuration: 300,
 				})
-			}
-		}
+			},
+		},
 	}
 </script>
 
@@ -265,6 +315,14 @@
 		color: #667085;
 	}
 
+	.pill-actions {
+		display: flex;
+		flex-direction: column;
+		gap: 12rpx;
+		flex-shrink: 0;
+		align-items: flex-end;
+	}
+
 	.pill-btn {
 		padding: 14rpx 24rpx;
 		border-radius: 999rpx;
@@ -273,6 +331,16 @@
 		font-weight: 700;
 		color: #ffffff;
 		flex-shrink: 0;
+	}
+
+	.pill-btn.muted {
+		background: rgba(148, 163, 184, 0.22);
+		color: #64748b;
+	}
+
+	.theme-dark .pill-btn.muted {
+		background: rgba(255, 255, 255, 0.08);
+		color: #aeb8ca;
 	}
 
 	.theme-dark.friend-page {

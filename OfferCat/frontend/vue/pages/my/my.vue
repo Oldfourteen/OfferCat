@@ -2,10 +2,10 @@
 	<view class="my-page" :class="themeClass">
 		<!-- 顶部信息卡展示头像、简介和个人成长统计。 -->
 		<UserInfoCard :theme="currentTheme" :animationKey="animationKey" />
-		<!-- 个人空间区收纳好友、名片、互动消息和收藏入口。 -->
-		<PersonalSpace :theme="currentTheme" :animationKey="animationKey" />
 		<!-- 档案区聚合今日任务、打卡和四类核心档案入口。 -->
 		<JobTools :theme="currentTheme" :animationKey="animationKey" />
+		<!-- 个人空间区收纳好友、名片、互动消息和收藏入口。 -->
+		<PersonalSpace :theme="currentTheme" :animationKey="animationKey" />
 		<!-- 成长区承接成长档案、复盘、收藏等延展入口。 -->
 		<GrowthHub :theme="currentTheme" :animationKey="animationKey" />
 		<!-- 设置区统一收纳帮助、资料编辑和系统设置入口。 -->

@@ -19,7 +19,7 @@
 				</view>
 				
 				<view class="hero-date" v-if="radarData">
-					<text>已更新于 {{ formattedDate }}</text>
+					<text>调查问卷数据已更新于 {{ formattedDate }}</text>
 				</view>
 				<view class="hero-date" v-else>暂未生成成长档案</view>
 			</view>

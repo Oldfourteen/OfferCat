@@ -763,6 +763,21 @@ CREATE TABLE `questionnaire_question` (
     `scores_d` JSON NOT NULL
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='问卷题目表（40题完整版）';
 
+DROP TABLE IF EXISTS `forum_private_message`;
+CREATE TABLE `forum_private_message` (
+  `id` BIGINT PRIMARY KEY AUTO_INCREMENT COMMENT '私信ID',
+  `sender_id` BIGINT NOT NULL COMMENT '发送者ID',
+  `receiver_id` BIGINT NOT NULL COMMENT '接收者ID',
+  `content` TEXT NOT NULL COMMENT '私信内容',
+  `is_read` TINYINT DEFAULT 0 COMMENT '是否已读 0-未读 1-已读',
+  `create_time` DATETIME DEFAULT CURRENT_TIMESTAMP COMMENT '发送时间',
+  `update_time` DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  INDEX `idx_sender_receiver` (`sender_id`, `receiver_id`),
+  INDEX `idx_receiver_read` (`receiver_id`, `is_read`),
+  FOREIGN KEY (`sender_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE,
+  FOREIGN KEY (`receiver_id`) REFERENCES `user`(`user_id`) ON DELETE CASCADE
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='论坛私信表';
+
 -- 插入全部 40 题
 INSERT INTO questionnaire_question (section, question_order, question_text, option_a, option_b, option_c, option_d, scores_a, scores_b, scores_c, scores_d) VALUES
 -- 1

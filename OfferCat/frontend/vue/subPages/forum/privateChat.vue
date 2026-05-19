@@ -6,16 +6,16 @@
 			</view>
 			<view class="title-box">
 				<text class="page-title">{{ pageTitle }}</text>
-				<text class="page-subtitle">私信功能暂未接通，仅展示样式</text>
 			</view>
 			<view class="top-bar-placeholder"></view>
 		</view>
 
-		<scroll-view class="chat-scroll" scroll-y :show-scrollbar="false">
+		<scroll-view class="chat-scroll" scroll-y :show-scrollbar="false" :scroll-into-view="scrollTarget">
 			<view class="chat-list">
 				<view
-					v-for="item in mockMessages"
+					v-for="item in messages"
 					:key="item.id"
+					:id="'msg-' + item.id"
 					class="chat-item"
 					:class="{ 'is-self': item.isSelf }"
 				>
@@ -29,13 +29,20 @@
 					</view>
 				</view>
 			</view>
+			<view id="scroll-bottom" style="height: 10rpx;"></view>
 		</scroll-view>
 
 		<view class="input-bar">
 			<view class="input-shell">
-				<text class="placeholder-text">私信发送功能开发中...</text>
+				<input
+					class="chat-input"
+					v-model="inputText"
+					placeholder="发送私信..."
+					confirm-type="send"
+					@confirm="handleSend"
+				/>
 			</view>
-			<view class="send-btn disabled">
+			<view class="send-btn" :class="{ disabled: !inputText.trim() }" @click="handleSend">
 				<text class="send-text">发送</text>
 			</view>
 		</view>
@@ -44,6 +51,8 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
+	import { getPrivateChatHistory, sendPrivateMessage } from '@/api/forum.js'
+	import dayjs from 'dayjs'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
 
@@ -52,37 +61,76 @@
 		data() {
 			return {
 				pageTitle: '私信',
-				mockMessages: [
-					{
-						id: 'm1',
-						isSelf: false,
-						avatar: DEFAULT_AVATAR,
-						content: '看到你发的帖子了，那个项目经历写得很有意思。',
-						time: '09:02'
-					},
-					{
-						id: 'm2',
-						isSelf: true,
-						avatar: DEFAULT_AVATAR,
-						content: '谢谢呀，我还想再优化一下结尾那段。',
-						time: '09:05'
-					},
-					{
-						id: 'm3',
-						isSelf: false,
-						avatar: DEFAULT_AVATAR,
-						content: '等私信功能接上后，我们可以继续在这里细聊。',
-						time: '09:06'
-					}
-				]
+				targetUserId: '',
+				myUserId: '',
+				messages: [],
+				inputText: '',
+				scrollTarget: '',
+				myAvatar: DEFAULT_AVATAR,
+				targetAvatar: DEFAULT_AVATAR
 			}
 		},
 		onLoad(options) {
 			if (options && options.name) {
 				this.pageTitle = decodeURIComponent(options.name)
 			}
+			if (options && options.id) {
+				this.targetUserId = options.id
+			}
+			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			this.myUserId = u.userId || u.id
+			this.myAvatar = u.avatar || DEFAULT_AVATAR
+			// targetAvatar 可以从接口返回，这里先用默认的
+		},
+		async onShow() {
+			await this.loadHistory()
 		},
 		methods: {
+			async loadHistory() {
+				if (!this.myUserId || !this.targetUserId) return
+				try {
+					const res = await getPrivateChatHistory(this.myUserId, this.targetUserId)
+					if (res && res.data) {
+						this.messages = res.data.map(m => ({
+							id: m.id,
+							isSelf: String(m.senderId) === String(this.myUserId),
+							avatar: String(m.senderId) === String(this.myUserId) ? this.myAvatar : this.targetAvatar,
+							content: m.content,
+							time: this.formatTime(m.createTime)
+						}))
+						this.scrollToBottom()
+					}
+				} catch (e) {
+					console.error('获取聊天记录失败', e)
+				}
+			},
+			formatTime(t) {
+				if (!t) return ''
+				return t.substring(11, 16) // e.g. "10:30" from "2023-10-10T10:30:00"
+			},
+			async handleSend() {
+				if (!this.inputText.trim()) return
+				if (!this.myUserId || !this.targetUserId) return
+				const content = this.inputText.trim()
+				this.inputText = '' // 先清空输入框
+				try {
+					await sendPrivateMessage({
+						senderId: this.myUserId,
+						receiverId: this.targetUserId,
+						content: content
+					})
+					// 重新加载或者直接 push
+					await this.loadHistory()
+				} catch (e) {
+					uni.showToast({ title: '发送失败', icon: 'none' })
+					console.error('发送私信失败', e)
+				}
+			},
+			scrollToBottom() {
+				this.$nextTick(() => {
+					this.scrollTarget = 'scroll-bottom'
+				})
+			},
 			goBack() {
 				uni.navigateBack({
 					animationType: 'slide-out-right',
@@ -139,13 +187,6 @@
 		color: #15305e;
 	}
 
-	.page-subtitle {
-		display: block;
-		margin-top: 8rpx;
-		font-size: 20rpx;
-		color: #98a2b3;
-	}
-
 	.chat-scroll {
 		flex: 1;
 		min-height: 0;
@@ -197,6 +238,7 @@
 		border-radius: 24rpx;
 		background: #ffffff;
 		box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
+		word-break: break-word;
 	}
 
 	.chat-item.is-self .bubble {
@@ -238,9 +280,11 @@
 		align-items: center;
 	}
 
-	.placeholder-text {
-		font-size: 24rpx;
-		color: #98a2b3;
+	.chat-input {
+		flex: 1;
+		font-size: 28rpx;
+		color: #24345b;
+		background: transparent;
 	}
 
 	.send-btn {
@@ -251,6 +295,7 @@
 		align-items: center;
 		justify-content: center;
 		background: linear-gradient(135deg, #5b79ff, #7c5cff);
+		transition: opacity 0.2s;
 	}
 
 	.send-btn.disabled {
@@ -281,8 +326,7 @@
 
 		.page-subtitle,
 		.sender-name,
-		.message-time,
-		.placeholder-text {
+		.message-time {
 			color: #8090ad;
 		}
 
@@ -295,7 +339,7 @@
 			box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.26);
 		}
 
-		.bubble-text {
+		.bubble-text, .chat-input {
 			color: #f4f7fb;
 		}
 

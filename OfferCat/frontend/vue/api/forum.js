@@ -199,6 +199,28 @@ export function sendForumFriendRequest(fromUserId, toUserId) {
 	}))
 }
 
+export function getPrivateConversations(userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/private-message/conversations?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+	}))
+}
+
+export function getPrivateChatHistory(userId, targetUserId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/private-message/history?userId=${encodeURIComponent(String(userId))}&targetUserId=${encodeURIComponent(String(targetUserId))}`,
+		method: 'GET',
+	}))
+}
+
+export function sendPrivateMessage(payload) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/private-message/send`,
+		method: 'POST',
+		data: payload,
+	}))
+}
+
 export function respondForumFriendRequest(requestId, userId, accept) {
 	return forumRequest((prefix) => ({
 		url: `${prefix}/friend/respond`,

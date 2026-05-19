@@ -85,7 +85,7 @@
 
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
-	import { getForumUnreadCounts } from '@/api/forum.js'
+	import { getForumUnreadCounts, getPrivateConversations } from '@/api/forum.js'
 
 	const BADGE_STORAGE_KEY = 'forum_message_center_badges'
 
@@ -133,8 +133,29 @@
 		},
 		async onShow() {
 			await this.loadUnreadCounts()
+			await this.loadConversations()
 		},
 		methods: {
+			async loadConversations() {
+				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const uid = u.userId || u.id
+				if (!uid) return
+				try {
+					const res = await getPrivateConversations(uid)
+					if (res && res.data) {
+						this.conversations = res.data.map(c => ({
+							id: c.targetUserId,
+							name: c.targetUserName,
+							avatar: c.targetUserAvatar || '/static/default-avatar.jpg',
+							time: c.lastMessageTime,
+							preview: c.lastMessageContent,
+							pinned: false
+						}))
+					}
+				} catch (e) {
+					console.error('获取私信列表失败', e)
+				}
+			},
 			async loadUnreadCounts() {
 				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				const uid = u.userId || u.id
@@ -220,7 +241,7 @@
 			},
 			goConversation(item) {
 				uni.navigateTo({
-					url: `/subPages/forum/privateChat?name=${encodeURIComponent(item.name)}`,
+					url: `/subPages/forum/privateChat?id=${item.id}&name=${encodeURIComponent(item.name)}`,
 					animationType: 'slide-in-right',
 					animationDuration: 300
 				})

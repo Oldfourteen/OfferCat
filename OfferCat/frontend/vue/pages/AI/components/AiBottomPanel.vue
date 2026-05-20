@@ -273,6 +273,15 @@
 				this.recorderManager = manager
 				return manager
 			},
+			doStartVoiceRecording(manager) {
+				this.recording = true
+				try {
+					manager.start({ format: 'mp3', duration: 60000 })
+				} catch (error) {
+					this.recording = false
+					uni.showToast({ title: '录音失败', icon: 'none' })
+				}
+			},
 			startVoice() {
 				const manager = this.getRecorderManager()
 				if (!manager) {
@@ -282,12 +291,31 @@
 				if (this.recording) {
 					return
 				}
-				this.recording = true
-				try {
-					manager.start({ format: 'mp3' })
-				} catch (error) {
-					this.recording = false
+				// #ifdef APP-PLUS
+				if (typeof plus !== 'undefined' && plus.android && plus.android.requestPermissions) {
+					plus.android.requestPermissions(
+						['android.permission.RECORD_AUDIO'],
+						(e) => {
+							const granted = e && e.granted && e.granted.length
+							if (granted) {
+								this.doStartVoiceRecording(manager)
+								return
+							}
+							uni.showModal({
+								title: '需要麦克风权限',
+								content: '请在系统设置中允许 OfferCat 使用麦克风后再试',
+								confirmText: '知道了',
+								showCancel: false
+							})
+						},
+						() => {
+							uni.showToast({ title: '无法获取麦克风权限', icon: 'none' })
+						}
+					)
+					return
 				}
+				// #endif
+				this.doStartVoiceRecording(manager)
 			},
 			stopVoice() {
 				if (!this.recording) {

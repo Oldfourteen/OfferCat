@@ -17,6 +17,15 @@ public class AliyunDypnsClientConfig {
 
     @Bean
     public IAcsClient dypnsAcsClient(AliyunDypnsProperties properties) {
+        // 号码认证 OpenAPI 域名须为 dypnsapi.aliyuncs.com（与官方 SDK 示例一致）
+        try {
+            DefaultProfile.addEndpoint(
+                    properties.getRegionId(),
+                    "Dypnsapi",
+                    "dypnsapi.aliyuncs.com");
+        } catch (Exception ignored) {
+            // 重复注册 endpoint 时忽略
+        }
         IClientProfile profile = DefaultProfile.getProfile(
                 properties.getRegionId(),
                 properties.getAccessKeyId(),

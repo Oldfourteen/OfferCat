@@ -1,6 +1,6 @@
 <template>
 	<!-- 纯色底 + 单色进度弧 + 外发光 -->
-	<view class="qbg-card" :class="[toneClazz, themeClazz]" @tap.stop :id="uniqueId">
+	<view class="qbg-card qbg-observe-target" :class="[toneClazz, themeClazz]" @tap.stop>
 		<view class="qbg-inner">
 			<view class="qbg-chart">
 				<svg class="qbg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
@@ -69,8 +69,7 @@
 				animatedProgress: 0,
 				animatedNum: 0,
 				animationTriggered: false,
-				observer: null,
-				uniqueId: `qbg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+				observer: null
 			}
 		},
 		computed: {
@@ -137,48 +136,63 @@
 			}
 		},
 		watch: {
-			accuracyPercent(newVal) {
+			accuracyPercent() {
 				if (this.animationTriggered) {
 					this.triggerAnimation()
+				} else if (this.hasValue) {
+					this.applyStaticMetrics()
 				}
 			}
 		},
 		mounted() {
 			this.setupIntersectionObserver()
+			if (this.hasValue) {
+				this.applyStaticMetrics()
+			}
+		},
+		beforeDestroy() {
+			this.teardownObserver()
 		},
 		beforeUnmount() {
-			if (this.observer) {
-				this.observer.disconnect()
-			}
-			this.animationTriggered = false
+			this.teardownObserver()
 		},
 		methods: {
-			setupIntersectionObserver() {
-				const that = this
-				const observeElement = () => {
-					const el = document.getElementById(that.uniqueId)
-					if (el) {
-						that.observer = new IntersectionObserver(
-							(entries) => {
-								entries.forEach((entry) => {
-									if (entry.isIntersecting && !that.animationTriggered) {
-										that.triggerAnimation()
-									}
-								})
-							},
-							{
-								threshold: 0.3,
-								rootMargin: '0px 0px -50px 0px'
-							}
-						)
-						that.observer.observe(el)
-					} else {
-						setTimeout(observeElement, 100)
-					}
+			teardownObserver() {
+				if (this.observer) {
+					this.observer.disconnect()
+					this.observer = null
 				}
-				observeElement()
+				this.animationTriggered = false
+			},
+			applyStaticMetrics() {
+				if (!this.hasValue) return
+				this.animatedNum = this.numericPct
+				this.animatedProgress = this.targetProgress
+			},
+			setupIntersectionObserver() {
+				this.$nextTick(() => {
+					if (typeof uni === 'undefined' || typeof uni.createIntersectionObserver !== 'function') {
+						if (this.hasValue) this.triggerAnimation()
+						return
+					}
+					try {
+						this.observer = uni.createIntersectionObserver(this)
+						this.observer
+							.relativeToViewport({ bottom: 50 })
+							.observe('.qbg-observe-target', (res) => {
+								const ratio = res && res.intersectionRatio
+								if (ratio > 0.3 && !this.animationTriggered) {
+									this.triggerAnimation()
+								}
+							})
+					} catch (e) {
+						console.warn('[QuestionBankTypeGauge] IntersectionObserver 不可用', e)
+						if (this.hasValue) this.triggerAnimation()
+					}
+				})
 			},
 			triggerAnimation() {
+				if (this.animationTriggered) return
 				this.animationTriggered = true
 				if (!this.hasValue) return
 				const duration = 500

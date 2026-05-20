@@ -1,5 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:26:43 CST 2026
-https\://maven.aliyun.com/nexus/content/repositories/central/.lastUpdated=1777040803210
+#Wed May 20 12:37:41 CST 2026
+https\://repo.maven.apache.org/maven2/.lastUpdated=1779251861164
 https\://repo.itextsupport.com/releases/.error=
-https\://repo.itextsupport.com/releases/.lastUpdated=1777040802977
+https\://maven.aliyun.com/nexus/content/repositories/central/.lastUpdated=1777040803210
+https\://repo.itextsupport.com/releases/.lastUpdated=1779251860823

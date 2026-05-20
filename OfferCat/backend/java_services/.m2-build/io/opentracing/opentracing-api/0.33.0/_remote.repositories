@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 13 12:24:50 CST 2026
+#Wed May 20 13:01:38 CST 2026
+opentracing-api-0.33.0.jar>central=
 opentracing-api-0.33.0.jar>nexus-aliyun=
+opentracing-api-0.33.0.pom>central=
 opentracing-api-0.33.0.pom>nexus-aliyun=

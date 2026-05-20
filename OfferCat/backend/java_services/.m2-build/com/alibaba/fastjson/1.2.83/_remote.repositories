@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:31:54 CST 2026
+#Wed May 20 13:02:53 CST 2026
+fastjson-1.2.83.jar>central=
 fastjson-1.2.83.jar>nexus-aliyun=
+fastjson-1.2.83.pom>central=
 fastjson-1.2.83.pom>nexus-aliyun=

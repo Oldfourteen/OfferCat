@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 13 14:17:56 CST 2026
+#Wed May 20 13:01:38 CST 2026
+druid-spring-boot-3-starter-1.2.23.jar>central=
 druid-spring-boot-3-starter-1.2.23.jar>nexus-aliyun=
+druid-spring-boot-3-starter-1.2.23.pom>central=
 druid-spring-boot-3-starter-1.2.23.pom>nexus-aliyun=

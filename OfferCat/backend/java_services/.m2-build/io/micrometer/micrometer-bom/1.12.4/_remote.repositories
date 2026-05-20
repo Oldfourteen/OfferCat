@@ -1,3 +1,4 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:25:00 CST 2026
+#Wed May 20 12:36:17 CST 2026
 micrometer-bom-1.12.4.pom>nexus-aliyun=
+micrometer-bom-1.12.4.pom>central=

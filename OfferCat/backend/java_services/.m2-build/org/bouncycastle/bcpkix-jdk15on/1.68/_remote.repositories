@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:33:51 CST 2026
+#Wed May 20 13:02:04 CST 2026
+bcpkix-jdk15on-1.68.jar>central=
 bcpkix-jdk15on-1.68.jar>nexus-aliyun=
+bcpkix-jdk15on-1.68.pom>central=
 bcpkix-jdk15on-1.68.pom>nexus-aliyun=

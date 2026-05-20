@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:30:07 CST 2026
+#Wed May 20 13:00:21 CST 2026
+osgi-resource-locator-1.0.3.jar>central=
 osgi-resource-locator-1.0.3.jar>nexus-aliyun=
+osgi-resource-locator-1.0.3.pom>central=
 osgi-resource-locator-1.0.3.pom>nexus-aliyun=

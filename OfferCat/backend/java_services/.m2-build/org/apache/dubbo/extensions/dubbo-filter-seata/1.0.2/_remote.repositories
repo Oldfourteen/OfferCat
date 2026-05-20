@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:31:54 CST 2026
+#Wed May 20 13:02:53 CST 2026
+dubbo-filter-seata-1.0.2.jar>central=
 dubbo-filter-seata-1.0.2.jar>nexus-aliyun=
+dubbo-filter-seata-1.0.2.pom>central=
 dubbo-filter-seata-1.0.2.pom>nexus-aliyun=

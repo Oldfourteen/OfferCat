@@ -57,7 +57,7 @@ public class ForumPostController {
             String newFilename = UUID.randomUUID().toString() + suffix;
             File dest = new File(dir, newFilename);
             file.transferTo(dest);
-            return ResponseResult.success("/api/ai/photo/" + newFilename);
+            return ResponseResult.success("/api/forum/images/" + newFilename);
         } catch (IOException e) {
             return ResponseResult.error("图片上传失败: " + e.getMessage());
         }

@@ -13,7 +13,7 @@
         INSERT INTO user_personal_galaxy (user_id, galaxy_json)
         VALUES (#{userId}, #{galaxyJson,jdbcType=VARCHAR})
         ON DUPLICATE KEY UPDATE
-            galaxy_json = VALUES(galaxy_json),
+            galaxy_json = #{galaxyJson,jdbcType=VARCHAR},
             update_time = CURRENT_TIMESTAMP
     </insert>
 

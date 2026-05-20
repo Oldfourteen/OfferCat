@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:32:19 CST 2026
+#Wed May 20 13:01:59 CST 2026
+jsqlparser-4.7.jar>central=
 jsqlparser-4.7.jar>nexus-aliyun=
+jsqlparser-4.7.pom>central=
 jsqlparser-4.7.pom>nexus-aliyun=

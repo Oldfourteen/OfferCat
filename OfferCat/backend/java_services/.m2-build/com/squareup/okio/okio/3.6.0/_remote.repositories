@@ -1,4 +1,6 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Fri Apr 24 22:34:00 CST 2026
+#Wed May 20 13:02:14 CST 2026
+okio-3.6.0.jar>central=
 okio-3.6.0.jar>nexus-aliyun=
+okio-3.6.0.pom>central=
 okio-3.6.0.pom>nexus-aliyun=

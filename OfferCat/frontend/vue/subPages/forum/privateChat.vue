@@ -74,13 +74,15 @@
 			if (options && options.name) {
 				this.pageTitle = decodeURIComponent(options.name)
 			}
-			if (options && options.id) {
-				this.targetUserId = options.id
+			if (options && (options.userId || options.id)) {
+				this.targetUserId = options.userId || options.id
+			}
+			if (options && options.avatar) {
+				this.targetAvatar = decodeURIComponent(options.avatar) || DEFAULT_AVATAR
 			}
 			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 			this.myUserId = u.userId || u.id
 			this.myAvatar = u.avatar || DEFAULT_AVATAR
-			// targetAvatar 可以从接口返回，这里先用默认的
 		},
 		async onShow() {
 			await this.loadHistory()

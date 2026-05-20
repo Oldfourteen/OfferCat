@@ -29,6 +29,16 @@
 					<text class="profile-name">{{ displayName }}</text>
 					<text class="profile-meta" v-if="profileSummary">{{ profileSummary }}</text>
 					<text class="profile-bio" v-if="profileBio">{{ profileBio }}</text>
+					<view class="profile-actions" v-if="!isSelf && targetUserId">
+						<view
+							class="profile-action-btn primary"
+							:class="{ disabled: isPrimaryActionDisabled }"
+							@click="handlePrimaryFriendAction"
+						>
+							{{ primaryActionText }}
+						</view>
+						<view class="profile-action-btn ghost" @click="goPrivateChat">发私信</view>
+					</view>
 				</view>
 			</view>
 
@@ -99,7 +109,12 @@
 	import { BASE_URL } from '@/api/config.js'
 	import { getUser } from '@/utils/user.js'
 	import { getUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
-	import { searchForumPosts } from '@/api/forum.js'
+	import {
+		searchForumPosts,
+		sendForumFriendRequest,
+		respondForumFriendRequest,
+		getForumFriendRelationStatus,
+	} from '@/api/forum.js'
 	import { syncForumPostsViews } from '@/utils/forumViewCount.js'
 
 	export default {
@@ -115,6 +130,10 @@
 				profileGrade: '',
 				profileMajor: '',
 				profileBio: '',
+				friendRelationStatus: 'none',
+				friendRelationRequestId: '',
+				isFriendStatusLoading: false,
+				isFriendActionLoading: false,
 				userPosts: [],
 				isLeaving: false,
 				allowNativeBack: false,
@@ -123,7 +142,7 @@
 		},
 		computed: {
 			currentUserId() {
-				const user = getUser() || uni.getStorageSync('user') || {}
+				const user = getUser() || uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 				return String(user.userId || user.id || '')
 			},
 			isSelf() {
@@ -137,6 +156,24 @@
 			},
 			profileSummary() {
 				return [this.profileGrade, this.profileMajor].filter(Boolean).join(' · ')
+			},
+			primaryActionText() {
+				if (this.isFriendActionLoading) return '处理中...'
+				if (this.isFriendStatusLoading) return '加载中...'
+				switch (this.friendRelationStatus) {
+					case 'accepted':
+						return '已是好友'
+					case 'outgoing_pending':
+						return '已申请'
+					case 'incoming_pending':
+						return '通过申请'
+					default:
+						return '加好友'
+				}
+			},
+			isPrimaryActionDisabled() {
+				if (this.isFriendActionLoading || this.isFriendStatusLoading) return true
+				return this.friendRelationStatus === 'accepted' || this.friendRelationStatus === 'outgoing_pending'
 			}
 		},
 		onLoad(options) {
@@ -170,6 +207,7 @@
 		methods: {
 			loadPageData() {
 				this.loadUserInfo()
+				this.loadFriendRelation()
 				this.loadUserPosts()
 			},
 			loadUserInfo() {
@@ -184,6 +222,25 @@
 
 				if (!this.targetUserId) {
 					this.targetUserId = this.currentUserId
+				}
+			},
+			async loadFriendRelation() {
+				if (!this.currentUserId || !this.targetUserId || this.isSelf) {
+					this.friendRelationStatus = this.isSelf ? 'self' : 'none'
+					this.friendRelationRequestId = ''
+					return
+				}
+				this.isFriendStatusLoading = true
+				try {
+					const res = await getForumFriendRelationStatus(this.currentUserId, this.targetUserId)
+					const data = (res && res.data) || {}
+					this.friendRelationStatus = data.relationStatus || 'none'
+					this.friendRelationRequestId = data.requestId || ''
+				} catch (_) {
+					this.friendRelationStatus = 'none'
+					this.friendRelationRequestId = ''
+				} finally {
+					this.isFriendStatusLoading = false
 				}
 			},
 			async loadUserPosts() {
@@ -237,6 +294,62 @@
 				if (!id) return
 				uni.navigateTo({
 					url: `/subPages/forum/detail?id=${id}`
+				})
+			},
+			handlePrimaryFriendAction() {
+				if (this.isPrimaryActionDisabled) return
+				if (this.friendRelationStatus === 'incoming_pending') {
+					this.acceptFriendRequest()
+					return
+				}
+				this.handleAddFriend()
+			},
+			async handleAddFriend() {
+				if (!this.currentUserId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				if (!this.targetUserId || this.isSelf) return
+				this.isFriendActionLoading = true
+				try {
+					await sendForumFriendRequest(this.currentUserId, this.targetUserId)
+					this.friendRelationStatus = 'outgoing_pending'
+					uni.showToast({ title: '好友申请已发送', icon: 'none' })
+				} catch (e) {
+					const msg = (e && (e.message || e.errMsg)) || '发送失败'
+					if (String(msg).includes('已是好友')) {
+						this.friendRelationStatus = 'accepted'
+					} else if (String(msg).includes('已申请')) {
+						this.friendRelationStatus = 'outgoing_pending'
+					}
+					uni.showToast({ title: String(msg), icon: 'none' })
+				} finally {
+					this.isFriendActionLoading = false
+				}
+			},
+			async acceptFriendRequest() {
+				if (!this.currentUserId || !this.friendRelationRequestId) return
+				this.isFriendActionLoading = true
+				try {
+					await respondForumFriendRequest(this.friendRelationRequestId, this.currentUserId, true)
+					this.friendRelationStatus = 'accepted'
+					uni.showToast({ title: '已添加好友', icon: 'none' })
+				} catch (e) {
+					const msg = (e && (e.message || e.errMsg)) || '操作失败'
+					uni.showToast({ title: String(msg), icon: 'none' })
+				} finally {
+					this.isFriendActionLoading = false
+				}
+			},
+			goPrivateChat() {
+				if (!this.currentUserId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+				if (!this.targetUserId || this.isSelf) return
+				const avatar = this.getFullUrl(this.displayAvatar) || DEFAULT_AVATAR
+				uni.navigateTo({
+					url: `/subPages/forum/privateChat?userId=${encodeURIComponent(String(this.targetUserId))}&name=${encodeURIComponent(this.displayName)}&avatar=${encodeURIComponent(avatar)}`
 				})
 			},
 			getImagesList(imagesStr) {
@@ -465,6 +578,41 @@
 		background: rgba(255, 255, 255, 0.14);
 	}
 
+	.profile-actions {
+		display: flex;
+		align-items: center;
+		gap: 18rpx;
+		width: 100%;
+		margin-top: 28rpx;
+	}
+
+	.profile-action-btn {
+		flex: 1;
+		height: 84rpx;
+		border-radius: 999rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 28rpx;
+		font-weight: 700;
+	}
+
+	.profile-action-btn.disabled {
+		opacity: 0.72;
+	}
+
+	.profile-action-btn.primary {
+		background: #ffffff;
+		color: #3357d6;
+		box-shadow: 0 12rpx 24rpx rgba(14, 52, 135, 0.16);
+	}
+
+	.profile-action-btn.ghost {
+		background: rgba(255, 255, 255, 0.16);
+		border: 1rpx solid rgba(255, 255, 255, 0.32);
+		color: #ffffff;
+	}
+
 	.posts-section {
 		padding: 32rpx 30rpx calc(48rpx + env(safe-area-inset-bottom));
 	}
@@ -670,6 +818,18 @@
 		.profile-bio {
 			background: rgba(255, 255, 255, 0.09);
 			color: rgba(244, 247, 251, 0.92);
+		}
+
+		.profile-action-btn.primary {
+			background: #f4f7fb;
+			color: #2f49b6;
+			box-shadow: 0 12rpx 28rpx rgba(0, 0, 0, 0.22);
+		}
+
+		.profile-action-btn.ghost {
+			background: rgba(255, 255, 255, 0.08);
+			border-color: rgba(255, 255, 255, 0.12);
+			color: #f4f7fb;
 		}
 
 		.section-title {

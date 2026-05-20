@@ -153,8 +153,10 @@
 			},
 			goPrivateChat(item) {
 				const nameParam = encodeURIComponent(item.name || item.nickname || '')
+				const userIdParam = encodeURIComponent(String(item.userId || item.id || ''))
+				const avatarParam = encodeURIComponent(this.avatarUrl(item.avatar))
 				uni.navigateTo({
-					url: `/subPages/forum/privateChat?name=${nameParam}`,
+					url: `/subPages/forum/privateChat?userId=${userIdParam}&name=${nameParam}&avatar=${avatarParam}`,
 					animationType: 'slide-in-right',
 					animationDuration: 300,
 				})

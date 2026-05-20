@@ -243,6 +243,13 @@ export function getForumAcceptedFriends(userId) {
 	}))
 }
 
+export function getForumFriendRelationStatus(userId, targetUserId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/relation?userId=${encodeURIComponent(String(userId))}&targetUserId=${encodeURIComponent(String(targetUserId))}`,
+		method: 'GET',
+	}))
+}
+
 export function uploadForumImage(filePath) {
 	const base = getApiBase()
 	const token = getToken()

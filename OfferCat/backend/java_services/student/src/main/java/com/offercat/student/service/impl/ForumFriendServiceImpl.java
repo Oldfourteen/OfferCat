@@ -2,6 +2,7 @@ package com.offercat.student.service.impl;
 
 import com.offercat.student.dao.ForumFriendMapper;
 import com.offercat.student.service.ForumFriendService;
+import com.offercat.student.vo.ForumFriendRelationVO;
 import com.offercat.student.vo.ForumFriendRequestVO;
 import com.offercat.student.vo.ForumFriendUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -90,5 +91,46 @@ public class ForumFriendServiceImpl implements ForumFriendService {
             }
         }
         return list;
+    }
+
+    @Override
+    public ForumFriendRelationVO getRelationStatus(Long userId, Long targetUserId) {
+        ForumFriendRelationVO relation = new ForumFriendRelationVO();
+        relation.setRelationStatus("none");
+        if (userId == null || targetUserId == null) {
+            return relation;
+        }
+        if (userId.longValue() == targetUserId.longValue()) {
+            relation.setRelationStatus("self");
+            return relation;
+        }
+
+        ForumFriendRequestVO directional = forumFriendMapper.selectDirectional(userId, targetUserId);
+        ForumFriendRequestVO reverse = forumFriendMapper.selectDirectional(targetUserId, userId);
+
+        if (isAccepted(directional) || isAccepted(reverse)) {
+            relation.setRelationStatus("accepted");
+            relation.setRequestId(isAccepted(directional) ? directional.getRequestId() : reverse.getRequestId());
+            return relation;
+        }
+        if (isPending(reverse)) {
+            relation.setRelationStatus("incoming_pending");
+            relation.setRequestId(reverse.getRequestId());
+            return relation;
+        }
+        if (isPending(directional)) {
+            relation.setRelationStatus("outgoing_pending");
+            relation.setRequestId(directional.getRequestId());
+            return relation;
+        }
+        return relation;
+    }
+
+    private boolean isAccepted(ForumFriendRequestVO row) {
+        return row != null && row.getStatus() != null && row.getStatus() == STATUS_ACCEPTED;
+    }
+
+    private boolean isPending(ForumFriendRequestVO row) {
+        return row != null && row.getStatus() != null && row.getStatus() == STATUS_PENDING;
     }
 }

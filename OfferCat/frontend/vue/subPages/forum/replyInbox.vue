@@ -285,7 +285,7 @@
 	}
 
 	.post-text {
-		color: #5d76bd;
+		color: #98a2b3;
 	}
 
 	.empty-state {

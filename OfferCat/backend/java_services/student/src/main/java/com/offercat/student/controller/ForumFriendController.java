@@ -4,6 +4,7 @@ import com.offercat.student.common.ResponseResult;
 import com.offercat.student.dto.ForumFriendBidDTO;
 import com.offercat.student.dto.ForumFriendRespondDTO;
 import com.offercat.student.service.ForumFriendService;
+import com.offercat.student.vo.ForumFriendRelationVO;
 import com.offercat.student.vo.ForumFriendRequestVO;
 import com.offercat.student.vo.ForumFriendUserVO;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -58,5 +59,11 @@ public class ForumFriendController {
     @GetMapping("/accepted")
     public ResponseResult<List<ForumFriendUserVO>> friends(@RequestParam("userId") Long userId) {
         return ResponseResult.success(forumFriendService.listFriends(userId));
+    }
+
+    @GetMapping("/relation")
+    public ResponseResult<ForumFriendRelationVO> relation(@RequestParam("userId") Long userId,
+                                                          @RequestParam("targetUserId") Long targetUserId) {
+        return ResponseResult.success(forumFriendService.getRelationStatus(userId, targetUserId));
     }
 }

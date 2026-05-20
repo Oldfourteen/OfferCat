@@ -22,16 +22,17 @@
 				<view class="image-grid">
 					<view class="image-ai-layout">
 						<view class="image-slots">
+							<view class="upload-btn" @click="chooseImage" v-if="images.length < 6">
+								<text class="plus-icon">+</text>
+								<text class="upload-text">添加图片</text>
+								<text class="upload-limit">最多6张</text>
+							</view>
+
 							<view class="image-item" v-for="(img, index) in images" :key="index">
 								<image class="uploaded-img" :src="img.url" mode="aspectFill" @click="previewImage(index)"></image>
 								<view class="delete-btn" @click.stop="deleteImage(index)">
 									<text class="delete-icon">×</text>
 								</view>
-							</view>
-
-							<view class="upload-btn" @click="chooseImage" v-if="images.length < 1">
-								<text class="plus-icon">+</text>
-								<text class="upload-text">添加图片</text>
 							</view>
 						</view>
 
@@ -162,11 +163,11 @@
 				uni.navigateBack()
 			},
 			chooseImage() {
-				const count = 1 - this.images.length
+				const count = 6 - this.images.length
 				if (count <= 0) return
 				
 				uni.chooseImage({
-					count: count,
+					count: Math.min(6, count),
 					sizeType: ['compressed'],
 					sourceType: ['album', 'camera'],
 					success: (res) => {
@@ -525,6 +526,13 @@
 					opacity: 0.92;
 					transform: scale(0.98);
 				}
+
+				.upload-limit {
+					margin-top: 8rpx;
+					font-size: 20rpx;
+					color: #b0b7c3;
+					line-height: 1;
+				}
 			}
 		}
 	}
@@ -781,6 +789,9 @@
 				}
 				.upload-text {
 					color: #9aa6c4;
+				}
+				.upload-limit {
+					color: #707784;
 				}
 			}
 		}

@@ -1,4 +1,4 @@
-import { getUser } from '@/utils/user.js'
+import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
 import { getPracticeSessions } from '@/api/growth.js'
 
 // 题库练习历史的最大保留条数与更新事件名。
@@ -94,6 +94,9 @@ export function saveQuestionHistoryBatch(records = []) {
 export function syncQuestionHistoryFromServer({ paperType, limit } = {}) {
 	if (syncingPromise) return syncingPromise
 	syncingPromise = (async () => {
+		if (!resolveStoredStudentId() && !resolveStoredUserId(getUser())) {
+			return []
+		}
 		const list = await getPracticeSessions({ paperType, limit: limit || MAX_HISTORY_COUNT })
 		const items = (Array.isArray(list) ? list : (list && list.data) ? list.data : []).map((row) => {
 			const submittedAt = row.submittedAt || row.createTime || ''

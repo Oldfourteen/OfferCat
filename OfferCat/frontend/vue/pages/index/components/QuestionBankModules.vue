@@ -62,6 +62,7 @@
 	import QuestionBankTypeGauge from './QuestionBankTypeGauge.vue'
 	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
 	import { cumulativeAccuracyPercentForKind } from '@/utils/growthTrendScore.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		name: 'QuestionBankModules',
@@ -143,15 +144,32 @@
 			}
 		},
 		methods: {
-			async refreshPracticeScores() {
-				try {
-					await syncQuestionHistoryFromServer()
-				} catch (e) {
-					console.warn('[QuestionBankModules] syncQuestionHistoryFromServer 失败', e)
-				}
+			applyPracticeScoresFromHistory() {
 				const history = getQuestionHistory()
 				this.writtenAccuracy = cumulativeAccuracyPercentForKind(history, 'written')
 				this.interviewAccuracy = cumulativeAccuracyPercentForKind(history, 'interview')
+			},
+			async refreshPracticeScores() {
+				// 先用本地缓存展示，避免 App 端网络/身份未就绪时长期显示「暂未统计」。
+				this.applyPracticeScoresFromHistory()
+
+				let studentId = resolveStoredStudentId()
+				let userId = resolveStoredUserId(getUser())
+				if (!studentId && !userId) {
+					await syncUserProfileFromServer()
+					studentId = resolveStoredStudentId()
+					userId = resolveStoredUserId(getUser())
+				}
+
+				if (studentId || userId) {
+					try {
+						await syncQuestionHistoryFromServer()
+					} catch (e) {
+						console.warn('[QuestionBankModules] syncQuestionHistoryFromServer 失败', e)
+					}
+				}
+
+				this.applyPracticeScoresFromHistory()
 			},
 			goModule(item) {
 				// 按配置跳转到对应题库子页面。

@@ -46,6 +46,16 @@ public class AliyunDypnsProperties {
     private long sendIntervalSeconds = 60;
 
     /**
+     * 使用 ##code## 占位符时必填：1=纯数字验证码（与阿里云文档一致）。
+     */
+    private long codeType = 1;
+
+    /**
+     * 为 true 时接口返回验证码并在服务端日志打印（仅联调/演示，生产请保持 false）。
+     */
+    private boolean returnVerifyCodeForLog = false;
+
+    /**
      * 未配置阿里云密钥时是否使用 Redis 本地验证码（开发/联调；生产应配置真实密钥走阿里云）。
      */
     private boolean redisFallbackWhenUnconfigured = true;

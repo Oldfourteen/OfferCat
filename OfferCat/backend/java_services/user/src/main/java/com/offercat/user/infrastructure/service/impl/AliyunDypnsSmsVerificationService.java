@@ -63,13 +63,25 @@ public class AliyunDypnsSmsVerificationService {
         request.setCodeLength(properties.getCodeLength());
         request.setValidTime(properties.getValidTimeSeconds());
         request.setInterval(properties.getSendIntervalSeconds());
+        request.setCodeType(properties.getCodeType());
+        request.setReturnVerifyCode(properties.isReturnVerifyCodeForLog());
         request.setOutId(UUID.randomUUID().toString());
 
         try {
             SendSmsVerifyCodeResponse response = dypnsAcsClient.getAcsResponse(request);
             boolean ok = Boolean.TRUE.equals(response.getSuccess()) && "OK".equalsIgnoreCase(response.getCode());
             if (ok) {
-                log.info("阿里云短信验证码已发起: phone={}", nationalPhone11);
+                SendSmsVerifyCodeResponse.Model model = response.getModel();
+                if (model != null) {
+                    log.info("阿里云短信验证码已发起: phone={} bizId={} outId={}",
+                            nationalPhone11, model.getBizId(), model.getOutId());
+                    if (properties.isReturnVerifyCodeForLog() && StringUtils.hasText(model.getVerifyCode())) {
+                        log.warn("【联调】阿里云返回验证码（勿用于生产日志）phone={} code={}",
+                                nationalPhone11, model.getVerifyCode());
+                    }
+                } else {
+                    log.info("阿里云短信验证码已发起: phone={}（无 Model 详情）", nationalPhone11);
+                }
                 return SmsSendResult.ok();
             }
             log.warn("阿里云 SendSmsVerifyCode 未成功 phone={} respCode={} success={} msg={}",

@@ -37,8 +37,8 @@ public class RedisSmsVerificationService {
                     redisKey(phone),
                     code,
                     Duration.ofSeconds(ttlSec));
-            log.warn("【Redis 短信回退】已向 {} 写入验证码（有效期 {}s）；生产环境请配置阿里云 Dypns 并查看 user 服务日志获取联调码",
-                    phone, ttlSec);
+            log.warn("【Redis 短信回退】未走运营商短信，手机收不到短信。phone={} code={} ttl={}s（演示/联调可直接用此码登录）",
+                    phone, code, ttlSec);
             return SmsSendResult.ok();
         } catch (Exception ex) {
             log.error("Redis 写入验证码失败 phone={}", phone, ex);

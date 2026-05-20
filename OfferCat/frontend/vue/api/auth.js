@@ -5,20 +5,27 @@ import { request } from './request'
 // 由后端提供“发验证码接口”，后端再去调用阿里云短信发送短信，并把验证码写入缓存/数据库用于校验
 
 export function sendCode(payload) {
-	// payload: { phone?, email?, scene: 'register'|'login' }
+	const phone = String((payload && payload.phone) || '').trim()
 	return request({
 		url: '/auth/send-code',
 		method: 'POST',
-		data: payload
+		data: { phone }
 	})
 }
 
 export function register(payload) {
-	// payload: { phone, email, password, code }
+	const phone = String(payload.phone || '').trim()
+	const code = String(payload.code || '').trim()
+	const password = String(payload.password || '').trim()
+	const confirmPassword = String(payload.confirmPassword || payload.password || '').trim()
+	const emailRaw = payload.email == null ? '' : String(payload.email).trim()
+	const data = { phone, code, password, confirmPassword }
+	if (emailRaw) data.email = emailRaw
 	return request({
 		url: '/auth/register',
 		method: 'POST',
-		data: payload
+		data,
+		timeout: 45000
 	})
 }
 

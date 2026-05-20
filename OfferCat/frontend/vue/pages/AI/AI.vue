@@ -1,5 +1,5 @@
 <template>
-	<view class="ai-page" :class="themeClass">
+	<view class="ai-page" :class="[themeClass, { 'keyboard-open': isKeyboardVisible }]">
 		<!-- 会话抽屉：管理历史对话、切换会话、重命名和删除 -->
 		<AiSessionDrawer
 			:visible="drawerVisible"
@@ -73,6 +73,7 @@
 					:active-mode="currentMode"
 					:compact="hasMessages"
 					:theme="theme"
+					:keyboard-visible="isKeyboardVisible"
 					:interview-lock="isLocked"
 					:disabled-input="isCurrentInterviewEnded"
 					:sending="sending"
@@ -83,6 +84,7 @@
 					@remove-image="removeDraftImage"
 					@voice-input="handleVoiceInput"
 					@height-change="handleBottomLayoutChange(false)"
+					@keyboard-change="onComposerKeyboardChange"
 				/>
 			</view>
 
@@ -98,7 +100,7 @@
 				</view>
 			</view>
 		</view>
-		<AppLiquidTabBar tab-page-path="pages/AI/AI" :theme="theme" />
+		<AppLiquidTabBar v-if="!isKeyboardVisible" tab-page-path="pages/AI/AI" :theme="theme" />
 	</view>
 </template>
 
@@ -237,17 +239,16 @@
 			},
 			aiBottomSpaceStyle() {
 				const panelHeight = this.bottomPanelHeight || 220
-				// adjustPan 下窗口不缩放：键盘弹起时用键盘高度占位；收起时仍为底栏高度
-				const bottomReserve =
-					this.keyboardHeight > 0 ? this.keyboardHeight : this.tabBarOverlapPx
+				// adjustResize 下可视区已避开键盘，仅需为输入面板 +（无键盘时）底栏留白
+				const bottomReserve = this.isKeyboardVisible ? 16 : this.tabBarOverlapPx
 				return {
 					height: `${panelHeight + 24 + bottomReserve}px`
 				}
 			},
 			aiBottomLiftStyle() {
-				// 键盘弹起时底栏保持在屏幕最底部（可被键盘盖住），输入区只靠键盘高度上推
-				if (this.keyboardHeight > 0) {
-					return { bottom: `${this.keyboardHeight}px` }
+				// 键盘弹起：窗口已缩小，输入区贴底（紧贴键盘上沿）；收起：为自定义底栏让位
+				if (this.isKeyboardVisible) {
+					return { bottom: '0px' }
 				}
 				return { bottom: `${this.tabBarOverlapPx}px` }
 			},
@@ -775,13 +776,22 @@
 					this.scrollToBottom(force)
 				})
 			},
+			onComposerKeyboardChange(visible) {
+				if (typeof uni.onKeyboardHeightChange === 'function') {
+					return
+				}
+				this.isKeyboardVisible = !!visible
+				this.keyboardHeight = visible ? 1 : 0
+				this.handleBottomLayoutChange(false)
+			},
 			initKeyboardListener() {
 				if (typeof uni.onKeyboardHeightChange !== 'function') {
 					return
 				}
 				this.keyboardHandle = (res) => {
-					this.keyboardHeight = res.height
-					this.isKeyboardVisible = res.height > 0
+					const h = res && res.height ? res.height : 0
+					this.keyboardHeight = h
+					this.isKeyboardVisible = h > 0
 					this.handleBottomLayoutChange(false)
 				}
 				uni.onKeyboardHeightChange(this.keyboardHandle)
@@ -1257,6 +1267,11 @@
 		right: 0;
 		z-index: 7;
 		box-shadow: 0 -10rpx 30rpx rgba(21, 48, 94, 0.05);
+		transition: bottom 0.2s ease;
+	}
+
+	.ai-page.keyboard-open .ai-bottom {
+		z-index: 50;
 	}
 
 	.hr-respond-timer {

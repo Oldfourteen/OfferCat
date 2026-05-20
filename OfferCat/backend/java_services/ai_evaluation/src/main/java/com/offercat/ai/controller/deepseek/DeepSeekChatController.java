@@ -34,9 +34,6 @@ public class DeepSeekChatController {
     @Autowired
     private com.offercat.ai._service.AiServiceClient aiServiceClient;
 
-    @Autowired
-    private com.offercat.ai.dao.AiUserSessionMapper aiUserSessionMapper;
-
     /**
      * 云端咨询保留标记与按月清理策略
      */
@@ -164,41 +161,5 @@ public class DeepSeekChatController {
         }
         String advice = aiServiceClient.generatePracticeAdvice(practiceData);
         return ResponseEntity.ok(advice);
-    }
-
-    /**
-     * 同步前端 AI 历史会话列表（JSON）到服务端
-     */
-    @PostMapping("/sessions/sync")
-    public ResponseEntity<?> saveSessions(@RequestBody Map<String, Object> req) {
-        if (!req.containsKey("userId") || !req.containsKey("conversations")) {
-            return ResponseEntity.badRequest().body(Map.of("error", "参数不完整"));
-        }
-        Long userId = Long.valueOf(req.get("userId").toString());
-        String conversationsJson = (String) req.get("conversations");
-        
-        com.offercat.ai.entity.AiUserSession existing = aiUserSessionMapper.selectByUserId(userId);
-        if (existing == null) {
-            com.offercat.ai.entity.AiUserSession newSession = new com.offercat.ai.entity.AiUserSession();
-            newSession.setUserId(userId);
-            newSession.setConversationsJson(conversationsJson);
-            aiUserSessionMapper.insert(newSession);
-        } else {
-            existing.setConversationsJson(conversationsJson);
-            aiUserSessionMapper.update(existing);
-        }
-        return ResponseEntity.ok(Map.of("success", true));
-    }
-
-    /**
-     * 从服务端拉取前端 AI 历史会话列表（JSON）
-     */
-    @GetMapping("/sessions/sync")
-    public ResponseEntity<?> getSessions(@RequestParam Long userId) {
-        com.offercat.ai.entity.AiUserSession session = aiUserSessionMapper.selectByUserId(userId);
-        if (session != null && session.getConversationsJson() != null) {
-            return ResponseEntity.ok(Map.of("conversations", session.getConversationsJson()));
-        }
-        return ResponseEntity.ok(Map.of("conversations", "[]"));
     }
 }

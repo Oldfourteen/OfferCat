@@ -44,4 +44,23 @@ public class AliyunDypnsProperties {
 
     /** 同一号码发送间隔（秒），与 SendSmsVerifyCode 的 Interval 一致 */
     private long sendIntervalSeconds = 60;
+
+    /**
+     * 未配置阿里云密钥时是否使用 Redis 本地验证码（开发/联调；生产应配置真实密钥走阿里云）。
+     */
+    private boolean redisFallbackWhenUnconfigured = true;
+
+    /**
+     * 已配置阿里云但下发/核验失败时，是否回退 Redis（需 Redis 可用；生产可按需关闭）。
+     */
+    private boolean redisFallbackOnAliyunFailure = true;
+
+    /** AccessKey、Secret 与方案名均已配置时走阿里云号码认证。 */
+    public boolean isConfigured() {
+        return notBlank(accessKeyId) && notBlank(accessKeySecret) && notBlank(schemeName);
+    }
+
+    private static boolean notBlank(String s) {
+        return s != null && !s.isBlank();
+    }
 }

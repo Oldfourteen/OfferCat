@@ -44,19 +44,9 @@ mybatis:
     # 必须开启：否则 user_role / user_id 等无法映射到 userRole / userId，会导致角色始终为「空」误判
     map-underscore-to-camel-case: true
 
+# 无 Seata Server 时必须关闭，否则带 @Transactional 的注册/改密可能失败（生产见 application-prod.yml）
 seata:
-  enabled: true
-  application-id: user-service
-  tx-service-group: my_test_tx_group
-  service:
-    vgroup-mapping:
-      my_test_tx_group: default
-    grouplist:
-      default: 127.0.0.1:8091
-  config:
-    type: file
-  registry:
-    type: file
+  enabled: false
 
 # 阿里云号码认证 · 短信验证码（与控制台 SchemeName / 签名 / 模版 CODE 保持一致）
 aliyun:
@@ -73,6 +63,9 @@ aliyun:
     code-length: 6
     valid-time-seconds: 300
     send-interval-seconds: 60
+    # 未配置 access-key 时是否用 Redis 发验证码（开发联调）；生产请配置 secrets/application-dypns.yml
+    redis-fallback-when-unconfigured: true
+    redis-fallback-on-aliyun-failure: true
 
 # Eureka Client 配置
 eureka:

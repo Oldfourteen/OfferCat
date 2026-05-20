@@ -4,6 +4,7 @@ import com.offercat.user.dto.request.LoginRequest;
 import com.offercat.user.dto.request.RegisterRequest;
 import com.offercat.user.dto.response.AuthResponse;
 import com.offercat.user.infrastructure.common.ResponseResult;
+import com.offercat.user.infrastructure.service.SmsSendResult;
 import com.offercat.user.infrastructure.service.SmsVerificationService;
 import com.offercat.user.service.AuthService;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +28,7 @@ public class TestSameAccount {
 
     @BeforeEach
     public void stubSms() {
-        lenient().when(smsVerificationService.sendVerificationCode(anyString())).thenReturn(true);
+        lenient().when(smsVerificationService.sendVerificationCode(anyString())).thenReturn(SmsSendResult.ok());
         lenient().when(smsVerificationService.verifyCode(anyString(), anyString())).thenReturn(true);
     }
 

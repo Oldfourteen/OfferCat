@@ -6,6 +6,7 @@ import com.offercat.user.dto.response.AuthResponse;
 import com.offercat.user.entity.*;
 import com.offercat.user.infrastructure.common.ResponseResult;
 import com.offercat.user.infrastructure.service.EmailService;
+import com.offercat.user.infrastructure.service.SmsSendResult;
 import com.offercat.user.infrastructure.service.SmsVerificationService;
 import com.offercat.user.service.AuthService;
 import lombok.extern.slf4j.Slf4j;
@@ -57,10 +58,10 @@ public class AuthServiceImplement implements AuthService {
      */
     @Override
     public ResponseResult<Void> sendVerificationCode(SendCodeRequest request) {
-        boolean sent = smsVerificationService.sendVerificationCode(request.getPhone());
+        SmsSendResult sendResult = smsVerificationService.sendVerificationCode(request.getPhone());
 
-        if (!sent) {
-            return ResponseResult.error("验证码发送失败，请稍后再试");
+        if (!sendResult.isSuccess()) {
+            return ResponseResult.error(sendResult.getUserMessage());
         }
 
         log.info("已向 {} 发起短信验证码（阿里云号码认证）", request.getPhone());
@@ -137,6 +138,7 @@ public class AuthServiceImplement implements AuthService {
         user = new User();
         user.setPassword(passwordEncoder.encode(request.getPassword())); // 【安全规范】使用 BCrypt 哈希存储密码
         user.setPhone(request.getPhone());
+        user.setNickname("用户" + request.getPhone().substring(Math.max(0, request.getPhone().length() - 4)));
         user.setEmail(request.getEmail());
         user.setUserRole(1); // 默认角色设为1(学生)
         user.setUserStatus(1);

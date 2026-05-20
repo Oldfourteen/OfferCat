@@ -64,7 +64,7 @@
 				"navigationStyle": "custom",
 				"navigationBarTitleText": "",
 				"app-plus": {
-					"softinputMode": "adjustPan"
+					"softinputMode": "adjustResize"
 				}
 			}
 		},

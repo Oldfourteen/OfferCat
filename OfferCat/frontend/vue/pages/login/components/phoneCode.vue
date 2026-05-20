@@ -100,7 +100,7 @@
 				uni.showLoading({ title: '发送中', mask: true })
 				try {
 					// TODO(后端/阿里云短信)：由后端接口去调用阿里云短信发送验证码并落库/缓存
-					await sendCode({ phone: this.phone, scene: this.scene })
+					await sendCode({ phone: (this.phone || '').trim(), scene: this.scene })
 					
 					uni.hideLoading()
 					uni.showToast({ title: '验证码已发送', icon: 'none' })

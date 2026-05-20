@@ -7,6 +7,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.jdbc.CannotGetJdbcConnectionException;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 
@@ -16,6 +18,8 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
  */
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
     /**
      * 处理方法参数校验异常
      */
@@ -49,6 +53,7 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler({java.sql.SQLException.class, DataAccessException.class})
     public ResponseResult<Void> handleDatabaseException(Exception ex) {
+        log.error("数据库异常", ex);
         return ResponseResult.internalError("服务器繁忙，请稍后再试");
     }
 
@@ -57,6 +62,7 @@ public class GlobalExceptionHandler {
      */ 
     @ExceptionHandler(Exception.class)
     public ResponseResult<Void> handleException(Exception ex) {
+        log.error("未处理异常", ex);
         return ResponseResult.internalError("服务器繁忙，请稍后再试");
     }
 }

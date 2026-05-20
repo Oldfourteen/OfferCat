@@ -1,5 +1,9 @@
 <template>
-	<view class="bottom-panel" :class="[{ compact: compact }, themeClass, { 'recording-lock': recording }]" @click="handleRootClick">
+	<view
+		class="bottom-panel"
+		:class="[{ compact: compact, 'keyboard-visible': keyboardVisible }, themeClass, { 'recording-lock': recording }]"
+		@click="handleRootClick"
+	>
 		<!-- 快捷功能条：让用户一键切换简历润色、面试、岗位分析等模式 -->
 		<scroll-view class="actions-scroll" scroll-x :show-scrollbar="false">
 			<view class="actions-row">
@@ -43,6 +47,8 @@
 					placeholder-class="composer-placeholder"
 					:value="modelValue"
 					@input="onInput"
+					@focus="onInputFocus"
+					@blur="onInputBlur"
 					@confirm="emitSend"
 					@linechange="onLineChange"
 				/>
@@ -124,6 +130,10 @@
 				}
 			},
 			compact: Boolean,
+			keyboardVisible: {
+				type: Boolean,
+				default: false
+			},
 			sending: {
 				type: Boolean,
 				default: false
@@ -308,6 +318,12 @@
 				}
 				this.$emit('update:modelValue', event.detail.value)
 			},
+			onInputFocus() {
+				this.$emit('keyboard-change', true)
+			},
+			onInputBlur() {
+				this.$emit('keyboard-change', false)
+			},
 			onLineChange(e) {
 				const lineCount = e.detail.lineCount || 1;
 				const lines = Math.min(lineCount, 5);
@@ -332,6 +348,10 @@
 		padding: 16rpx 18rpx calc(18rpx + env(safe-area-inset-bottom));
 		background: linear-gradient(180deg, rgba(249, 250, 253, 0.92) 0%, #f9fafd 22%, #f9fafd 100%);
 		backdrop-filter: blur(12rpx);
+	}
+
+	.bottom-panel.keyboard-visible {
+		padding-bottom: 18rpx;
 	}
 
 	.bottom-panel.compact {

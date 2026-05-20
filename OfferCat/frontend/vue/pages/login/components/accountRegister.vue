@@ -78,6 +78,8 @@
 	import phoneCode from './phoneCode.vue';
 	import humanVerify from './humanVerify.vue';
 	import { register } from '../../../api/auth'
+	import { setToken } from '../../../utils/token'
+	import { setUser, scheduleLoginProfileSync } from '../../../utils/user'
 	
 	export default {
 		components: {
@@ -225,20 +227,40 @@
 				this.doRegister();
 			},
 			async doRegister() {
-				// 注册成功后提示用户并切回登录模式继续登录。
 				uni.showLoading({ title: '注册中', mask: true })
 				try {
-					await register({
-						phone: this.phone,
-						email: this.email,
-						password: this.password,
-						confirmPassword: this.confirmPassword,
-						code: this.code
+					const result = await register({
+						phone: (this.phone || '').trim(),
+						email: (this.email || '').trim(),
+						password: (this.password || '').trim(),
+						confirmPassword: (this.confirmPassword || '').trim(),
+						code: (this.code || '').trim()
 					})
+
+					const token = (result && result.token) || (result && result.data && result.data.token) || ''
+					const user = (result && result.user) || (result && result.data && result.data.user) || null
+					if (!token) {
+						throw new Error('后端未返回 token')
+					}
+
+					let isComplete = true
+					const resData = (result && result.data) ? result.data : result
+					if (resData && typeof resData === 'object' && resData.isComplete !== undefined) {
+						isComplete = resData.isComplete
+					}
+
+					setToken(token)
+					setUser(user)
+					scheduleLoginProfileSync({ timeout: 12000 })
+
 					uni.hideLoading()
 					uni.showToast({ title: '注册成功', icon: 'success' })
 					setTimeout(() => {
-						this.$emit('switchMode')
+						if (isComplete === false) {
+							uni.redirectTo({ url: '/pages/initProfile/initProfile' })
+						} else {
+							uni.switchTab({ url: '/pages/index/index' })
+						}
 					}, 600)
 				} catch (e) {
 					uni.hideLoading()

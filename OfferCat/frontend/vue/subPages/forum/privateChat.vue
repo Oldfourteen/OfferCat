@@ -52,7 +52,6 @@
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getPrivateChatHistory, sendPrivateMessage } from '@/api/forum.js'
-	import dayjs from 'dayjs'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
 

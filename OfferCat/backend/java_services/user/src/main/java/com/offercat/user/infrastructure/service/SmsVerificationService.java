@@ -8,7 +8,7 @@ public interface SmsVerificationService {
     /**
      * @param nationalPhone11 国内 11 位手机号，不含国家码
      */
-    boolean sendVerificationCode(String nationalPhone11);
+    SmsSendResult sendVerificationCode(String nationalPhone11);
 
     /**
      * @param nationalPhone11 国内 11 位手机号

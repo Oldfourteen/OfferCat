@@ -35,11 +35,11 @@
 		data() {
 			return {
 				tools: [
-					{ name: '好友', iconImage: '/static/好友.svg', desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
-					{ name: '个人名片', iconImage: '/static/个人名片.svg', desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
-					{ name: '消息', iconImage: '/static/消息.svg', desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
-					{ name: '收到喜欢', iconImage: '/static/点赞.svg', desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
-					{ name: '收藏', iconImage: '/static/收藏.svg', desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
+					{ name: '好友', iconImage: '/static/haoyou.svg', desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
+					{ name: '个人名片', iconImage: '/static/geren.svg', desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
+					{ name: '消息', iconImage: '/static/xiaoxi.svg', desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
+					{ name: '收到喜欢', iconImage: '/static/dianzan.svg', desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
+					{ name: '收藏', iconImage: '/static/shoucang.svg', desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
 				]
 			}
 		},

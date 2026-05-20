@@ -39,6 +39,28 @@
 			<skillSection :htmlContent="resumeData.skill" :skillItems="resumeData.skillItems" :theme="theme" />
 		</view>
 		<bottomActions :theme="theme" @preview="handlePreviewResume" @exportPdf="handleExportPdf" />
+
+		<view v-if="showExportModePopup" class="export-mode-popup" @touchmove.stop.prevent>
+			<view class="export-mode-popup__mask" @click="closeExportModePopup"></view>
+			<view class="export-mode-popup__panel">
+				<view class="export-mode-popup__header">
+					<text class="export-mode-popup__title">选择导出方式</text>
+					<text class="export-mode-popup__desc">先保留两种生成入口，后续再接真实导出能力</text>
+				</view>
+				<view class="export-mode-popup__actions">
+					<view class="export-mode-card" @click="handleSelectExportMode('plain')">
+						<text class="export-mode-card__title">朴素生成 PDF</text>
+						<text class="export-mode-card__desc">稳定简洁，适合常规排版导出</text>
+					</view>
+					<view class="export-mode-card export-mode-card--primary" @click="handleSelectExportMode('smart')">
+						<text class="export-mode-card__badge">Beta</text>
+						<text class="export-mode-card__title">智能生成 PDF</text>
+						<text class="export-mode-card__desc">预留给后续智能排版与增强生成</text>
+					</view>
+				</view>
+				<view class="export-mode-popup__footer" @click="closeExportModePopup">取消</view>
+			</view>
+		</view>
 	</view>
 </template>
 
@@ -105,7 +127,8 @@
 				},
 				// 保存从简历仓库传过来的整条简历记录（如果有的话）
 				currentResumeId: null,
-				fullResumeRecord: null
+				fullResumeRecord: null,
+				showExportModePopup: false
 			}
 		},
 		computed: {
@@ -384,8 +407,18 @@
 					url: `/subPages/onlineResumeMake/previewResume?resume_data=${dataStr}`
 				})
 			},
-			// 导出PDF（调用C++服务生成）
-			async handleExportPdf() {
+			handleExportPdf() {
+				this.handleSaveResume()
+				this.showExportModePopup = true
+			},
+			closeExportModePopup() {
+				this.showExportModePopup = false
+			},
+			handleSelectExportMode() {
+				uni.showToast({ title: '功能开发中', icon: 'none' })
+			},
+			// 预留：后续恢复实际导出逻辑时可直接接回
+			async performExportPdf() {
 				// 导出前先保存
 				const record = this.handleSaveResume()
 				
@@ -733,6 +766,150 @@
 					color: #fff;
 				}
 			}
+		}
+	}
+
+	.export-mode-popup {
+		position: fixed;
+		inset: 0;
+		z-index: 1200;
+	}
+
+	.export-mode-popup__mask {
+		position: absolute;
+		inset: 0;
+		background: rgba(15, 23, 42, 0.48);
+	}
+
+	.export-mode-popup__panel {
+		position: absolute;
+		left: 24rpx;
+		right: 24rpx;
+		bottom: calc(28rpx + env(safe-area-inset-bottom));
+		border-radius: 32rpx;
+		background: #ffffff;
+		padding: 30rpx 26rpx 24rpx;
+		box-shadow: 0 24rpx 64rpx rgba(15, 23, 42, 0.18);
+	}
+
+	.export-mode-popup__header {
+		text-align: center;
+	}
+
+	.export-mode-popup__title {
+		display: block;
+		font-size: 34rpx;
+		font-weight: 700;
+		color: #1f2a44;
+	}
+
+	.export-mode-popup__desc {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 24rpx;
+		line-height: 1.6;
+		color: #73809b;
+	}
+
+	.export-mode-popup__actions {
+		display: flex;
+		flex-direction: column;
+		gap: 18rpx;
+		margin-top: 28rpx;
+	}
+
+	.export-mode-card {
+		position: relative;
+		padding: 28rpx 26rpx;
+		border-radius: 28rpx;
+		background: linear-gradient(180deg, #f8faff 0%, #eef2fb 100%);
+		border: 2rpx solid rgba(93, 118, 189, 0.08);
+	}
+
+	.export-mode-card--primary {
+		background: linear-gradient(135deg, #5d76bd 0%, #6f87d4 100%);
+		box-shadow: 0 16rpx 36rpx rgba(93, 118, 189, 0.24);
+	}
+
+	.export-mode-card__badge {
+		position: absolute;
+		top: 22rpx;
+		right: 22rpx;
+		padding: 6rpx 14rpx;
+		border-radius: 999rpx;
+		background: rgba(255, 255, 255, 0.18);
+		font-size: 20rpx;
+		font-weight: 700;
+		color: #ffffff;
+	}
+
+	.export-mode-card__title {
+		display: block;
+		font-size: 30rpx;
+		font-weight: 700;
+		color: #334155;
+	}
+
+	.export-mode-card__desc {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 24rpx;
+		line-height: 1.6;
+		color: #64748b;
+	}
+
+	.export-mode-card--primary .export-mode-card__title,
+	.export-mode-card--primary .export-mode-card__desc {
+		color: #ffffff;
+	}
+
+	.export-mode-popup__footer {
+		height: 88rpx;
+		border-radius: 999rpx;
+		margin-top: 24rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		background: #f1f5f9;
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #475569;
+	}
+
+	.online-resume-page.theme-dark {
+		.export-mode-popup__panel {
+			background: #1b1d23;
+			box-shadow: 0 24rpx 64rpx rgba(0, 0, 0, 0.34);
+		}
+
+		.export-mode-popup__title {
+			color: #f4f7fb;
+		}
+
+		.export-mode-popup__desc {
+			color: #95a3be;
+		}
+
+		.export-mode-card {
+			background: linear-gradient(180deg, #242835 0%, #1f2330 100%);
+			border-color: rgba(255, 255, 255, 0.06);
+		}
+
+		.export-mode-card__title {
+			color: #f4f7fb;
+		}
+
+		.export-mode-card__desc {
+			color: #a6b2ca;
+		}
+
+		.export-mode-card--primary {
+			background: linear-gradient(135deg, #5d76bd 0%, #7a92df 100%);
+		}
+
+		.export-mode-popup__footer {
+			background: #23252b;
+			color: #d3dceb;
 		}
 	}
 </style>

@@ -34,10 +34,18 @@
 		@confirm="onPopupConfirm" 
 		@cancel="onPopupCancel" 
 	/>
+	<avatarCropPopup
+		:visible="isCropPopupVisible"
+		:imageSrc="cropSource"
+		:theme="theme"
+		@confirm="onCropConfirm"
+		@cancel="onCropCancel"
+	/>
 </template>
 
 <script>
 	import editResumeNamePopup from './editResumeNamePopup.vue'
+	import avatarCropPopup from './avatarCropPopup.vue'
 	import { DEFAULT_AVATAR } from '@/utils/userProfile.js'
 	import { request } from '@/api/request.js'
 	import { BASE_URL } from '@/api/config.js'
@@ -47,7 +55,8 @@
 	export default {
 		name: 'resumeHeader',
 		components: {
-			editResumeNamePopup
+			editResumeNamePopup,
+			avatarCropPopup
 		},
 		emits: ['updatePhoto', 'updateResumeName'],
 		props: {
@@ -118,6 +127,8 @@
 			return {
 				DEFAULT_AVATAR,
 				isPopupVisible: false,
+				isCropPopupVisible: false,
+				cropSource: '',
 				localResumeName: ''
 			}
 		},
@@ -158,14 +169,22 @@
 					success: (res) => {
 						const tempFilePaths = res.tempFilePaths;
 						if (tempFilePaths && tempFilePaths.length > 0) {
-							const selectedPhoto = tempFilePaths[0];
-							
-							uni.showLoading({ title: '上传中...' });
-							
-							this.uploadAvatarToServer(selectedPhoto);
+							this.cropSource = tempFilePaths[0]
+							this.isCropPopupVisible = true
 						}
 					}
 				});
+			},
+			onCropCancel() {
+				this.isCropPopupVisible = false
+				this.cropSource = ''
+			},
+			onCropConfirm(croppedFilePath) {
+				this.isCropPopupVisible = false
+				this.cropSource = ''
+				if (!croppedFilePath) return
+				uni.showLoading({ title: '上传中...' })
+				this.uploadAvatarToServer(croppedFilePath)
 			},
 			async uploadAvatarToServer(filePath) {
 				try {

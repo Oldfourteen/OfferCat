@@ -45,7 +45,7 @@
 			<view class="export-mode-popup__panel">
 				<view class="export-mode-popup__header">
 					<text class="export-mode-popup__title">选择导出方式</text>
-					<text class="export-mode-popup__desc">先保留两种生成入口，后续再接真实导出能力</text>
+					<text class="export-mode-popup__desc">朴素版稳定排版；智能版增强排版（不可用时自动回退）</text>
 				</view>
 				<view class="export-mode-popup__actions">
 					<view class="export-mode-card" @click="handleSelectExportMode('plain')">
@@ -55,7 +55,7 @@
 					<view class="export-mode-card export-mode-card--primary" @click="handleSelectExportMode('smart')">
 						<text class="export-mode-card__badge">Beta</text>
 						<text class="export-mode-card__title">智能生成 PDF</text>
-						<text class="export-mode-card__desc">预留给后续智能排版与增强生成</text>
+						<text class="export-mode-card__desc">C++ 服务增强排版，不可用则自动回退朴素版</text>
 					</view>
 				</view>
 				<view class="export-mode-popup__footer" @click="closeExportModePopup">取消</view>
@@ -79,9 +79,7 @@
 	// 工具类导入
 	import { getResumeById, saveResumeRecord } from '../../utils/resumeRepo.js'
 	import themeMixin from '@/utils/themeMixin.js'
-	import { request } from '@/api/request.js'
-	import { BASE_URL } from '@/api/config.js'
-	import { getUser } from '@/utils/user.js'
+	import { exportResumePdf } from '@/utils/resumePdfExport.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -128,7 +126,8 @@
 				// 保存从简历仓库传过来的整条简历记录（如果有的话）
 				currentResumeId: null,
 				fullResumeRecord: null,
-				showExportModePopup: false
+				showExportModePopup: false,
+				backendResumeId: null
 			}
 		},
 		computed: {
@@ -414,85 +413,34 @@
 			closeExportModePopup() {
 				this.showExportModePopup = false
 			},
-			handleSelectExportMode() {
-				uni.showToast({ title: '功能开发中', icon: 'none' })
+			handleSelectExportMode(mode) {
+				this.closeExportModePopup()
+				this.performExportPdf(mode === 'smart' ? 'smart' : 'plain')
 			},
-			// 预留：后续恢复实际导出逻辑时可直接接回
-			async performExportPdf() {
-				// 导出前先保存
+			async performExportPdf(mode = 'plain') {
 				const record = this.handleSaveResume()
-				
-				uni.showLoading({ title: '正在生成PDF...' })
-				
+				uni.showLoading({ title: '正在同步并生成 PDF...', mask: true })
 				try {
-					// 去除 HTML 标签，纯文本传给接口
-					const stripHtml = (html) => {
-						if (!html) return '';
-						let text = String(html).replace(/<br\s*\/?>/gi, '\n');
-						text = text.replace(/<\/p>/gi, '\n');
-						text = text.replace(/<[^>]+>/g, '');
-						text = text.replace(/&nbsp;/g, ' ');
-						return text.replace(/\n\s*\n/g, '\n').trim();
-					};
-
-					const storedUser = getUser() || {}
-					const userId = storedUser.userId || null
-
-					// 请求生成简历
-					const res = await request({
-						url: '/api/resume/create',
-						method: 'POST',
-						data: {
-							userId: userId,
-							resumeName: record.resume_name,
-							realName: record.real_name,
-							gender: record.gender,
-							phone: record.phone,
-							email: record.email,
-							photo: record.photo,
-							campusExperience: stripHtml(record.campus_experience),
-							workExperience: stripHtml(record.work_experience),
-							projectExperience: stripHtml(record.project_experience),
-							selfEvaluation: stripHtml(record.self_evaluation),
-							aiScore: 0.0,
-							aiEvaluation: '',
-							resumeStatus: 1
-						}
-					})
-					
-					// 使用C++服务生成PDF
-					const pdfRes = await request({
-						url: `/api/resume/export/pdf/cpp/${res.resumeId}`,
-						method: 'GET',
-						responseType: 'blob'
-					})
-					
+					const result = await exportResumePdf(record, mode, this.backendResumeId)
+					this.backendResumeId = result.backendResumeId
 					uni.hideLoading()
-					uni.showToast({ title: 'PDF导出成功', icon: 'success' })
-					
-					// 生成下载链接（调用C++服务的PDF接口）
-					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/cpp/${res.resumeId}`
-					
-					uni.showModal({
-						title: '导出成功',
-						content: 'PDF 已生成（C++服务），是否复制下载链接？\n\n' + realPdfUrl,
-						confirmText: '复制链接',
-						cancelText: '关闭',
-						success: (resModal) => {
-							if (resModal.confirm) {
-								uni.setClipboardData({
-									data: realPdfUrl,
-									success: () => {
-										uni.showToast({ title: '链接已复制', icon: 'none' })
-									}
-								})
-							}
-						}
-					})
+					if (result.usedFallback) {
+						uni.showToast({
+							title: '智能服务不可用，已用朴素方式生成',
+							icon: 'none',
+							duration: 2800
+						})
+					} else {
+						uni.showToast({ title: 'PDF 导出成功', icon: 'success' })
+					}
 				} catch (e) {
 					console.error('PDF导出失败:', e)
 					uni.hideLoading()
-					uni.showToast({ title: 'PDF导出失败', icon: 'none' })
+					uni.showToast({
+						title: (e && e.message) ? e.message : 'PDF导出失败',
+						icon: 'none',
+						duration: 3000
+					})
 				}
 			},
 			// 标准化条目结构（兼容旧版数据）

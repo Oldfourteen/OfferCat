@@ -54,6 +54,20 @@
         ORDER BY fr.create_time DESC
     </select>
 
+    <select id="listPendingOutgoing" resultType="com.offercat.student.vo.ForumFriendRequestVO">
+        SELECT fr.request_id AS requestId,
+               fr.from_user_id AS fromUserId,
+               fr.to_user_id AS toUserId,
+               fr.status AS status,
+               u.nickname AS toNickname,
+               u.avatar AS toAvatar,
+               fr.create_time AS createTime
+        FROM forum_friend_request fr
+        LEFT JOIN `user` u ON fr.to_user_id = u.user_id
+        WHERE fr.from_user_id = #{userId} AND fr.status = 0
+        ORDER BY fr.create_time DESC
+    </select>
+
     <select id="listAcceptedFriends" resultType="com.offercat.student.vo.ForumFriendUserVO">
         SELECT
             CASE WHEN fr.from_user_id = #{userId} THEN fr.to_user_id ELSE fr.from_user_id END AS userId,

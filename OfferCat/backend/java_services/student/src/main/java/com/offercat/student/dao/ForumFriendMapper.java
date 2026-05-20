@@ -25,6 +25,8 @@ public interface ForumFriendMapper {
 
     List<ForumFriendRequestVO> listPendingIncoming(@Param("userId") Long userId);
 
+    List<ForumFriendRequestVO> listPendingOutgoing(@Param("userId") Long userId);
+
     List<ForumFriendUserVO> listAcceptedFriends(@Param("userId") Long userId);
 
     int countPendingIncoming(@Param("userId") Long userId);

@@ -14,6 +14,8 @@ public interface ForumFriendService {
 
     List<ForumFriendRequestVO> listPendingIncoming(Long userId);
 
+    List<ForumFriendRequestVO> listPendingOutgoing(Long userId);
+
     List<ForumFriendUserVO> listFriends(Long userId);
 
     ForumFriendRelationVO getRelationStatus(Long userId, Long targetUserId);

@@ -40,25 +40,37 @@
 		</view>
 		<bottomActions :theme="theme" @preview="handlePreviewResume" @exportPdf="handleExportPdf" />
 
-		<view v-if="showExportModePopup" class="export-mode-popup" @touchmove.stop.prevent>
-			<view class="export-mode-popup__mask" @click="closeExportModePopup"></view>
-			<view class="export-mode-popup__panel">
+		<view v-if="showExportModePopup" class="export-mode-popup">
+			<view
+				class="export-mode-popup__mask"
+				@tap="closeExportModePopup"
+				@touchmove.stop.prevent
+			></view>
+			<view class="export-mode-popup__panel" @tap.stop>
 				<view class="export-mode-popup__header">
 					<text class="export-mode-popup__title">选择导出方式</text>
-					<text class="export-mode-popup__desc">朴素版稳定排版；智能版增强排版（不可用时自动回退）</text>
+					<text class="export-mode-popup__desc">点击下方按钮即可导出 PDF 并自动打开</text>
 				</view>
 				<view class="export-mode-popup__actions">
-					<view class="export-mode-card" @click="handleSelectExportMode('plain')">
+					<view
+						class="export-mode-card"
+						hover-class="export-mode-card--active"
+						@tap.stop="handleSelectExportMode('plain')"
+					>
 						<text class="export-mode-card__title">朴素生成 PDF</text>
 						<text class="export-mode-card__desc">稳定简洁，适合常规排版导出</text>
 					</view>
-					<view class="export-mode-card export-mode-card--primary" @click="handleSelectExportMode('smart')">
+					<view
+						class="export-mode-card export-mode-card--primary"
+						hover-class="export-mode-card--active"
+						@tap.stop="handleSelectExportMode('smart')"
+					>
 						<text class="export-mode-card__badge">Beta</text>
 						<text class="export-mode-card__title">智能生成 PDF</text>
-						<text class="export-mode-card__desc">C++ 服务增强排版，不可用则自动回退朴素版</text>
+						<text class="export-mode-card__desc">C++ 增强排版，不可用时自动回退朴素版</text>
 					</view>
 				</view>
-				<view class="export-mode-popup__footer" @click="closeExportModePopup">取消</view>
+				<view class="export-mode-popup__footer" @tap.stop="closeExportModePopup">取消</view>
 			</view>
 		</view>
 	</view>
@@ -79,7 +91,7 @@
 	// 工具类导入
 	import { getResumeById, saveResumeRecord } from '../../utils/resumeRepo.js'
 	import themeMixin from '@/utils/themeMixin.js'
-	import { exportResumePdf } from '@/utils/resumePdfExport.js'
+	import { exportResumePdf } from '../../utils/resumePdfExport.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -408,14 +420,28 @@
 			},
 			handleExportPdf() {
 				this.handleSaveResume()
-				this.showExportModePopup = true
+				// 优先使用系统 ActionSheet，避免自定义弹窗在 App 端点击被拦截
+				uni.showActionSheet({
+					itemList: ['朴素生成 PDF', '智能生成 PDF (Beta)'],
+					success: (res) => {
+						if (res.tapIndex === 0) {
+							this.performExportPdf('plain')
+						} else if (res.tapIndex === 1) {
+							this.performExportPdf('smart')
+						}
+					},
+					fail: () => {
+						this.showExportModePopup = true
+					}
+				})
 			},
 			closeExportModePopup() {
 				this.showExportModePopup = false
 			},
 			handleSelectExportMode(mode) {
+				const exportMode = mode === 'smart' ? 'smart' : 'plain'
 				this.closeExportModePopup()
-				this.performExportPdf(mode === 'smart' ? 'smart' : 'plain')
+				this.performExportPdf(exportMode)
 			},
 			async performExportPdf(mode = 'plain') {
 				const record = this.handleSaveResume()
@@ -726,6 +752,7 @@
 	.export-mode-popup__mask {
 		position: absolute;
 		inset: 0;
+		z-index: 1;
 		background: rgba(15, 23, 42, 0.48);
 	}
 
@@ -734,6 +761,7 @@
 		left: 24rpx;
 		right: 24rpx;
 		bottom: calc(28rpx + env(safe-area-inset-bottom));
+		z-index: 2;
 		border-radius: 32rpx;
 		background: #ffffff;
 		padding: 30rpx 26rpx 24rpx;
@@ -772,6 +800,11 @@
 		border-radius: 28rpx;
 		background: linear-gradient(180deg, #f8faff 0%, #eef2fb 100%);
 		border: 2rpx solid rgba(93, 118, 189, 0.08);
+	}
+
+	.export-mode-card--active {
+		opacity: 0.88;
+		transform: scale(0.98);
 	}
 
 	.export-mode-card--primary {

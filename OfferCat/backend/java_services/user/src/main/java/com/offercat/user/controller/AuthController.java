@@ -6,7 +6,10 @@ import com.offercat.user.infrastructure.common.ResponseResult;
 import com.offercat.user.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+
+import java.util.Map;
 
 /**
  * 认证控制器
@@ -19,6 +22,16 @@ public class AuthController {
 
     @Autowired
     private AuthService authService;
+
+    /**
+     * 轻量存活探针，供 App 启动/登录页预热网关与用户服务，避免首包登录卡在冷启动。
+     */
+    @GetMapping("/ping")
+    public ResponseEntity<Map<String, String>> ping() {
+        return ResponseEntity.ok(Map.of(
+                "status", "UP",
+                "service", "user-service"));
+    }
 
     /**
      * 发送验证码

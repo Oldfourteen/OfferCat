@@ -1,7 +1,8 @@
 <script>
 	import { applyTheme } from '@/utils/theme.js'
+	import { warmApiConnection } from '@/utils/apiWarmup.js'
 	import { getToken } from '@/utils/token.js'
-	import { syncUserProfileFromServer } from '@/utils/user.js'
+	import { scheduleLoginProfileSync } from '@/utils/user.js'
 
 	export default {
 		globalData: {
@@ -14,6 +15,8 @@
 		onLaunch: function() {
 			applyTheme()
 			console.log('App Launch')
+			// 尽早预热网关与用户服务，减轻登录页首包冷启动耗时
+			void warmApiConnection()
 			// 检查是否已有有效的登录态，自动跳转首页
 			this.checkAutoLogin()
 		},
@@ -29,7 +32,7 @@
 				// 检查本地存储中是否有有效的 token
 				const token = getToken()
 				if (token) {
-					void syncUserProfileFromServer()
+					scheduleLoginProfileSync({ timeout: 12000 })
 					// 已有登录态，自动跳转到首页
 					console.log('已检测到登录态，自动跳转首页')
 					uni.switchTab({

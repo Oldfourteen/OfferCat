@@ -62,7 +62,7 @@
 	import QuestionBankTypeGauge from './QuestionBankTypeGauge.vue'
 	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
 	import { cumulativeAccuracyPercentForKind } from '@/utils/growthTrendScore.js'
-	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, scheduleLoginProfileSync } from '@/utils/user.js'
 
 	export default {
 		name: 'QuestionBankModules',
@@ -156,20 +156,15 @@
 				let studentId = resolveStoredStudentId()
 				let userId = resolveStoredUserId(getUser())
 				if (!studentId && !userId) {
-					await syncUserProfileFromServer()
-					studentId = resolveStoredStudentId()
-					userId = resolveStoredUserId(getUser())
-				}
-
-				if (studentId || userId) {
+					scheduleLoginProfileSync({ timeout: 8000 })
+				} else {
 					try {
 						await syncQuestionHistoryFromServer()
 					} catch (e) {
 						console.warn('[QuestionBankModules] syncQuestionHistoryFromServer 失败', e)
 					}
+					this.applyPracticeScoresFromHistory()
 				}
-
-				this.applyPracticeScoresFromHistory()
 			},
 			goModule(item) {
 				// 按配置跳转到对应题库子页面。

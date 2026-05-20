@@ -22,6 +22,7 @@
 	import confirmAgreement from './components/confirmAgreement.vue';
 	import loginArea from './components/loginArea.vue';
 	import logoArea from '../../pages/loginAndRegister/components/logoArea.vue';
+	import { warmApiConnection } from '@/utils/apiWarmup.js';
 	export default{
 		data() {
 			return {
@@ -32,6 +33,7 @@
 			}
 		},
 		onLoad() {
+			void warmApiConnection()
 			// 页面加载时检查是否在72小时免验证期内
 			this.checkAgreementExpire();
 		},

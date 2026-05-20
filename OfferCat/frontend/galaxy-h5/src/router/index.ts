@@ -27,3 +27,7 @@ export const router = createRouter({
 router.afterEach((to) => {
   postRouteToShell(to.name)
 })
+
+router.isReady().then(() => {
+  postRouteToShell(router.currentRoute.value.name)
+})

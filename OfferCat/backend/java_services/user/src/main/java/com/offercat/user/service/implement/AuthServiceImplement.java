@@ -64,7 +64,7 @@ public class AuthServiceImplement implements AuthService {
             return ResponseResult.error(sendResult.getUserMessage());
         }
 
-        log.info("已向 {} 发起短信验证码（阿里云号码认证）", request.getPhone());
+        log.info("已向 {} 下发验证码请求成功（具体通道见 CompositeSms / Redis / 阿里云 日志）", request.getPhone());
         return ResponseResult.success();
     }
 

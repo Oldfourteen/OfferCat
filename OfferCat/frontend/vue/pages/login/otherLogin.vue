@@ -26,6 +26,7 @@
 	import accountLogin from './components/accountLogin.vue';
 	import accountRegister from './components/accountRegister.vue';
 	import smsLogin from './components/smsLogin.vue';
+	import { warmApiConnection } from '@/utils/apiWarmup.js';
 	
 	export default {
 		components: {
@@ -38,6 +39,9 @@
 				// mode 控制账号登录、验证码登录和注册三种表单视图切换。
 				mode: 'password'
 			}
+		},
+		onLoad() {
+			void warmApiConnection()
 		},
 		computed: {
 			title() {

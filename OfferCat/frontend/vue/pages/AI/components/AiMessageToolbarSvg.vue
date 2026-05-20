@@ -1,15 +1,44 @@
 <template>
-	<!-- APP-PLUS 不支持内联 svg，改用纯 CSS 绘制，与 AiTopBar 一致 -->
-	<view
-		class="ai-toolbar-icon"
-		:class="[
-			`ai-toolbar-icon--${name}`,
-			size === 'sm' ? 'ai-toolbar-icon--sm' : ''
-		]"
-	/>
+	<!-- APP 原生层不渲染 ::before/::after，使用真实子节点 + 字符图标 -->
+	<view class="ai-toolbar-wrap" :class="size === 'sm' ? 'ai-toolbar-wrap--sm' : ''">
+		<view v-if="useShapeIcon" class="ai-toolbar-shape" :class="`ai-toolbar-shape--${name}`">
+			<template v-if="name === 'copy'">
+				<view class="copy-sheet copy-sheet--back" />
+				<view class="copy-sheet copy-sheet--front" />
+			</template>
+			<template v-else-if="name === 'pen'">
+				<view class="pen-body" />
+				<view class="pen-tip" />
+			</template>
+			<template v-else-if="name === 'thumbs-up' || name === 'thumbs-up-fill'">
+				<view class="thumb-handle" :class="{ 'thumb-handle--fill': name === 'thumbs-up-fill' }" />
+				<view class="thumb-top" :class="{ 'thumb-top--fill': name === 'thumbs-up-fill' }" />
+			</template>
+			<template v-else-if="name === 'arrows-rotate'">
+				<view class="rotate-ring" />
+				<view class="rotate-arrow rotate-arrow--top" />
+				<view class="rotate-arrow rotate-arrow--bottom" />
+			</template>
+			<template v-else-if="name === 'microphone'">
+				<view class="mic-head" />
+				<view class="mic-stand" />
+				<view class="mic-base" />
+			</template>
+		</view>
+		<text v-else class="ai-toolbar-glyph">{{ glyph }}</text>
+	</view>
 </template>
 
 <script>
+	const GLYPH = {
+		copy: '复制',
+		pen: '编辑',
+		'thumbs-up': '赞',
+		'thumbs-up-fill': '已赞',
+		'arrows-rotate': '重答',
+		microphone: '朗读'
+	}
+
 	export default {
 		name: 'AiMessageToolbarSvg',
 		props: {
@@ -20,186 +49,216 @@
 			size: {
 				type: String,
 				default: 'md'
+			},
+			// APP 端优先用文字标签，保证 APK 一定能看见可点区域
+			preferTextOnApp: {
+				type: Boolean,
+				default: true
+			}
+		},
+		computed: {
+			isAppPlus() {
+				// #ifdef APP-PLUS
+				return true
+				// #endif
+				// #ifndef APP-PLUS
+				return false
+				// #endif
+			},
+			useShapeIcon() {
+				return !(this.preferTextOnApp && this.isAppPlus)
+			},
+			glyph() {
+				return GLYPH[this.name] || ''
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
-	.ai-toolbar-icon {
-		position: relative;
+	.ai-toolbar-wrap {
+		display: flex;
+		align-items: center;
+		justify-content: center;
 		flex-shrink: 0;
-		width: 26rpx;
-		height: 26rpx;
-		color: inherit;
-		box-sizing: border-box;
+		min-width: 40rpx;
+		min-height: 40rpx;
 	}
 
-	.ai-toolbar-icon--sm {
-		width: 20rpx;
-		height: 20rpx;
+	.ai-toolbar-wrap--sm {
+		min-width: 56rpx;
+		min-height: 32rpx;
+	}
+
+	.ai-toolbar-glyph {
+		font-size: 22rpx;
+		line-height: 1;
+		color: inherit;
+		white-space: nowrap;
+	}
+
+	.ai-toolbar-wrap--sm .ai-toolbar-glyph {
+		font-size: 20rpx;
+	}
+
+	.ai-toolbar-shape {
+		position: relative;
+		width: 30rpx;
+		height: 30rpx;
+		flex-shrink: 0;
+	}
+
+	.ai-toolbar-wrap--sm .ai-toolbar-shape {
+		width: 24rpx;
+		height: 24rpx;
 	}
 
 	/* 复制 */
-	.ai-toolbar-icon--copy::before,
-	.ai-toolbar-icon--copy::after {
-		content: '';
+	.copy-sheet {
 		position: absolute;
-		border: 2rpx solid currentColor;
-		border-radius: 4rpx;
+		width: 16rpx;
+		height: 16rpx;
+		border: 2rpx solid #8b9199;
+		border-radius: 3rpx;
 		box-sizing: border-box;
 	}
 
-	.ai-toolbar-icon--copy::before {
-		width: 58%;
-		height: 58%;
-		top: 18%;
-		left: 18%;
+	.copy-sheet--back {
+		top: 2rpx;
+		left: 2rpx;
 	}
 
-	.ai-toolbar-icon--copy::after {
-		width: 58%;
-		height: 58%;
-		bottom: 10%;
-		right: 10%;
+	.copy-sheet--front {
+		right: 2rpx;
+		bottom: 2rpx;
+		background: #f6f8fc;
 	}
 
 	/* 编辑 */
-	.ai-toolbar-icon--pen::before {
-		content: '';
+	.pen-body {
 		position: absolute;
-		width: 70%;
-		height: 2rpx;
-		top: 50%;
-		left: 8%;
-		background: currentColor;
+		left: 4rpx;
+		top: 14rpx;
+		width: 20rpx;
+		height: 3rpx;
+		background: #8b9199;
 		border-radius: 2rpx;
 		transform: rotate(-38deg);
-		transform-origin: left center;
 	}
 
-	.ai-toolbar-icon--pen::after {
-		content: '';
+	.pen-tip {
 		position: absolute;
+		right: 5rpx;
+		bottom: 8rpx;
 		width: 0;
 		height: 0;
-		right: 10%;
-		bottom: 22%;
-		border-left: 5rpx solid transparent;
-		border-right: 5rpx solid transparent;
-		border-top: 8rpx solid currentColor;
+		border-left: 4rpx solid transparent;
+		border-right: 4rpx solid transparent;
+		border-top: 6rpx solid #8b9199;
 		transform: rotate(-38deg);
 	}
 
-	/* 点赞（描边） */
-	.ai-toolbar-icon--thumbs-up::before {
-		content: '';
+	/* 点赞 */
+	.thumb-handle {
 		position: absolute;
-		left: 14%;
-		bottom: 8%;
-		width: 28%;
-		height: 52%;
-		border: 2rpx solid currentColor;
-		border-radius: 4rpx 0 0 4rpx;
+		left: 4rpx;
+		bottom: 4rpx;
+		width: 8rpx;
+		height: 14rpx;
+		border: 2rpx solid #8b9199;
+		border-radius: 2rpx 0 0 2rpx;
 		box-sizing: border-box;
 	}
 
-	.ai-toolbar-icon--thumbs-up::after {
-		content: '';
+	.thumb-handle--fill {
+		background: #8b9199;
+	}
+
+	.thumb-top {
 		position: absolute;
-		right: 8%;
-		top: 18%;
-		width: 52%;
-		height: 58%;
-		border: 2rpx solid currentColor;
-		border-radius: 8rpx 8rpx 4rpx 4rpx;
+		right: 4rpx;
+		top: 6rpx;
+		width: 14rpx;
+		height: 14rpx;
+		border: 2rpx solid #8b9199;
 		border-bottom: none;
+		border-radius: 6rpx 6rpx 2rpx 2rpx;
 		box-sizing: border-box;
 	}
 
-	/* 已赞（填充） */
-	.ai-toolbar-icon--thumbs-up-fill::before {
-		content: '';
-		position: absolute;
-		left: 14%;
-		bottom: 8%;
-		width: 28%;
-		height: 52%;
-		background: currentColor;
-		border-radius: 4rpx 0 0 4rpx;
+	.thumb-top--fill {
+		background: #8b9199;
 	}
 
-	.ai-toolbar-icon--thumbs-up-fill::after {
-		content: '';
+	/* 重答 */
+	.rotate-ring {
 		position: absolute;
-		right: 8%;
-		top: 18%;
-		width: 52%;
-		height: 58%;
-		background: currentColor;
-		border-radius: 8rpx 8rpx 4rpx 4rpx;
-	}
-
-	/* 重新生成 */
-	.ai-toolbar-icon--arrows-rotate {
-		border: 2rpx solid transparent;
-		border-top-color: currentColor;
-		border-right-color: currentColor;
+		left: 4rpx;
+		top: 4rpx;
+		width: 20rpx;
+		height: 20rpx;
+		border: 2rpx solid #8b9199;
+		border-right-color: transparent;
 		border-radius: 50%;
+		box-sizing: border-box;
 		transform: rotate(-30deg);
 	}
 
-	.ai-toolbar-icon--arrows-rotate::before,
-	.ai-toolbar-icon--arrows-rotate::after {
-		content: '';
+	.rotate-arrow {
 		position: absolute;
 		width: 0;
 		height: 0;
 		border-style: solid;
 	}
 
-	.ai-toolbar-icon--arrows-rotate::before {
-		top: -2rpx;
-		left: 2rpx;
-		border-width: 0 5rpx 7rpx 5rpx;
-		border-color: transparent transparent currentColor transparent;
-		transform: rotate(-18deg);
+	.rotate-arrow--top {
+		top: 2rpx;
+		left: 6rpx;
+		border-width: 0 4rpx 6rpx 4rpx;
+		border-color: transparent transparent #8b9199 transparent;
 	}
 
-	.ai-toolbar-icon--arrows-rotate::after {
-		bottom: -2rpx;
-		right: 2rpx;
-		border-width: 7rpx 5rpx 0 5rpx;
-		border-color: currentColor transparent transparent transparent;
-		transform: rotate(-18deg);
+	.rotate-arrow--bottom {
+		right: 4rpx;
+		bottom: 2rpx;
+		border-width: 6rpx 4rpx 0 4rpx;
+		border-color: #8b9199 transparent transparent transparent;
 	}
 
-	/* 语音播报 */
-	.ai-toolbar-icon--microphone::before {
-		content: '';
+	/* 朗读 */
+	.mic-head {
 		position: absolute;
 		left: 50%;
-		top: 10%;
-		width: 34%;
-		height: 46%;
-		transform: translateX(-50%);
-		border: 2rpx solid currentColor;
+		top: 4rpx;
+		width: 10rpx;
+		height: 12rpx;
+		margin-left: -5rpx;
+		border: 2rpx solid #8b9199;
 		border-radius: 999rpx;
 		box-sizing: border-box;
 	}
 
-	.ai-toolbar-icon--microphone::after {
-		content: '';
+	.mic-stand {
 		position: absolute;
 		left: 50%;
-		bottom: 8%;
-		width: 58%;
-		height: 34%;
-		transform: translateX(-50%);
-		border: 2rpx solid currentColor;
+		top: 14rpx;
+		width: 16rpx;
+		height: 8rpx;
+		margin-left: -8rpx;
+		border: 2rpx solid #8b9199;
 		border-top: none;
 		border-radius: 0 0 999rpx 999rpx;
 		box-sizing: border-box;
 	}
 
+	.mic-base {
+		position: absolute;
+		left: 50%;
+		bottom: 4rpx;
+		width: 14rpx;
+		height: 2rpx;
+		margin-left: -7rpx;
+		background: #8b9199;
+		border-radius: 2rpx;
+	}
 </style>

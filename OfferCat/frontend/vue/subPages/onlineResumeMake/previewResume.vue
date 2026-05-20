@@ -79,7 +79,7 @@
 	import topNavBar from './components/topNavBar.vue'
 	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
-	import { exportResumePdf } from '@/utils/resumePdfExport.js'
+	import { exportResumePdf } from '../../utils/resumePdfExport.js'
 
 	export default {
 		mixins: [themeMixin],

@@ -1,4 +1,4 @@
-import { BASE_URL } from '@/api/config.js'
+import { getApiBase } from '@/api/config.js'
 import { request } from '@/api/request.js'
 import { getToken } from '@/utils/token.js'
 import { getUser } from '@/utils/user.js'
@@ -11,6 +11,15 @@ export function stripHtml(html) {
 	text = text.replace(/<[^>]+>/g, '')
 	text = text.replace(/&nbsp;/g, ' ')
 	return text.replace(/\n\s*\n/g, '\n').trim()
+}
+
+function pickResumeId(body) {
+	if (!body || typeof body !== 'object') return null
+	if (body.resumeId != null && body.resumeId !== '') return Number(body.resumeId)
+	if (body.resume_id != null && body.resume_id !== '') return Number(body.resume_id)
+	if (body.data && body.data.resumeId != null) return Number(body.data.resumeId)
+	if (body.data && body.data.resume_id != null) return Number(body.data.resume_id)
+	return null
 }
 
 /** 将本地简历记录转为后端 Resume 实体字段 */
@@ -47,7 +56,7 @@ export async function syncResumeToBackend(record, backendResumeId) {
 				method: 'PUT',
 				data: { ...payload, resumeId: backendResumeId }
 			})
-			const id = updated.resumeId || backendResumeId
+			const id = pickResumeId(updated) || Number(backendResumeId)
 			return { resumeId: id, backendResumeId: id }
 		} catch (e) {
 			console.warn('更新简历失败，将重新创建', e)
@@ -58,24 +67,73 @@ export async function syncResumeToBackend(record, backendResumeId) {
 		method: 'POST',
 		data: payload
 	})
-	return { resumeId: created.resumeId, backendResumeId: created.resumeId }
+	const id = pickResumeId(created)
+	if (!id) {
+		throw new Error('创建简历失败：服务端未返回 resumeId，请确认 resume 服务已启动')
+	}
+	return { resumeId: id, backendResumeId: id }
 }
 
-/** GET 下载 PDF 二进制 */
+function buildAuthHeader() {
+	const hdr = { Accept: 'application/pdf' }
+	const tok = getToken()
+	if (tok) hdr['Authorization'] = `Bearer ${tok}`
+	return hdr
+}
+
+function isPdfArrayBuffer(buf) {
+	try {
+		const u = new Uint8Array(buf)
+		return u.length > 4 && u[0] === 0x25 && u[1] === 0x50 && u[2] === 0x44 && u[3] === 0x46
+	} catch (_) {
+		return false
+	}
+}
+
+function parseErrorFromBuffer(buf) {
+	try {
+		const u = new Uint8Array(buf)
+		let s = ''
+		const len = Math.min(u.length, 400)
+		for (let i = 0; i < len; i++) s += String.fromCharCode(u[i])
+		const trimmed = s.trim()
+		if (trimmed.startsWith('{') || trimmed.startsWith('<')) {
+			try {
+				const j = JSON.parse(trimmed)
+				return j.message || j.msg || j.error || trimmed.slice(0, 120)
+			} catch (_) {
+				return trimmed.slice(0, 120)
+			}
+		}
+		return trimmed.slice(0, 120) || '响应不是有效的 PDF 文件'
+	} catch (_) {
+		return '响应不是有效的 PDF 文件'
+	}
+}
+
+/**
+ * 下载 PDF：H5 用 arraybuffer；App/小程序用 downloadFile（更稳定）
+ * @returns {Promise<{ type: 'buffer', data: ArrayBuffer } | { type: 'file', tempFilePath: string }>}
+ */
 export function fetchResumePdfBytes(exportPath) {
+	const url = `${getApiBase()}${exportPath}`
+	const header = buildAuthHeader()
+
+	// #ifdef H5
 	return new Promise((resolve, reject) => {
-		const hdr = {}
-		const tok = getToken()
-		if (tok) hdr['Authorization'] = `Bearer ${tok}`
 		uni.request({
-			url: `${BASE_URL}${exportPath}`,
+			url,
 			method: 'GET',
 			responseType: 'arraybuffer',
 			timeout: 120000,
-			header: hdr,
+			header,
 			success: (res) => {
 				if (res.statusCode >= 200 && res.statusCode < 300 && res.data) {
-					resolve(res.data)
+					if (!isPdfArrayBuffer(res.data)) {
+						reject(new Error(parseErrorFromBuffer(res.data)))
+						return
+					}
+					resolve({ type: 'buffer', data: res.data })
 					return
 				}
 				reject(new Error(`PDF下载失败（HTTP ${res.statusCode}）`))
@@ -83,27 +141,62 @@ export function fetchResumePdfBytes(exportPath) {
 			fail: (err) => reject(new Error(err.errMsg || '网络错误'))
 		})
 	})
+	// #endif
+
+	// #ifndef H5
+	return new Promise((resolve, reject) => {
+		uni.downloadFile({
+			url,
+			header,
+			timeout: 120000,
+			success: (res) => {
+				if (res.statusCode >= 200 && res.statusCode < 300 && res.tempFilePath) {
+					resolve({ type: 'file', tempFilePath: res.tempFilePath })
+					return
+				}
+				reject(new Error(`PDF下载失败（HTTP ${res.statusCode}）`))
+			},
+			fail: (err) => reject(new Error(err.errMsg || '下载失败'))
+		})
+	})
+	// #endif
 }
 
-/** 保存并打开/下载 PDF（H5 下载，App/小程序落盘后用系统阅读器打开） */
-export function saveAndOpenPdf(data, fileName = 'resume') {
+/** 保存并打开/下载 PDF */
+export function saveAndOpenPdf(payload, fileName = 'resume') {
+	if (payload && payload.type === 'file' && payload.tempFilePath) {
+		return new Promise((resolve, reject) => {
+			uni.openDocument({
+				filePath: payload.tempFilePath,
+				fileType: 'pdf',
+				showMenu: true,
+				success: () => resolve(payload.tempFilePath),
+				fail: (err) => reject(new Error(err.errMsg || '无法打开 PDF'))
+			})
+		})
+	}
+
+	const data = payload && payload.type === 'buffer' ? payload.data : payload
 	const base = String(fileName || 'resume').replace(/[\\/:*?"<>|]/g, '_') || 'resume'
+
 	// #ifdef H5
+	if (!data) return Promise.reject(new Error('PDF 数据为空'))
 	const blob = new Blob([data], { type: 'application/pdf' })
-	const url = window.URL.createObjectURL(blob)
+	const objUrl = window.URL.createObjectURL(blob)
 	const a = document.createElement('a')
-	a.href = url
+	a.href = objUrl
 	a.download = `${base}_${Date.now()}.pdf`
 	document.body.appendChild(a)
 	a.click()
 	a.remove()
-	window.URL.revokeObjectURL(url)
+	window.URL.revokeObjectURL(objUrl)
+	return Promise.resolve()
 	// #endif
 
 	// #ifndef H5
 	const fs = uni.getFileSystemManager ? uni.getFileSystemManager() : null
-	if (!fs) {
-		return Promise.reject(new Error('当前环境不支持直接打开 PDF'))
+	if (!fs || !data) {
+		return Promise.reject(new Error('当前环境不支持保存 PDF'))
 	}
 	let userPath = '_doc'
 	if (typeof uni.env !== 'undefined' && uni.env.USER_DATA_PATH) {
@@ -129,45 +222,39 @@ export function saveAndOpenPdf(data, fileName = 'resume') {
 					fileType: 'pdf',
 					showMenu: true,
 					success: () => resolve(filePath),
-					fail: (err) => {
-						reject(new Error(err.errMsg || '无法打开 PDF，文件已保存'))
-					}
+					fail: (err) => reject(new Error(err.errMsg || '无法打开 PDF'))
 				})
 			},
 			fail: (err) => reject(new Error(err.errMsg || '保存 PDF 失败'))
 		})
 	})
 	// #endif
-
-	// #ifdef H5
-	return Promise.resolve()
-	// #endif
 }
 
 /**
- * 完整导出流程：同步 → 生成 PDF → 保存/打开
- * @param {'plain'|'smart'} mode plain=Java，smart=C++（失败回退 plain）
+ * 完整导出：同步 → 生成 PDF → 保存/打开
+ * @param {'plain'|'smart'} mode
  */
 export async function exportResumePdf(record, mode = 'plain', backendResumeId = null) {
 	const { resumeId, backendResumeId: newBackendId } = await syncResumeToBackend(record, backendResumeId)
 	const plainPath = `/api/resume/export/pdf/${resumeId}`
 	const smartPath = `/api/resume/export/pdf/cpp/${resumeId}`
 
-	let pdfData
+	let pdfPayload
 	let usedFallback = false
 	if (mode === 'smart') {
 		try {
-			pdfData = await fetchResumePdfBytes(smartPath)
+			pdfPayload = await fetchResumePdfBytes(smartPath)
 		} catch (e) {
 			console.warn('智能 PDF 导出失败，回退朴素导出', e)
 			usedFallback = true
-			pdfData = await fetchResumePdfBytes(plainPath)
+			pdfPayload = await fetchResumePdfBytes(plainPath)
 		}
 	} else {
-		pdfData = await fetchResumePdfBytes(plainPath)
+		pdfPayload = await fetchResumePdfBytes(plainPath)
 	}
 
 	const safeName = (record.resume_name || 'resume').replace(/[\\/:*?"<>|]/g, '_')
-	await saveAndOpenPdf(pdfData, safeName)
+	await saveAndOpenPdf(pdfPayload, safeName)
 	return { resumeId, backendResumeId: newBackendId, usedFallback }
 }

@@ -401,14 +401,26 @@ export function requestAiChat(messages = [], options = {}) {
 
 // 缓存当前的音频播放实例，便于重复播放前先停止上一次语音。
 let innerAudioContext = null;
+let plusAudioPlayer = null;
 
 // 停止并销毁当前 AI 语音播放实例。
 export function stopAiVoice() {
 	if (innerAudioContext) {
-		innerAudioContext.stop();
-		innerAudioContext.destroy();
+		try {
+			innerAudioContext.stop();
+			innerAudioContext.destroy();
+		} catch (e) {}
 		innerAudioContext = null;
 	}
+	// #ifdef APP-PLUS
+	if (plusAudioPlayer) {
+		try {
+			plusAudioPlayer.stop();
+			plusAudioPlayer.close && plusAudioPlayer.close();
+		} catch (e) {}
+		plusAudioPlayer = null;
+	}
+	// #endif
 }
 
 function getTtsStorageDir() {
@@ -438,28 +450,40 @@ function resolveNativeAudioSrc(filePath) {
 function saveTtsMp3ToLocal(arrayBuffer) {
 	return new Promise((resolve, reject) => {
 		const fs = typeof uni.getFileSystemManager === 'function' ? uni.getFileSystemManager() : null
-		if (!fs) {
+		if (!fs || typeof fs.writeFile !== 'function') {
 			reject(new Error('当前环境不支持保存语音文件'))
 			return
 		}
 		const filePath = `${getTtsStorageDir()}/ai_voice_${Date.now()}.mp3`
-		const done = (src) => resolve(resolveNativeAudioSrc(src))
-		if (typeof fs.writeFile === 'function') {
+		const done = () => resolve(resolveNativeAudioSrc(filePath))
+		const base64 = typeof uni.arrayBufferToBase64 === 'function'
+			? uni.arrayBufferToBase64(arrayBuffer)
+			: null
+		if (base64) {
 			fs.writeFile({
 				filePath,
-				data: arrayBuffer,
-				encoding: 'binary',
-				success: () => done(filePath),
-				fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+				data: base64,
+				encoding: 'base64',
+				success: done,
+				fail: () => {
+					fs.writeFile({
+						filePath,
+						data: arrayBuffer,
+						encoding: 'binary',
+						success: done,
+						fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+					})
+				}
 			})
 			return
 		}
-		try {
-			fs.writeFileSync(filePath, arrayBuffer, 'binary')
-			done(filePath)
-		} catch (e) {
-			reject(new Error(e.message || '保存语音文件失败'))
-		}
+		fs.writeFile({
+			filePath,
+			data: arrayBuffer,
+			encoding: 'binary',
+			success: done,
+			fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+		})
 	})
 }
 
@@ -473,10 +497,8 @@ function prepareTtsAudioSrc(arrayBuffer) {
 	// #endif
 }
 
-function playPreparedTts(src, onPlay) {
+function playWithInnerAudio(src, onPlay) {
 	return new Promise((resolve, reject) => {
-		stopAiVoice()
-
 		// #ifdef APP-PLUS
 		if (uni.setInnerAudioOption) {
 			uni.setInnerAudioOption({
@@ -487,32 +509,83 @@ function playPreparedTts(src, onPlay) {
 		// #endif
 
 		innerAudioContext = uni.createInnerAudioContext()
-		// #ifdef APP-PLUS
 		innerAudioContext.autoplay = false
-		// #endif
 		innerAudioContext.src = src
+		let settled = false
+		const finish = (err) => {
+			if (settled) return
+			settled = true
+			if (innerAudioContext) {
+				try {
+					innerAudioContext.destroy()
+				} catch (e) {}
+				innerAudioContext = null
+			}
+			if (err) reject(err)
+			else resolve()
+		}
 		innerAudioContext.onPlay(() => {
 			if (onPlay) onPlay()
 		})
-		innerAudioContext.onEnded(() => {
-			innerAudioContext.destroy()
-			innerAudioContext = null
-			resolve()
-		})
+		innerAudioContext.onEnded(() => finish())
 		innerAudioContext.onError((err) => {
 			const { errMsg, errCode } = err || {}
-			console.error('音频播放失败', { errMsg, errCode, src })
-			innerAudioContext.destroy()
-			innerAudioContext = null
-			reject(new Error(`音频播放失败: ${errMsg || 'unknown'} (${errCode || ''})`))
+			console.error('innerAudio 播放失败', { errMsg, errCode, src })
+			finish(new Error(`音频播放失败: ${errMsg || 'unknown'} (${errCode || ''})`))
 		})
-
 		setTimeout(() => {
 			if (innerAudioContext) {
 				innerAudioContext.play()
 			}
-		}, 80)
+		}, 120)
 	})
+}
+
+function playWithPlusAudio(src, onPlay) {
+	return new Promise((resolve, reject) => {
+		// #ifdef APP-PLUS
+		if (typeof plus !== 'undefined' && plus.audio && typeof plus.audio.createPlayer === 'function') {
+			stopAiVoice()
+			try {
+				plusAudioPlayer = plus.audio.createPlayer(src)
+				let settled = false
+				const finish = (err) => {
+					if (settled) return
+					settled = true
+					stopAiVoice()
+					if (err) reject(err)
+					else resolve()
+				}
+				const onPlayStart = () => {
+					if (onPlay) onPlay()
+				}
+				plusAudioPlayer.addEventListener('play', onPlayStart, false)
+				plusAudioPlayer.addEventListener('ended', () => finish(), false)
+				plusAudioPlayer.addEventListener('error', () => {
+					finish(new Error('原生播放器播放失败'))
+				}, false)
+				plusAudioPlayer.play(() => {}, (e) => {
+					finish(new Error((e && e.message) || '原生播放器启动失败'))
+				})
+				return
+			} catch (e) {
+				console.warn('plus.audio 不可用，回退 innerAudio', e)
+				plusAudioPlayer = null
+			}
+		}
+		// #endif
+		playWithInnerAudio(src, onPlay).then(resolve).catch(reject)
+	})
+}
+
+function playPreparedTts(src, onPlay) {
+	stopAiVoice()
+	// #ifdef APP-PLUS
+	return playWithPlusAudio(src, onPlay)
+	// #endif
+	// #ifndef APP-PLUS
+	return playWithInnerAudio(src, onPlay)
+	// #endif
 }
 
 // 调用 TTS 接口并播放 AI 生成的语音结果。

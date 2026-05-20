@@ -39,7 +39,7 @@
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260519-galaxy-navbtn-noborder-v1'
+				return '20260521-apk-lb-fab-v1'
 			},
 			/**
 			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。
@@ -78,10 +78,6 @@
 		onLoad() {
 			// #ifdef H5
 			window.addEventListener('message', this.handleWindowPostMessage, false)
-			// #endif
-			// #ifndef H5
-			// web-view 为原生层，内页 fixed 按钮常被挡；进入星图页即显示原生「排行榜」（仅展示页内 evalJS 会打开面板）
-			this.galaxyShowLbFab = true
 			// #endif
 		},
 		onUnload() {
@@ -167,12 +163,16 @@
 				}
 				return null
 			},
+			/** 仅个人星图展示页需要原生 cover-view「排行榜」（其它页由 H5 自管或不需要） */
+			applyGalaxyLbFabForRoute(routeName) {
+				this.galaxyShowLbFab = routeName === 'personalShowcase'
+			},
 			/** App / 小程序等：子网页通过 uni.postMessage 上报，在 @message 中接收，detail.data 为数组 */
 			handleWebViewMessage(event) {
 				const root = event && event.detail && event.detail.data
 				const routeMsg = this.findGalaxyRoutePayload(root, 0)
 				if (routeMsg) {
-					this.galaxyShowLbFab = routeMsg.name === 'personalShowcase'
+					this.applyGalaxyLbFabForRoute(routeMsg.name)
 					return
 				}
 				if (this.findGalaxyClosePayload(root, 0)) {
@@ -207,7 +207,7 @@
 				if (data.source !== 'galaxy-h5') return
 				if (this._galaxyFrameWin && event.source && event.source !== this._galaxyFrameWin) return
 				if (data.type === 'galaxy-route') {
-					this.galaxyShowLbFab = data.name === 'personalShowcase'
+					this.applyGalaxyLbFabForRoute(data.name)
 					return
 				}
 				if (data.type === 'close') {

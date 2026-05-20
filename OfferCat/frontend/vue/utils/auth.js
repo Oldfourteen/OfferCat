@@ -1,3 +1,4 @@
+import { ensureApiWarmBeforeLogin } from './apiWarmup'
 import { setToken } from './token'
 import { setUser, scheduleLoginProfileSync } from './user'
 import { login } from '../api/auth'
@@ -15,6 +16,7 @@ export async function completeOneClickLoginWithPhone(phone) {
 	if (!/^1\d{10}$/.test(target)) {
 		throw new Error('手机号格式无效')
 	}
+	await ensureApiWarmBeforeLogin(5000)
 	const result = await login({ loginType: 'oneClick', target, phone: target })
 
 	const token = (result && result.token) || (result && result.data && result.data.token) || ''

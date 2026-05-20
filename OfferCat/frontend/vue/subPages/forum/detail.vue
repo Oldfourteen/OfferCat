@@ -736,7 +736,7 @@
 			startReplyToReply(rootComment, reply) {
 				this.replyContext = {
 					rootCommentId: this.getCommentId(rootComment),
-					targetCommentId: this.getReplyId(reply),
+					targetCommentId: this.getCommentId(reply) || this.getReplyId(reply),
 					targetUserId: reply.userId || '',
 					targetUserName: this.getAuthorName(reply.authorName, reply.userId)
 				}
@@ -1035,15 +1035,11 @@
 					content: trimmed,
 					parentId: currentReplyContext ? Number(currentReplyContext.rootCommentId) || 0 : 0,
 					mentionUserIds: [],
-					parentCommentId: currentReplyContext ? Number(currentReplyContext.rootCommentId) || null : null,
 					replyToCommentId: currentReplyContext ? Number(currentReplyContext.targetCommentId) || null : null,
 					replyToUserId: currentReplyContext ? currentReplyContext.targetUserId || null : null
 				}
 				if (currentReplyContext) {
 					const rtc = Number(currentReplyContext.targetCommentId)
-					if (!Number.isNaN(rtc) && rtc > 0) {
-						payload.replyId = rtc
-					}
 					if (rtc) payload.replyToCommentId = rtc
 					const rtu = currentReplyContext.targetUserId
 					if (rtu !== undefined && rtu !== null && rtu !== '')

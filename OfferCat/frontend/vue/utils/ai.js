@@ -401,14 +401,191 @@ export function requestAiChat(messages = [], options = {}) {
 
 // 缓存当前的音频播放实例，便于重复播放前先停止上一次语音。
 let innerAudioContext = null;
+let plusAudioPlayer = null;
 
 // 停止并销毁当前 AI 语音播放实例。
 export function stopAiVoice() {
 	if (innerAudioContext) {
-		innerAudioContext.stop();
-		innerAudioContext.destroy();
+		try {
+			innerAudioContext.stop();
+			innerAudioContext.destroy();
+		} catch (e) {}
 		innerAudioContext = null;
 	}
+	// #ifdef APP-PLUS
+	if (plusAudioPlayer) {
+		try {
+			plusAudioPlayer.stop();
+			plusAudioPlayer.close && plusAudioPlayer.close();
+		} catch (e) {}
+		plusAudioPlayer = null;
+	}
+	// #endif
+}
+
+function getTtsStorageDir() {
+	if (typeof wx !== 'undefined' && wx.env && wx.env.USER_DATA_PATH) {
+		return wx.env.USER_DATA_PATH
+	}
+	if (uni.env && uni.env.USER_DATA_PATH) {
+		return uni.env.USER_DATA_PATH
+	}
+	return '_doc'
+}
+
+// APP 端 innerAudioContext 需要可访问的本地绝对路径，不能依赖 data: URI。
+function resolveNativeAudioSrc(filePath) {
+	// #ifdef APP-PLUS
+	if (typeof plus !== 'undefined' && plus.io && plus.io.convertLocalFileSystemURL) {
+		try {
+			return plus.io.convertLocalFileSystemURL(filePath)
+		} catch (e) {
+			console.warn('convertLocalFileSystemURL failed', e)
+		}
+	}
+	// #endif
+	return filePath
+}
+
+function saveTtsMp3ToLocal(arrayBuffer) {
+	return new Promise((resolve, reject) => {
+		const fs = typeof uni.getFileSystemManager === 'function' ? uni.getFileSystemManager() : null
+		if (!fs || typeof fs.writeFile !== 'function') {
+			reject(new Error('当前环境不支持保存语音文件'))
+			return
+		}
+		const filePath = `${getTtsStorageDir()}/ai_voice_${Date.now()}.mp3`
+		const done = () => resolve(resolveNativeAudioSrc(filePath))
+		const base64 = typeof uni.arrayBufferToBase64 === 'function'
+			? uni.arrayBufferToBase64(arrayBuffer)
+			: null
+		if (base64) {
+			fs.writeFile({
+				filePath,
+				data: base64,
+				encoding: 'base64',
+				success: done,
+				fail: () => {
+					fs.writeFile({
+						filePath,
+						data: arrayBuffer,
+						encoding: 'binary',
+						success: done,
+						fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+					})
+				}
+			})
+			return
+		}
+		fs.writeFile({
+			filePath,
+			data: arrayBuffer,
+			encoding: 'binary',
+			success: done,
+			fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+		})
+	})
+}
+
+function prepareTtsAudioSrc(arrayBuffer) {
+	// #ifdef H5
+	const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+	return Promise.resolve(URL.createObjectURL(blob))
+	// #endif
+	// #ifndef H5
+	return saveTtsMp3ToLocal(arrayBuffer)
+	// #endif
+}
+
+function playWithInnerAudio(src, onPlay) {
+	return new Promise((resolve, reject) => {
+		// #ifdef APP-PLUS
+		if (uni.setInnerAudioOption) {
+			uni.setInnerAudioOption({
+				obeyMuteSwitch: false,
+				sessionCategory: 'playback'
+			})
+		}
+		// #endif
+
+		innerAudioContext = uni.createInnerAudioContext()
+		innerAudioContext.autoplay = false
+		innerAudioContext.src = src
+		let settled = false
+		const finish = (err) => {
+			if (settled) return
+			settled = true
+			if (innerAudioContext) {
+				try {
+					innerAudioContext.destroy()
+				} catch (e) {}
+				innerAudioContext = null
+			}
+			if (err) reject(err)
+			else resolve()
+		}
+		innerAudioContext.onPlay(() => {
+			if (onPlay) onPlay()
+		})
+		innerAudioContext.onEnded(() => finish())
+		innerAudioContext.onError((err) => {
+			const { errMsg, errCode } = err || {}
+			console.error('innerAudio 播放失败', { errMsg, errCode, src })
+			finish(new Error(`音频播放失败: ${errMsg || 'unknown'} (${errCode || ''})`))
+		})
+		setTimeout(() => {
+			if (innerAudioContext) {
+				innerAudioContext.play()
+			}
+		}, 120)
+	})
+}
+
+function playWithPlusAudio(src, onPlay) {
+	return new Promise((resolve, reject) => {
+		// #ifdef APP-PLUS
+		if (typeof plus !== 'undefined' && plus.audio && typeof plus.audio.createPlayer === 'function') {
+			stopAiVoice()
+			try {
+				plusAudioPlayer = plus.audio.createPlayer(src)
+				let settled = false
+				const finish = (err) => {
+					if (settled) return
+					settled = true
+					stopAiVoice()
+					if (err) reject(err)
+					else resolve()
+				}
+				const onPlayStart = () => {
+					if (onPlay) onPlay()
+				}
+				plusAudioPlayer.addEventListener('play', onPlayStart, false)
+				plusAudioPlayer.addEventListener('ended', () => finish(), false)
+				plusAudioPlayer.addEventListener('error', () => {
+					finish(new Error('原生播放器播放失败'))
+				}, false)
+				plusAudioPlayer.play(() => {}, (e) => {
+					finish(new Error((e && e.message) || '原生播放器启动失败'))
+				})
+				return
+			} catch (e) {
+				console.warn('plus.audio 不可用，回退 innerAudio', e)
+				plusAudioPlayer = null
+			}
+		}
+		// #endif
+		playWithInnerAudio(src, onPlay).then(resolve).catch(reject)
+	})
+}
+
+function playPreparedTts(src, onPlay) {
+	stopAiVoice()
+	// #ifdef APP-PLUS
+	return playWithPlusAudio(src, onPlay)
+	// #endif
+	// #ifndef APP-PLUS
+	return playWithInnerAudio(src, onPlay)
+	// #endif
 }
 
 // 调用 TTS 接口并播放 AI 生成的语音结果。
@@ -430,81 +607,25 @@ export function playAiVoice(text, onPlay) {
 			},
 			success: (res) => {
 				if (res.statusCode === 200) {
-					try {
-						stopAiVoice();
-						let src = '';
-						// H5 通过 Blob URL 直接播放返回的音频二进制。
-						// #ifdef H5
-						const blob = new Blob([res.data], { type: 'audio/mpeg' });
-						src = URL.createObjectURL(blob);
-						// #endif
-						// #ifndef H5
-						try {
-							const fs = uni.getFileSystemManager();
-							// 兼容不同平台的用户目录常量
-							const dir = (typeof wx !== 'undefined' && wx.env && wx.env.USER_DATA_PATH) ? wx.env.USER_DATA_PATH : (uni.env && uni.env.USER_DATA_PATH) ? uni.env.USER_DATA_PATH : '_doc';
-							src = `${dir}/ai_voice_${Date.now()}.mp3`;
-							fs.writeFileSync(src, res.data, 'binary');
-						} catch (e) {
-							// 兜底方案
-							const base64 = uni.arrayBufferToBase64(res.data);
-							src = 'data:audio/mp3;base64,' + base64;
-						}
-						// #endif
-
-						// 创建新的音频上下文并绑定播放事件。
-						innerAudioContext = uni.createInnerAudioContext();
-						
-						// #ifdef APP-PLUS
-						// 如果用户设备处于静音模式，仍然播放声音
-						if (uni.setInnerAudioOption) {
-							uni.setInnerAudioOption({
-								obeyMuteSwitch: false,
-								// 在iOS上，设置为 'playback' 类型，与其他 App 音频混播
-								sessionCategory: 'playback'
-							});
-						}
-						// #endif
-
-						innerAudioContext.src = src;
-						innerAudioContext.onPlay(() => {
-							if (onPlay) onPlay();
-						});
-						innerAudioContext.onEnded(() => {
-							innerAudioContext.destroy();
-							innerAudioContext = null;
-							resolve();
-						});
-						innerAudioContext.onError((err) => {
-							const { errMsg, errCode } = err;
-							console.error('音频播放失败', { errMsg, errCode });
-							innerAudioContext.destroy();
-							innerAudioContext = null;
-							reject(new Error(`音频播放失败: ${errMsg} (${errCode})`));
-						});
-						
-						// 延时播放，避免部分机型初始化失败
-						setTimeout(() => {
-							innerAudioContext.play();
-						}, 50);
-					} catch (e) {
-						reject(new Error('处理音频异常: ' + e.message));
-					}
-				} else {
-					let errMsg = `请求TTS失败（HTTP ${res.statusCode}）`;
-					try {
-						const uint8Array = new Uint8Array(res.data);
-						let errText = '';
-						for (let i = 0; i < uint8Array.length; i++) {
-							errText += String.fromCharCode(uint8Array[i]);
-						}
-						errText = decodeURIComponent(escape(errText));
-						const errData = JSON.parse(errText);
-						if (errData.error) errMsg = errData.error;
-						else if (errData.message) errMsg = errData.message;
-					} catch (e) {}
-					reject(new Error(formatHttpErrorMessage(res.statusCode, errMsg)));
+					prepareTtsAudioSrc(res.data)
+						.then(src => playPreparedTts(src, onPlay))
+						.then(resolve)
+						.catch(err => reject(err instanceof Error ? err : new Error(String(err))))
+					return
 				}
+				let errMsg = `请求TTS失败（HTTP ${res.statusCode}）`
+				try {
+					const uint8Array = new Uint8Array(res.data)
+					let errText = ''
+					for (let i = 0; i < uint8Array.length; i++) {
+						errText += String.fromCharCode(uint8Array[i])
+					}
+					errText = decodeURIComponent(escape(errText))
+					const errData = JSON.parse(errText)
+					if (errData.error) errMsg = errData.error
+					else if (errData.message) errMsg = errData.message
+				} catch (e) {}
+				reject(new Error(formatHttpErrorMessage(res.statusCode, errMsg)))
 			},
 			fail: (err) => reject(new Error(err.errMsg || '请求TTS失败'))
 		})

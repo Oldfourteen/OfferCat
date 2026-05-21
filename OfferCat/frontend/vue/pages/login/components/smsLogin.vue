@@ -33,6 +33,7 @@
 	import phoneCode from './phoneCode.vue';
 	import humanVerify from './humanVerify.vue';
 	import { login } from '../../../api/auth'
+	import { runWithServerWarmup } from '../../../utils/loginFlow'
 	import { setToken } from '../../../utils/token'
 	import { setUser, scheduleLoginProfileSync } from '../../../utils/user'
 	
@@ -86,12 +87,16 @@
 			},
 			async doLogin() {
 				// 验证码登录成功后写入 token 和用户信息，并按资料完整度跳转。
-				uni.showLoading({ title: '登录中', mask: true })
 				try {
-					const result = await login({
-						loginType: 'code',
-						phone: this.phone,
-						code: this.code
+					const result = await runWithServerWarmup({
+						warmMaxMs: 22000,
+						busyTitle: '登录中',
+						run: () =>
+							login({
+								loginType: 'code',
+								phone: this.phone,
+								code: this.code,
+							}),
 					})
 					
 					const token = (result && result.token) || (result && result.data && result.data.token) || ''

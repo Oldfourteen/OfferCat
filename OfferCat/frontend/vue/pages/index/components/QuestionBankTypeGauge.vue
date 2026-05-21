@@ -1,8 +1,9 @@
 <template>
 	<!-- 纯色底 + 单色进度弧 + 外发光 -->
-	<view class="qbg-card" :class="[toneClazz, themeClazz]" @tap.stop :id="uniqueId">
+	<view class="qbg-card qbg-observe-target" :class="[toneClazz, themeClazz]" @tap.stop>
 		<view class="qbg-inner">
 			<view class="qbg-chart">
+				<!-- #ifdef H5 -->
 				<svg class="qbg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
 					<g transform="translate(50 50) rotate(135)">
 						<circle
@@ -29,9 +30,16 @@
 						/>
 					</g>
 				</svg>
+				<!-- #endif -->
+				<!-- #ifndef H5 -->
+				<view class="qbg-arc-native">
+					<view class="qbg-arc-track" :style="nativeTrackStyle"></view>
+					<view class="qbg-arc-progress" :style="nativeProgressStyle"></view>
+				</view>
+				<!-- #endif -->
 				<view class="qbg-center" :class="{ 'has-hint': !hasValue }">
 					<view class="qbg-metric-row" :class="{ 'is-untracked': !hasValue }">
-						<text class="qbg-num">{{ animatedNumber }}</text>
+						<text class="qbg-num">{{ displayPercentText }}</text>
 						<text class="qbg-pct-suffix">%</text>
 					</view>
 					<text v-if="!hasValue" class="qbg-metric-hint">暂未统计</text>
@@ -69,8 +77,7 @@
 				animatedProgress: 0,
 				animatedNum: 0,
 				animationTriggered: false,
-				observer: null,
-				uniqueId: `qbg-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`
+				observer: null
 			}
 		},
 		computed: {
@@ -117,7 +124,20 @@
 				return Math.max(0, Math.min(1, this.numericPct / 100))
 			},
 			progress01() {
-				return this.animatedProgress
+				if (!this.hasValue) return 0
+				if (this.animationTriggered) return this.animatedProgress
+				return this.targetProgress
+			},
+			nativeTrackStyle() {
+				return {
+					background: `conic-gradient(from 135deg, ${this.trackColor} 0deg 270deg, transparent 270deg)`
+				}
+			},
+			nativeProgressStyle() {
+				const deg = Math.max(0, Math.min(270, this.progress01 * 270))
+				return {
+					background: `conic-gradient(from 135deg, ${this.progColor} 0deg, ${this.progColor} ${deg}deg, transparent ${deg}deg)`
+				}
 			},
 			progressLinecap() {
 				return this.progress01 > 0.004 ? 'round' : 'butt'
@@ -130,55 +150,79 @@
 					transition: this.animationTriggered ? 'stroke-dasharray 0.5s ease-out' : 'none'
 				}
 			},
-			animatedNumber() {
+			displayPercentText() {
 				if (!this.hasValue) return '0'
-				const n = this.animatedNum
+				const n = this.animationTriggered ? this.animatedNum : this.numericPct
 				return Number.isInteger(n) ? String(n) : String(Math.round(n * 10) / 10)
 			}
 		},
 		watch: {
-			accuracyPercent(newVal) {
-				if (this.animationTriggered) {
-					this.triggerAnimation()
-				}
+			accuracyPercent: {
+				handler() {
+					if (this.animationTriggered) {
+						this.triggerAnimation()
+					} else {
+						this.applyStaticMetrics()
+					}
+				},
+				immediate: true
 			}
 		},
 		mounted() {
 			this.setupIntersectionObserver()
+			if (this.hasValue) {
+				this.applyStaticMetrics()
+			}
+		},
+		beforeDestroy() {
+			this.teardownObserver()
 		},
 		beforeUnmount() {
-			if (this.observer) {
-				this.observer.disconnect()
-			}
-			this.animationTriggered = false
+			this.teardownObserver()
 		},
 		methods: {
-			setupIntersectionObserver() {
-				const that = this
-				const observeElement = () => {
-					const el = document.getElementById(that.uniqueId)
-					if (el) {
-						that.observer = new IntersectionObserver(
-							(entries) => {
-								entries.forEach((entry) => {
-									if (entry.isIntersecting && !that.animationTriggered) {
-										that.triggerAnimation()
-									}
-								})
-							},
-							{
-								threshold: 0.3,
-								rootMargin: '0px 0px -50px 0px'
-							}
-						)
-						that.observer.observe(el)
-					} else {
-						setTimeout(observeElement, 100)
-					}
+			teardownObserver() {
+				if (this.observer) {
+					this.observer.disconnect()
+					this.observer = null
 				}
-				observeElement()
+			},
+			syncDisplayFromProps() {
+				this.applyStaticMetrics()
+			},
+			applyStaticMetrics() {
+				if (!this.hasValue) {
+					this.animatedNum = 0
+					this.animatedProgress = 0
+					return
+				}
+				this.animatedNum = this.numericPct
+				this.animatedProgress = this.targetProgress
+			},
+			setupIntersectionObserver() {
+				this.$nextTick(() => {
+					if (typeof uni === 'undefined' || typeof uni.createIntersectionObserver !== 'function') {
+						if (this.hasValue) this.triggerAnimation()
+						return
+					}
+					try {
+						this.observer = uni.createIntersectionObserver(this)
+						this.observer
+							.relativeToViewport({ bottom: 50 })
+							.observe('.qbg-observe-target', (res) => {
+								const ratio = res && res.intersectionRatio
+								if (ratio > 0.3 && !this.animationTriggered) {
+									this.triggerAnimation()
+								}
+							})
+					} catch (e) {
+						console.warn('[QuestionBankTypeGauge] IntersectionObserver 不可用', e)
+						if (this.hasValue) this.triggerAnimation()
+					}
+				})
 			},
 			triggerAnimation() {
+				if (this.animationTriggered) return
 				this.animationTriggered = true
 				if (!this.hasValue) return
 				const duration = 500
@@ -201,8 +245,7 @@
 			},
 			resetAnimation() {
 				this.animationTriggered = false
-				this.animatedProgress = 0
-				this.animatedNum = 0
+				this.applyStaticMetrics()
 			}
 		}
 	}
@@ -272,6 +315,29 @@
 		height: 208rpx;
 		display: block;
 		overflow: visible;
+	}
+
+	.qbg-arc-native {
+		position: relative;
+		width: 208rpx;
+		height: 208rpx;
+		border-radius: 50%;
+	}
+
+	.qbg-arc-track,
+	.qbg-arc-progress {
+		position: absolute;
+		left: 0;
+		top: 0;
+		width: 208rpx;
+		height: 208rpx;
+		border-radius: 50%;
+		mask: radial-gradient(circle, transparent 62%, #000 63%);
+		-webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
+	}
+
+	.qbg-arc-progress {
+		transition: background 0.35s ease-out;
 	}
 
 	.qbg-center {

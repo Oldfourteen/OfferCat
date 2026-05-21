@@ -21,6 +21,7 @@
 	import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
 	import themeMixin from '@/utils/themeMixin.js'
 	import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
+	import { warmApiConnection } from '@/utils/apiWarmup.js'
 
 	export default {
 		mixins: [themeMixin, liquidTabBarPageMixin],
@@ -39,6 +40,7 @@
 			}
 		},
 		onShow() {
+			void warmApiConnection()
 			// 返回首页时刷新子组件依赖的 key，保证头部和内容区展示最新状态。
 			this.refreshSeed += 1
 			// 通知子组件页面已显示，用于重置动画状态

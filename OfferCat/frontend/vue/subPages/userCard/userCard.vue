@@ -8,14 +8,22 @@
 					</view>
 				</view>
 				<text class="header-title">个人主页</text>
-				<view class="header-side header-right"></view>
+				<view class="header-side header-right">
+					<view v-if="shouldShowSelfMenu" class="menu-btn" @click="openSelfMenu">
+						<view class="menu-dots">
+							<view class="menu-dot"></view>
+							<view class="menu-dot"></view>
+							<view class="menu-dot"></view>
+						</view>
+					</view>
+				</view>
 			</view>
 		</view>
 
 		<scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
 			<view class="header-placeholder"></view>
 
-			<view class="profile-card">
+			<view class="profile-card" :style="profileCardStyle">
 				<view class="profile-decor profile-decor-a"></view>
 				<view class="profile-decor profile-decor-b"></view>
 				<view class="profile-content">
@@ -108,7 +116,7 @@
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 	import { BASE_URL } from '@/api/config.js'
 	import { getUser } from '@/utils/user.js'
-	import { getUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
+	import { getUserProfile, saveUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
 	import {
 		searchForumPosts,
 		sendForumFriendRequest,
@@ -116,6 +124,29 @@
 		getForumFriendRelationStatus,
 	} from '@/api/forum.js'
 	import { syncForumPostsViews } from '@/utils/forumViewCount.js'
+
+	const CARD_BACKGROUND_PRESETS = [
+		{
+			key: 'ocean',
+			label: '海盐蓝',
+			background: 'linear-gradient(140deg, rgba(125, 176, 255, 0.95) 0%, rgba(77, 113, 231, 0.92) 55%, rgba(80, 164, 255, 0.88) 100%)'
+		},
+		{
+			key: 'violet',
+			label: '星云紫',
+			background: 'linear-gradient(145deg, rgba(157, 128, 255, 0.96) 0%, rgba(103, 93, 234, 0.92) 48%, rgba(93, 152, 255, 0.86) 100%)'
+		},
+		{
+			key: 'sunset',
+			label: '落日橙',
+			background: 'linear-gradient(145deg, rgba(255, 184, 115, 0.96) 0%, rgba(255, 125, 98, 0.92) 52%, rgba(255, 98, 141, 0.88) 100%)'
+		},
+		{
+			key: 'forest',
+			label: '青森绿',
+			background: 'linear-gradient(145deg, rgba(95, 208, 178, 0.95) 0%, rgba(56, 160, 170, 0.92) 50%, rgba(66, 132, 214, 0.88) 100%)'
+		}
+	]
 
 	export default {
 		mixins: [themeMixin],
@@ -130,6 +161,7 @@
 				profileGrade: '',
 				profileMajor: '',
 				profileBio: '',
+				cardBackgroundKey: 'ocean',
 				friendRelationStatus: 'none',
 				friendRelationRequestId: '',
 				isFriendStatusLoading: false,
@@ -137,7 +169,8 @@
 				userPosts: [],
 				isLeaving: false,
 				allowNativeBack: false,
-				pageTransitionMs: 260
+				pageTransitionMs: 260,
+				hasExplicitTargetUserId: false
 			}
 		},
 		computed: {
@@ -148,6 +181,11 @@
 			isSelf() {
 				return this.targetUserId && this.currentUserId && this.targetUserId === this.currentUserId
 			},
+			shouldShowSelfMenu() {
+				if (!this.currentUserId) return false
+				if (!this.hasExplicitTargetUserId) return true
+				return this.isSelf
+			},
 			displayName() {
 				return this.profileName || (this.isSelf ? '我自己' : '匿名用户')
 			},
@@ -156,6 +194,12 @@
 			},
 			profileSummary() {
 				return [this.profileGrade, this.profileMajor].filter(Boolean).join(' · ')
+			},
+			profileCardStyle() {
+				const preset = CARD_BACKGROUND_PRESETS.find(item => item.key === this.cardBackgroundKey) || CARD_BACKGROUND_PRESETS[0]
+				return {
+					background: preset.background
+				}
 			},
 			primaryActionText() {
 				if (this.isFriendActionLoading) return '处理中...'
@@ -177,6 +221,7 @@
 			}
 		},
 		onLoad(options) {
+			this.hasExplicitTargetUserId = Boolean(options.userId)
 			this.targetUserId = String(options.userId || this.currentUserId || '')
 			this.profileName = decodeURIComponent(options.name || '')
 			this.profileAvatar = decodeURIComponent(options.avatar || '')
@@ -218,11 +263,41 @@
 					this.profileGrade = profile.grade || profile.graduationYear || this.profileGrade
 					this.profileMajor = profile.major || this.profileMajor
 					this.profileBio = profile.bio || ''
+					this.cardBackgroundKey = profile.cardBackgroundKey || 'ocean'
 				}
 
 				if (!this.targetUserId) {
 					this.targetUserId = this.currentUserId
 				}
+			},
+			openSelfMenu() {
+				uni.showActionSheet({
+					itemList: ['个人信息完善', '个人卡片背景更改'],
+					success: (res) => {
+						if (Number(res.tapIndex) === 0) {
+							this.goToProfileEdit()
+							return
+						}
+						this.openBackgroundPicker()
+					}
+				})
+			},
+			goToProfileEdit() {
+				uni.navigateTo({
+					url: '/subPages/profile/profile'
+				})
+			},
+			openBackgroundPicker() {
+				uni.showActionSheet({
+					itemList: CARD_BACKGROUND_PRESETS.map(item => item.label),
+					success: (res) => {
+						const preset = CARD_BACKGROUND_PRESETS[Number(res.tapIndex)]
+						if (!preset) return
+						this.cardBackgroundKey = preset.key
+						saveUserProfile({ cardBackgroundKey: preset.key })
+						uni.showToast({ title: '背景已更新', icon: 'none' })
+					}
+				})
 			},
 			async loadFriendRelation() {
 				if (!this.currentUserId || !this.targetUserId || this.isSelf) {
@@ -484,6 +559,31 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
+	}
+
+	.menu-btn {
+		width: 72rpx;
+		height: 72rpx;
+		border-radius: 50%;
+		background: rgba(255, 255, 255, 0.92);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		box-shadow: 0 4rpx 14rpx rgba(34, 97, 193, 0.12);
+	}
+
+	.menu-dots {
+		display: flex;
+		align-items: center;
+		gap: 8rpx;
+	}
+
+	.menu-dot {
+		width: 8rpx;
+		height: 8rpx;
+		border-radius: 50%;
+		background: #3357d6;
+		display: block;
 	}
 
 	.back-icon-img {
@@ -781,6 +881,16 @@
 			background: rgba(255, 255, 255, 0.08);
 			border: 1rpx solid rgba(255, 255, 255, 0.08);
 			box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.35);
+		}
+
+		.menu-btn {
+			background: rgba(255, 255, 255, 0.08);
+			border: 1rpx solid rgba(255, 255, 255, 0.08);
+			box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.35);
+		}
+
+		.menu-dot {
+			background: #f4f7fb;
 		}
 
 		.back-icon-img {

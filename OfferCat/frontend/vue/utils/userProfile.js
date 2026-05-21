@@ -21,7 +21,8 @@ export const DEFAULT_USER_PROFILE = {
 	phone: '',
 	realName: '',
 	email: '',
-	gender: ''
+	gender: '',
+	cardBackgroundKey: 'ocean'
 }
 
 // 统一用户资料字段，兼容接口字段与本地字段命名差异。
@@ -45,7 +46,8 @@ function normalizeProfile(source = {}) {
 		phone: source.phone || DEFAULT_USER_PROFILE.phone,
 		realName: source.realName || DEFAULT_USER_PROFILE.realName,
 		email: source.email || DEFAULT_USER_PROFILE.email,
-		gender: source.gender || DEFAULT_USER_PROFILE.gender
+		gender: source.gender ?? DEFAULT_USER_PROFILE.gender,
+		cardBackgroundKey: source.cardBackgroundKey || DEFAULT_USER_PROFILE.cardBackgroundKey
 	}
 }
 

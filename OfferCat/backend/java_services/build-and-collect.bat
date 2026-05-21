@@ -37,13 +37,29 @@ for %%S in (registry api_gateway user student resume ai_evaluation radar_evaluat
     )
 )
 
+echo [3/3] Copying Aliyun secrets next to JARs (method 1: dist\secrets\)...
+set DYPNS_SRC=%SCRIPT_DIR%user\secrets\application-dypns.yml
+if exist "%DYPNS_SRC%" (
+    if not exist "%DIST%\secrets" mkdir "%DIST%\secrets"
+    copy /Y "%DYPNS_SRC%" "%DIST%\secrets\application-dypns.yml" >nul
+    echo   Collected: dist\secrets\application-dypns.yml
+    if not exist "%SCRIPT_DIR%deploy\config" mkdir "%SCRIPT_DIR%deploy\config"
+    copy /Y "%DYPNS_SRC%" "%SCRIPT_DIR%deploy\config\application-dypns.yml" >nul
+    echo   Collected: deploy\config\application-dypns.yml
+) else (
+    echo   [WARN] Missing %DYPNS_SRC%
+    echo          Copy user\secrets\application-dypns.yml.example and fill AccessKey first.
+)
+
 echo.
 echo Done! JARs are in: %DIST%
 echo.
 echo Next steps:
 echo   1. Copy dist\*.jar  to server D:\offercat\apps\
-echo   2. Copy deploy\config\application-prod.yml  to server D:\offercat\config\
-echo   3. Replace server D:\offercat\bin\start_all.bat with deploy\bin\start_all.bat
-echo   4. On server: D:\offercat\bin\start_all.bat start
+echo   2. Copy dist\secrets\  to server D:\offercat\apps\secrets\   (same folder as user.jar)
+echo   3. Copy deploy\config\application-prod.yml  to server D:\offercat\config\
+echo   4. Copy deploy\config\application-dypns.yml to server D:\offercat\config\  (optional backup)
+echo   5. Replace server D:\offercat\bin\start_all.bat with deploy\bin\start_all.bat
+echo   6. On server: D:\offercat\bin\start_all.bat start  (or manage.bat restart)
 echo.
 pause

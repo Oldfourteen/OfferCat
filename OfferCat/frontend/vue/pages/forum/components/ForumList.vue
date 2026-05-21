@@ -89,6 +89,8 @@
 		uncollectForumPost,
 		getForumAcceptedFriends
 	} from '@/api/forum.js'
+	import { emitForumCollectNotice } from '@/utils/forumCollectNotice.js'
+	import { removeCollectedForumPost, upsertCollectedForumPost } from '@/utils/forumFavorites.js'
 	import { incrementForumViewCount, syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
 
 	export default {
@@ -176,12 +178,18 @@
 				})
 				this.$set(this.postList, index, next)
 				try {
-					if (nextCol) await collectForumPost(pid, uid)
-					else await uncollectForumPost(pid, uid)
-					uni.showToast({
-						title: nextCol ? '收藏成功' : '已取消收藏',
-						icon: 'none'
-					})
+					if (nextCol) {
+						await collectForumPost(pid, uid)
+						upsertCollectedForumPost(next, uid)
+						emitForumCollectNotice()
+					} else {
+						await uncollectForumPost(pid, uid)
+						removeCollectedForumPost(pid, uid)
+						uni.showToast({
+							title: '已取消收藏',
+							icon: 'none'
+						})
+					}
 				} catch (e) {
 					this.$set(this.postList, index, current)
 					uni.showToast({ title: (e && e.message) || '操作失败', icon: 'none' })

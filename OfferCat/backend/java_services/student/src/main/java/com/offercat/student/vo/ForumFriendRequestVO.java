@@ -20,6 +20,9 @@ public class ForumFriendRequestVO {
     /** 申请人展示信息 */
     private String fromNickname;
     private String fromAvatar;
+    /** 被申请人展示信息 */
+    private String toNickname;
+    private String toAvatar;
 
     @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime createTime;

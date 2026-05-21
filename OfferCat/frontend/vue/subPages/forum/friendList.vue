@@ -8,54 +8,109 @@
 			<view class="top-bar-placeholder"></view>
 		</view>
 
-		<scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
-			<view class="section-card">
-				<view class="section-head">
-					<text class="section-title">好友申请</text>
-				</view>
-				<view
-					v-for="item in pendingFriends"
-					:key="item.requestId"
-					class="request-item"
-				>
-					<image class="avatar" :src="avatarUrl(item.fromAvatar)" mode="aspectFill"></image>
-					<view class="item-main">
-						<view class="item-head">
-							<text class="user-name">{{ item.fromNickname }}</text>
-							<text class="time-text">{{ formatTime(item.createTime) }}</text>
-						</view>
-						<text class="item-desc text-wrap-safe">{{ item.desc }}</text>
-					</view>
-					<view class="pill-actions">
-						<view class="pill-btn muted" @click.stop="respondIncoming(item, false)">忽略</view>
-						<view class="pill-btn" @click.stop="respondIncoming(item, true)">通过</view>
-					</view>
-				</view>
+		<view class="tab-bar">
+			<view
+				v-for="tab in tabs"
+				:key="tab.key"
+				class="tab-pill"
+				:class="{ active: activeTab === tab.key }"
+				@click="activeTab = tab.key"
+			>
+				<text class="tab-pill__text">{{ tab.label }}</text>
+				<text class="tab-pill__badge" v-if="tab.count > 0">{{ tab.count }}</text>
 			</view>
+		</view>
 
-			<view class="section-card">
-				<view class="section-head">
-					<text class="section-title">我的好友</text>
-				</view>
-				<view
-					v-for="item in friends"
-					:key="item.userId"
-					class="friend-item"
-					@click="goPrivateChat(item)"
-				>
-					<image class="avatar" :src="avatarUrl(item.avatar)" mode="aspectFill"></image>
-					<view class="item-main">
-						<view class="item-head">
-							<view class="name-row">
-								<text class="user-name">{{ item.nickname }}</text>
-								<text class="tag-text" v-if="item.tagText">{{ item.tagText }}</text>
+		<scroll-view class="page-scroll" scroll-y :show-scrollbar="false">
+			<template v-if="activeTab === 'requests'">
+				<view class="section-card">
+					<view class="section-head">
+						<text class="section-title">收到的申请</text>
+						<text class="section-subtitle">{{ incomingRequests.length }} 条</text>
+					</view>
+					<view
+						v-for="item in incomingRequests"
+						:key="`incoming_${item.requestId}`"
+						class="request-item"
+					>
+						<image class="avatar" :src="avatarUrl(item.fromAvatar)" mode="aspectFill"></image>
+						<view class="item-main">
+							<view class="item-head">
+								<text class="user-name">{{ item.fromNickname || '用户' }}</text>
+								<text class="time-text">{{ formatTime(item.createTime) }}</text>
 							</view>
-							<text class="time-text">{{ item.lastSeen }}</text>
+							<text class="item-desc text-wrap-safe">申请添加你为好友</text>
 						</view>
-						<text class="item-desc text-wrap-safe">{{ item.bio }}</text>
+						<view class="pill-actions">
+							<view class="pill-btn muted" @click.stop="respondIncoming(item, false)">忽略</view>
+							<view class="pill-btn" @click.stop="respondIncoming(item, true)">通过</view>
+						</view>
+					</view>
+					<view class="empty-state" v-if="incomingRequests.length === 0">
+						<text class="empty-title">还没有收到新的好友申请</text>
+						<text class="empty-desc">别人申请加你好友后，会显示在这里。</text>
 					</view>
 				</view>
-			</view>
+
+				<view class="section-card">
+					<view class="section-head">
+						<text class="section-title">发出的申请</text>
+						<text class="section-subtitle">{{ outgoingRequests.length }} 条</text>
+					</view>
+					<view
+						v-for="item in outgoingRequests"
+						:key="`outgoing_${item.requestId}`"
+						class="request-item"
+					>
+						<image class="avatar" :src="avatarUrl(item.toAvatar)" mode="aspectFill"></image>
+						<view class="item-main">
+							<view class="item-head">
+								<text class="user-name">{{ item.toNickname || '用户' }}</text>
+								<text class="time-text">{{ formatTime(item.createTime) }}</text>
+							</view>
+							<text class="item-desc text-wrap-safe">已向对方发出好友申请，等待通过</text>
+						</view>
+						<view class="single-status">
+							<text class="single-status__text">等待通过</text>
+						</view>
+					</view>
+					<view class="empty-state" v-if="outgoingRequests.length === 0">
+						<text class="empty-title">你还没有发出好友申请</text>
+						<text class="empty-desc">去论坛逛逛，遇到想联系的人就可以添加好友。</text>
+					</view>
+				</view>
+			</template>
+
+			<template v-else>
+				<view class="section-card">
+					<view class="section-head">
+						<text class="section-title">好友列表</text>
+						<text class="section-subtitle">{{ friends.length }} 位好友</text>
+					</view>
+					<view
+						v-for="item in friends"
+						:key="item.userId"
+						class="friend-item"
+						@click="goPrivateChat(item)"
+					>
+						<image class="avatar" :src="avatarUrl(item.avatar)" mode="aspectFill"></image>
+						<view class="item-main">
+							<view class="item-head">
+								<view class="name-row">
+									<text class="user-name">{{ item.nickname }}</text>
+									<text class="tag-text" v-if="item.tagText">{{ item.tagText }}</text>
+								</view>
+								<text class="time-text">{{ item.lastSeen }}</text>
+							</view>
+							<text class="item-desc text-wrap-safe">{{ item.bio || '快去和好友打个招呼吧。' }}</text>
+						</view>
+					</view>
+					<view class="empty-state" v-if="friends.length === 0">
+						<text class="empty-title">你还没有好友</text>
+						<text class="empty-desc">通过好友申请或从个人名片页添加好友后，会出现在这里。</text>
+					</view>
+				</view>
+			</template>
 		</scroll-view>
 	</view>
 </template>
@@ -65,20 +120,38 @@
 	import { BASE_URL } from '@/api/config.js'
 	import {
 		getForumIncomingFriendRequests,
+		getForumOutgoingFriendRequests,
 		getForumAcceptedFriends,
 		respondForumFriendRequest,
 	} from '@/api/forum.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
-	const DEFAULT_REQ_DESC = '在论坛发来好友申请。'
 
 	export default {
 		mixins: [themeMixin],
 		data() {
 			return {
-				pendingFriends: [],
+				activeTab: 'requests',
+				incomingRequests: [],
+				outgoingRequests: [],
 				friends: [],
 			}
+		},
+		computed: {
+			tabs() {
+				return [
+					{
+						key: 'requests',
+						label: '好友申请',
+						count: this.incomingRequests.length + this.outgoingRequests.length,
+					},
+					{
+						key: 'friends',
+						label: '好友列表',
+						count: this.friends.length,
+					},
+				]
+			},
 		},
 		onShow() {
 			this.reload()
@@ -103,17 +176,19 @@
 					return
 				}
 				try {
-					const [incRes, accRes] = await Promise.all([
+					const [incRes, outRes, accRes] = await Promise.all([
 						getForumIncomingFriendRequests(uid),
+						getForumOutgoingFriendRequests(uid),
 						getForumAcceptedFriends(uid),
 					])
 					const inList = (incRes && incRes.data) || []
+					const outList = (outRes && outRes.data) || []
 					const okList = (accRes && accRes.data) || []
-					this.pendingFriends = Array.isArray(inList)
-						? inList.map((r) => ({
-							...r,
-							desc: DEFAULT_REQ_DESC,
-						}))
+					this.incomingRequests = Array.isArray(inList)
+						? inList
+						: []
+					this.outgoingRequests = Array.isArray(outList)
+						? outList
 						: []
 					this.friends = Array.isArray(okList)
 						? okList.map((f) => ({
@@ -122,7 +197,8 @@
 						}))
 						: []
 				} catch (_) {
-					this.pendingFriends = []
+					this.incomingRequests = []
+					this.outgoingRequests = []
 					this.friends = []
 				}
 			},
@@ -131,8 +207,8 @@
 				const uid = u.userId || u.id
 				if (!uid || !item || item.requestId == null) return
 				if (String(item.requestId).startsWith('mock_')) {
-					const next = this.pendingFriends.filter((p) => p.requestId !== item.requestId)
-					this.pendingFriends = next
+					const next = this.incomingRequests.filter((p) => p.requestId !== item.requestId)
+					this.incomingRequests = next
 					uni.showToast({ title: accept ? '已通过（离线）' : '已忽略（离线）', icon: 'none' })
 					return
 				}
@@ -209,6 +285,57 @@
 		min-height: 0;
 	}
 
+	.tab-bar {
+		display: flex;
+		gap: 18rpx;
+		padding: 24rpx 30rpx 8rpx;
+	}
+
+	.tab-pill {
+		flex: 1;
+		height: 82rpx;
+		border-radius: 999rpx;
+		background: rgba(255, 255, 255, 0.88);
+		box-shadow: 0 8rpx 22rpx rgba(15, 23, 42, 0.05);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		gap: 10rpx;
+	}
+
+	.tab-pill.active {
+		background: linear-gradient(135deg, #5b79ff, #7c5cff);
+	}
+
+	.tab-pill__text {
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #31456e;
+	}
+
+	.tab-pill.active .tab-pill__text {
+		color: #ffffff;
+	}
+
+	.tab-pill__badge {
+		min-width: 34rpx;
+		height: 34rpx;
+		padding: 0 10rpx;
+		border-radius: 999rpx;
+		background: rgba(91, 121, 255, 0.12);
+		font-size: 20rpx;
+		font-weight: 700;
+		color: #5b79ff;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.tab-pill.active .tab-pill__badge {
+		background: rgba(255, 255, 255, 0.2);
+		color: #ffffff;
+	}
+
 	.section-card {
 		background: #ffffff;
 		box-shadow: 0 10rpx 28rpx rgba(15, 23, 42, 0.06);
@@ -221,6 +348,9 @@
 
 	.section-head {
 		padding: 20rpx 6rpx 10rpx;
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
 	}
 
 	.section-title {
@@ -228,6 +358,11 @@
 		font-size: 30rpx;
 		font-weight: 700;
 		color: #24345b;
+	}
+
+	.section-subtitle {
+		font-size: 22rpx;
+		color: #98a2b3;
 	}
 
 	.request-item,
@@ -317,6 +452,43 @@
 		color: #64748b;
 	}
 
+	.single-status {
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		padding: 0 8rpx;
+	}
+
+	.single-status__text {
+		padding: 12rpx 20rpx;
+		border-radius: 999rpx;
+		background: rgba(91, 121, 255, 0.12);
+		font-size: 22rpx;
+		font-weight: 700;
+		color: #5b79ff;
+	}
+
+	.empty-state {
+		padding: 50rpx 10rpx 42rpx;
+		text-align: center;
+		border-top: 1rpx solid rgba(15, 23, 42, 0.06);
+	}
+
+	.empty-title {
+		display: block;
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #24345b;
+	}
+
+	.empty-desc {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 24rpx;
+		line-height: 1.6;
+		color: #98a2b3;
+	}
+
 	.theme-dark .pill-btn.muted {
 		background: rgba(255, 255, 255, 0.08);
 		color: #aeb8ca;
@@ -332,6 +504,22 @@
 			border-bottom-color: rgba(255, 255, 255, 0.06);
 		}
 
+		.tab-pill {
+			background: #1b1d23;
+			box-shadow: 0 8rpx 22rpx rgba(0, 0, 0, 0.18);
+		}
+
+		.tab-pill__text,
+		.empty-title,
+		.section-subtitle {
+			color: #f4f7fb;
+		}
+
+		.tab-pill__badge {
+			background: rgba(169, 187, 240, 0.16);
+			color: #a9bbf0;
+		}
+
 		.back-icon,
 		.page-title,
 		.section-title,
@@ -345,12 +533,14 @@
 		}
 
 		.time-text,
-		.item-desc {
+		.item-desc,
+		.empty-desc {
 			color: #8090ad;
 		}
 
 		.request-item,
-		.friend-item {
+		.friend-item,
+		.empty-state {
 			border-top-color: rgba(255, 255, 255, 0.08);
 		}
 
@@ -359,6 +549,11 @@
 		}
 
 		.tag-text {
+			background: rgba(141, 164, 230, 0.18);
+			color: #a9bbf0;
+		}
+
+		.single-status__text {
 			background: rgba(141, 164, 230, 0.18);
 			color: #a9bbf0;
 		}

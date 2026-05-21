@@ -85,8 +85,9 @@
 						</view>
 
 						<view
-							v-else-if="item.role === 'assistant' && item.text && !item.loading"
+							v-else-if="item.role === 'assistant' && item.text"
 							class="msg-icon-row msg-icon-row--assistant"
+							:class="{ 'msg-icon-row--streaming': item.loading }"
 						>
 							<view class="msg-icon-hit" @tap.stop="copyPlain(item.text)">
 								<AiMessageToolbarSvg name="copy" />
@@ -488,14 +489,21 @@
 		justify-content: flex-start;
 	}
 
+	.msg-icon-row--streaming .msg-icon-hit {
+		opacity: 0.45;
+		pointer-events: none;
+	}
+
 	.msg-icon-hit {
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		padding: 8rpx;
+		min-width: 56rpx;
+		min-height: 48rpx;
+		padding: 8rpx 12rpx;
 		border-radius: 12rpx;
 		color: #8b9199;
-		background: transparent;
+		background: rgba(139, 145, 153, 0.08);
 	}
 
 	.msg-icon-hit:active {
@@ -723,6 +731,7 @@
 
 	.message-list.theme-dark .msg-icon-hit {
 		color: #9aa3b5;
+		background: rgba(255, 255, 255, 0.06);
 	}
 
 	.message-list.theme-dark .msg-icon-hit--liked {

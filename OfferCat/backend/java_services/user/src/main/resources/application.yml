@@ -63,7 +63,10 @@ aliyun:
     code-length: 6
     valid-time-seconds: 300
     send-interval-seconds: 60
-    # 未配置 access-key 时是否用 Redis 发验证码（开发联调）；生产请配置 secrets/application-dypns.yml
+    code-type: 1
+    # 联调时可改为 true，验证码会打在 user 服务日志里（仍建议以真短信为准）
+    return-verify-code-for-log: false
+    # 阿里云失败时若回退 Redis：接口仍显示「已发送」但手机无短信，验证码只在日志/Redis
     redis-fallback-when-unconfigured: true
     redis-fallback-on-aliyun-failure: true
 

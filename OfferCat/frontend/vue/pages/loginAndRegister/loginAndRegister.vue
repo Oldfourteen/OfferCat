@@ -17,12 +17,16 @@
 <script>
 	import logoArea from './components/logoArea.vue';
 	import titleArea from './components/titleArea.vue';
+	import { warmApiConnection } from '@/utils/apiWarmup.js';
 	export default {
 		data() {
 			return {
 				// 进入登录页前先执行收缩动画，增强页面切换的过渡感。
 				isShrinking: false
 			}
+		},
+		onLoad() {
+			void warmApiConnection()
 		},
 		onShow() {
 			// 每次返回欢迎页时重置动画状态，避免页面保持缩小态。

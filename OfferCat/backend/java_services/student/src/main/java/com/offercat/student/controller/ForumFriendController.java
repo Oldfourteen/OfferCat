@@ -56,6 +56,11 @@ public class ForumFriendController {
         return ResponseResult.success(forumFriendService.listPendingIncoming(userId));
     }
 
+    @GetMapping("/outgoing")
+    public ResponseResult<List<ForumFriendRequestVO>> outgoing(@RequestParam("userId") Long userId) {
+        return ResponseResult.success(forumFriendService.listPendingOutgoing(userId));
+    }
+
     @GetMapping("/accepted")
     public ResponseResult<List<ForumFriendUserVO>> friends(@RequestParam("userId") Long userId) {
         return ResponseResult.success(forumFriendService.listFriends(userId));

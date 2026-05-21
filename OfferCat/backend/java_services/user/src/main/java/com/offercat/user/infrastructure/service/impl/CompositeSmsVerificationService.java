@@ -44,7 +44,11 @@ public class CompositeSmsVerificationService implements SmsVerificationService {
             }
             return SmsSendResult.fail("短信认证方案未配置，请联系管理员检查 scheme-name");
         }
-        log.warn("阿里云短信未完整配置，使用 Redis 验证码回退 phone={}", nationalPhone11);
+        log.warn("阿里云短信未完整配置，使用 Redis 验证码回退 phone={}（accessKey配置={} scheme={}；"
+                        + "请确认 deploy/config/application-dypns.yml 或 dist/secrets/ 已加载且 prod 未覆盖空密钥）",
+                nationalPhone11,
+                credOk ? "有" : "无",
+                StringUtils.hasText(properties.getSchemeName()) ? properties.getSchemeName() : "无");
         return redisSms.sendVerificationCode(nationalPhone11);
     }
 

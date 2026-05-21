@@ -75,6 +75,11 @@ public class ForumFriendServiceImpl implements ForumFriendService {
     }
 
     @Override
+    public List<ForumFriendRequestVO> listPendingOutgoing(Long userId) {
+        return forumFriendMapper.listPendingOutgoing(userId);
+    }
+
+    @Override
     public List<ForumFriendUserVO> listFriends(Long userId) {
         List<ForumFriendUserVO> list = forumFriendMapper.listAcceptedFriends(userId);
         if (list != null) {

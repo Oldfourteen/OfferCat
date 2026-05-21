@@ -1,5 +1,6 @@
 package com.offercat.ai.controller.session;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.offercat.ai.dao.AiUserSessionMapper;
 import com.offercat.ai.entity.AiUserSession;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -19,25 +20,36 @@ public class AiUserSessionController {
     @Autowired
     private AiUserSessionMapper aiUserSessionMapper;
 
+    @Autowired
+    private ObjectMapper objectMapper;
+
     @PostMapping("/sync")
     public ResponseEntity<?> syncToServer(@RequestBody Map<String, Object> payload) {
         if (!payload.containsKey("userId") || !payload.containsKey("conversations")) {
             return ResponseEntity.badRequest().body(Map.of("error", "参数不完整"));
         }
         Long userId = Long.valueOf(payload.get("userId").toString());
-        String conversationsJson = (String) payload.get("conversations");
+        String conversationsJson = toConversationsJson(payload.get("conversations"));
 
-        AiUserSession existing = aiUserSessionMapper.selectByUserId(userId);
-        if (existing == null) {
-            AiUserSession newSession = new AiUserSession();
-            newSession.setUserId(userId);
-            newSession.setConversationsJson(conversationsJson);
-            aiUserSessionMapper.insert(newSession);
-        } else {
-            existing.setConversationsJson(conversationsJson);
-            aiUserSessionMapper.update(existing);
-        }
+        AiUserSession session = new AiUserSession();
+        session.setUserId(userId);
+        session.setConversationsJson(conversationsJson);
+        aiUserSessionMapper.upsert(session);
         return ResponseEntity.ok(Map.of("success", true));
+    }
+
+    private String toConversationsJson(Object conversations) {
+        if (conversations == null) {
+            return "[]";
+        }
+        if (conversations instanceof String s) {
+            return s;
+        }
+        try {
+            return objectMapper.writeValueAsString(conversations);
+        } catch (Exception e) {
+            return conversations.toString();
+        }
     }
 
     @GetMapping("/sync")

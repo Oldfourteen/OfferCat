@@ -64,7 +64,7 @@ public class AuthServiceImplement implements AuthService {
             return ResponseResult.error(sendResult.getUserMessage());
         }
 
-        log.info("已向 {} 发起短信验证码（阿里云号码认证）", request.getPhone());
+        log.info("已向 {} 下发验证码请求成功（具体通道见 CompositeSms / Redis / 阿里云 日志）", request.getPhone());
         return ResponseResult.success();
     }
 
@@ -391,16 +391,16 @@ public class AuthServiceImplement implements AuthService {
      * 2. 生成模拟 Token (UUID)
      */
     private ResponseResult<AuthResponse> loginAfterAuth(User user) {
-        boolean isComplete = checkInfoComplete(user);
-
         // 不在接口响应中返回密码哈希（BCrypt 也绝不应「解密」回传）
         user.setPassword(null);
 
-        // 查询并附带完整的学生档案信息给前端
+        Student student = null;
         if (user.getUserRole() != null && user.getUserRole() == 1) {
-            Student student = studentMapper.selectByUserId(user.getUserId());
+            student = studentMapper.selectByUserId(user.getUserId());
             user.setProfile(student);
         }
+
+        boolean isComplete = checkInfoComplete(user, student);
 
         String token = UUID.randomUUID().toString(); // 演示用 UUID，生产环境建议用 JWT
 
@@ -417,13 +417,16 @@ public class AuthServiceImplement implements AuthService {
      * 检查用户身份信息是否完整
      * 根据 user_role 字段去对应的明细表(student/teacher/company_account)中查询
      */
-    private boolean checkInfoComplete(User user) {
+    private boolean checkInfoComplete(User user, Student cachedStudent) {
         if (user.getUserRole() == null) {
             return false;
         }
         
         switch (user.getUserRole()) {
-            case 1: // 学生模式：查询 student 表
+            case 1: // 学生模式：复用 loginAfterAuth 已查出的档案，避免登录多打一次库
+                if (cachedStudent != null) {
+                    return true;
+                }
                 return studentMapper.selectByUserId(user.getUserId()) != null;
             case 4: // 管理员模式：无需完善额外信息
                 return true;

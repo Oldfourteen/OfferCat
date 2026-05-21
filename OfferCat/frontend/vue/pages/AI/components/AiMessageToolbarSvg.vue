@@ -1,158 +1,44 @@
 <template>
-	<!-- 离线内联 SVG（currentColor），不依赖外链字体或 CDN -->
-	<view class="ai-toolbar-svg-wrap" :class="size === 'sm' ? 'ai-toolbar-svg-wrap--sm' : ''">
-		<!-- 复制 -->
-		<svg
-			v-if="name === 'copy'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<rect
-				x="8"
-				y="8"
-				width="14"
-				height="14"
-				rx="2"
-				ry="2"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M4 16c-1.1 0-2-.9-2-2V4c0-1.1.9-2 2-2h10c1.1 0 2 .9 2 2"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
-		<!-- 修改 -->
-		<svg
-			v-else-if="name === 'pen'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				d="M17 3a2.828 2.828 0 1 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="m15 5 4 4"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
-		<!-- 点赞（描边） -->
-		<svg
-			v-else-if="name === 'thumbs-up'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
-		<!-- 已赞（填充轮廓） -->
-		<svg
-			v-else-if="name === 'thumbs-up-fill'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="currentColor"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				fill-rule="evenodd"
-				clip-rule="evenodd"
-				d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3H14zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3v11z"
-			/>
-		</svg>
-		<!-- 重新生成 -->
-		<svg
-			v-else-if="name === 'arrows-rotate'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M3 3v5h5"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M16 16h5v5"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
-		<!-- 语音播报 -->
-		<svg
-			v-else-if="name === 'microphone'"
-			class="ai-toolbar-svg"
-			viewBox="0 0 24 24"
-			fill="none"
-			xmlns="http://www.w3.org/2000/svg"
-		>
-			<path
-				d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M19 10v2a7 7 0 0 1-14 0v-2"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-			<path
-				d="M12 19v3M8 22h8"
-				stroke="currentColor"
-				stroke-width="1.65"
-				stroke-linecap="round"
-				stroke-linejoin="round"
-			/>
-		</svg>
+	<!-- APP 原生层不渲染 ::before/::after，使用真实子节点 + 字符图标 -->
+	<view class="ai-toolbar-wrap" :class="size === 'sm' ? 'ai-toolbar-wrap--sm' : ''">
+		<view v-if="useShapeIcon" class="ai-toolbar-shape" :class="`ai-toolbar-shape--${name}`">
+			<template v-if="name === 'copy'">
+				<view class="copy-sheet copy-sheet--back" />
+				<view class="copy-sheet copy-sheet--front" />
+			</template>
+			<template v-else-if="name === 'pen'">
+				<view class="pen-body" />
+				<view class="pen-tip" />
+			</template>
+			<template v-else-if="name === 'thumbs-up' || name === 'thumbs-up-fill'">
+				<view class="thumb-handle" :class="{ 'thumb-handle--fill': name === 'thumbs-up-fill' }" />
+				<view class="thumb-top" :class="{ 'thumb-top--fill': name === 'thumbs-up-fill' }" />
+			</template>
+			<template v-else-if="name === 'arrows-rotate'">
+				<view class="rotate-ring" />
+				<view class="rotate-arrow rotate-arrow--top" />
+				<view class="rotate-arrow rotate-arrow--bottom" />
+			</template>
+			<template v-else-if="name === 'microphone'">
+				<view class="mic-head" />
+				<view class="mic-stand" />
+				<view class="mic-base" />
+			</template>
+		</view>
+		<text v-else class="ai-toolbar-glyph">{{ glyph }}</text>
 	</view>
 </template>
 
 <script>
+	const GLYPH = {
+		copy: '复制',
+		pen: '编辑',
+		'thumbs-up': '赞',
+		'thumbs-up-fill': '已赞',
+		'arrows-rotate': '重答',
+		microphone: '朗读'
+	}
+
 	export default {
 		name: 'AiMessageToolbarSvg',
 		props: {
@@ -163,28 +49,216 @@
 			size: {
 				type: String,
 				default: 'md'
+			},
+			// APP 端优先用文字标签，保证 APK 一定能看见可点区域
+			preferTextOnApp: {
+				type: Boolean,
+				default: true
+			}
+		},
+		computed: {
+			isAppPlus() {
+				// #ifdef APP-PLUS
+				return true
+				// #endif
+				// #ifndef APP-PLUS
+				return false
+				// #endif
+			},
+			useShapeIcon() {
+				return !(this.preferTextOnApp && this.isAppPlus)
+			},
+			glyph() {
+				return GLYPH[this.name] || ''
 			}
 		}
 	}
 </script>
 
 <style lang="scss" scoped>
-	.ai-toolbar-svg-wrap {
+	.ai-toolbar-wrap {
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		flex-shrink: 0;
+		min-width: 40rpx;
+		min-height: 40rpx;
+	}
+
+	.ai-toolbar-wrap--sm {
+		min-width: 56rpx;
+		min-height: 32rpx;
+	}
+
+	.ai-toolbar-glyph {
+		font-size: 22rpx;
+		line-height: 1;
 		color: inherit;
+		white-space: nowrap;
+	}
+
+	.ai-toolbar-wrap--sm .ai-toolbar-glyph {
+		font-size: 20rpx;
+	}
+
+	.ai-toolbar-shape {
+		position: relative;
+		width: 30rpx;
+		height: 30rpx;
 		flex-shrink: 0;
 	}
 
-	.ai-toolbar-svg {
-		display: block;
-		width: 26rpx;
-		height: 26rpx;
+	.ai-toolbar-wrap--sm .ai-toolbar-shape {
+		width: 24rpx;
+		height: 24rpx;
 	}
 
-	.ai-toolbar-svg-wrap--sm .ai-toolbar-svg {
+	/* 复制 */
+	.copy-sheet {
+		position: absolute;
+		width: 16rpx;
+		height: 16rpx;
+		border: 2rpx solid #8b9199;
+		border-radius: 3rpx;
+		box-sizing: border-box;
+	}
+
+	.copy-sheet--back {
+		top: 2rpx;
+		left: 2rpx;
+	}
+
+	.copy-sheet--front {
+		right: 2rpx;
+		bottom: 2rpx;
+		background: #f6f8fc;
+	}
+
+	/* 编辑 */
+	.pen-body {
+		position: absolute;
+		left: 4rpx;
+		top: 14rpx;
+		width: 20rpx;
+		height: 3rpx;
+		background: #8b9199;
+		border-radius: 2rpx;
+		transform: rotate(-38deg);
+	}
+
+	.pen-tip {
+		position: absolute;
+		right: 5rpx;
+		bottom: 8rpx;
+		width: 0;
+		height: 0;
+		border-left: 4rpx solid transparent;
+		border-right: 4rpx solid transparent;
+		border-top: 6rpx solid #8b9199;
+		transform: rotate(-38deg);
+	}
+
+	/* 点赞 */
+	.thumb-handle {
+		position: absolute;
+		left: 4rpx;
+		bottom: 4rpx;
+		width: 8rpx;
+		height: 14rpx;
+		border: 2rpx solid #8b9199;
+		border-radius: 2rpx 0 0 2rpx;
+		box-sizing: border-box;
+	}
+
+	.thumb-handle--fill {
+		background: #8b9199;
+	}
+
+	.thumb-top {
+		position: absolute;
+		right: 4rpx;
+		top: 6rpx;
+		width: 14rpx;
+		height: 14rpx;
+		border: 2rpx solid #8b9199;
+		border-bottom: none;
+		border-radius: 6rpx 6rpx 2rpx 2rpx;
+		box-sizing: border-box;
+	}
+
+	.thumb-top--fill {
+		background: #8b9199;
+	}
+
+	/* 重答 */
+	.rotate-ring {
+		position: absolute;
+		left: 4rpx;
+		top: 4rpx;
 		width: 20rpx;
 		height: 20rpx;
+		border: 2rpx solid #8b9199;
+		border-right-color: transparent;
+		border-radius: 50%;
+		box-sizing: border-box;
+		transform: rotate(-30deg);
+	}
+
+	.rotate-arrow {
+		position: absolute;
+		width: 0;
+		height: 0;
+		border-style: solid;
+	}
+
+	.rotate-arrow--top {
+		top: 2rpx;
+		left: 6rpx;
+		border-width: 0 4rpx 6rpx 4rpx;
+		border-color: transparent transparent #8b9199 transparent;
+	}
+
+	.rotate-arrow--bottom {
+		right: 4rpx;
+		bottom: 2rpx;
+		border-width: 6rpx 4rpx 0 4rpx;
+		border-color: #8b9199 transparent transparent transparent;
+	}
+
+	/* 朗读 */
+	.mic-head {
+		position: absolute;
+		left: 50%;
+		top: 4rpx;
+		width: 10rpx;
+		height: 12rpx;
+		margin-left: -5rpx;
+		border: 2rpx solid #8b9199;
+		border-radius: 999rpx;
+		box-sizing: border-box;
+	}
+
+	.mic-stand {
+		position: absolute;
+		left: 50%;
+		top: 14rpx;
+		width: 16rpx;
+		height: 8rpx;
+		margin-left: -8rpx;
+		border: 2rpx solid #8b9199;
+		border-top: none;
+		border-radius: 0 0 999rpx 999rpx;
+		box-sizing: border-box;
+	}
+
+	.mic-base {
+		position: absolute;
+		left: 50%;
+		bottom: 4rpx;
+		width: 14rpx;
+		height: 2rpx;
+		margin-left: -7rpx;
+		background: #8b9199;
+		border-radius: 2rpx;
 	}
 </style>

@@ -236,6 +236,13 @@ export function getForumIncomingFriendRequests(userId) {
 	}))
 }
 
+export function getForumOutgoingFriendRequests(userId) {
+	return forumRequest((prefix) => ({
+		url: `${prefix}/friend/outgoing?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+	}))
+}
+
 export function getForumAcceptedFriends(userId) {
 	return forumRequest((prefix) => ({
 		url: `${prefix}/friend/accepted?userId=${encodeURIComponent(String(userId))}`,

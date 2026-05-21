@@ -79,12 +79,7 @@
 	import topNavBar from './components/topNavBar.vue'
 	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
-	// 网络请求工具
-	import { request } from '@/api/request.js'
-	// 接口基础地址
-	import { BASE_URL } from '@/api/config.js'
-	// 获取用户信息
-	import { getUser } from '@/utils/user.js'
+	import { exportResumePdf } from '../../utils/resumePdfExport.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -128,74 +123,20 @@
 			handleBack() {
 				uni.navigateBack()
 			},
-			// 调用后端接口导出PDF
 			async handleExportPdf() {
-				uni.showLoading({ title: '正在生成PDF...' })
-				
+				uni.showLoading({ title: '正在同步并生成 PDF...', mask: true })
 				try {
-					// 去除 HTML 标签，提取纯文本
-					const stripHtml = (html) => {
-						if (!html) return '';
-						let text = String(html).replace(/<br\s*\/?>/gi, '\n');
-						text = text.replace(/<\/p>/gi, '\n');
-						text = text.replace(/<[^>]+>/g, '');
-						text = text.replace(/&nbsp;/g, ' ');
-						return text.replace(/\n\s*\n/g, '\n').trim();
-					};
-
-					// 获取当前用户ID
-					const storedUser = getUser() || {}
-					const userId = storedUser.userId || null
-
-					// 请求后端生成简历PDF
-					const res = await request({
-						url: '/api/resume/create',
-						method: 'POST',
-						data: {
-							userId: userId,
-							resumeName: this.resume.resume_name,
-							realName: this.resume.real_name,
-							gender: this.resume.gender,
-							phone: this.resume.phone,
-							email: this.resume.email,
-							photo: this.resume.photo,
-							campusExperience: stripHtml(this.resume.campus_experience),
-							workExperience: stripHtml(this.resume.work_experience),
-							projectExperience: stripHtml(this.resume.project_experience),
-							selfEvaluation: stripHtml(this.resume.self_evaluation),
-							aiScore: 0.0,
-							aiEvaluation: '',
-							resumeStatus: 1
-						}
-					})
-					
+					await exportResumePdf(this.resume, 'plain', null)
 					uni.hideLoading()
-					uni.showToast({ title: 'PDF导出成功', icon: 'success' })
-					
-					// 拼接PDF下载链接
-					const realPdfUrl = `${BASE_URL}/api/resume/export/pdf/${res.resumeId}`
-					
-					// 弹出复制链接确认框
-					uni.showModal({
-						title: '导出成功',
-						content: 'PDF 已生成，是否复制下载链接？\n\n' + realPdfUrl,
-						confirmText: '复制链接',
-						cancelText: '关闭',
-						success: (resModal) => {
-							if (resModal.confirm) {
-								uni.setClipboardData({
-									data: realPdfUrl,
-									success: () => {
-										uni.showToast({ title: '链接已复制', icon: 'none' })
-									}
-								})
-							}
-						}
-					})
+					uni.showToast({ title: 'PDF 导出成功', icon: 'success' })
 				} catch (e) {
 					console.error('PDF导出失败:', e)
 					uni.hideLoading()
-					uni.showToast({ title: 'PDF导出失败', icon: 'none' })
+					uni.showToast({
+						title: (e && e.message) ? e.message : 'PDF导出失败',
+						icon: 'none',
+						duration: 3000
+					})
 				}
 			}
 		}

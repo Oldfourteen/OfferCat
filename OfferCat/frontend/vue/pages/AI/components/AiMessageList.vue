@@ -85,31 +85,36 @@
 						</view>
 
 						<view
-							v-else-if="item.role === 'assistant' && item.text"
-							class="msg-icon-row msg-icon-row--assistant"
-							:class="{ 'msg-icon-row--streaming': item.loading }"
-						>
-							<view class="msg-icon-hit" @tap.stop="copyPlain(item.text)">
-								<AiMessageToolbarSvg name="copy" />
-							</view>
-							<view
-								class="msg-icon-hit"
-								:class="{ 'msg-icon-hit--liked': likedMap[item.id] }"
-								@tap.stop="toggleLike(item.id)"
-							>
-								<AiMessageToolbarSvg :name="likedMap[item.id] ? 'thumbs-up-fill' : 'thumbs-up'" />
-							</view>
-							<view class="msg-icon-hit" @tap.stop="$emit('regenerate', { assistantMessageId: item.id })">
-								<AiMessageToolbarSvg name="arrows-rotate" />
-							</view>
-							<view
-								class="msg-icon-hit msg-icon-hit--voice"
-								@tap.stop="handlePlayVoice(item)"
-							>
-								<AiMessageToolbarSvg name="microphone" size="sm" />
-								<text v-if="voiceStatusLabel(item)" class="toolbar-voice-label">{{ voiceStatusLabel(item) }}</text>
-							</view>
+						v-else-if="item.role === 'assistant' && item.text"
+						class="msg-icon-row msg-icon-row--assistant"
+						:class="{ 'msg-icon-row--streaming': item.loading }"
+					>
+						<view class="msg-icon-hit" @tap.stop="copyPlain(item.text)">
+							<AiMessageToolbarSvg name="copy" />
 						</view>
+						<view
+							class="msg-icon-hit"
+							:class="{ 'msg-icon-hit--liked': likedMap[item.id] }"
+							@tap.stop="toggleLike(item.id)"
+						>
+							<AiMessageToolbarSvg :name="likedMap[item.id] ? 'thumbs-up-fill' : 'thumbs-up'" />
+						</view>
+						<view class="msg-icon-hit" @tap.stop="$emit('regenerate', { assistantMessageId: item.id })">
+							<AiMessageToolbarSvg name="arrows-rotate" />
+						</view>
+						<view
+							class="msg-icon-hit msg-icon-hit--voice"
+							@tap.stop="handlePlayVoice(item)"
+						>
+							<AiMessageToolbarSvg name="microphone" size="sm" />
+						</view>
+					</view>
+					<view
+						v-if="item.role === 'assistant' && item.text && voiceStatusLabel(item)"
+						class="msg-voice-status"
+					>
+						<text class="msg-voice-status-text">{{ voiceStatusLabel(item) }}</text>
+					</view>
 
 						<text class="msg-time">{{ item.displayTime }}</text>
 					</view>
@@ -478,7 +483,8 @@
 		display: flex;
 		flex-wrap: wrap;
 		align-items: center;
-		gap: 4rpx;
+		gap: 24rpx;
+		margin-top: 8rpx;
 	}
 
 	.msg-icon-row--user {
@@ -498,35 +504,48 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		min-width: 56rpx;
-		min-height: 48rpx;
-		padding: 8rpx 12rpx;
-		border-radius: 12rpx;
-		color: #8b9199;
-		background: rgba(139, 145, 153, 0.08);
+		width: 36rpx;
+		height: 36rpx;
+		padding: 0;
+		border-radius: 50%;
+		color: #9ca3af;
+		background: transparent;
+		transition: all 0.2s ease;
 	}
 
 	.msg-icon-hit:active {
-		opacity: 0.55;
+		transform: scale(0.9);
+		opacity: 0.7;
 	}
 
 	.msg-icon-hit--liked {
 		color: #e85d8c;
+		background: transparent;
 	}
 
 	.msg-icon-hit--voice {
 		flex-direction: row;
-		gap: 6rpx;
-		min-height: auto;
+		gap: 4rpx;
+		width: 36rpx;
+		min-width: 36rpx;
+		padding: 0;
 	}
 
-	.toolbar-voice-label {
+	.msg-voice-status {
+		display: flex;
+		align-items: center;
+		margin-top: 4rpx;
+		margin-bottom: 4rpx;
+	}
+
+	.bubble-column--assistant .msg-voice-status {
+		justify-content: flex-start;
+	}
+
+	.msg-voice-status-text {
 		font-size: 18rpx;
-		color: inherit;
+		color: #9ca3af;
 		line-height: 1;
-		max-width: 88rpx;
-		overflow: hidden;
-		text-overflow: ellipsis;
 		white-space: nowrap;
 	}
 

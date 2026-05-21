@@ -25,6 +25,15 @@ function pickResumeId(body) {
 /** 将本地简历记录转为后端 Resume 实体字段 */
 export function buildResumeApiPayload(record) {
 	const storedUser = getUser() || {}
+	// 处理证书数据：转换为JSON字符串
+	let certificatesJson = null
+	if (record.certificates && Array.isArray(record.certificates)) {
+		// 过滤掉空证书
+		const validCerts = record.certificates.filter(cert => cert && cert.name && cert.name.trim())
+		if (validCerts.length > 0) {
+			certificatesJson = JSON.stringify(validCerts)
+		}
+	}
 	return {
 		userId: storedUser.userId || null,
 		resumeName: record.resume_name,
@@ -33,6 +42,8 @@ export function buildResumeApiPayload(record) {
 		phone: record.phone,
 		email: record.email,
 		photo: record.photo,
+		jobIntention: record.job_intention || '',
+		certificates: certificatesJson,
 		campusExperience: stripHtml(record.campus_experience),
 		workExperience: stripHtml(record.work_experience),
 		projectExperience: stripHtml(record.project_experience),

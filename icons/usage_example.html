@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI对话图标使用示例</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: #f5f5f5;
+            padding: 40px;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+        }
+
+        h1 {
+            text-align: center;
+            margin-bottom: 40px;
+            color: #333;
+        }
+
+        .chat-message {
+            background: white;
+            border-radius: 12px;
+            padding: 16px 20px;
+            margin-bottom: 16px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .message-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 12px;
+        }
+
+        .avatar {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+            margin-right: 12px;
+        }
+
+        .message-content {
+            color: #333;
+            line-height: 1.6;
+            margin-bottom: 12px;
+        }
+
+        /* 操作按钮区域 */
+        .message-actions {
+            display: flex;
+            gap: 8px;
+            padding-top: 12px;
+            border-top: 1px solid #f0f0f0;
+        }
+
+        .action-btn {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            padding: 6px 12px;
+            border: none;
+            background: transparent;
+            color: #666;
+            font-size: 13px;
+            cursor: pointer;
+            border-radius: 6px;
+            transition: all 0.2s ease;
+        }
+
+        .action-btn:hover {
+            background: #f5f5f5;
+            color: #333;
+        }
+
+        .action-btn img {
+            width: 16px;
+            height: 16px;
+            opacity: 0.6;
+            transition: opacity 0.2s ease;
+        }
+
+        .action-btn:hover img {
+            opacity: 1;
+        }
+
+        /* 图标展示区域 */
+        .icons-showcase {
+            background: white;
+            border-radius: 12px;
+            padding: 24px;
+            margin-top: 40px;
+        }
+
+        .icons-showcase h2 {
+            margin-bottom: 20px;
+            color: #333;
+        }
+
+        .icon-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 20px;
+        }
+
+        .icon-item {
+            text-align: center;
+            padding: 16px;
+            border-radius: 8px;
+            background: #f8f9fa;
+        }
+
+        .icon-item img {
+            width: 32px;
+            height: 32px;
+            margin-bottom: 8px;
+        }
+
+        .icon-item span {
+            display: block;
+            font-size: 12px;
+            color: #666;
+        }
+
+        /* 响应式 */
+        @media (max-width: 600px) {
+            .message-actions {
+                flex-wrap: wrap;
+            }
+            
+            .action-btn {
+                padding: 8px;
+            }
+            
+            .action-btn span {
+                display: none;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🤖 AI 对话界面图标使用示例</h1>
+
+        <!-- 示例对话消息 -->
+        <div class="chat-message">
+            <div class="message-header">
+                <div class="avatar">AI</div>
+                <span style="color: #666; font-size: 14px;">AI 助手</span>
+            </div>
+            <div class="message-content">
+                你好呀！😊 今天心情怎么样？有什么想聊聊的吗？我可以帮你解答问题、陪你聊天，或者协助你完成各种任务。
+            </div>
+            <div class="message-actions">
+                <button class="action-btn" title="复制">
+                    <img src="copy.png" alt="复制">
+                    <span>复制</span>
+                </button>
+                <button class="action-btn" title="赞">
+                    <img src="thumbs-up.png" alt="赞">
+                    <span>赞</span>
+                </button>
+                <button class="action-btn" title="重答">
+                    <img src="rotate-right.png" alt="重答">
+                    <span>重答</span>
+                </button>
+                <button class="action-btn" title="朗读">
+                    <img src="volume-high.png" alt="朗读">
+                    <span>朗读</span>
+                </button>
+                <button class="action-btn" title="编辑">
+                    <img src="pen-to-square.png" alt="编辑">
+                    <span>编辑</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 用户消息示例 -->
+        <div class="chat-message">
+            <div class="message-header">
+                <div class="avatar" style="background: linear-gradient(135deg, #f093fb 0%, #f5576c 100%);">我</div>
+                <span style="color: #666; font-size: 14px;">用户</span>
+            </div>
+            <div class="message-content">
+                你好啊
+            </div>
+            <div class="message-actions">
+                <button class="action-btn" title="复制">
+                    <img src="copy.png" alt="复制">
+                    <span>复制</span>
+                </button>
+                <button class="action-btn" title="编辑">
+                    <img src="pen-to-square.png" alt="编辑">
+                    <span>编辑</span>
+                </button>
+            </div>
+        </div>
+
+        <!-- 图标展示 -->
+        <div class="icons-showcase">
+            <h2>📦 图标集合</h2>
+            <div class="icon-grid">
+                <div class="icon-item">
+                    <img src="copy.png" alt="复制">
+                    <span>复制 (Copy)</span>
+                </div>
+                <div class="icon-item">
+                    <img src="thumbs-up.png" alt="赞">
+                    <span>赞 (Like)</span>
+                </div>
+                <div class="icon-item">
+                    <img src="rotate-right.png" alt="重答">
+                    <span>重答 (Regenerate)</span>
+                </div>
+                <div class="icon-item">
+                    <img src="volume-high.png" alt="朗读">
+                    <span>朗读 (Read Aloud)</span>
+                </div>
+                <div class="icon-item">
+                    <img src="pen-to-square.png" alt="编辑">
+                    <span>编辑 (Edit)</span>
+                </div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

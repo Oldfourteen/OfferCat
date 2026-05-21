@@ -101,6 +101,8 @@ CREATE TABLE `resume` (
   `phone` VARCHAR(11) DEFAULT NULL COMMENT '手机号', 
   `email` VARCHAR(50) DEFAULT NULL COMMENT '邮箱', 
   `photo` VARCHAR(255) DEFAULT NULL COMMENT '照片URL', 
+  `job_intention` VARCHAR(100) DEFAULT NULL COMMENT '求职意向', 
+  `certificates` JSON DEFAULT NULL COMMENT '证书列表（JSON格式）', 
   `campus_experience` TEXT DEFAULT NULL COMMENT '在校经历', 
   `work_experience` TEXT DEFAULT NULL COMMENT '工作经历', 
   `project_experience` TEXT DEFAULT NULL COMMENT '项目经验', 

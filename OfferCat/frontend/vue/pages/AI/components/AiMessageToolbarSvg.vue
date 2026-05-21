@@ -1,17 +1,23 @@
 <template>
 	<view class="ai-toolbar-wrap" :class="size === 'sm' ? 'ai-toolbar-wrap--sm' : ''">
-		<text class="ai-toolbar-glyph">{{ glyph }}</text>
+		<image 
+			class="ai-toolbar-icon" 
+			:src="iconPath" 
+			mode="aspectFit"
+			:style="iconStyle"
+		/>
 	</view>
 </template>
 
 <script>
-	const GLYPH = {
-		copy: '复制',
-		pen: '编辑',
-		'thumbs-up': '赞',
-		'thumbs-up-fill': '已赞',
-		'arrows-rotate': '重答',
-		microphone: '朗读'
+	// 图标路径映射
+	const ICON_PATHS = {
+		copy: '/static/ai-icons/copy.png',
+		pen: '/static/ai-icons/pen-to-square.png',
+		'thumbs-up': '/static/ai-icons/thumbs-up.png',
+		'thumbs-up-fill': '/static/ai-icons/thumbs-up.png',
+		'arrows-rotate': '/static/ai-icons/rotate-right.png',
+		microphone: '/static/ai-icons/volume-high.png'
 	}
 
 	export default {
@@ -27,8 +33,18 @@
 			}
 		},
 		computed: {
-			glyph() {
-				return GLYPH[this.name] || '·'
+			iconPath() {
+				return ICON_PATHS[this.name] || ICON_PATHS.copy
+			},
+			iconStyle() {
+				// 统一图标大小，让它们更协调
+				if (this.name === 'thumbs-up' || this.name === 'thumbs-up-fill') {
+					return { width: '28rpx', height: '28rpx' }
+				}
+				if (this.name === 'microphone') {
+					return { width: '26rpx', height: '26rpx' }
+				}
+				return { width: '28rpx', height: '28rpx' }
 			}
 		}
 	}
@@ -40,23 +56,24 @@
 		align-items: center;
 		justify-content: center;
 		flex-shrink: 0;
-		min-width: 40rpx;
-		min-height: 40rpx;
+		width: 100%;
+		height: 100%;
 	}
 
 	.ai-toolbar-wrap--sm {
-		min-width: 56rpx;
-		min-height: 32rpx;
+		width: 100%;
+		height: 100%;
 	}
 
-	.ai-toolbar-glyph {
-		font-size: 22rpx;
-		line-height: 1;
-		color: inherit;
-		white-space: nowrap;
+	.ai-toolbar-icon {
+		display: block;
+		width: 28rpx;
+		height: 28rpx;
+		opacity: 0.6;
+		transition: opacity 0.2s ease;
 	}
 
-	.ai-toolbar-wrap--sm .ai-toolbar-glyph {
-		font-size: 20rpx;
+	.ai-toolbar-wrap:active .ai-toolbar-icon {
+		opacity: 0.8;
 	}
 </style>

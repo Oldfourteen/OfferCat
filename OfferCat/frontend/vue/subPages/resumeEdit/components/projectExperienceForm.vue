@@ -35,7 +35,8 @@
 			<view class="form-item">
 				<view class="item-label"><text class="required">*</text>项目描述</view>
 				<view class="item-content">
-					<textarea class="form-textarea" v-model="formData.description" placeholder="请简要描述项目内容、您的职责及取得的成果" maxlength="500"></textarea>
+					<textarea class="form-textarea" v-model="formData.description" placeholder="请简要描述项目内容、您的职责及取得的成果" maxlength="200"></textarea>
+					<view class="char-counter">{{ formData.description.length }}/200</view>
 				</view>
 			</view>
 		</view>
@@ -195,6 +196,13 @@
 							color: #9ca3af;
 						}
 					}
+
+					.char-counter {
+						text-align: right;
+						font-size: 12px;
+						color: #9ca3af;
+						margin-top: 6px;
+					}
 					
 					.form-picker {
 						flex: 1;
@@ -257,6 +265,10 @@
 						}
 
 						.separator {
+							color: rgba(255, 255, 255, 0.38);
+						}
+
+						.char-counter {
 							color: rgba(255, 255, 255, 0.38);
 						}
 					}

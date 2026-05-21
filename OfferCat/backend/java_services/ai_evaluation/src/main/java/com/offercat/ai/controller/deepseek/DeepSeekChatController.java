@@ -88,7 +88,10 @@ public class DeepSeekChatController {
      * 输出：对话记录列表
      */
     @GetMapping("/history")
-    public Object getHistory(@RequestParam Long userId) {
+    public Object getHistory(@RequestParam(required = false) Long userId) {
+        if (userId == null || userId <= 0) {
+            return java.util.Collections.emptyList();
+        }
         return deepSeekChatServices.getHistoryByUserId(userId);
     }
 

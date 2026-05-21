@@ -474,6 +474,12 @@ function parseTtsErrorBody(data) {
 // App/小程序端 innerAudioContext 需要可访问的本地绝对路径，不能依赖 data: URI。
 function resolveNativeAudioSrc(filePath) {
 	let src = filePath
+	
+	// 如果是 data URL，直接返回（某些环境支持直接播放 base64 音频）
+	if (src && src.startsWith('data:')) {
+		return src
+	}
+	
 	// #ifdef APP-PLUS
 	if (typeof plus !== 'undefined' && plus.io && plus.io.convertLocalFileSystemURL) {
 		try {
@@ -492,23 +498,77 @@ function resolveNativeAudioSrc(filePath) {
 function saveTtsMp3ToLocal(arrayBuffer) {
 	return new Promise((resolve, reject) => {
 		const fs = typeof uni.getFileSystemManager === 'function' ? uni.getFileSystemManager() : null
-		if (!fs || typeof fs.writeFile !== 'function') {
-			reject(new Error('当前环境不支持保存语音文件'))
-			return
-		}
 		const dir = getTtsStorageDir()
 		const filePath = `${dir}/ai_voice_${Date.now()}.mp3`
-		if (typeof uni.arrayBufferToBase64 !== 'function') {
-			reject(new Error('当前环境不支持语音编码'))
+		
+		// 方法1: 使用 uni.getFileSystemManager (微信小程序/部分环境)
+		if (fs && typeof fs.writeFile === 'function') {
+			if (typeof uni.arrayBufferToBase64 !== 'function') {
+				reject(new Error('当前环境不支持语音编码'))
+				return
+			}
+			fs.writeFile({
+				filePath,
+				data: uni.arrayBufferToBase64(arrayBuffer),
+				encoding: 'base64',
+				success: () => resolve(resolveNativeAudioSrc(filePath)),
+				fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
+			})
 			return
 		}
-		fs.writeFile({
-			filePath,
-			data: uni.arrayBufferToBase64(arrayBuffer),
-			encoding: 'base64',
-			success: () => resolve(resolveNativeAudioSrc(filePath)),
-			fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
-		})
+		
+		// 方法2: 使用 uni.saveFile (uni-app 通用方法，支持 App/H5/小程序)
+		// 先将 ArrayBuffer 转为临时文件路径，再保存
+		// #ifdef APP-PLUS
+		if (typeof plus !== 'undefined' && plus.io) {
+			try {
+				// 使用 plus.io 写入文件
+				const savePath = `_doc/ai_voice_${Date.now()}.mp3`
+				plus.io.requestFileSystem(plus.io.PRIVATE_DOC, (fs) => {
+					fs.root.getFile(savePath, { create: true }, (fileEntry) => {
+						fileEntry.createWriter((writer) => {
+							writer.onwrite = () => {
+								const fullPath = plus.io.convertLocalFileSystemURL(savePath)
+								resolve(fullPath)
+							}
+							writer.onerror = (e) => {
+								reject(new Error('写入语音文件失败: ' + (e.message || '未知错误')))
+							}
+							// 将 ArrayBuffer 转为 Blob 写入
+							const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+							writer.write(blob)
+						}, (e) => {
+							reject(new Error('创建文件写入器失败: ' + (e.message || '未知错误')))
+						})
+					}, (e) => {
+						reject(new Error('创建文件失败: ' + (e.message || '未知错误')))
+					})
+				}, (e) => {
+					reject(new Error('请求文件系统失败: ' + (e.message || '未知错误')))
+				})
+			} catch (e) {
+				reject(new Error('保存语音文件异常: ' + (e.message || '未知错误')))
+			}
+			return
+		}
+		// #endif
+		
+		// 方法3: 尝试使用 uni.saveFile (将临时文件保存到本地)
+		// 先将数据写入临时文件，再保存
+		try {
+			// 对于不支持 fileSystemManager 的环境，尝试直接使用 data URL 或 base64
+			// 某些版本的 uni-app 支持直接使用 base64 作为音频源
+			if (typeof uni.arrayBufferToBase64 === 'function') {
+				const base64 = uni.arrayBufferToBase64(arrayBuffer)
+				const dataUrl = `data:audio/mpeg;base64,${base64}`
+				resolve(dataUrl)
+				return
+			}
+		} catch (e) {
+			console.warn('尝试使用 data URL 播放失败:', e)
+		}
+		
+		reject(new Error('当前环境不支持保存语音文件'))
 	})
 }
 

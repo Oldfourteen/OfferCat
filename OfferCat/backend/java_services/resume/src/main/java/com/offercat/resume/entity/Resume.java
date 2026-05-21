@@ -3,14 +3,15 @@ package com.offercat.resume.entity;
 import lombok.Data;
 
 import java.time.LocalDateTime;
+import java.util.List;
+import java.util.Map;
 
 /**
- * 简历实体类
- * 功能：存储简历信息
- * 对应数据库表：resume
+ * 简历实体类 功能：存储简历信息 对应数据库表：resume
  */
 @Data
 public class Resume {
+
     // 简历ID
     private Long resumeId;
     // 简历名称
@@ -27,6 +28,10 @@ public class Resume {
     private String email;
     // 照片URL
     private String photo;
+    // 求职意向
+    private String jobIntention;
+    // 证书列表（JSON格式）
+    private String certificates;
     // 在校经历
     private String campusExperience;
     // 工作经历

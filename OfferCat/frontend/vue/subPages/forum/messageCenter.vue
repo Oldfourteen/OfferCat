@@ -317,18 +317,14 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow:
-			0 8rpx 22rpx rgba(93, 118, 189, 0.18),
-			0 2rpx 8rpx rgba(45, 58, 95, 0.06),
-			inset 0 2rpx 0 rgba(255, 255, 255, 0.85);
+		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
 	}
 
 	.back-icon {
-		font-size: 44rpx;
+		font-size: 40rpx;
 		line-height: 1;
-		color: #1e2638;
-		font-weight: 300;
-		margin-top: -4rpx;
+		color: #333333;
+		font-weight: 700;
 	}
 
 	.page-title {
@@ -677,9 +673,7 @@
 
 		.back-btn {
 			background: #2e323c;
-			box-shadow:
-				0 8rpx 22rpx rgba(0, 0, 0, 0.35),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
+			box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.3);
 		}
 
 		.back-icon,

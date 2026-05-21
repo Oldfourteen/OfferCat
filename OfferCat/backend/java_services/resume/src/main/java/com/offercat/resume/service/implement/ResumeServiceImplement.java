@@ -692,10 +692,40 @@ public class ResumeServiceImplement implements ResumeService {
         map.put("majorName", "计算机科学与技术");
 
         /** 求职意向 */
-        map.put("title_line", "求职意向：软件工程师");
+        String jobIntention = resume.getJobIntention();
+        if (jobIntention != null && !jobIntention.isEmpty()) {
+            map.put("title_line", "求职意向：" + jobIntention);
+        } else {
+            map.put("title_line", "求职意向：");
+        }
 
         /** 证书 */
-        map.put("certificate", "");
+        String certificatesStr = resume.getCertificates();
+        StringBuilder certBuilder = new StringBuilder();
+        if (certificatesStr != null && !certificatesStr.isEmpty()) {
+            try {
+                // 尝试解析JSON格式的证书数据
+                com.fasterxml.jackson.databind.ObjectMapper mapper = new com.fasterxml.jackson.databind.ObjectMapper();
+                java.util.List<?> certs = mapper.readValue(certificatesStr, java.util.List.class);
+                for (int i = 0; i < certs.size(); i++) {
+                    Object cert = certs.get(i);
+                    if (cert instanceof java.util.Map) {
+                        java.util.Map<?, ?> certMap = (java.util.Map<?, ?>) cert;
+                        Object name = certMap.get("name");
+                        if (name != null && !name.toString().trim().isEmpty()) {
+                            if (certBuilder.length() > 0) {
+                                certBuilder.append("、");
+                            }
+                            certBuilder.append(name.toString());
+                        }
+                    }
+                }
+            } catch (Exception e) {
+                // 如果解析失败，直接使用原始字符串
+                certBuilder.append(certificatesStr);
+            }
+        }
+        map.put("certificate", certBuilder.toString());
 
         /** 教育背景 */
         map.put("education", Map.of(

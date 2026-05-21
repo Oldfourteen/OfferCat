@@ -11,6 +11,8 @@
         <result column="phone" property="phone" />
         <result column="email" property="email" />
         <result column="photo" property="photo" />
+        <result column="job_intention" property="jobIntention" />
+        <result column="certificates" property="certificates" />
         <result column="campus_experience" property="campusExperience" />
         <result column="work_experience" property="workExperience" />
         <result column="project_experience" property="projectExperience" />
@@ -37,12 +39,12 @@
     <insert id="insert" parameterType="com.offercat.resume.entity.Resume" useGeneratedKeys="true" keyProperty="resumeId">
         INSERT INTO resume (
             resume_name, user_id, real_name, gender, phone, email,
-            photo, campus_experience, work_experience, project_experience,
+            photo, job_intention, certificates, campus_experience, work_experience, project_experience,
             self_evaluation, ai_score, ai_evaluation, resume_status,
             create_time, update_time
         ) VALUES (
             #{resumeName}, #{userId}, #{realName}, #{gender}, #{phone}, #{email},
-            #{photo}, #{campusExperience}, #{workExperience}, #{projectExperience},
+            #{photo}, #{jobIntention}, #{certificates}, #{campusExperience}, #{workExperience}, #{projectExperience},
             #{selfEvaluation}, #{aiScore}, #{aiEvaluation}, #{resumeStatus},
             #{createTime}, #{updateTime}
         )
@@ -57,6 +59,8 @@
             phone = #{phone},
             email = #{email},
             photo = #{photo},
+            job_intention = #{jobIntention},
+            certificates = #{certificates},
             campus_experience = #{campusExperience},
             work_experience = #{workExperience},
             project_experience = #{projectExperience},

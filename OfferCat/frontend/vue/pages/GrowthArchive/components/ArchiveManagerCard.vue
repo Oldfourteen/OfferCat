@@ -23,8 +23,8 @@
 
 <script>
 		import { getArchiveSummary, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
-		import { BASE_URL, getApiBase } from '@/api/config.js'
-		import { getUser } from '@/utils/user.js'
+		import { getApiBase } from '@/api/config.js'
+		import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
 		export default {
 			name: 'ArchiveManagerCard',
@@ -116,8 +116,10 @@
 			fetchEntryCounts() {
 				// 四类档案分开请求，全部返回后再一次性更新卡片数量。
 				const user = getUser()
-				const studentId = user && user.studentId ? user.studentId : null
+				const studentId = resolveStoredStudentId(user)
+				console.log('[ArchiveManagerCard] studentId:', studentId, 'apiBase:', getApiBase())
 				if (!studentId || !getApiBase()) {
+					console.warn('[ArchiveManagerCard] 缺少studentId或apiBase，使用本地计数')
 					this.applyLocalCounts()
 					return
 				}
@@ -127,17 +129,23 @@
 					{ type: 'projects', path: '/api/student/profile/project/list' },
 					{ type: 'internships', path: '/api/student/profile/internship/list' }
 				]
+				const apiBase = getApiBase()
 				const countMap = {}
 				let done = 0
 				paths.forEach(({ type, path }) => {
 					uni.request({
-						url: `${BASE_URL}${path}`,
+						url: `${apiBase}${path}`,
 						method: 'GET',
 						data: { studentId },
 						success: (res) => {
 							if (res.statusCode === 200 && res.data && Array.isArray(res.data.data)) {
 								countMap[type] = res.data.data.length
+							} else {
+								console.warn(`[ArchiveManagerCard] 获取${type}失败:`, res.statusCode, res.data)
 							}
+						},
+						fail: (err) => {
+							console.error(`[ArchiveManagerCard] 请求${type}失败:`, err)
 						},
 						complete: () => {
 							done++

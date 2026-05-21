@@ -81,9 +81,9 @@
 		import { PNG_ICONS } from '@/utils/staticIcons.js'
 // 主题样式混入
 		import themeMixin from '@/utils/themeMixin.js'
-		// 档案数据本地存储工具方法
-		import { getArchiveRecords, saveArchiveRecords } from '@/utils/archiveData.js'
 		import ArchiveEditorForm from './components/ArchiveEditorForm.vue'
+		import { getApiBase } from '@/api/config.js'
+		import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
 	/*
 	页面类型配置映射表
@@ -238,6 +238,88 @@
 
 	const ARCHIVE_MANAGE_BACK_ICON = PNG_ICONS.chevronLeft
 
+	// API配置映射
+	const API_CONFIG = {
+		awards: {
+			list: '/api/student/profile/competition/list',
+			add: '/api/student/profile/competition/add',
+			update: '/api/student/profile/competition/update',
+			delete: '/api/student/profile/competition/delete',
+			// 后端数据字段映射到前端显示
+			mapBackendToFrontend: (item) => ({
+				id: item.awardId,
+				title: item.competitionName,
+				desc: `${item.awardGrade || '待补充等级'} · ${item.awardTime || '待补充时间'}${item.achievementDesc ? ' · ' + item.achievementDesc : ''}`
+			}),
+			// 前端表单数据映射到后端
+			mapFrontendToBackend: (form, studentId, id) => ({
+				awardId: id || undefined,
+				studentId: studentId,
+				competitionName: form.name,
+				awardGrade: form.level,
+				awardTime: form.period,
+				achievementDesc: form.detail
+			})
+		},
+		certificates: {
+			list: '/api/student/profile/certificate/list',
+			add: '/api/student/profile/certificate/add',
+			update: '/api/student/profile/certificate/update',
+			delete: '/api/student/profile/certificate/delete',
+			mapBackendToFrontend: (item) => ({
+				id: item.certId,
+				title: item.certName,
+				desc: `${item.scoreOrGrade || '待补充分数'} · ${item.obtainTime || '待补充时间'}${item.supplementaryDesc ? ' · ' + item.supplementaryDesc : ''}`
+			}),
+			mapFrontendToBackend: (form, studentId, id) => ({
+				certId: id || undefined,
+				studentId: studentId,
+				certName: form.name,
+				scoreOrGrade: form.score,
+				obtainTime: form.period,
+				supplementaryDesc: form.detail
+			})
+		},
+		projects: {
+			list: '/api/student/profile/project/list',
+			add: '/api/student/profile/project/add',
+			update: '/api/student/profile/project/update',
+			delete: '/api/student/profile/project/delete',
+			mapBackendToFrontend: (item) => ({
+				id: item.projectId,
+				title: item.projectName,
+				desc: `${item.techStack || '待补充技术栈'} · ${item.responsibility || '待补充职责'}${item.projectHighlights ? ' · ' + item.projectHighlights : ''}`
+			}),
+			mapFrontendToBackend: (form, studentId, id) => ({
+				projectId: id || undefined,
+				studentId: studentId,
+				projectName: form.name,
+				techStack: form.stack,
+				responsibility: form.role,
+				projectHighlights: form.detail
+			})
+		},
+		internships: {
+			list: '/api/student/profile/internship/list',
+			add: '/api/student/profile/internship/add',
+			update: '/api/student/profile/internship/update',
+			delete: '/api/student/profile/internship/delete',
+			mapBackendToFrontend: (item) => ({
+				id: item.internshipId,
+				title: item.positionName,
+				desc: `${item.company || '待补充公司'} · ${item.timePeriod || '待补充时间'}${item.experienceDesc ? ' · ' + item.experienceDesc : ''}`
+			}),
+			mapFrontendToBackend: (form, studentId, id) => ({
+				internshipId: id || undefined,
+				studentId: studentId,
+				company: form.company,
+				positionName: form.position,
+				timePeriod: form.period,
+				experienceDesc: form.detail
+			})
+		}
+	}
+
 	export default {
 		components: {
 			ArchiveEditorForm
@@ -251,7 +333,9 @@
 				editingIndex: -1, // 正在编辑的索引，-1=新增
 				formSeed: {}, // 打开编辑器时的初始表单快照
 				editorSessionKey: 0, // 每次打开编辑器递增，隔离输入状态
-				archiveManageBackIcon: ARCHIVE_MANAGE_BACK_ICON
+				archiveManageBackIcon: ARCHIVE_MANAGE_BACK_ICON,
+				studentId: null, // 当前学生ID
+				loading: false // 加载状态
 			}
 		},
 		computed: {
@@ -294,8 +378,12 @@
 				this.type = query.type
 			}
 
-			// 初始化数据
-			this.resetRecords()
+			// 获取学生ID
+			const user = getUser()
+			this.studentId = resolveStoredStudentId(user)
+
+			// 从后端加载数据
+			this.loadRecordsFromBackend()
 			this.resetFormSeed()
 		},
 		methods: {
@@ -303,9 +391,42 @@
 			goBack() {
 				uni.navigateBack()
 			},
-			// 重置档案列表（从本地存储读取）
-			resetRecords() {
-				this.recordsState = getArchiveRecords(this.type).map(item => ({ ...item }))
+			// 从后端加载档案列表
+			loadRecordsFromBackend() {
+				if (!this.studentId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
+				}
+
+				const apiConfig = API_CONFIG[this.type]
+				if (!apiConfig) {
+					console.error('[manage] 未知的档案类型:', this.type)
+					return
+				}
+
+				this.loading = true
+				uni.request({
+					url: `${getApiBase()}${apiConfig.list}`,
+					method: 'GET',
+					data: { studentId: this.studentId },
+					success: (res) => {
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							// 将后端数据转换为前端格式
+							this.recordsState = res.data.data.map(item => apiConfig.mapBackendToFrontend(item))
+							console.log(`[manage] ${this.type} 加载成功:`, this.recordsState.length, '条记录')
+						} else {
+							console.warn(`[manage] ${this.type} 加载失败:`, res.statusCode, res.data)
+							uni.showToast({ title: '加载失败', icon: 'none' })
+						}
+					},
+					fail: (err) => {
+						console.error(`[manage] ${this.type} 请求失败:`, err)
+						uni.showToast({ title: '网络错误', icon: 'none' })
+					},
+					complete: () => {
+						this.loading = false
+					}
+				})
 			},
 			// 重置表单种子数据
 			resetFormSeed() {
@@ -352,39 +473,80 @@
 					return
 				}
 
-				// 生成记录ID
-				const nextId = this.isEditing ? this.records[this.editingIndex].id : Date.now()
-				// 格式化数据
-				const nextRecord = this.pageConfig.toRecord(formData, nextId)
-
-				// 编辑 / 新增逻辑
-				if (this.isEditing) {
-					this.recordsState.splice(this.editingIndex, 1, nextRecord)
-				} else {
-					this.recordsState.unshift(nextRecord)
+				if (!this.studentId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
 				}
-				// 保存到本地存储
-				saveArchiveRecords(this.type, this.recordsState)
 
-				uni.showToast({
-					title: this.isEditing ? '已更新' : '已新增',
-					icon: 'success'
+				const apiConfig = API_CONFIG[this.type]
+				const isEdit = this.isEditing
+				const recordId = isEdit ? this.records[this.editingIndex].id : null
+
+				// 准备后端数据
+				const backendData = apiConfig.mapFrontendToBackend(formData, this.studentId, recordId)
+
+				uni.request({
+					url: `${getApiBase()}${isEdit ? apiConfig.update : apiConfig.add}`,
+					method: isEdit ? 'PUT' : 'POST',
+					data: backendData,
+					success: (res) => {
+						if (res.statusCode === 200 && res.data && res.data.code === 200) {
+							uni.showToast({
+								title: isEdit ? '已更新' : '已新增',
+								icon: 'success'
+							})
+							// 重新加载数据以获取最新状态
+							this.loadRecordsFromBackend()
+							this.cancelEdit()
+						} else {
+							console.error('[manage] 保存失败:', res.data)
+							uni.showToast({ title: '保存失败', icon: 'none' })
+						}
+					},
+					fail: (err) => {
+						console.error('[manage] 保存请求失败:', err)
+						uni.showToast({ title: '网络错误', icon: 'none' })
+					}
 				})
-
-				// 重置表单并收起面板
-				this.cancelEdit()
 			},
 			// 删除单条记录
 			removeRecord(index) {
-				this.recordsState.splice(index, 1)
-				saveArchiveRecords(this.type, this.recordsState)
-				// 如果删除的是正在编辑的项，取消编辑
-				if (this.editingIndex === index) {
-					this.cancelEdit()
+				if (!this.studentId) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					return
 				}
-				uni.showToast({
-					title: '已删除',
-					icon: 'success'
+
+				const record = this.records[index]
+				const apiConfig = API_CONFIG[this.type]
+
+				// 根据类型准备删除参数
+				let deleteParams = { studentId: this.studentId }
+				if (this.type === 'awards') deleteParams.awardId = record.id
+				else if (this.type === 'certificates') deleteParams.certId = record.id
+				else if (this.type === 'projects') deleteParams.projectId = record.id
+				else if (this.type === 'internships') deleteParams.internshipId = record.id
+
+				uni.request({
+					url: `${getApiBase()}${apiConfig.delete}`,
+					method: 'DELETE',
+					data: deleteParams,
+					success: (res) => {
+						if (res.statusCode === 200 && res.data && res.data.code === 200) {
+							uni.showToast({ title: '已删除', icon: 'success' })
+							// 重新加载数据
+							this.loadRecordsFromBackend()
+							if (this.editingIndex === index) {
+								this.cancelEdit()
+							}
+						} else {
+							console.error('[manage] 删除失败:', res.data)
+							uni.showToast({ title: '删除失败', icon: 'none' })
+						}
+					},
+					fail: (err) => {
+						console.error('[manage] 删除请求失败:', err)
+						uni.showToast({ title: '网络错误', icon: 'none' })
+					}
 				})
 			}
 		}

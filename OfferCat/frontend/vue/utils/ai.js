@@ -214,7 +214,8 @@ export function requestAiHistory() {
 	const user = getStoredUser()
 	const userId = (user && user.userId) ? Number(user.userId) : 0
 
-	if (!userId) {
+	// 未登录或无效用户ID，直接返回空数组，不发送请求
+	if (!userId || userId <= 0) {
 		return Promise.resolve([])
 	}
 

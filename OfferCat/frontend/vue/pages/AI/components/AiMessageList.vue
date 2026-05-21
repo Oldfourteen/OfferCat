@@ -25,9 +25,12 @@
 			:class="item.role"
 		>
 			<!-- 头像区：AI 固定头像，用户走通用头像组件 -->
-			<view class="avatar">
-				<image v-if="item.role === 'assistant'" class="avatar-img" src="@/asset/image/AIHR.png" mode="aspectFill"></image>
-				<CommonAvatar v-else class="avatar-img" :src="userAvatar" image-class="avatar-img" />
+			<view class="avatar-wrap">
+				<view class="avatar">
+					<image v-if="item.role === 'assistant'" class="avatar-img" src="@/asset/image/AIHR.png" mode="aspectFill"></image>
+					<CommonAvatar v-else class="avatar-img" :src="userAvatar" image-class="avatar-img" />
+				</view>
+				<text class="avatar-name">{{ item.role === 'assistant' ? 'AI助手' : userNickname }}</text>
 			</view>
 			<view class="bubble-wrap">
 				<view
@@ -160,14 +163,15 @@
 		data() {
 			return {
 				userAvatar: '',
-				playingId: null,
-				loadingId: null,
-				likedMap: {},
-				editTarget: null,
-				editDraft: '',
-				// 依赖此计数周期性重算「刚刚」等相对时间文案
-				timeTick: 0,
-				timeTickTimer: null
+			userNickname: '',
+			playingId: null,
+			loadingId: null,
+			likedMap: {},
+			editTarget: null,
+			editDraft: '',
+			// 依赖此计数周期性重算「刚刚」等相对时间文案
+			timeTick: 0,
+			timeTickTimer: null
 			}
 		},
 		created() {
@@ -206,13 +210,14 @@
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
 			renderedMessages() {
-				const _t = this.timeTick
-				return this.messages.filter(item => !item.hidden).map(item => ({
-					...item,
-					html: item.role === 'assistant' ? renderMarkdown(item.text) : renderPlainText(item.text),
-					displayTime: this.formatMessageTime(item)
-				}))
-			}
+			const _t = this.timeTick
+			return this.messages.filter(item => !item.hidden).map(item => ({
+				...item,
+				text: item.text || '',
+				html: item.role === 'assistant' ? renderMarkdown(item.text) : renderPlainText(item.text),
+				displayTime: this.formatMessageTime(item)
+			}))
+		}
 		},
 		methods: {
 			formatMessageClock(ms) {
@@ -299,11 +304,12 @@
 				const retained = !!(e.detail && e.detail.value)
 				this.$emit('retain-change', { consultId: item.consultId, retained })
 			},
-			// 同步用户头像，保证聊天页头像与个人资料保持一致。
-			updateProfile() {
-				const user = getUserProfile()
-				this.userAvatar = user.avatar
-			},
+			// 同步用户头像和昵称，保证聊天页头像与个人资料保持一致。
+		updateProfile() {
+			const user = getUserProfile()
+			this.userAvatar = user.avatar
+			this.userNickname = user.nickname || user.realName || '我'
+		},
 			// 父组件在流式回复结束后触发，与点击「语音播报」共用同一套 TTS 逻辑。
 			playVoiceForMessage(messageId, text) {
 				return this.handlePlayVoice({ id: messageId, text })
@@ -370,18 +376,38 @@
 	.message-row {
 		display: flex;
 		align-items: flex-start;
-		margin-bottom: 24rpx;
+		margin-bottom: 32rpx;
+		padding: 0 8rpx;
 	}
 
 	.message-row.user {
 		flex-direction: row-reverse;
 	}
 
+	.avatar-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8rpx;
+		flex-shrink: 0;
+	}
+
+	.avatar-name {
+		font-size: 20rpx;
+		color: #8a92a8;
+		font-weight: 500;
+		max-width: 80rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: center;
+	}
+
 	.avatar {
 		width: 80rpx;
 		height: 80rpx;
-		border-radius: 24rpx;
-		background: #3165d7;
+		border-radius: 28rpx;
+		background: #5d76bd;
 		color: #ffffff;
 		display: flex;
 		align-items: center;
@@ -390,6 +416,12 @@
 		font-weight: 700;
 		flex-shrink: 0;
 		overflow: hidden;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 2rpx 4rpx rgba(255, 255, 255, 0.25),
+			inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.08);
+		border: 2rpx solid rgba(255, 255, 255, 0.4);
 	}
 
 	.avatar-img {
@@ -399,8 +431,13 @@
 	}
 
 	.message-row.user .avatar {
-		background: #dfe8fb;
-		color: #24438f;
+		background: linear-gradient(145deg, #7a9ae0 0%, #5d76bd 100%);
+		color: #ffffff;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.4),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.25),
+			inset 0 2rpx 4rpx rgba(255, 255, 255, 0.3),
+			inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.1);
 	}
 
 	.bubble-wrap {
@@ -437,18 +474,30 @@
 		min-width: 0;
 		font-size: 28rpx;
 		line-height: 1.55;
-		border-radius: 36rpx;
-		background: #eef3ff;
-		color: #171c26;
-		box-shadow: 0 1rpx 4rpx rgba(80, 100, 180, 0.06);
+		border-radius: 32rpx;
+		background: #ffffff;
+		color: #2d3748;
+		box-shadow:
+			0 2rpx 8rpx rgba(93, 118, 189, 0.08),
+			0 4rpx 16rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		border: 1rpx solid rgba(93, 118, 189, 0.12);
 	}
 
 	.msg-pill--assistant {
-		background: #eef3ff;
+		background: #ffffff;
+		border-bottom-left-radius: 12rpx;
 	}
 
 	.msg-pill--user {
-		background: #eef3ff;
+		background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
+		color: #ffffff;
+		border-bottom-right-radius: 12rpx;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
+		border: none;
 	}
 
 	.msg-pill-inner {
@@ -504,23 +553,29 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		width: 36rpx;
-		height: 36rpx;
+		width: 44rpx;
+		height: 44rpx;
 		padding: 0;
-		border-radius: 50%;
-		color: #9ca3af;
-		background: transparent;
+		border-radius: 14rpx;
+		color: #8a92a8;
+		background: rgba(93, 118, 189, 0.08);
 		transition: all 0.2s ease;
+		box-shadow:
+			0 2rpx 4rpx rgba(93, 118, 189, 0.1),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 	}
 
 	.msg-icon-hit:active {
-		transform: scale(0.9);
-		opacity: 0.7;
+		transform: scale(0.92);
+		background: rgba(93, 118, 189, 0.15);
 	}
 
 	.msg-icon-hit--liked {
 		color: #e85d8c;
-		background: transparent;
+		background: rgba(232, 93, 140, 0.12);
+		box-shadow:
+			0 2rpx 4rpx rgba(232, 93, 140, 0.15),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 	}
 
 	.msg-icon-hit--voice {
@@ -621,10 +676,12 @@
 	}
 
 	.bubble-rich :deep(code) {
-		padding: 2rpx 8rpx;
+		padding: 4rpx 10rpx;
 		border-radius: 10rpx;
-		background: rgba(49, 101, 215, 0.1);
+		background: rgba(93, 118, 189, 0.12);
 		font-size: 22rpx;
+		color: #5d76bd;
+		font-weight: 500;
 	}
 
 	.bubble-rich :deep(pre) {
@@ -644,13 +701,15 @@
 	.bubble-rich :deep(blockquote) {
 		margin: 12rpx 0 0;
 		padding-left: 16rpx;
-		border-left: 6rpx solid rgba(49, 101, 215, 0.24);
+		border-left: 6rpx solid #5d76bd;
 		opacity: 0.9;
 	}
 
 	.bubble-rich :deep(a) {
-		color: #3d56c4;
-		text-decoration: underline;
+		color: #5d76bd;
+		text-decoration: none;
+		font-weight: 500;
+		border-bottom: 2rpx solid rgba(93, 118, 189, 0.4);
 	}
 
 	.retain-wrap-inline {
@@ -722,8 +781,11 @@
 	}
 
 	.edit-btn.primary {
-		background: linear-gradient(135deg, #4a67f7 0%, #3165d7 100%);
+		background: #5d76bd;
 		color: #ffffff;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.retain-wrap {
@@ -738,53 +800,74 @@
 	}
 
 	.message-list.theme-dark .msg-pill {
-		background: #2f323c;
+		background: #2d3038;
 		color: #e8ebf5;
-		box-shadow: none;
+		box-shadow:
+			0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+		border-color: rgba(255, 255, 255, 0.08);
 	}
 
-	.message-list.theme-dark .msg-pill--user,
 	.message-list.theme-dark .msg-pill--assistant {
-		background: #2f323c;
+		background: #2d3038;
+	}
+
+	.message-list.theme-dark .msg-pill--user {
+		background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 	}
 
 	.message-list.theme-dark .msg-icon-hit {
 		color: #9aa3b5;
-		background: rgba(255, 255, 255, 0.06);
+		background: rgba(255, 255, 255, 0.08);
+		box-shadow:
+			0 2rpx 4rpx rgba(0, 0, 0, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 	}
 
 	.message-list.theme-dark .msg-icon-hit--liked {
 		color: #ff8cab;
+		background: rgba(232, 93, 140, 0.15);
 	}
 
 	.message-list.theme-dark .msg-time {
-		color: rgba(255, 255, 255, 0.36);
+		color: rgba(255, 255, 255, 0.4);
+	}
+
+	.message-list.theme-dark .avatar-name {
+		color: rgba(255, 255, 255, 0.5);
 	}
 
 	.message-list.theme-dark .bubble-rich :deep(code) {
-		background: rgba(255, 255, 255, 0.08);
+		background: rgba(93, 118, 189, 0.2);
+		color: #8ea9ff;
 	}
 
 	.message-list.theme-dark .bubble-rich :deep(blockquote) {
-		border-left-color: rgba(138, 183, 255, 0.38);
+		border-left-color: #5d76bd;
 	}
 
 	.message-list.theme-dark .bubble-rich :deep(a) {
-		color: #8ab7ff;
+		color: #8ea9ff;
+		border-bottom-color: rgba(142, 169, 255, 0.4);
 	}
 
 	.message-list.theme-dark .message-row.user .avatar {
-		background: rgba(255, 255, 255, 0.1);
-		color: #dce6f8;
+		background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 	}
 
 	.message-list.theme-dark .retain-label {
-		color: rgba(255, 255, 255, 0.42);
+		color: rgba(255, 255, 255, 0.45);
 	}
 
 	.message-list.theme-dark .edit-sheet {
-		background: #1e1e24;
-		box-shadow: 0 -8rpx 40rpx rgba(0, 0, 0, 0.35);
+		background: #252830;
+		box-shadow: 0 -8rpx 40rpx rgba(0, 0, 0, 0.4);
 	}
 
 	.message-list.theme-dark .edit-title {
@@ -792,12 +875,19 @@
 	}
 
 	.message-list.theme-dark .edit-textarea {
-		background: #2a2c33;
+		background: #2d3038;
 		color: #eef2f8;
 	}
 
 	.message-list.theme-dark .edit-btn.ghost {
-		background: #2a2c33;
-		color: rgba(255, 255, 255, 0.65);
+		background: #2d3038;
+		color: rgba(255, 255, 255, 0.7);
+	}
+
+	.message-list.theme-dark .edit-btn.primary {
+		background: #5d76bd;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 	}
 </style>

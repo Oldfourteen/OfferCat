@@ -960,6 +960,10 @@ ALTER TABLE ai_consult
 ADD COLUMN user_images JSON DEFAULT NULL COMMENT '用户发送的图片列表',
 ADD COLUMN ai_images JSON DEFAULT NULL COMMENT 'AI生成的图片列表';
 
+USE offercat;
+ALTER TABLE ai_consult 
+ADD COLUMN retained TINYINT DEFAULT 0 COMMENT '用户标记保留：1 表示不参与每月 15 日的批量清理；0 表示可被清理';
+
 
 USE offercat;
 DROP TABLE IF EXISTS `ai_consult`;

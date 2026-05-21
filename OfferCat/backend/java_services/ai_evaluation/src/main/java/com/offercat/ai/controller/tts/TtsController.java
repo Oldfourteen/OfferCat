@@ -4,6 +4,7 @@ import com.offercat.ai._service.implement.SiliconFlowTtsServiceImplement;
 import com.offercat.ai.dto.request.TtsSpeakRequest;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.*;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -22,6 +23,7 @@ import java.util.Map;
 @RestController
 @RequestMapping("/api/ai/tts")
 @RequiredArgsConstructor
+@Slf4j
 public class TtsController {
     /**
      * TTS服务
@@ -32,15 +34,19 @@ public class TtsController {
      */
     @PostMapping("/speak")
     public ResponseEntity<?> speak(@Valid @RequestBody TtsSpeakRequest req){
+        log.info("收到TTS请求，文本长度: {}", req.getText() != null ? req.getText().length() : 0);
+        
         try{
             ResponseEntity<byte[]> resp = ttsService.speak(req);
             /**
              * 检查响应是否为空
              */
             if (resp.getBody() == null || resp.getBody().length == 0) {
-                throw new RuntimeException("TTS 服务返回了空的音频数据");
+                log.error("TTS服务返回了空的音频数据");
+                throw new RuntimeException("TTS服务返回了空的音频数据");
             }
             byte[] bytes = resp.getBody();
+            log.info("TTS成功，返回音频数据大小: {} bytes", bytes.length);
 
             /**
              * 从请求里判断返回格式 默认MP3
@@ -77,9 +83,16 @@ public class TtsController {
              */
             return new ResponseEntity<>(bytes, headers, HttpStatus.OK);
         }catch (IllegalArgumentException e){
+            log.error("TTS请求参数错误: {}", e.getMessage());
             return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }catch (RuntimeException e){
+            log.error("TTS服务运行时错误: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "TTS服务暂时不可用: " + e.getMessage()));
         }catch (Exception e){
-            return ResponseEntity.internalServerError().body(Map.of("error","TTS失败" + e.getMessage()));
+            log.error("TTS服务未知错误: {}", e.getMessage(), e);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body(Map.of("error", "TTS服务异常，请稍后重试"));
         }
     }
 }

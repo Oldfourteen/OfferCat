@@ -2,9 +2,11 @@ package com.offercat.ai._service.implement;
 
 import com.offercat.ai.dto.request.TtsSpeakRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.HashMap;
@@ -26,6 +28,7 @@ import java.util.Map;
  */
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class SiliconFlowTtsServiceImplement {
     private final RestTemplate restTemplate;
 
@@ -58,17 +61,31 @@ public class SiliconFlowTtsServiceImplement {
             throw new IllegalArgumentException("文本不能为空");
         }
 
+        // 检查API密钥是否配置
+        if (apiKey == null || apiKey.isBlank()) {
+            log.error("硅基流动API密钥未配置");
+            throw new IllegalArgumentException("TTS服务未配置，请联系管理员");
+        }
+
         String url = baseUrl + speachPath;
+        log.info("TTS请求URL: {}", url);
+        log.info("TTS请求文本长度: {}", req.getText().length());
 
         // 组装 JSON body
         Map<String, Object> body = new HashMap<>();
         body.put("model", defaultModel);
         body.put("input", req.getText());
         // 硅基流动要求 voice 为「模型名:音色」枚举值，不能单独传 alex（见官方 /v1/audio/speech）
-        body.put("voice", resolveVoice(req.getVoice()));
+        String resolvedVoice = resolveVoice(req.getVoice());
+        body.put("voice", resolvedVoice);
         body.put("response_format", (req.getResponseFormat() == null || req.getResponseFormat().isBlank()) ? defaultResponseFormat : req.getResponseFormat());
         body.put("stream", req.getStream() == null ? defaultStream : req.getStream());
         body.put("speed", req.getSpeed() == null ? defaultSpeed : req.getSpeed());
+
+        log.info("TTS请求参数: model={}, voice={}, format={}, speed={}", 
+                defaultModel, resolvedVoice, 
+                (req.getResponseFormat() == null || req.getResponseFormat().isBlank()) ? defaultResponseFormat : req.getResponseFormat(),
+                req.getSpeed() == null ? defaultSpeed : req.getSpeed());
 
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
@@ -76,8 +93,21 @@ public class SiliconFlowTtsServiceImplement {
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(body, headers);
 
-        //音频二进制
-        return restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+        try {
+            //音频二进制
+            log.info("开始发送TTS请求到硅基流动...");
+            ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
+            log.info("TTS请求成功，响应状态: {}, 数据长度: {}", 
+                    response.getStatusCode(), 
+                    response.getBody() != null ? response.getBody().length : 0);
+            return response;
+        } catch (RestClientException e) {
+            log.error("TTS请求失败: {}", e.getMessage(), e);
+            throw new RuntimeException("TTS服务请求失败: " + e.getMessage(), e);
+        } catch (Exception e) {
+            log.error("TTS请求发生未知错误: {}", e.getMessage(), e);
+            throw new RuntimeException("TTS服务异常: " + e.getMessage(), e);
+        }
     }
 
     /**
@@ -89,6 +119,8 @@ public class SiliconFlowTtsServiceImplement {
         if (v.contains(":")) {
             return v;
         }
-        return defaultModel + ":" + v;
+        String resolved = defaultModel + ":" + v;
+        log.debug("音色名转换: {} -> {}", requestedVoice, resolved);
+        return resolved;
     }
 }

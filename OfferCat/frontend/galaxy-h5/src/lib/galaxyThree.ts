@@ -7,6 +7,23 @@ import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPa
 import { CSS2DObject, CSS2DRenderer } from 'three/examples/jsm/renderers/CSS2DRenderer.js'
 import { disposeNodeSurfaceTextureCache, getNodeSurfaceTextures } from '@/lib/nodeSurfaceTexture'
 
+/** 检测是否为移动设备 */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1)
+}
+
+/** 检测是否为低性能设备 */
+function isLowEndDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  const memory = (navigator as any).deviceMemory
+  const cores = navigator.hardwareConcurrency
+  if (memory && memory <= 4) return true
+  if (cores && cores <= 4) return true
+  return isMobileDevice()
+}
+
 export type RawNode = { id: string; type: string; label: string; meta?: Record<string, string> }
 export type RawEdge = { u: string; v: string; weight?: number; kind?: string }
 export type RawHE = { id: string; member_node_ids: string[]; style_hint?: string }
@@ -24,6 +41,16 @@ const COL_STARFIELD = 0x9bb8e8
 /** OrbitControls.autoRotateSpeed 单位与官方一致，约 1~2 即可明显看到旋转 */
 const AUTO_ROTATE_ORBIT_SPEED = 1.35
 const AUTO_ROTATE_IDLE_MS = 4000
+
+/** 移动端性能优化配置 */
+const MOBILE_PERF_CONFIG = {
+  pixelRatio: isMobileDevice() ? 1 : Math.min(window.devicePixelRatio, 2),
+  starfieldCount: isLowEndDevice() ? 800 : 2000,
+  geometrySegments: isMobileDevice() ? { major: 24, fusion: 16 } : { major: 48, fusion: 36 },
+  enableBloom: !isMobileDevice(),
+  bloomResolutionScale: isMobileDevice() ? 0.5 : 0.5,
+  animationFrameSkip: isMobileDevice() ? 2 : 1,
+}
 
 /** 融合小行星轨道四象短标签（完整数值在业务侧弹层） */
 const FUSION_QUADRANT_LABELS = ['热度/年薪', '强度/竞争', '学历门槛', '学科技能'] as const
@@ -62,8 +89,8 @@ export function mountGalaxyThree(
   const camera = new THREE.PerspectiveCamera(55, width / height, 0.1, 200)
   camera.position.set(12, 10, 16)
 
-  const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: false, powerPreference: 'high-performance' })
-  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2))
+  const renderer = new THREE.WebGLRenderer({ antialias: !isMobileDevice(), alpha: false, powerPreference: isMobileDevice() ? 'default' : 'high-performance' })
+  renderer.setPixelRatio(MOBILE_PERF_CONFIG.pixelRatio)
   renderer.setSize(width, height)
   renderer.outputColorSpace = THREE.SRGBColorSpace
   renderer.toneMapping = THREE.ACESFilmicToneMapping
@@ -78,19 +105,27 @@ export function mountGalaxyThree(
   const labelRenderer = new CSS2DRenderer({ element: labelLayer })
   labelRenderer.setSize(width, height)
 
-  const pixelRatio = Math.min(window.devicePixelRatio, 2)
+  const pixelRatio = MOBILE_PERF_CONFIG.pixelRatio
   const composer = new EffectComposer(renderer)
   composer.setPixelRatio(pixelRatio)
   const renderPass = new RenderPass(scene, camera)
-  const bloomResolution = new THREE.Vector2(
-    Math.max(128, Math.floor((width * pixelRatio) / 2)),
-    Math.max(128, Math.floor((height * pixelRatio) / 2)),
-  )
-  const bloomPass = new UnrealBloomPass(bloomResolution, 0.34, 0.34, 0.88)
-  const outputPass = new OutputPass()
-  composer.addPass(renderPass)
-  composer.addPass(bloomPass)
-  composer.addPass(outputPass)
+
+  let bloomPass: UnrealBloomPass | null = null
+  let outputPass: OutputPass | null = null
+
+  if (MOBILE_PERF_CONFIG.enableBloom) {
+    const bloomResolution = new THREE.Vector2(
+      Math.max(128, Math.floor((width * pixelRatio) * MOBILE_PERF_CONFIG.bloomResolutionScale)),
+      Math.max(128, Math.floor((height * pixelRatio) * MOBILE_PERF_CONFIG.bloomResolutionScale)),
+    )
+    bloomPass = new UnrealBloomPass(bloomResolution, 0.34, 0.34, 0.88)
+    outputPass = new OutputPass()
+    composer.addPass(renderPass)
+    composer.addPass(bloomPass)
+    composer.addPass(outputPass)
+  } else {
+    composer.addPass(renderPass)
+  }
 
   const hemi = new THREE.HemisphereLight(0x8aaee8, 0x151820, 0.62)
   scene.add(hemi)
@@ -155,7 +190,7 @@ export function mountGalaxyThree(
 
   /** 远景星尘：与节点解耦；ambientBoost 提高粒子数与整体亮度，充盈整幅画面 */
   const addStarfield = () => {
-    const n = Math.min(9200, Math.floor(1100 + ambientBoost * 7200))
+    const n = Math.min(MOBILE_PERF_CONFIG.starfieldCount, Math.floor(MOBILE_PERF_CONFIG.starfieldCount * 0.2 + ambientBoost * MOBILE_PERF_CONFIG.starfieldCount * 0.8))
     const positions = new Float32Array(n * 3)
     const sizes = new Float32Array(n)
     for (let i = 0; i < n; i++) {
@@ -299,7 +334,7 @@ export function mountGalaxyThree(
     const { map } = getNodeSurfaceTextures(nodeId, variant)
     const coreRadius = isMajor ? 0.23 : 0.15
 
-    const coreGeo = new THREE.SphereGeometry(coreRadius, isMajor ? 48 : 36, isMajor ? 32 : 26)
+    const coreGeo = new THREE.SphereGeometry(coreRadius, isMajor ? MOBILE_PERF_CONFIG.geometrySegments.major : MOBILE_PERF_CONFIG.geometrySegments.fusion, isMajor ? Math.floor(MOBILE_PERF_CONFIG.geometrySegments.major * 0.67) : Math.floor(MOBILE_PERF_CONFIG.geometrySegments.fusion * 0.72))
     const coreMat = new THREE.MeshBasicMaterial({
       map,
       color: new THREE.Color(0xffffff),
@@ -545,15 +580,22 @@ export function mountGalaxyThree(
   controls.addEventListener('end', onUserInteractionEnd)
 
   let raf = 0
+  let frameCount = 0
   const clock = new THREE.Clock()
   const loop = () => {
+    frameCount++
     const dt = clock.getDelta()
     const t = clock.getElapsedTime()
     controls.update()
-    for (const g of nodeMeshes.values()) {
-      g.rotation.y += dt * 0.1
-      g.rotation.z += dt * 0.02 * Math.sin(t * 0.6 + g.position.x * 0.2)
+
+    // 移动端跳过部分帧的动画更新
+    if (frameCount % MOBILE_PERF_CONFIG.animationFrameSkip === 0) {
+      for (const g of nodeMeshes.values()) {
+        g.rotation.y += dt * 0.1 * MOBILE_PERF_CONFIG.animationFrameSkip
+        g.rotation.z += dt * 0.02 * Math.sin(t * 0.6 + g.position.x * 0.2) * MOBILE_PERF_CONFIG.animationFrameSkip
+      }
     }
+
     composer.render()
     labelRenderer.render(scene, camera)
     raf = requestAnimationFrame(loop)
@@ -764,8 +806,8 @@ export function mountGalaxyThree(
       starfield.geometry.dispose()
       ;(starfield.material as THREE.ShaderMaterial).dispose()
 
-      bloomPass.dispose()
-      outputPass.dispose()
+      if (bloomPass) bloomPass.dispose()
+      if (outputPass) outputPass.dispose()
       composer.dispose()
       disposeNodeSurfaceTextureCache()
 

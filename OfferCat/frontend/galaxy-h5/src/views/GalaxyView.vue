@@ -114,6 +114,21 @@ function readPayload(): GalaxyMajorsPayload | null {
   }
 }
 
+/** 带超时的fetch包装 */
+async function fetchWithTimeout<T>(promise: Promise<T>, timeoutMs: number, errorMsg: string): Promise<T> {
+  const timeout = new Promise<never>((_, reject) =>
+    setTimeout(() => reject(new Error(errorMsg)), timeoutMs)
+  )
+  return Promise.race([promise, timeout])
+}
+
+/** 检测是否为移动设备 */
+function isMobileDevice(): boolean {
+  if (typeof navigator === 'undefined') return false
+  return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent)
+    || (navigator.maxTouchPoints && navigator.maxTouchPoints > 1)
+}
+
 async function bootstrap() {
   phase.value = 'loading'
   errorMessage.value = ''
@@ -128,13 +143,26 @@ async function bootstrap() {
     return
   }
   payload.value = p
+
+  // 移动端使用更短的超时时间
+  const isMobile = isMobileDevice()
+  const loadTimeout = isMobile ? 15000 : 30000
+
   try {
     const primary = getGalaxyDataBase()
     let bundle: Awaited<ReturnType<typeof fetchGalaxyBundle>>
     let rec: Awaited<ReturnType<typeof fetchRecommendMock>>
     try {
-      bundle = await fetchGalaxyBundle(primary)
-      rec = await fetchRecommendMock(primary)
+      bundle = await fetchWithTimeout(
+        fetchGalaxyBundle(primary),
+        loadTimeout,
+        '加载星系数据超时，请检查网络连接'
+      )
+      rec = await fetchWithTimeout(
+        fetchRecommendMock(primary),
+        5000,
+        '加载推荐数据超时'
+      )
     } catch (firstErr) {
       const injected =
         typeof window !== 'undefined' && window.__GALAXY_API_BASE__ && String(window.__GALAXY_API_BASE__).trim() !== ''
@@ -159,6 +187,7 @@ async function bootstrap() {
   } catch (e) {
     phase.value = 'error'
     errorMessage.value = e instanceof Error ? e.message : '加载失败'
+    console.error('[GalaxyView] Bootstrap error:', e)
   }
 }
 

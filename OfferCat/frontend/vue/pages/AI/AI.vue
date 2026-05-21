@@ -1226,9 +1226,7 @@
 		height: 100vh;
 		min-height: 100vh;
 		overflow: hidden;
-		background:
-			radial-gradient(circle at 50% 22%, rgba(49, 101, 215, 0.12) 0%, rgba(49, 101, 215, 0) 46%),
-			linear-gradient(180deg, #f8f7f5 0%, #ffffff 58%, #f5f7fc 100%);
+		background: #f8f9fc;
 	}
 
 	.ai-shell {
@@ -1266,8 +1264,12 @@
 		left: 0;
 		right: 0;
 		z-index: 7;
-		box-shadow: 0 -10rpx 30rpx rgba(21, 48, 94, 0.05);
+		box-shadow:
+			0 -4rpx 16rpx rgba(93, 118, 189, 0.08),
+			0 -8rpx 32rpx rgba(93, 118, 189, 0.05);
 		transition: bottom 0.2s ease;
+		background: rgba(248, 249, 252, 0.95);
+		backdrop-filter: blur(12rpx);
 	}
 
 	.ai-page.keyboard-open .ai-bottom {
@@ -1287,23 +1289,25 @@
 		gap: 16rpx;
 		padding: 16rpx 28rpx;
 		border-radius: 999rpx;
-		background: rgba(49, 101, 215, 0.14);
-		border: 1rpx solid rgba(49, 101, 215, 0.28);
-		box-shadow: 0 8rpx 24rpx rgba(49, 101, 215, 0.12);
+		background: rgba(93, 118, 189, 0.12);
+		border: 1rpx solid rgba(93, 118, 189, 0.25);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.15),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 		pointer-events: none;
 	}
 
 	.hr-respond-timer__label {
 		font-size: 26rpx;
 		font-weight: 600;
-		color: #25408f;
+		color: #5d76bd;
 	}
 
 	.hr-respond-timer__value {
 		font-size: 30rpx;
 		font-weight: 700;
 		font-variant-numeric: tabular-nums;
-		color: #3165d7;
+		color: #5d76bd;
 		letter-spacing: 2rpx;
 	}
 
@@ -1385,12 +1389,11 @@
 	}
 
 	.ai-page.theme-dark {
-		background:
-			radial-gradient(circle at 50% 22%, rgba(74, 103, 247, 0.24) 0%, rgba(74, 103, 247, 0) 42%),
-			linear-gradient(180deg, #101114 0%, #16181d 58%, #101114 100%);
+		background: #1a1c23;
 
 		.ai-bottom {
-			box-shadow: 0 -10rpx 30rpx rgba(0, 0, 0, 0.28);
+			box-shadow: 0 -4rpx 16rpx rgba(0, 0, 0, 0.3);
+			background: rgba(26, 28, 35, 0.95);
 		}
 
 		.give-up-modal-mask {

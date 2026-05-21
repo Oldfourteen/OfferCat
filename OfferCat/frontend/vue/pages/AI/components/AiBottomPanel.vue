@@ -411,31 +411,33 @@
 		min-width: 260rpx;
 		max-width: 300rpx;
 		padding: 18rpx 20rpx;
-		background: rgba(255, 255, 255, 0.94);
-		border: 2rpx solid rgba(49, 101, 215, 0.08);
+		background: rgba(255, 255, 255, 0.96);
+		border: 2rpx solid rgba(93, 118, 189, 0.12);
 		border-radius: 26rpx;
 		box-shadow:
-			0 2rpx 6rpx rgba(21, 48, 94, 0.05),
-			0 10rpx 28rpx rgba(49, 101, 215, 0.09);
+			0 2rpx 8rpx rgba(93, 118, 189, 0.08),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.1),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 		display: inline-flex;
 		align-items: center;
 		transition: all 0.2s ease;
 	}
 
 	.action-chip.is-active {
-		background: #3165d7;
-		border-color: #3165d7;
+		background: #5d76bd;
+		border-color: #5d76bd;
 		box-shadow:
-			0 4rpx 10rpx rgba(21, 48, 94, 0.12),
-			0 14rpx 32rpx rgba(49, 101, 215, 0.28);
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 12rpx 32rpx rgba(93, 118, 189, 0.25),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.action-icon {
 		width: 44rpx;
 		height: 44rpx;
 		border-radius: 14rpx;
-		background: rgba(49, 101, 215, 0.1);
-		color: #3165d7;
+		background: rgba(93, 118, 189, 0.12);
+		color: #5d76bd;
 		display: flex;
 		align-items: center;
 		justify-content: center;
@@ -443,18 +445,21 @@
 		font-weight: 700;
 		margin-right: 14rpx;
 		flex-shrink: 0;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
 	}
 
 	.action-text {
 		font-size: 24rpx;
 		line-height: 1.4;
-		color: #334666;
+		color: #4a5568;
 		white-space: normal;
+		font-weight: 500;
 	}
 
 	.action-chip.is-active .action-icon {
-		background: rgba(255, 255, 255, 0.2);
+		background: rgba(255, 255, 255, 0.25);
 		color: #ffffff;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 	}
 
 	.action-chip.is-active .action-text {
@@ -466,9 +471,12 @@
 		flex-direction: column;
 		padding: 16rpx 18rpx;
 		border-radius: 34rpx;
-		background: rgba(255, 255, 255, 0.96);
-		box-shadow: 0 18rpx 36rpx rgba(21, 48, 94, 0.08);
-		border: 2rpx solid rgba(49, 101, 215, 0.08);
+		background: rgba(255, 255, 255, 0.98);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.1),
+			0 12rpx 32rpx rgba(93, 118, 189, 0.12),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		border: 2rpx solid rgba(93, 118, 189, 0.1);
 	}
 
 	.composer-row {
@@ -572,7 +580,7 @@
 	.composer-send {
 		padding: 12rpx 22rpx;
 		border-radius: 999rpx;
-		background: #4f6ea8;
+		background: #5d76bd;
 		color: #ffffff;
 		font-size: 24rpx;
 		font-weight: 700;
@@ -583,6 +591,9 @@
 		justify-content: center;
 		min-width: 92rpx;
 		box-sizing: border-box;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.sending-spinner {
@@ -603,8 +614,11 @@
 
 	.composer-send.active,
 	.composer-send.is-sending {
-		background: #3165d7;
-		box-shadow: 0 12rpx 26rpx rgba(49, 101, 215, 0.28);
+		background: #5d76bd;
+		box-shadow:
+			0 6rpx 16rpx rgba(93, 118, 189, 0.4),
+			0 12rpx 28rpx rgba(93, 118, 189, 0.25),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.3);
 		opacity: 1;
 	}
 
@@ -645,18 +659,23 @@
 		width: 200rpx;
 		height: 170rpx;
 		border-radius: 26rpx;
-		background: rgba(255, 255, 255, 0.94);
-		border: 2rpx solid rgba(49, 101, 215, 0.08);
+		background: rgba(255, 255, 255, 0.96);
+		border: 2rpx solid rgba(93, 118, 189, 0.1);
 		display: flex;
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
 		gap: 14rpx;
+		box-shadow:
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 	}
 
 	.more-item.recording {
-		border-color: rgba(49, 101, 215, 0.4);
-		box-shadow: 0 16rpx 34rpx rgba(49, 101, 215, 0.18);
+		border-color: rgba(93, 118, 189, 0.4);
+		box-shadow:
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 	}
 
 	.recording-lock .action-chip,
@@ -682,11 +701,14 @@
 		width: 520rpx;
 		height: 140rpx;
 		border-radius: 32rpx;
-		background: #3165d7;
+		background: #5d76bd;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 24rpx 70rpx rgba(49, 101, 215, 0.3);
+		box-shadow:
+			0 12rpx 36rpx rgba(93, 118, 189, 0.35),
+			0 24rpx 60rpx rgba(93, 118, 189, 0.25),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.2);
 		pointer-events: none;
 	}
 
@@ -723,13 +745,14 @@
 		width: 72rpx;
 		height: 72rpx;
 		border-radius: 22rpx;
-		background: rgba(49, 101, 215, 0.1);
-		color: #3165d7;
+		background: rgba(93, 118, 189, 0.12);
+		color: #5d76bd;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		font-size: 28rpx;
 		font-weight: 800;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
 	}
 
 	.more-text {
@@ -738,47 +761,57 @@
 	}
 
 	.bottom-panel.theme-dark {
-		background: linear-gradient(180deg, rgba(18, 19, 24, 0.92) 0%, #181a1f 22%, #181a1f 100%);
+		background: linear-gradient(180deg, rgba(18, 19, 24, 0.95) 0%, #1a1c23 22%, #1a1c23 100%);
 
 		.action-chip,
 		.composer-shell {
-			background: rgba(35, 37, 43, 0.96);
-			border-color: rgba(255, 255, 255, 0.06);
-			box-shadow: 0 18rpx 36rpx rgba(0, 0, 0, 0.2);
+			background: rgba(35, 37, 43, 0.98);
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow:
+				0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 		}
 
 		.action-chip.is-active {
-			background: #4a67f7;
-			border-color: #4a67f7;
+			background: #5d76bd;
+			border-color: #5d76bd;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 		}
 
 		.action-text,
 		.composer-input {
 			color: #eef2f8;
 		}
-		
+
 		.composer-input:focus {
 			outline: none;
 		}
 
 		.action-icon,
 		.composer-add {
-			background: rgba(255, 255, 255, 0.08);
-			color: #d7e1f5;
+			background: rgba(93, 118, 189, 0.15);
+			color: #8ea9ff;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
 		}
 
 		.composer-placeholder {
-			color: rgba(255, 255, 255, 0.36);
+			color: rgba(255, 255, 255, 0.4);
 		}
 
 		.more-item {
-			background: rgba(35, 37, 43, 0.96);
-			border-color: rgba(255, 255, 255, 0.06);
+			background: rgba(35, 37, 43, 0.98);
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow:
+				0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 		}
 
 		.more-icon {
-			background: rgba(255, 255, 255, 0.08);
-			color: #d7e1f5;
+			background: rgba(93, 118, 189, 0.15);
+			color: #8ea9ff;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
 		}
 
 		.more-text {

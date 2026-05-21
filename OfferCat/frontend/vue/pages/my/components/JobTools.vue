@@ -85,6 +85,7 @@
 	import { QUESTION_FAVORITES_UPDATED_EVENT } from '@/utils/questionFavorites.js'
 	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 	import { getGrowthRecordStats, checkIn, getWeeklyCheckinStatus } from '@/api/growth.js'
+	import { getApiBase } from '@/api/config.js'
 
 	export default {
 		name: "JobTools",
@@ -268,6 +269,8 @@
 				const metrics = getDashboardMetrics()
 				let resumeCount = metrics.resumeCount
 				let interviewCount = metrics.interviewCount
+				let certificatesCount = 0
+				let awardsCount = 0
 				const canLoadGrowth =
 					Boolean(resolveStoredStudentId()) || Boolean(resolveStoredUserId(getUser()))
 				if (canLoadGrowth) {
@@ -281,18 +284,58 @@
 					} catch (e) {
 						console.warn('[JobTools] growth/stats 失败，使用本地聚合', e)
 					}
+					// 从后端获取证书资质和竞赛奖项的真实数据
+					try {
+						const studentId = resolveStoredStudentId()
+						if (studentId) {
+							const [certRes, awardRes] = await Promise.all([
+								this.fetchArchiveCount('/api/student/profile/certificate/list', studentId),
+								this.fetchArchiveCount('/api/student/profile/competition/list', studentId)
+							])
+							certificatesCount = certRes
+							awardsCount = awardRes
+						}
+					} catch (e) {
+						console.warn('[JobTools] 获取档案数量失败，使用本地数据', e)
+						certificatesCount = metrics.archiveSummary.certificatesCount
+						awardsCount = metrics.archiveSummary.awardsCount
+					}
+				} else {
+					// 未登录时使用本地数据
+					certificatesCount = metrics.archiveSummary.certificatesCount
+					awardsCount = metrics.archiveSummary.awardsCount
 				}
 				const valueMap = {
 					'我的简历': resumeCount,
 					'面试记录': interviewCount,
-					'证书资质': metrics.archiveSummary.certificatesCount,
-					'竞赛奖项': metrics.archiveSummary.awardsCount
+					'证书资质': certificatesCount,
+					'竞赛奖项': awardsCount
 				}
 				this.tools = this.tools.map(item => ({
 					...item,
 					value: String(valueMap[item.name] || 0)
 				}))
 				this.dynamicValues = this.tools.map(item => Number(item.value) || 0)
+			},
+			// 获取档案数量
+			fetchArchiveCount(path, studentId) {
+				return new Promise((resolve) => {
+					uni.request({
+						url: `${getApiBase()}${path}`,
+						method: 'GET',
+						data: { studentId },
+						success: (res) => {
+							if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+								resolve(res.data.data.length)
+							} else {
+								resolve(0)
+							}
+						},
+						fail: () => {
+							resolve(0)
+						}
+					})
+				})
 			},
 			animateValues() {
 				// 为每个工具项实现数字累加动画。

@@ -18,12 +18,12 @@ public class ForumPrivateMessageController {
     private ForumPrivateMessageService privateMessageService;
 
     @GetMapping("/conversations")
-    public ResponseResult<List<PrivateConversationVO>> getConversations(@RequestParam Long userId) {
+    public ResponseResult<List<PrivateConversationVO>> getConversations(@RequestParam("userId") Long userId) {
         return ResponseResult.success(privateMessageService.getConversations(userId));
     }
 
     @GetMapping("/history")
-    public ResponseResult<List<PrivateMessageVO>> getChatHistory(@RequestParam Long userId, @RequestParam Long targetUserId) {
+    public ResponseResult<List<PrivateMessageVO>> getChatHistory(@RequestParam("userId") Long userId, @RequestParam("targetUserId") Long targetUserId) {
         privateMessageService.markAsRead(userId, targetUserId);
         return ResponseResult.success(privateMessageService.getChatHistory(userId, targetUserId));
     }

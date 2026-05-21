@@ -89,7 +89,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getForumUnreadCounts, getPrivateConversations } from '@/api/forum.js'
 	import { MSG_ICON_FRIEND, MSG_ICON_LIKE } from '@/utils/personalSpaceIcons.js'
-	import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
+	import { getUser, resolveStoredUserId, resolveStoredStudentId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	const BADGE_STORAGE_KEY = 'forum_message_center_badges'
 
@@ -144,11 +144,14 @@
 		methods: {
 			async getUid() {
 				const cached = getUser() || uni.getStorageSync('user') || {}
-				let uid = resolveStoredUserId(cached)
+				let uid = resolveStoredUserId(cached) || resolveStoredStudentId(cached)
 				if (uid == null) {
 					const synced = await syncUserProfileFromServer({ timeout: 8000 })
-					if (synced) uid = resolveStoredUserId(synced)
-					if (uid == null) uid = resolveStoredUserId(getUser() || cached)
+					if (synced) uid = resolveStoredUserId(synced) || resolveStoredStudentId(synced)
+					if (uid == null) {
+						const next = getUser() || cached
+						uid = resolveStoredUserId(next) || resolveStoredStudentId(next)
+					}
 				}
 				return uid
 			},
@@ -157,7 +160,23 @@
 				if (!uid) return
 				try {
 					const res = await getPrivateConversations(uid)
-					const list = res && Array.isArray(res.data) ? res.data : []
+					let raw = res && res.data
+					for (let i = 0; i < 3; i++) {
+						if (raw && typeof raw === 'object' && raw.data !== undefined && raw.code !== undefined) {
+							raw = raw.data
+							continue
+						}
+						break
+					}
+					const list = Array.isArray(raw)
+						? raw
+						: raw && Array.isArray(raw.data)
+							? raw.data
+							: raw && Array.isArray(raw.list)
+								? raw.list
+								: raw && Array.isArray(raw.records)
+									? raw.records
+									: []
 					if (list.length) {
 						this.conversations = list.map(c => ({
 							id: c.targetUserId,
@@ -180,7 +199,14 @@
 				if (uid) {
 					try {
 						const res = await getForumUnreadCounts(uid)
-						const d = res && res.data
+						let d = res && res.data
+						for (let i = 0; i < 3; i++) {
+							if (d && typeof d === 'object' && d.data !== undefined && d.code !== undefined) {
+								d = d.data
+								continue
+							}
+							break
+						}
 						if (d && typeof d === 'object') {
 							this.badgesServerBacked = true
 							this.replySeenCount = 0

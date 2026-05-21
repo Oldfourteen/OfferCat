@@ -54,7 +54,7 @@
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getPrivateChatHistory, sendPrivateMessage } from '@/api/forum.js'
-	import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
+	import { getUser, resolveStoredUserId, resolveStoredStudentId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
 
@@ -106,12 +106,12 @@
 					return
 				}
 				const cached = getUser() || uni.getStorageSync('user') || {}
-				let uid = resolveStoredUserId(cached)
+				let uid = resolveStoredUserId(cached) || resolveStoredStudentId(cached)
 				let nextUser = cached
 				if (uid == null) {
 					const synced = await syncUserProfileFromServer({ timeout: 8000 })
 					if (synced) nextUser = synced
-					uid = resolveStoredUserId(nextUser)
+					uid = resolveStoredUserId(nextUser) || resolveStoredStudentId(nextUser)
 				}
 				this.myUserId = uid || ''
 				this.myAvatar = (nextUser && nextUser.avatar) || DEFAULT_AVATAR
@@ -156,14 +156,23 @@
 				const keepLocal = options.keepLocal !== false
 				try {
 					const res = await getPrivateChatHistory(this.myUserId, this.targetUserId)
-					const raw = res && res.data
+					let raw = res && res.data
+					for (let i = 0; i < 3; i++) {
+						if (raw && typeof raw === 'object' && raw.data !== undefined && raw.code !== undefined) {
+							raw = raw.data
+							continue
+						}
+						break
+					}
 					const list = Array.isArray(raw)
 						? raw
-						: raw && Array.isArray(raw.list)
-							? raw.list
-							: raw && Array.isArray(raw.records)
-								? raw.records
-								: []
+						: raw && Array.isArray(raw.data)
+							? raw.data
+							: raw && Array.isArray(raw.list)
+								? raw.list
+								: raw && Array.isArray(raw.records)
+									? raw.records
+									: []
 					if (list.length) {
 						const local = keepLocal ? (this.messages || []).filter(m => String(m.id || '').startsWith('local-')) : []
 						const serverMessages = list.map(m => ({

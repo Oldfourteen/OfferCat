@@ -56,16 +56,18 @@
 										const cf = await uniCloud.callFunction({
 											name: 'phonelogin',
 											data: {
-												access_token: res.access_token
+												access_token: res.authResult.access_token,
+												openid: res.authResult.openid
 											}
 										})
 										const payload = cf && cf.result ? cf.result : cf
 										if (!payload || payload.code !== 0 || !payload.phone) {
+											this.closeAuthViewSafely()
 											reject(new Error((payload && payload.msg) || '获取手机号失败'))
 											return
 										}
-										const session = await completeOneClickLoginWithPhone(payload.phone)
 										this.closeAuthViewSafely()
+										const session = await completeOneClickLoginWithPhone(payload.phone)
 										resolve(session)
 									} catch (e) {
 										this.closeAuthViewSafely()

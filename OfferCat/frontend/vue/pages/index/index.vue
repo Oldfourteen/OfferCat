@@ -61,7 +61,7 @@
 				const collapsedHeight = 128
 				const height = expandedHeight - (expandedHeight - collapsedHeight) * this.headerCollapseProgress
 				return {
-					height: `${height}rpx`
+					height: `calc(var(--status-bar-height) + ${height}rpx)`
 				}
 			}
 		},

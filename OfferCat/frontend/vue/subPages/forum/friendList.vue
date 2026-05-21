@@ -97,12 +97,11 @@
 						<view class="item-main">
 							<view class="item-head">
 								<view class="name-row">
-									<text class="user-name">{{ item.nickname }}</text>
+									<text class="user-name">{{ item.nickname || '用户' }}</text>
 									<text class="tag-text" v-if="item.tagText">{{ item.tagText }}</text>
 								</view>
-								<text class="time-text">{{ item.lastSeen }}</text>
 							</view>
-							<text class="item-desc text-wrap-safe">{{ item.bio || '快去和好友打个招呼吧。' }}</text>
+							<text class="item-desc text-wrap-safe">ID: {{ item.userId || item.id }}</text>
 						</view>
 					</view>
 					<view class="empty-state" v-if="friends.length === 0">
@@ -164,6 +163,14 @@
 				const base = String(BASE_URL || '').replace(/\/$/, '')
 				const path = s.startsWith('/') ? s : `/${s}`
 				return base + path
+			},
+			formatNickname(nickname) {
+				if (!nickname) return '用户'
+				const s = String(nickname)
+				if (s.length > 4) {
+					return s.substring(0, 4) + '...'
+				}
+				return s
 			},
 			formatTime(t) {
 				if (typeof t === 'string') return t.substring(0, 16).replace('T', ' ')
@@ -246,7 +253,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: #f7f8fb;
+		background: #f8f9fc;
 	}
 
 	.top-bar {
@@ -254,9 +261,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		background: rgba(255, 255, 255, 0.9);
-		backdrop-filter: blur(20px);
-		border-bottom: 1rpx solid rgba(15, 23, 42, 0.06);
+		background: rgba(255, 255, 255, 0.95);
+		backdrop-filter: blur(20rpx);
+		box-shadow:
+			0 2rpx 12rpx rgba(93, 118, 189, 0.08),
+			0 4rpx 20rpx rgba(93, 118, 189, 0.05);
+		border-bottom: 1rpx solid rgba(93, 118, 189, 0.08);
 	}
 
 	.back-btn,
@@ -265,19 +275,26 @@
 		height: 60rpx;
 		display: flex;
 		align-items: center;
+		justify-content: center;
+	}
+
+	.back-btn {
+		background: #ffffff;
+		border-radius: 50%;
+		box-shadow: 0 4rpx 12rpx rgba(0, 0, 0, 0.1);
 	}
 
 	.back-icon {
-		font-size: 56rpx;
+		font-size: 40rpx;
 		line-height: 1;
-		color: #24345b;
-		margin-top: -8rpx;
+		color: #4a5568;
+		font-weight: 600;
 	}
 
 	.page-title {
 		font-size: 34rpx;
 		font-weight: 700;
-		color: #15305e;
+		color: #4a5568;
 	}
 
 	.page-scroll {
@@ -295,22 +312,32 @@
 		flex: 1;
 		height: 82rpx;
 		border-radius: 999rpx;
-		background: rgba(255, 255, 255, 0.88);
-		box-shadow: 0 8rpx 22rpx rgba(15, 23, 42, 0.05);
+		background: rgba(255, 255, 255, 0.96);
+		box-shadow:
+			0 2rpx 8rpx rgba(93, 118, 189, 0.08),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.1),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		border: 2rpx solid rgba(93, 118, 189, 0.1);
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		gap: 10rpx;
+		transition: all 0.2s ease;
 	}
 
 	.tab-pill.active {
-		background: linear-gradient(135deg, #5b79ff, #7c5cff);
+		background: #5d76bd;
+		border-color: #5d76bd;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 12rpx 32rpx rgba(93, 118, 189, 0.25),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.tab-pill__text {
 		font-size: 28rpx;
 		font-weight: 700;
-		color: #31456e;
+		color: #4a5568;
 	}
 
 	.tab-pill.active .tab-pill__text {
@@ -322,23 +349,29 @@
 		height: 34rpx;
 		padding: 0 10rpx;
 		border-radius: 999rpx;
-		background: rgba(91, 121, 255, 0.12);
+		background: rgba(93, 118, 189, 0.12);
 		font-size: 20rpx;
 		font-weight: 700;
-		color: #5b79ff;
+		color: #5d76bd;
 		display: flex;
 		align-items: center;
 		justify-content: center;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
 	}
 
 	.tab-pill.active .tab-pill__badge {
-		background: rgba(255, 255, 255, 0.2);
+		background: rgba(255, 255, 255, 0.25);
 		color: #ffffff;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 	}
 
 	.section-card {
 		background: #ffffff;
-		box-shadow: 0 10rpx 28rpx rgba(15, 23, 42, 0.06);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.08),
+			0 12rpx 32rpx rgba(93, 118, 189, 0.1);
+		border-radius: 24rpx;
+		border: 1rpx solid rgba(93, 118, 189, 0.08);
 	}
 
 	.section-card {
@@ -357,12 +390,12 @@
 		display: block;
 		font-size: 30rpx;
 		font-weight: 700;
-		color: #24345b;
+		color: #4a5568;
 	}
 
 	.section-subtitle {
 		font-size: 22rpx;
-		color: #98a2b3;
+		color: #8a92a8;
 	}
 
 	.request-item,
@@ -371,15 +404,21 @@
 		align-items: center;
 		gap: 18rpx;
 		padding: 24rpx 6rpx;
-		border-top: 1rpx solid rgba(15, 23, 42, 0.06);
+		border-top: 1rpx solid rgba(93, 118, 189, 0.1);
 	}
 
 	.avatar {
 		width: 88rpx;
 		height: 88rpx;
-		border-radius: 50%;
-		background: #e8edf5;
+		border-radius: 28rpx;
+		background: #ffffff;
 		flex-shrink: 0;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 2rpx 4rpx rgba(255, 255, 255, 0.25),
+			inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.08);
+		border: 2rpx solid rgba(255, 255, 255, 0.4);
 	}
 
 	.item-main {
@@ -404,20 +443,22 @@
 	.user-name {
 		font-size: 30rpx;
 		font-weight: 700;
-		color: #24345b;
+		color: #2d3748;
 	}
 
 	.tag-text {
-		padding: 6rpx 12rpx;
+		padding: 6rpx 14rpx;
 		border-radius: 999rpx;
-		background: rgba(91, 121, 255, 0.12);
+		background: rgba(93, 118, 189, 0.12);
 		font-size: 20rpx;
-		color: #5b79ff;
+		color: #5d76bd;
+		font-weight: 500;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
 	}
 
 	.time-text {
 		font-size: 22rpx;
-		color: #98a2b3;
+		color: #8a92a8;
 		flex-shrink: 0;
 	}
 
@@ -426,7 +467,7 @@
 		margin-top: 10rpx;
 		font-size: 24rpx;
 		line-height: 1.6;
-		color: #667085;
+		color: #64748b;
 	}
 
 	.pill-actions {
@@ -440,16 +481,22 @@
 	.pill-btn {
 		padding: 14rpx 24rpx;
 		border-radius: 999rpx;
-		background: linear-gradient(135deg, #5b79ff, #7c5cff);
+		background: #5d76bd;
 		font-size: 22rpx;
 		font-weight: 700;
 		color: #ffffff;
 		flex-shrink: 0;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.pill-btn.muted {
-		background: rgba(148, 163, 184, 0.22);
+		background: rgba(148, 163, 184, 0.2);
 		color: #64748b;
+		box-shadow:
+			0 2rpx 6rpx rgba(0, 0, 0, 0.08),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.4);
 	}
 
 	.single-status {
@@ -462,23 +509,24 @@
 	.single-status__text {
 		padding: 12rpx 20rpx;
 		border-radius: 999rpx;
-		background: rgba(91, 121, 255, 0.12);
+		background: rgba(93, 118, 189, 0.12);
 		font-size: 22rpx;
 		font-weight: 700;
-		color: #5b79ff;
+		color: #5d76bd;
+		box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.5);
 	}
 
 	.empty-state {
 		padding: 50rpx 10rpx 42rpx;
 		text-align: center;
-		border-top: 1rpx solid rgba(15, 23, 42, 0.06);
+		border-top: 1rpx solid rgba(93, 118, 189, 0.1);
 	}
 
 	.empty-title {
 		display: block;
 		font-size: 28rpx;
 		font-weight: 700;
-		color: #24345b;
+		color: #4a5568;
 	}
 
 	.empty-desc {
@@ -486,56 +534,81 @@
 		margin-top: 10rpx;
 		font-size: 24rpx;
 		line-height: 1.6;
-		color: #98a2b3;
+		color: #8a92a8;
 	}
 
 	.theme-dark .pill-btn.muted {
 		background: rgba(255, 255, 255, 0.08);
 		color: #aeb8ca;
+		box-shadow:
+			0 2rpx 6rpx rgba(0, 0, 0, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 	}
 
 	.theme-dark.friend-page {
-		background: #111216;
+		background: #1a1c23;
 	}
 
 	.theme-dark {
 		.top-bar {
-			background: rgba(17, 18, 22, 0.92);
+			background: rgba(26, 28, 35, 0.95);
 			border-bottom-color: rgba(255, 255, 255, 0.06);
+			box-shadow:
+				0 2rpx 12rpx rgba(0, 0, 0, 0.2);
 		}
 
 		.tab-pill {
-			background: #1b1d23;
-			box-shadow: 0 8rpx 22rpx rgba(0, 0, 0, 0.18);
+			background: #252830;
+			box-shadow:
+				0 2rpx 8rpx rgba(0, 0, 0, 0.25),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+			border-color: rgba(255, 255, 255, 0.08);
+		}
+
+		.tab-pill.active {
+			background: #5d76bd;
+			border-color: #5d76bd;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 		}
 
 		.tab-pill__text,
 		.empty-title,
 		.section-subtitle {
-			color: #f4f7fb;
+			color: #eef1f8;
 		}
 
 		.tab-pill__badge {
-			background: rgba(169, 187, 240, 0.16);
-			color: #a9bbf0;
+			background: rgba(93, 118, 189, 0.2);
+			color: #8ea9ff;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
+		}
+
+		.tab-pill.active .tab-pill__badge {
+			background: rgba(255, 255, 255, 0.25);
+			color: #ffffff;
 		}
 
 		.back-icon,
 		.page-title,
 		.section-title,
 		.user-name {
-			color: #f4f7fb;
+			color: #eef1f8;
 		}
 
 		.section-card {
-			background: #1b1d23;
-			box-shadow: 0 10rpx 28rpx rgba(0, 0, 0, 0.22);
+			background: #252830;
+			box-shadow:
+				0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+			border-color: rgba(255, 255, 255, 0.08);
 		}
 
 		.time-text,
 		.item-desc,
 		.empty-desc {
-			color: #8090ad;
+			color: #8a92a8;
 		}
 
 		.request-item,
@@ -545,17 +618,30 @@
 		}
 
 		.avatar {
-			background: #23252b;
+			background: #ffffff;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
+			border-color: rgba(255, 255, 255, 0.15);
 		}
 
 		.tag-text {
-			background: rgba(141, 164, 230, 0.18);
-			color: #a9bbf0;
+			background: rgba(93, 118, 189, 0.2);
+			color: #8ea9ff;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
 		}
 
 		.single-status__text {
-			background: rgba(141, 164, 230, 0.18);
-			color: #a9bbf0;
+			background: rgba(93, 118, 189, 0.2);
+			color: #8ea9ff;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
+		}
+
+		.pill-btn {
+			background: #5d76bd;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 		}
 	}
 </style>

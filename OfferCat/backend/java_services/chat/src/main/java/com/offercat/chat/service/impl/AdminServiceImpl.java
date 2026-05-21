@@ -3,6 +3,8 @@ package com.offercat.chat.service.impl;
 import com.offercat.chat.entity.UserMute;
 import com.offercat.chat.mapper.UserMuteMapper;
 import com.offercat.chat.service.AdminService;
+import com.offercat.user.dao.UserMapper;
+import com.offercat.user.entity.User;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -15,8 +17,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 管理员服务实现类
- * 功能：实现管理员相关的业务逻辑处理
+ * 管理员服务实现类 功能：实现管理员相关的业务逻辑处理
  */
 @Slf4j
 @Service
@@ -24,6 +25,7 @@ import java.util.Map;
 public class AdminServiceImpl implements AdminService {
 
     private final UserMuteMapper userMuteMapper;
+    private final UserMapper userMapper;
 
     @Override
     @Transactional
@@ -68,6 +70,9 @@ public class AdminServiceImpl implements AdminService {
     @Transactional
     public boolean deletePost(Long postId) {
         log.info("删除帖子: postId={}", postId);
+        // 调用student服务的帖子删除接口
+        // 这里通过HTTP调用或Feign调用student服务的删除接口
+        // 暂时返回true，实际实现需要调用ForumPostService
         return true;
     }
 
@@ -75,22 +80,49 @@ public class AdminServiceImpl implements AdminService {
     public List<Map<String, Object>> searchUser(String keyword) {
         List<Map<String, Object>> result = new ArrayList<>();
 
-        Map<String, Object> user1 = new HashMap<>();
-        user1.put("userId", 1L);
-        user1.put("username", "张三");
-        result.add(user1);
+        if (keyword == null || keyword.trim().isEmpty()) {
+            return result;
+        }
 
-        Map<String, Object> user2 = new HashMap<>();
-        user2.put("userId", 2L);
-        user2.put("username", "李四");
-        result.add(user2);
+        String trimmedKeyword = keyword.trim();
 
-        Map<String, Object> user3 = new HashMap<>();
-        user3.put("userId", 3L);
-        user3.put("username", "王五");
-        result.add(user3);
+        try {
+            // 尝试作为用户ID搜索
+            Long userId = null;
+            try {
+                userId = Long.parseLong(trimmedKeyword);
+            } catch (NumberFormatException e) {
+                // 不是数字，按用户名搜索
+            }
 
-        log.info("搜索用户: keyword={}, resultCount={}", keyword, result.size());
+            if (userId != null) {
+                // 根据ID查询
+                User user = userMapper.selectById(userId);
+                if (user != null) {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("userId", user.getUserId());
+                    userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
+                    userMap.put("phone", user.getPhone());
+                    userMap.put("email", user.getEmail());
+                    result.add(userMap);
+                }
+            } else {
+                // 根据手机号搜索
+                User user = userMapper.selectByPhone(trimmedKeyword);
+                if (user != null) {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("userId", user.getUserId());
+                    userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
+                    userMap.put("phone", user.getPhone());
+                    userMap.put("email", user.getEmail());
+                    result.add(userMap);
+                }
+            }
+        } catch (Exception e) {
+            log.error("搜索用户失败: keyword={}", trimmedKeyword, e);
+        }
+
+        log.info("搜索用户: keyword={}, resultCount={}", trimmedKeyword, result.size());
         return result;
     }
 }

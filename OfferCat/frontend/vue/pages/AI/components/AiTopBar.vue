@@ -492,123 +492,68 @@
 
 
 	.topbar.theme-dark {
-
-		background: linear-gradient(180deg, rgba(18, 19, 24, 0.98) 0%, rgba(18, 19, 24, 0.88) 72%, rgba(18, 19, 24, 0) 100%);
-
-
+		background: rgba(26, 28, 35, 0.95);
+		box-shadow:
+			0 2rpx 12rpx rgba(0, 0, 0, 0.2),
+			0 4rpx 20rpx rgba(0, 0, 0, 0.15);
+		border-bottom-color: rgba(255, 255, 255, 0.06);
 
 		&::after {
-
 			background: linear-gradient(
-
 				90deg,
-
 				rgba(255, 255, 255, 0),
-
 				rgba(255, 255, 255, 0.1) 22%,
-
 				rgba(255, 255, 255, 0.1) 78%,
-
 				rgba(255, 255, 255, 0)
-
 			);
-
 		}
-
-
 
 		.toolbar-chip {
-
-			background: rgba(36, 38, 46, 0.94);
-
-			border-color: rgba(255, 255, 255, 0.09);
-
+			background: rgba(35, 37, 43, 0.95);
+			border-color: rgba(255, 255, 255, 0.1);
 			box-shadow:
-
-				0 4rpx 16rpx rgba(0, 0, 0, 0.22),
-
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.04);
-
+				0 2rpx 8rpx rgba(0, 0, 0, 0.25),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 		}
-
-
 
 		.chip-split-line {
-
 			background: rgba(255, 255, 255, 0.12);
-
 		}
-
-
 
 		.chip-hit--voice:active,
-
 		.chip-hit--create:active,
-
 		.chip-hit--menu:active {
-
-			background: rgba(255, 255, 255, 0.06);
-
+			background: rgba(93, 118, 189, 0.15);
 		}
-
-
 
 		.chip-hit--voice-on {
-
-			background: rgba(74, 103, 247, 0.22);
-
+			background: rgba(93, 118, 189, 0.2);
 		}
-
-
 
 		.menu-line {
-
 			background: #e8ecf5;
-
 		}
-
-
 
 		.create-plus {
-
 			color: #8ea9ff;
-
 		}
-
-
 
 		.spkr-body {
-
-			background: linear-gradient(180deg, #8ea9ff 0%, #6b86f0 100%);
-
+			background: #8ea9ff;
 		}
-
-
 
 		.spkr-bar {
-
 			background: #8ea9ff;
-
 		}
-
-
 
 		.spkr--muted .spkr-body,
-
 		.spkr--muted .spkr-bar {
-
 			background: #6d7388;
-
 		}
-
-
 
 		.topbar-title {
-
 			color: #eef1f8;
-
 		}
-
 	}
 
 </style>

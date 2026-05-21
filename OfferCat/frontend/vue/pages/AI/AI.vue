@@ -1401,20 +1401,34 @@
 		}
 
 		.give-up-modal {
-			background: #1e1e24;
+			background: #252830;
+			box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.4);
 		}
 
 		.modal-title {
-			color: #e8e8e8;
+			color: #eef1f8;
 		}
 
 		.modal-desc {
-			color: #999999;
+			color: #a0a8b8;
 		}
 
 		.modal-btn.cancel {
-			background: #2a2a32;
-			color: #cccccc;
+			background: #2d3038;
+			color: #c8cdd8;
+		}
+
+		.hr-respond-timer {
+			background: rgba(93, 118, 189, 0.15);
+			border-color: rgba(93, 118, 189, 0.3);
+			box-shadow:
+				0 4rpx 12rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+		}
+
+		.hr-respond-timer__label,
+		.hr-respond-timer__value {
+			color: #8ea9ff;
 		}
 	}
 

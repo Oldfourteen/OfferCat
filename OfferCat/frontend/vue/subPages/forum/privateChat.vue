@@ -13,21 +13,23 @@
 		<scroll-view class="chat-scroll" scroll-y :show-scrollbar="false" :scroll-into-view="scrollTarget">
 			<view class="chat-list">
 				<view
-					v-for="item in messages"
-					:key="item.id"
-					:id="'msg-' + item.id"
-					class="chat-item"
-					:class="{ 'is-self': item.isSelf }"
-				>
+				v-for="item in messages"
+				:key="item.id"
+				:id="'msg-' + item.id"
+				class="chat-item"
+				:class="{ 'is-self': item.isSelf }"
+			>
+				<view class="avatar-wrap">
 					<image class="avatar" :src="item.avatar" mode="aspectFill"></image>
-					<view class="bubble-wrap">
-						<text class="sender-name" v-if="!item.isSelf">{{ pageTitle }}</text>
-						<view class="bubble">
-							<text class="bubble-text">{{ item.content }}</text>
-						</view>
-						<text class="message-time">{{ item.time }}</text>
-					</view>
+					<text class="avatar-name">{{ item.isSelf ? '我' : pageTitle }}</text>
 				</view>
+				<view class="bubble-wrap">
+					<view class="bubble">
+						<text class="bubble-text">{{ item.content }}</text>
+					</view>
+					<text class="message-time">{{ item.time }}</text>
+				</view>
+			</view>
 			</view>
 			<view id="scroll-bottom" style="height: 10rpx;"></view>
 		</scroll-view>
@@ -220,7 +222,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: #f7f8fb;
+		background: #f8f9fc;
 	}
 
 	.top-bar {
@@ -228,9 +230,12 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		background: rgba(255, 255, 255, 0.92);
-		backdrop-filter: blur(20px);
-		border-bottom: 1rpx solid rgba(15, 23, 42, 0.06);
+		background: rgba(255, 255, 255, 0.95);
+		backdrop-filter: blur(20rpx);
+		box-shadow:
+			0 2rpx 12rpx rgba(93, 118, 189, 0.08),
+			0 4rpx 20rpx rgba(93, 118, 189, 0.05);
+		border-bottom: 1rpx solid rgba(93, 118, 189, 0.08);
 	}
 
 	.back-btn,
@@ -244,7 +249,7 @@
 	.back-icon {
 		font-size: 56rpx;
 		line-height: 1;
-		color: #24345b;
+		color: #4a5568;
 		margin-top: -8rpx;
 	}
 
@@ -258,7 +263,7 @@
 		display: block;
 		font-size: 32rpx;
 		font-weight: 700;
-		color: #15305e;
+		color: #4a5568;
 	}
 
 	.chat-scroll {
@@ -270,7 +275,7 @@
 		padding: 30rpx 24rpx;
 		display: flex;
 		flex-direction: column;
-		gap: 28rpx;
+		gap: 32rpx;
 	}
 
 	.chat-item {
@@ -283,12 +288,37 @@
 		flex-direction: row-reverse;
 	}
 
-	.avatar {
-		width: 72rpx;
-		height: 72rpx;
-		border-radius: 50%;
-		background: #e8edf5;
+	.avatar-wrap {
+		display: flex;
+		flex-direction: column;
+		align-items: center;
+		gap: 8rpx;
 		flex-shrink: 0;
+	}
+
+	.avatar-name {
+		font-size: 20rpx;
+		color: #8a92a8;
+		font-weight: 500;
+		max-width: 80rpx;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+		text-align: center;
+	}
+
+	.avatar {
+		width: 80rpx;
+		height: 80rpx;
+		border-radius: 28rpx;
+		background: linear-gradient(145deg, #7a9ae0 0%, #5d76bd 100%);
+		flex-shrink: 0;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 2rpx 4rpx rgba(255, 255, 255, 0.25),
+			inset 0 -2rpx 4rpx rgba(0, 0, 0, 0.08);
+		border: 2rpx solid rgba(255, 255, 255, 0.4);
 	}
 
 	.bubble-wrap {
@@ -301,28 +331,34 @@
 		align-items: flex-end;
 	}
 
-	.sender-name {
-		font-size: 22rpx;
-		color: #98a2b3;
-		margin-bottom: 10rpx;
-	}
-
 	.bubble {
-		padding: 22rpx 24rpx;
-		border-radius: 24rpx;
+		padding: 22rpx 28rpx;
+		border-radius: 32rpx;
 		background: #ffffff;
-		box-shadow: 0 6rpx 20rpx rgba(15, 23, 42, 0.06);
+		box-shadow:
+			0 2rpx 8rpx rgba(93, 118, 189, 0.08),
+			0 4rpx 16rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		border: 1rpx solid rgba(93, 118, 189, 0.12);
 		word-break: break-word;
+		border-bottom-left-radius: 12rpx;
 	}
 
 	.chat-item.is-self .bubble {
-		background: linear-gradient(135deg, #5b79ff, #7c5cff);
+		background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			0 8rpx 24rpx rgba(93, 118, 189, 0.2),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
+		border: none;
+		border-bottom-right-radius: 12rpx;
+		border-bottom-left-radius: 32rpx;
 	}
 
 	.bubble-text {
 		font-size: 28rpx;
 		line-height: 1.6;
-		color: #24345b;
+		color: #2d3748;
 	}
 
 	.chat-item.is-self .bubble-text {
@@ -332,7 +368,7 @@
 	.message-time {
 		margin-top: 10rpx;
 		font-size: 20rpx;
-		color: #98a2b3;
+		color: #8a92a8;
 	}
 
 	.input-bar {
@@ -340,8 +376,11 @@
 		display: flex;
 		align-items: center;
 		gap: 18rpx;
-		background: rgba(255, 255, 255, 0.94);
-		border-top: 1rpx solid rgba(15, 23, 42, 0.06);
+		background: rgba(255, 255, 255, 0.95);
+		border-top: 1rpx solid rgba(93, 118, 189, 0.08);
+		box-shadow:
+			0 -4rpx 16rpx rgba(93, 118, 189, 0.08),
+			0 -8rpx 32rpx rgba(93, 118, 189, 0.05);
 	}
 
 	.input-shell {
@@ -349,15 +388,19 @@
 		height: 84rpx;
 		padding: 0 26rpx;
 		border-radius: 999rpx;
-		background: #f2f4f8;
+		background: #f8f9fc;
 		display: flex;
 		align-items: center;
+		border: 2rpx solid rgba(93, 118, 189, 0.1);
+		box-shadow:
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 	}
 
 	.chat-input {
 		flex: 1;
 		font-size: 28rpx;
-		color: #24345b;
+		color: #2d3748;
 		background: transparent;
 	}
 
@@ -368,12 +411,16 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(135deg, #5b79ff, #7c5cff);
-		transition: opacity 0.2s;
+		background: #5d76bd;
+		transition: all 0.2s ease;
+		box-shadow:
+			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 	}
 
 	.send-btn.disabled {
 		opacity: 0.5;
+		box-shadow: none;
 	}
 
 	.send-text {
@@ -383,42 +430,64 @@
 	}
 
 	.theme-dark.private-chat-page {
-		background: #111216;
+		background: #1a1c23;
 	}
 
 	.theme-dark {
 		.top-bar,
 		.input-bar {
-			background: rgba(17, 18, 22, 0.94);
+			background: rgba(26, 28, 35, 0.95);
 			border-color: rgba(255, 255, 255, 0.06);
+			box-shadow:
+				0 -4rpx 16rpx rgba(0, 0, 0, 0.3);
 		}
 
 		.back-icon,
 		.page-title {
-			color: #f4f7fb;
+			color: #eef1f8;
 		}
 
-		.page-subtitle,
-		.sender-name,
+		.avatar-name,
 		.message-time {
-			color: #8090ad;
+			color: rgba(255, 255, 255, 0.5);
 		}
 
 		.avatar {
-			background: #23252b;
+			background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 		}
 
 		.bubble {
-			background: #23252b;
-			box-shadow: 0 6rpx 20rpx rgba(0, 0, 0, 0.26);
+			background: #2d3038;
+			box-shadow:
+				0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+			border-color: rgba(255, 255, 255, 0.08);
 		}
 
-		.bubble-text, .chat-input {
-			color: #f4f7fb;
+		.bubble-text {
+			color: #eef1f8;
+		}
+
+		.chat-input {
+			color: #eef1f8;
 		}
 
 		.input-shell {
-			background: #23252b;
+			background: #2d3038;
+			border-color: rgba(255, 255, 255, 0.08);
+			box-shadow:
+				0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+		}
+
+		.send-btn {
+			background: #5d76bd;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 		}
 	}
 </style>

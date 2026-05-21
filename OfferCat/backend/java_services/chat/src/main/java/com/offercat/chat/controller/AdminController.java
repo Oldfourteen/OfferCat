@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -101,8 +102,20 @@ public class AdminController {
      * @return 用户列表
      */
     @GetMapping("/search/user")
-    public ResponseEntity<List<Map<String, Object>>> searchUser(@RequestParam String keyword) {
-        List<Map<String, Object>> users = adminService.searchUser(keyword);
-        return ResponseEntity.ok(users);
+    public ResponseEntity<Map<String, Object>> searchUser(@RequestParam String keyword) {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<Map<String, Object>> users = adminService.searchUser(keyword);
+            response.put("code", 200);
+            response.put("data", users);
+            response.put("message", "搜索成功");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("搜索用户失败", e);
+            response.put("code", 500);
+            response.put("data", new ArrayList<>());
+            response.put("message", "搜索失败");
+            return ResponseEntity.internalServerError().body(response);
+        }
     }
 }

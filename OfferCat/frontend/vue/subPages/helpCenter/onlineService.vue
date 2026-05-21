@@ -3,14 +3,14 @@
 		<!-- 顶部导航栏 -->
 		<view class="nav-bar">
 			<view class="nav-left" @click="goBack">
-				<view class="nav-icon-btn">
-					<text class="back-icon">‹</text>
+				<view class="back-btn">
+					<text class="back-icon">&lt;</text>
 				</view>
 			</view>
 			<text class="nav-title">在线客服</text>
 			<view class="nav-right" @click="showMenu">
-				<view class="nav-icon-btn is-menu">
-					<text class="menu-icon">⋮</text>
+				<view class="menu-btn">
+					<text class="menu-text">更多</text>
 				</view>
 			</view>
 		</view>
@@ -19,7 +19,9 @@
 		<view class="menu-modal" v-if="showMenuModal" @click="closeMenu">
 			<view class="menu-content" @click.stop>
 				<view class="menu-item" @click="clearLocalHistory">
-					<text class="menu-icon-text">🗑️</text>
+					<view class="menu-icon">
+						<text class="icon-text">清</text>
+					</view>
 					<text class="menu-text">清空聊天记录</text>
 				</view>
 			</view>
@@ -34,7 +36,7 @@
 		>
 			<!-- 历史消息分隔线 -->
 			<view class="history-divider">
-				<text class="divider-text">—— 以上为历史消息 ——</text>
+				<text class="divider-text">以上为历史消息</text>
 			</view>
 
 			<!-- 消息列表 -->
@@ -48,7 +50,8 @@
 				>
 					<view class="avatar-wrapper">
 						<view class="avatar" :class="{ 'self-avatar': msg.isSelf }">
-							<text class="avatar-text">{{ msg.isSelf ? '我' : '客' }}</text>
+							<image v-if="msg.isSelf" class="avatar-img" :src="userAvatar" mode="aspectFill"></image>
+							<text v-else class="avatar-text">客</text>
 						</view>
 					</view>
 					<view class="message-content">
@@ -65,7 +68,9 @@
 				<view class="quick-header" @click="toggleQuickQuestions">
 					<text class="quick-title">猜你想问</text>
 					<view class="quick-header-right">
-						<text class="quick-refresh" @click.stop="refreshQuickQuestions">↻</text>
+						<view class="refresh-btn" @click.stop="refreshQuickQuestions">
+							<text class="btn-label">刷新</text>
+						</view>
 						<text class="quick-arrow" :class="{ expanded: showQuickQuestions }">▼</text>
 					</view>
 				</view>
@@ -98,33 +103,7 @@
 				<view class="bottom-links">
 					<text class="link-text">隐私政策</text>
 					<text class="link-divider">|</text>
-					<text class="link-text人工" @click="showContactOptions">联系管理员</text>
-				</view>
-
-				<!-- 联系选项弹窗 -->
-				<view class="contact-modal" v-if="showContactModal" @click="closeContactModal">
-					<view class="contact-modal-content" @click.stop>
-						<text class="contact-modal-title">联系管理员</text>
-						<view class="contact-options">
-							<view class="contact-option" @click="callAdmin">
-								<text class="contact-icon">📞</text>
-								<view class="contact-info">
-									<text class="contact-label">电话联系</text>
-									<text class="contact-value">150-92730328</text>
-								</view>
-							</view>
-							<view class="contact-option" @longpress="copyPhone">
-								<text class="contact-icon">📋</text>
-								<view class="contact-info">
-									<text class="contact-label">复制号码</text>
-									<text class="contact-value">长按复制</text>
-								</view>
-							</view>
-						</view>
-						<view class="contact-modal-cancel" @click="closeContactModal">
-							<text class="cancel-text">取消</text>
-						</view>
-					</view>
+					<text class="link-text-primary" @click="showContactOptions">联系管理员</text>
 				</view>
 			</view>
 		</view>
@@ -136,6 +115,7 @@
 	import { getApiBase } from '@/api/config.js'
 	import { getToken } from '@/utils/token.js'
 	import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
+	import { getUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
 
 	/** 与 chat 服务约定：0 表示客服端 */
 	const CS_BOT_ID = 0
@@ -160,10 +140,12 @@
 					'模拟面试练习'
 				],
 				isHumanService: false,
-				adminPhone: '15092730328'
+				adminPhone: '15092730328',
+				userAvatar: DEFAULT_AVATAR
 			}
 		},
 		onLoad() {
+			this.loadUserAvatar()
 			this.loadMessages()
 		},
 		watch: {
@@ -177,6 +159,10 @@
 			goBack() {
 				uni.navigateBack()
 			},
+			loadUserAvatar() {
+				const profile = getUserProfile()
+				this.userAvatar = profile.avatar || DEFAULT_AVATAR
+			},
 			showMenu() {
 				this.showMenuModal = true
 			},
@@ -184,6 +170,9 @@
 				this.showMenuModal = false
 			},
 			loadMessages() {
+				const userId = resolveStoredUserId(getUser())
+				
+				// 先从本地加载显示
 				const localMessages = uni.getStorageSync('chat_messages') || []
 				if (localMessages.length > 0) {
 					this.messageList = localMessages
@@ -191,8 +180,71 @@
 					this.messageList = [
 						{ isSelf: false, content: '您好呀，我是您的智能助理，遇到的产品和购物问题，请您详细描述下，我会尽全力帮您解答的~', time: this.getCurrentTime() }
 					]
-					this.saveMessages()
 				}
+				
+				// 然后从服务器加载历史记录
+				if (userId) {
+					this.loadServerHistory(userId)
+				}
+			},
+			loadServerHistory(userId) {
+				const token = getToken()
+				const headers = {
+					'Content-Type': 'application/json'
+				}
+				if (token) {
+					headers['Authorization'] = `Bearer ${token}`
+				}
+				
+				uni.request({
+					url: `${getApiBase()}/api/chat/history/${userId}`,
+					method: 'GET',
+					header: headers,
+					success: (res) => {
+						if (res.statusCode === 200 && Array.isArray(res.data)) {
+							// 将服务器消息转换为本地格式
+							const serverMessages = res.data.map(msg => ({
+								isSelf: msg.senderId === userId,
+								content: msg.content,
+								time: this.formatServerTime(msg.createTime)
+							}))
+							
+							// 合并本地和服务器消息（去重）
+							const mergedMessages = this.mergeMessages(this.messageList, serverMessages)
+							this.messageList = mergedMessages
+							
+							// 保存到本地
+							uni.setStorageSync('chat_messages', this.messageList)
+						}
+					},
+					fail: (err) => {
+						console.log('加载服务器历史记录失败:', err)
+					}
+				})
+			},
+			formatServerTime(timeStr) {
+				if (!timeStr) return this.getCurrentTime()
+				const date = new Date(timeStr)
+				const hours = date.getHours().toString().padStart(2, '0')
+				const minutes = date.getMinutes().toString().padStart(2, '0')
+				return `${hours}:${minutes}`
+			},
+			mergeMessages(localMsgs, serverMsgs) {
+				// 创建一个Set来存储已存在的消息内容+时间的组合（简单去重）
+				const existingKeys = new Set(localMsgs.map(m => `${m.content}_${m.time}`))
+				
+				// 添加服务器消息中不存在于本地的
+				const uniqueServerMsgs = serverMsgs.filter(m => !existingKeys.has(`${m.content}_${m.time}`))
+				
+				// 合并并按时间排序（如果有时间戳的话）
+				const allMessages = [...localMsgs, ...uniqueServerMsgs]
+				
+				// 如果合并后消息太多，只保留最近的100条
+				if (allMessages.length > 100) {
+					return allMessages.slice(-100)
+				}
+				
+				return allMessages
 			},
 			buildChatPersistencePayload(messageList, userId) {
 				const rows = []
@@ -441,13 +493,7 @@
 		height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(
-			168deg,
-			#e4e9f5 0%,
-			#eceff8 38%,
-			#f2f4fb 72%,
-			#fafbfe 100%
-		);
+		background: #f0f3f9;
 		box-sizing: border-box;
 	}
 
@@ -456,69 +502,76 @@
 		display: flex;
 		align-items: center;
 		justify-content: space-between;
-		padding: calc(var(--status-bar-height) + 12rpx) 20rpx 16rpx;
-		background: linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 0.96) 0%,
-			rgba(245, 247, 252, 0.94) 100%
-		);
-		backdrop-filter: blur(12px);
+		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 22rpx;
+		background: #ffffff;
 		box-shadow:
-			0 8rpx 28rpx rgba(38, 51, 78, 0.07),
-			inset 0 -1rpx 0 rgba(93, 118, 189, 0.06);
+			0 4rpx 20rpx rgba(93, 118, 189, 0.12),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06);
 
 		.nav-left,
 		.nav-right {
-			width: 72rpx;
-			height: 72rpx;
-			display: flex;
-			align-items: center;
-			justify-content: center;
 			flex-shrink: 0;
 		}
 
 		.nav-title {
 			flex: 1;
 			text-align: center;
-			font-size: 32rpx;
-			font-weight: 750;
-			letter-spacing: 0.04em;
-			color: #1e2638;
+			font-size: 34rpx;
+			font-weight: 700;
+			color: #2d3748;
 		}
 
-		.nav-icon-btn {
-			width: 64rpx;
-			height: 64rpx;
+		.back-btn {
+			box-sizing: border-box;
+			width: 72rpx;
+			height: 72rpx;
 			border-radius: 50%;
-			background: #fff;
+			border: none;
+			background: #f5f7fb;
 			display: flex;
 			align-items: center;
 			justify-content: center;
 			box-shadow:
-				0 6rpx 18rpx rgba(93, 118, 189, 0.14),
-				0 2rpx 6rpx rgba(45, 58, 95, 0.05),
-				inset 0 2rpx 0 rgba(255, 255, 255, 0.88);
+				0 4rpx 12rpx rgba(93, 118, 189, 0.15),
+				inset 0 2rpx 0 rgba(255, 255, 255, 0.8);
+			transition: all 0.2s ease;
 
-			&.is-menu .menu-icon {
-				margin-top: -6rpx;
-				letter-spacing: 2rpx;
+			&:active {
+				transform: scale(0.95);
+				box-shadow:
+					0 2rpx 6rpx rgba(93, 118, 189, 0.1),
+					inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
 			}
 		}
 
 		.back-icon {
-			font-size: 40rpx;
-			line-height: 1;
-			color: #1e2638;
-			font-weight: 300;
-			margin-left: -4rpx;
-			margin-top: -4rpx;
+			font-size: 28rpx;
+			font-weight: 700;
+			color: #5d76bd;
+			margin-right: 2rpx;
 		}
 
-		.menu-icon {
-			font-size: 34rpx;
-			font-weight: 700;
-			color: #3d4760;
-			line-height: 1;
+		.menu-btn {
+			padding: 14rpx 24rpx;
+			background: #f5f7fb;
+			border-radius: 16rpx;
+			box-shadow:
+				0 4rpx 12rpx rgba(93, 118, 189, 0.15),
+				inset 0 2rpx 0 rgba(255, 255, 255, 0.8);
+			transition: all 0.2s ease;
+
+			&:active {
+				transform: scale(0.95);
+				box-shadow:
+					0 2rpx 6rpx rgba(93, 118, 189, 0.1),
+					inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
+			}
+		}
+
+		.menu-text {
+			font-size: 24rpx;
+			font-weight: 600;
+			color: #5d76bd;
 		}
 	}
 
@@ -527,16 +580,16 @@
 		min-height: 0;
 		width: 100%;
 		box-sizing: border-box;
-		padding: 20rpx 22rpx 16rpx;
+		padding: 28rpx;
 	}
 
 	.bottom-sheet-stack {
 		flex-shrink: 0;
-		background: linear-gradient(180deg, rgba(253, 254, 255, 0.98) 0%, #f5f7fc 100%);
+		background: #ffffff;
 		box-shadow:
-			0 -10rpx 36rpx rgba(93, 118, 189, 0.1),
-			0 -2rpx 12rpx rgba(38, 51, 78, 0.04);
-		border-radius: 24rpx 24rpx 0 0;
+			0 -8rpx 32rpx rgba(93, 118, 189, 0.1),
+			0 -2rpx 8rpx rgba(93, 118, 189, 0.05);
+		border-radius: 28rpx 28rpx 0 0;
 		padding-bottom: env(safe-area-inset-bottom);
 	}
 
@@ -546,7 +599,7 @@
 		left: 0;
 		right: 0;
 		bottom: 0;
-		background: rgba(15, 22, 36, 0.45);
+		background: rgba(0, 0, 0, 0.5);
 		display: flex;
 		align-items: flex-end;
 		z-index: 1000;
@@ -554,132 +607,55 @@
 
 	.menu-content {
 		width: 100%;
-		background: linear-gradient(180deg, #ffffff 0%, #f4f6fc 100%);
+		background: #ffffff;
 		border-radius: 28rpx 28rpx 0 0;
 		padding: 28rpx 24rpx;
 		padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
-		box-shadow: 0 -12rpx 48rpx rgba(93, 118, 189, 0.12);
+		box-shadow:
+			0 -12rpx 48rpx rgba(0, 0, 0, 0.15);
 
 		.menu-item {
 			display: flex;
 			align-items: center;
 			gap: 16rpx;
 			padding: 24rpx 20rpx;
-			background: linear-gradient(
-				165deg,
-				rgba(255, 120, 120, 0.1) 0%,
-				rgba(255, 236, 236, 0.65) 100%
-			);
-			border-radius: 18rpx;
-			border: none;
+			background: #fff1f0;
+			border-radius: 20rpx;
 			box-shadow:
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.75),
-				0 6rpx 18rpx rgba(232, 85, 85, 0.12);
+				0 2rpx 8rpx rgba(255, 77, 79, 0.1),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
+			transition: all 0.2s ease;
 
-			.menu-icon-text {
-				font-size: 32rpx;
-			}
-
-			.menu-text {
-				font-size: 28rpx;
-				color: #d94848;
-				font-weight: 650;
+			&:active {
+				transform: scale(0.98);
+				background: #ffdede;
 			}
 		}
-	}
 
-	.contact-modal {
-		position: fixed;
-		top: 0;
-		left: 0;
-		right: 0;
-		bottom: 0;
-		background: rgba(15, 22, 36, 0.48);
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		z-index: 1002;
-	}
-
-	.contact-modal-content {
-		width: 600rpx;
-		max-width: 90vw;
-		background: linear-gradient(165deg, #ffffff 0%, #f6f8fd 100%);
-		border-radius: 24rpx;
-		padding: 36rpx 28rpx 28rpx;
-		box-shadow:
-			0 24rpx 60rpx rgba(38, 51, 78, 0.2),
-			0 8rpx 24rpx rgba(93, 118, 189, 0.12),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.9);
-
-		.contact-modal-title {
-			font-size: 32rpx;
-			font-weight: 750;
-			color: #1e2638;
-			text-align: center;
-			display: block;
-			margin-bottom: 28rpx;
-		}
-
-		.contact-options {
-			display: flex;
-			flex-direction: column;
-			gap: 16rpx;
-		}
-
-		.contact-option {
+		.menu-icon {
+			width: 44rpx;
+			height: 44rpx;
+			border-radius: 12rpx;
+			background: #ff4d4f;
 			display: flex;
 			align-items: center;
-			gap: 16rpx;
-			padding: 22rpx 20rpx;
-			background: linear-gradient(
-				165deg,
-				rgba(93, 118, 189, 0.08) 0%,
-				rgba(255, 255, 255, 0.92) 100%
-			);
-			border-radius: 18rpx;
+			justify-content: center;
 			box-shadow:
-				0 6rpx 16rpx rgba(93, 118, 189, 0.08),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
+				0 4rpx 10rpx rgba(255, 77, 79, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 
-			.contact-icon {
-				font-size: 32rpx;
-			}
-
-			.contact-label {
+			.icon-text {
 				font-size: 22rpx;
-				color: #7c88a8;
-				display: block;
-			}
-
-			.contact-value {
-				font-size: 28rpx;
-				color: #1e2638;
-				font-weight: 650;
-				display: block;
-				margin-top: 6rpx;
+				font-weight: 700;
+				color: #ffffff;
 			}
 		}
 
-		.contact-modal-cancel {
-			margin-top: 24rpx;
-			padding: 22rpx;
-			background: linear-gradient(180deg, #e8ecf4 0%, #dde2ee 100%);
-			border-radius: 16rpx;
-			text-align: center;
-			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
-
-			.cancel-text {
-				font-size: 28rpx;
-				font-weight: 600;
-				color: #5c6680;
-			}
+		.menu-text {
+			font-size: 28rpx;
+			color: #ff4d4f;
+			font-weight: 600;
 		}
-	}
-
-	.contact-option .contact-info {
-		flex: 1;
-		min-width: 0;
 	}
 
 	.history-divider {
@@ -687,13 +663,13 @@
 		margin: 8rpx 0 28rpx;
 
 		.divider-text {
-			font-size: 22rpx;
-			color: #7c88a8;
+			font-size: 24rpx;
+			color: #718096;
 			font-weight: 500;
 			padding: 10rpx 28rpx;
 			background: rgba(93, 118, 189, 0.1);
 			border-radius: 999rpx;
-			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.65);
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 		}
 	}
 
@@ -706,42 +682,36 @@
 
 	.message-item {
 		display: flex;
-		align-items: flex-end;
+		align-items: flex-start;
 		gap: 14rpx;
 
 		&.is-self {
 			flex-direction: row-reverse;
 
 			.avatar {
-				background:
-					radial-gradient(circle at 30% 25%, rgba(255, 255, 255, 0.35) 0%, transparent 55%),
-					linear-gradient(145deg, #6b87d8 0%, #5d76bd 45%, #3f5590 100%);
+				background: #5d76bd;
 				box-shadow:
-					0 6rpx 16rpx rgba(93, 118, 189, 0.35),
-					inset 0 2rpx 0 rgba(255, 255, 255, 0.25);
+					0 4rpx 12rpx rgba(93, 118, 189, 0.3),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 
 				.avatar-text {
-					color: #fff;
+					color: #ffffff;
 				}
 			}
 
 			.message-content {
-				max-width: 72%;
-				background:
-					radial-gradient(120% 85% at 12% -10%, rgba(255, 255, 255, 0.32) 0%, transparent 50%),
-					linear-gradient(152deg, #6f86cf 0%, #5d76bd 45%, #4a62a8 100%);
+				background: #5d76bd;
 				border-radius: 22rpx 8rpx 22rpx 22rpx;
 				box-shadow:
-					0 10rpx 28rpx rgba(93, 118, 189, 0.32),
-					0 2rpx 8rpx rgba(45, 58, 95, 0.12),
-					inset 0 2rpx 0 rgba(255, 255, 255, 0.22);
+					0 8rpx 24rpx rgba(93, 118, 189, 0.3),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.15);
 
 				.message-text {
-					color: #fff;
+					color: #ffffff;
 				}
 
 				.message-time {
-					color: rgba(255, 255, 255, 0.78);
+					color: rgba(255, 255, 255, 0.75);
 				}
 			}
 		}
@@ -755,42 +725,48 @@
 		width: 72rpx;
 		height: 72rpx;
 		border-radius: 50%;
-		background: linear-gradient(145deg, #e8ecf4 0%, #d4dae8 100%);
+		background: #e2e8f0;
 		display: flex;
 		align-items: center;
 		justify-content: center;
 		box-shadow:
-			0 6rpx 14rpx rgba(93, 118, 189, 0.12),
-			inset 0 2rpx 0 rgba(255, 255, 255, 0.75);
+			0 4rpx 12rpx rgba(93, 118, 189, 0.15),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
+		overflow: hidden;
 
 		.avatar-text {
-			font-size: 24rpx;
-			color: #4d5a78;
+			font-size: 26rpx;
+			color: #4a5568;
 			font-weight: 700;
+		}
+
+		.avatar-img {
+			width: 100%;
+			height: 100%;
+			border-radius: 50%;
 		}
 	}
 
 	.message-content {
 		max-width: 72%;
-		background: linear-gradient(165deg, #ffffff 0%, #f6f8fd 100%);
+		background: #ffffff;
 		border-radius: 8rpx 22rpx 22rpx 22rpx;
 		padding: 18rpx 22rpx;
 		box-shadow:
-			0 10rpx 28rpx rgba(93, 118, 189, 0.1),
-			0 2rpx 8rpx rgba(38, 51, 78, 0.05),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.95);
+			0 8rpx 24rpx rgba(93, 118, 189, 0.1),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 
 		.message-text {
 			font-size: 28rpx;
-			color: #1e2638;
+			color: #2d3748;
 			display: block;
 			line-height: 1.55;
 			word-break: break-word;
 		}
 
 		.message-time {
-			font-size: 20rpx;
-			color: #9aa3b8;
+			font-size: 22rpx;
+			color: #718096;
 			display: block;
 			text-align: right;
 			margin-top: 10rpx;
@@ -810,26 +786,36 @@
 
 		.quick-title {
 			font-size: 28rpx;
-			font-weight: 750;
-			color: #1e2638;
+			font-weight: 700;
+			color: #2d3748;
 		}
 
 		.quick-header-right {
 			display: flex;
 			align-items: center;
-			gap: 20rpx;
+			gap: 16rpx;
 		}
 
-		.quick-refresh {
-			font-size: 34rpx;
-			font-weight: 400;
-			color: #5d76bd;
-			padding: 8rpx;
+		.refresh-btn {
+			padding: 8rpx 16rpx;
+			background: rgba(93, 118, 189, 0.1);
+			border-radius: 12rpx;
+			transition: all 0.2s ease;
+
+			&:active {
+				background: rgba(93, 118, 189, 0.2);
+			}
+
+			.btn-label {
+				font-size: 22rpx;
+				font-weight: 600;
+				color: #5d76bd;
+			}
 		}
 
 		.quick-arrow {
 			font-size: 20rpx;
-			color: #7c88a8;
+			color: #718096;
 			transition: transform 0.28s ease;
 
 			&.expanded {
@@ -848,28 +834,22 @@
 
 	.quick-item {
 		padding: 14rpx 22rpx;
-		background: linear-gradient(
-			165deg,
-			rgba(93, 118, 189, 0.1) 0%,
-			rgba(255, 255, 255, 0.9) 100%
-		);
+		background: #f7f9fc;
 		border-radius: 999rpx;
 		box-shadow:
-			0 6rpx 16rpx rgba(93, 118, 189, 0.1),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
-		transition:
-			transform 0.15s ease,
-			opacity 0.15s ease;
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		transition: all 0.2s ease;
 
 		&:active {
 			transform: scale(0.97);
-			opacity: 0.94;
+			background: #e8ecf5;
 		}
 
 		.quick-text {
 			font-size: 24rpx;
 			font-weight: 600;
-			color: #3d4a62;
+			color: #4a5568;
 			line-height: 1.35;
 		}
 	}
@@ -889,21 +869,20 @@
 	.message-input {
 		flex: 1;
 		height: 84rpx;
-		background: linear-gradient(
-			165deg,
-			rgba(93, 118, 189, 0.07) 0%,
-			rgba(255, 255, 255, 0.95) 55%,
-			#f8faff 100%
-		);
+		background: #f7f9fc;
 		border-radius: 999rpx;
 		padding: 0 28rpx;
 		font-size: 28rpx;
-		color: #1e2638;
+		color: #2d3748;
 		box-sizing: border-box;
 		border: none;
 		box-shadow:
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.85),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8),
 			0 4rpx 14rpx rgba(93, 118, 189, 0.08);
+
+		&::placeholder {
+			color: #a0aec0;
+		}
 	}
 
 	.send-btn {
@@ -913,32 +892,27 @@
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		background: linear-gradient(180deg, #dfe4ee 0%, #d4d9e5 100%);
+		background: #e2e8f0;
 		border-radius: 999rpx;
-		transition:
-			transform 0.18s ease,
-			box-shadow 0.18s ease,
-			background 0.18s ease;
+		transition: all 0.2s ease;
 		box-shadow:
-			0 4rpx 12rpx rgba(38, 51, 78, 0.08),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.65);
+			0 4rpx 12rpx rgba(93, 118, 189, 0.08),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 
 		.send-text {
 			font-size: 28rpx;
-			font-weight: 700;
-			color: #8b95aa;
-			letter-spacing: 0.06em;
+			font-weight: 600;
+			color: #718096;
 		}
 
 		&.active {
 			background: #5d76bd;
 			box-shadow:
-				0 10rpx 28rpx rgba(93, 118, 189, 0.35),
-				0 2rpx 8rpx rgba(45, 58, 95, 0.1),
-				inset 0 2rpx 0 rgba(255, 255, 255, 0.22);
+				0 8rpx 24rpx rgba(93, 118, 189, 0.3),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.25);
 
 			.send-text {
-				color: #fff;
+				color: #ffffff;
 			}
 		}
 
@@ -957,136 +931,169 @@
 	}
 
 	.link-text {
-		font-size: 22rpx;
-		color: #8b96b0;
+		font-size: 24rpx;
+		color: #718096;
 		font-weight: 500;
 	}
 
-	.link-text人工 {
-		font-size: 22rpx;
-		font-weight: 650;
+	.link-text-primary {
+		font-size: 24rpx;
+		font-weight: 600;
 		color: #5d76bd;
 	}
 
 	.link-divider {
-		font-size: 22rpx;
-		color: #c8cedd;
+		font-size: 24rpx;
+		color: #cbd5e0;
 	}
 
 	.online-service-page.theme-dark {
-		background: linear-gradient(168deg, #101218 0%, #171a22 52%, #1c2030 100%);
+		background: #1a1c23;
 
 		.nav-bar {
-			background: linear-gradient(
-				180deg,
-				rgba(36, 38, 48, 0.98) 0%,
-				rgba(28, 30, 38, 0.96) 100%
-			);
+			background: #252830;
 			box-shadow:
-				0 8rpx 32rpx rgba(0, 0, 0, 0.45),
-				inset 0 -1rpx 0 rgba(255, 255, 255, 0.04);
+				0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 
 			.nav-title {
-				color: #f4f7fb;
+				color: #f0f2f8;
 			}
 
-			.nav-icon-btn {
-				background: #323642;
+			.back-btn {
+				background: #2e323c;
 				box-shadow:
-					0 6rpx 18rpx rgba(0, 0, 0, 0.35),
-					inset 0 1rpx 0 rgba(255, 255, 255, 0.07);
+					0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 			}
 
-			.back-icon,
-			.menu-icon {
-				color: #f4f7fb;
+			.back-icon {
+				color: #8ea9ff;
+			}
+
+			.menu-btn {
+				background: #2e323c;
+				box-shadow:
+					0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+			}
+
+			.menu-text {
+				color: #8ea9ff;
 			}
 		}
 
 		.bottom-sheet-stack {
-			background: linear-gradient(180deg, #242830 0%, #1e222a 100%);
+			background: #252830;
 			box-shadow:
-				0 -10rpx 36rpx rgba(0, 0, 0, 0.45),
-				0 -2rpx 12rpx rgba(0, 0, 0, 0.2);
+				0 -8rpx 32rpx rgba(0, 0, 0, 0.25),
+				0 -2rpx 8rpx rgba(0, 0, 0, 0.15);
+		}
+
+		.menu-content {
+			background: #252830;
+			box-shadow:
+				0 -12rpx 48rpx rgba(0, 0, 0, 0.3);
+
+			.menu-item {
+				background: rgba(255, 77, 79, 0.15);
+				box-shadow:
+					0 2rpx 8rpx rgba(255, 77, 79, 0.1),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
+
+				&:active {
+					background: rgba(255, 77, 79, 0.25);
+				}
+			}
+
+			.menu-text {
+				color: #ff9696;
+			}
 		}
 
 		.divider-text {
-			background: rgba(93, 118, 189, 0.2);
-			color: #b4bccf;
-			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
+			background: rgba(93, 118, 189, 0.15);
+			color: #8a92a8;
+			box-shadow: inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
 		}
 
 		.message-item:not(.is-self) .message-content {
-			background: linear-gradient(165deg, #323642 0%, #292e38 100%);
+			background: #2e323c;
 			box-shadow:
-				0 10rpx 28rpx rgba(0, 0, 0, 0.28),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
+				0 8rpx 24rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
 
 			.message-text {
-				color: #eceff8;
+				color: #e8ebf2;
 			}
 
 			.message-time {
-				color: #8892aa;
+				color: #8a92a8;
 			}
 		}
 
 		.avatar:not(.self-avatar) {
-			background: linear-gradient(145deg, #3a414e 0%, #2f3540 100%);
+			background: #3a414e;
 			box-shadow:
-				0 6rpx 14rpx rgba(0, 0, 0, 0.3),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
+				0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 
 			.avatar-text {
-				color: #c5cad8;
+				color: #a0aec0;
 			}
 		}
 
 		.quick-title {
-			color: #f4f7fb;
+			color: #f0f2f8;
 		}
 
-		.quick-refresh {
-			color: #8fa8e8;
+		.refresh-btn {
+			background: rgba(93, 118, 189, 0.15);
+
+			&:active {
+				background: rgba(93, 118, 189, 0.25);
+			}
+
+			.btn-label {
+				color: #8ea9ff;
+			}
 		}
 
 		.quick-arrow {
-			color: #8a93a8;
+			color: #8a92a8;
 		}
 
 		.quick-item {
-			background: linear-gradient(
-				165deg,
-				rgba(93, 118, 189, 0.18) 0%,
-				rgba(40, 44, 52, 0.95) 100%
-			);
+			background: #2e323c;
 			box-shadow:
-				0 6rpx 16rpx rgba(0, 0, 0, 0.25),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+				0 2rpx 8rpx rgba(0, 0, 0, 0.15),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
+
+			&:active {
+				background: #363b47;
+			}
 
 			.quick-text {
-				color: #d8dee9;
+				color: #e8ebf2;
 			}
 		}
 
 		.message-input {
-			background: linear-gradient(
-				165deg,
-				rgba(93, 118, 189, 0.12) 0%,
-				#2f343e 55%,
-				#292e36 100%
-			);
-			color: #f4f7fb;
+			background: #2e323c;
+			color: #f0f2f8;
 			box-shadow:
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.05),
-				0 4rpx 14rpx rgba(0, 0, 0, 0.2);
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03),
+				0 4rpx 14rpx rgba(0, 0, 0, 0.15);
+
+			&::placeholder {
+				color: #5a6270;
+			}
 		}
 
 		.send-btn {
-			background: linear-gradient(180deg, #383e4a 0%, #323842 100%);
+			background: #3a414e;
 			box-shadow:
 				0 4rpx 12rpx rgba(0, 0, 0, 0.25),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
 
 			.send-text {
 				color: #6f7688;
@@ -1094,51 +1101,22 @@
 
 			&.active {
 				background: #5d76bd;
+				box-shadow:
+					0 8rpx 24rpx rgba(93, 118, 189, 0.3),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
 
 				.send-text {
-					color: #fff;
+					color: #ffffff;
 				}
-
-				box-shadow:
-					0 10rpx 28rpx rgba(93, 118, 189, 0.35),
-					inset 0 2rpx 0 rgba(255, 255, 255, 0.12);
 			}
 		}
 
 		.bottom-links .link-text {
-			color: #7c8498;
+			color: #8a92a8;
 		}
 
-		.bottom-links .link-text人工 {
-			color: #9eb2ec;
-		}
-
-		.menu-content {
-			background: linear-gradient(180deg, #323642 0%, #292e38 100%);
-
-			.menu-item .menu-text {
-				color: #ff8f8f;
-			}
-		}
-
-		.contact-modal-content {
-			background: linear-gradient(165deg, #323642 0%, #292e38 100%);
-
-			.contact-modal-title {
-				color: #f4f7fb;
-			}
-
-			.contact-option .contact-value {
-				color: #eef2fb;
-			}
-
-			.contact-modal-cancel {
-				background: linear-gradient(180deg, #3d434e 0%, #363b46 100%);
-
-				.cancel-text {
-					color: #b4bac8;
-				}
-			}
+		.bottom-links .link-text-primary {
+			color: #8ea9ff;
 		}
 	}
 </style>

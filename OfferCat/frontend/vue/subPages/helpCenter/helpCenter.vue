@@ -18,22 +18,19 @@
 				<view class="hotline-content">
 					<text class="hotline-label">官方客服热线</text>
 					<text class="hotline-number">15092730328</text>
+					<text class="hotline-desc">工作日 9:00-18:00</text>
 				</view>
 			</view>
 
 			<!-- 功能入口卡片 -->
 			<view class="function-grid">
 				<view class="function-item" @click="navigateToManager">
-					<view class="function-icon manager-icon">
-						<text class="icon-text">⚙️</text>
-					</view>
+					<view class="function-tag manager-tag">管理</view>
 					<text class="function-name">管理者入口</text>
 					<text class="function-desc">管理论坛与用户</text>
 				</view>
 				<view class="function-item" @click="navigateToOnlineService">
-					<view class="function-icon service-icon">
-						<text class="icon-text">💬</text>
-					</view>
+					<view class="function-tag service-tag">客服</view>
 					<text class="function-name">在线客服</text>
 					<text class="function-desc">联系人工客服</text>
 				</view>
@@ -47,7 +44,7 @@
 				<view class="faq-list">
 					<view class="faq-item" v-for="(item, index) in faqList" :key="index" @click="showFaqDetail(item)">
 						<text class="faq-question">{{ item.question }}</text>
-						<text class="faq-arrow">›</text>
+						<text class="faq-arrow">></text>
 					</view>
 				</view>
 			</view>
@@ -124,13 +121,7 @@ import themeMixin from '@/utils/themeMixin.js'
 		min-height: 100vh;
 		display: flex;
 		flex-direction: column;
-		background: linear-gradient(
-			168deg,
-			#e8ecf8 0%,
-			#ecf0fb 26%,
-			#f3f6fc 54%,
-			#f8f9fe 100%
-		);
+		background: #f0f3f9;
 	}
 
 	.nav-bar {
@@ -139,13 +130,10 @@ import themeMixin from '@/utils/themeMixin.js'
 		align-items: center;
 		justify-content: space-between;
 		padding: calc(var(--status-bar-height) + 18rpx) 24rpx 22rpx;
-		background: linear-gradient(
-			180deg,
-			rgba(255, 255, 255, 0.94) 0%,
-			rgba(244, 246, 252, 0.9) 100%
-		);
-		backdrop-filter: blur(14px);
-		box-shadow: 0 8rpx 28rpx rgba(38, 51, 78, 0.06);
+		background: #ffffff;
+		box-shadow:
+			0 4rpx 20rpx rgba(93, 118, 189, 0.12),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06);
 
 		.nav-left {
 			flex-shrink: 0;
@@ -156,14 +144,21 @@ import themeMixin from '@/utils/themeMixin.js'
 				height: 72rpx;
 				border-radius: 50%;
 				border: none;
-				background: #ffffff;
+				background: #f5f7fb;
 				display: flex;
 				align-items: center;
 				justify-content: center;
 				box-shadow:
-					0 8rpx 22rpx rgba(93, 118, 189, 0.18),
-					0 2rpx 8rpx rgba(45, 58, 95, 0.06),
-					inset 0 2rpx 0 rgba(255, 255, 255, 0.85);
+					0 4rpx 12rpx rgba(93, 118, 189, 0.15),
+					inset 0 2rpx 0 rgba(255, 255, 255, 0.8);
+				transition: all 0.2s ease;
+
+				&:active {
+					transform: scale(0.95);
+					box-shadow:
+						0 2rpx 6rpx rgba(93, 118, 189, 0.1),
+						inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
+				}
 			}
 
 			.back-icon-img {
@@ -176,11 +171,9 @@ import themeMixin from '@/utils/themeMixin.js'
 		.nav-title {
 			flex: 1;
 			text-align: center;
-			font-size: 32rpx;
-			font-weight: 750;
-			letter-spacing: 0.06em;
-			color: #1e2638;
-			text-shadow: 0 1rpx 0 rgba(255, 255, 255, 0.55);
+			font-size: 34rpx;
+			font-weight: 700;
+			color: #2d3748;
 		}
 
 		.nav-right {
@@ -198,16 +191,27 @@ import themeMixin from '@/utils/themeMixin.js'
 	}
 
 	.hotline-card {
-		margin: 24rpx 24rpx 20rpx;
-		border-radius: 24rpx;
+		margin: 28rpx 28rpx 24rpx;
+		border-radius: 28rpx;
 		overflow: hidden;
-		background: linear-gradient(142deg, #5d76bd 0%, #4660a3 42%, #6b87d6 100%);
-		padding: 32rpx 28rpx;
-		border: none;
+		background: #5d76bd;
+		padding: 36rpx 32rpx;
 		box-shadow:
-			0 16rpx 44rpx rgba(93, 118, 189, 0.35),
-			0 4rpx 16rpx rgba(45, 58, 95, 0.15),
-			inset 0 2rpx 0 rgba(255, 255, 255, 0.22);
+			0 12rpx 40rpx rgba(93, 118, 189, 0.35),
+			0 4rpx 12rpx rgba(93, 118, 189, 0.2),
+			inset 0 2rpx 0 rgba(255, 255, 255, 0.15),
+			inset 0 -4rpx 12rpx rgba(0, 0, 0, 0.08);
+		position: relative;
+
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 0;
+			right: 0;
+			height: 1rpx;
+			background: rgba(255, 255, 255, 0.2);
+		}
 	}
 
 	.hotline-content {
@@ -215,146 +219,146 @@ import themeMixin from '@/utils/themeMixin.js'
 		flex-direction: column;
 		align-items: center;
 		justify-content: center;
-		gap: 10rpx;
+		gap: 12rpx;
 		text-align: center;
 	}
 
 	.hotline-label {
-		font-size: 26rpx;
-		font-weight: 600;
-		color: rgba(255, 255, 255, 0.88);
-		letter-spacing: 0.08em;
+		font-size: 24rpx;
+		font-weight: 500;
+		color: rgba(255, 255, 255, 0.85);
+		letter-spacing: 0.06em;
 	}
 
 	.hotline-number {
-		font-size: 44rpx;
-		font-weight: 750;
-		color: #fff;
-		letter-spacing: 0.06em;
-		text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.12);
+		font-size: 48rpx;
+		font-weight: 700;
+		color: #ffffff;
+		letter-spacing: 0.04em;
+		text-shadow: 0 2rpx 8rpx rgba(0, 0, 0, 0.15);
+	}
+
+	.hotline-desc {
+		font-size: 22rpx;
+		color: rgba(255, 255, 255, 0.7);
+		margin-top: 4rpx;
 	}
 
 	.function-grid {
 		display: flex;
-		gap: 18rpx;
-		padding: 0 24rpx;
+		gap: 20rpx;
+		padding: 0 28rpx;
 	}
 
 	.function-item {
 		flex: 1;
 		min-width: 0;
-		background: linear-gradient(
-			165deg,
-			#ffffff 0%,
-			#f8faff 52%,
-			#f4f6fc 100%
-		);
-		border-radius: 22rpx;
-		padding: 28rpx 20rpx 32rpx;
+		background: #ffffff;
+		border-radius: 24rpx;
+		padding: 32rpx 20rpx 36rpx;
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		border: none;
 		box-shadow:
-			0 12rpx 36rpx rgba(93, 118, 189, 0.1),
-			0 4rpx 14rpx rgba(38, 51, 78, 0.05),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.95);
-		transition: transform 0.18s ease, opacity 0.18s ease;
+			0 8rpx 28rpx rgba(93, 118, 189, 0.12),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+		position: relative;
+
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 20rpx;
+			right: 20rpx;
+			height: 1rpx;
+			background: rgba(255, 255, 255, 0.5);
+		}
 
 		&:active {
-			transform: scale(0.98);
-			opacity: 0.95;
+			transform: translateY(-2rpx) scale(0.98);
+			box-shadow:
+				0 12rpx 36rpx rgba(93, 118, 189, 0.18),
+				0 4rpx 12rpx rgba(93, 118, 189, 0.1),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 		}
 	}
 
-	.function-icon {
-		width: 88rpx;
-		height: 88rpx;
-		border-radius: 22rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		border: none;
-		position: relative;
-		overflow: hidden;
+	.function-tag {
+		padding: 16rpx 32rpx;
+		border-radius: 16rpx;
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #ffffff;
 		box-shadow:
-			0 12rpx 28rpx rgba(45, 58, 95, 0.22),
-			0 3rpx 10rpx rgba(93, 118, 189, 0.12),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.42),
-			inset 0 -2rpx 6rpx rgba(20, 30, 55, 0.12);
-
-		.icon-text {
-			font-size: 36rpx;
-			line-height: 1;
-			position: relative;
-			z-index: 1;
-			filter: drop-shadow(0 1rpx 3rpx rgba(0, 0, 0, 0.2));
-		}
+			0 8rpx 24rpx rgba(93, 118, 189, 0.25),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.12),
+			inset 0 2rpx 0 rgba(255, 255, 255, 0.3);
 	}
 
-	/* 管理者：深蓝靛主色 + 左上角柔高光，色相连续不脏 */
-	.manager-icon {
-		background:
-			radial-gradient(ellipse 135% 100% at 12% -8%, rgba(255, 255, 255, 0.38) 0%, transparent 52%),
-			linear-gradient(156deg, #7a8fc8 0%, #5d76bd 40%, #4a62a8 72%, #3a4f7a 100%);
+	.manager-tag {
+		background: #5d76bd;
 	}
 
-	/* 客服：同属冷色系，青绿起手逐步落回品牌蓝，避免橙紫撞色 */
-	.service-icon {
-		background:
-			radial-gradient(ellipse 130% 95% at 18% -6%, rgba(255, 255, 255, 0.36) 0%, transparent 48%),
-			linear-gradient(156deg, #5eb3c4 0%, #4f9aaf 34%, #4d85aa 68%, #4d6599 92%, #5d76bd 100%);
+	.service-tag {
+		background: #4a90a4;
 	}
 
 	.function-name {
 		font-size: 28rpx;
 		font-weight: 700;
-		color: #1e2638;
-		margin-top: 18rpx;
+		color: #2d3748;
+		margin-top: 20rpx;
 		text-align: center;
 	}
 
 	.function-desc {
 		font-size: 22rpx;
 		font-weight: 500;
-		color: #7c88a8;
+		color: #718096;
 		margin-top: 8rpx;
-		line-height: 1.35;
+		line-height: 1.4;
 		text-align: center;
 	}
 
 	.faq-section {
-		margin: 28rpx 24rpx 0;
-		background: linear-gradient(
-			165deg,
-			#ffffff 0%,
-			#f8faff 52%,
-			#f4f6fc 100%
-		);
-		border-radius: 24rpx;
+		margin: 28rpx 28rpx 0;
+		background: #ffffff;
+		border-radius: 28rpx;
 		padding: 28rpx 24rpx 32rpx;
-		border: none;
 		box-shadow:
-			0 14rpx 44rpx rgba(93, 118, 189, 0.1),
-			0 4rpx 16rpx rgba(38, 51, 78, 0.04),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.95);
+			0 8rpx 32rpx rgba(93, 118, 189, 0.1),
+			0 2rpx 8rpx rgba(93, 118, 189, 0.05),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		position: relative;
+
+		&::before {
+			content: '';
+			position: absolute;
+			top: 0;
+			left: 24rpx;
+			right: 24rpx;
+			height: 1rpx;
+			background: rgba(255, 255, 255, 0.5);
+		}
 	}
 
 	.section-header {
-		margin-bottom: 20rpx;
+		margin-bottom: 24rpx;
+		padding: 0 8rpx;
 
 		.section-title {
 			font-size: 30rpx;
-			font-weight: 750;
-			color: #1e2638;
-			letter-spacing: 0.04em;
+			font-weight: 700;
+			color: #2d3748;
 		}
 	}
 
 	.faq-list {
 		display: flex;
 		flex-direction: column;
-		gap: 14rpx;
+		gap: 16rpx;
 	}
 
 	.faq-item {
@@ -362,134 +366,127 @@ import themeMixin from '@/utils/themeMixin.js'
 		align-items: center;
 		justify-content: space-between;
 		gap: 16rpx;
-		padding: 22rpx 20rpx;
-		border-radius: 18rpx;
-		border: none;
-		background: linear-gradient(
-			165deg,
-			rgba(93, 118, 189, 0.07) 0%,
-			rgba(255, 255, 255, 0.75) 100%
-		);
+		padding: 24rpx 20rpx;
+		border-radius: 20rpx;
+		background: #f7f9fc;
 		box-shadow:
-			0 6rpx 18rpx rgba(93, 118, 189, 0.07),
-			inset 0 1rpx 0 rgba(255, 255, 255, 0.85);
-		transition: transform 0.16s ease, box-shadow 0.16s ease;
+			0 2rpx 8rpx rgba(93, 118, 189, 0.06),
+			inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
+		transition: all 0.2s ease;
+		position: relative;
 
 		&:active {
 			transform: scale(0.99);
+			background: #f0f4fa;
 			box-shadow:
-				0 4rpx 12rpx rgba(93, 118, 189, 0.12),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.75);
-		}
-
-		.faq-question {
-			font-size: 28rpx;
-			font-weight: 650;
-			color: #2a3350;
-			flex: 1;
-			min-width: 0;
-			line-height: 1.45;
-		}
-
-		.faq-arrow {
-			flex-shrink: 0;
-			font-size: 36rpx;
-			font-weight: 300;
-			color: #a8b0c8;
-			line-height: 1;
+				0 4rpx 12rpx rgba(93, 118, 189, 0.1),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.6);
 		}
 	}
 
+	.faq-question {
+		font-size: 28rpx;
+		font-weight: 600;
+		color: #2d3748;
+		flex: 1;
+		min-width: 0;
+		line-height: 1.4;
+	}
+
+	.faq-arrow {
+		font-size: 28rpx;
+		font-weight: 700;
+		color: #5d76bd;
+		flex-shrink: 0;
+	}
+
 	.help-center-page.theme-dark {
-		background: linear-gradient(168deg, #0e1015 0%, #14161e 45%, #1a1c24 100%);
+		background: #1a1c23;
 
 		.nav-bar {
-			background: linear-gradient(
-				180deg,
-				rgba(32, 34, 42, 0.96) 0%,
-				rgba(24, 26, 32, 0.94) 100%
-			);
-			box-shadow: 0 8rpx 32rpx rgba(0, 0, 0, 0.45);
-		}
-
-		.nav-left .back-btn {
-			background: #2e323c;
+			background: #252830;
 			box-shadow:
-				0 8rpx 22rpx rgba(0, 0, 0, 0.35),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.08);
-		}
+				0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 
-		.nav-title {
-			color: #f4f7fb;
-			text-shadow: none;
+			.nav-title {
+				color: #f0f2f8;
+			}
+
+			.back-btn {
+				background: #2e323c;
+				box-shadow:
+					0 4rpx 12rpx rgba(0, 0, 0, 0.25),
+					inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+			}
 		}
 
 		.hotline-card {
+			background: #5d76bd;
 			box-shadow:
-				0 16rpx 44rpx rgba(0, 0, 0, 0.4),
-				inset 0 2rpx 0 rgba(255, 255, 255, 0.12);
+				0 12rpx 40rpx rgba(0, 0, 0, 0.35),
+				0 4rpx 12rpx rgba(0, 0, 0, 0.2),
+				inset 0 2rpx 0 rgba(255, 255, 255, 0.1);
 		}
 
 		.function-item {
-			background: linear-gradient(165deg, #282c36 0%, #22262e 100%);
+			background: #252830;
 			box-shadow:
-				0 12rpx 36rpx rgba(0, 0, 0, 0.3),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
-		}
-
-		.function-name {
-			color: #f4f7fb;
-		}
-
-		.function-desc {
-			color: #9aa6c4;
-		}
-
-		.function-icon {
-			box-shadow:
-				0 12rpx 28rpx rgba(0, 0, 0, 0.42),
-				0 2rpx 8rpx rgba(0, 0, 0, 0.25),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.18),
-				inset 0 -2rpx 8rpx rgba(0, 0, 0, 0.22);
-
-			.icon-text {
-				filter: drop-shadow(0 1rpx 4rpx rgba(0, 0, 0, 0.35));
-			}
-		}
-
-		.faq-section {
-			background: linear-gradient(165deg, #282c34 0%, #21252c 100%);
-			box-shadow:
-				0 14rpx 44rpx rgba(0, 0, 0, 0.28),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
-		}
-
-		.section-title {
-			color: #f4f7fb !important;
-		}
-
-		.faq-item {
-			background: linear-gradient(
-				165deg,
-				rgba(93, 118, 189, 0.14) 0%,
-				rgba(40, 44, 52, 0.95) 100%
-			);
-			box-shadow:
-				0 6rpx 18rpx rgba(0, 0, 0, 0.25),
-				inset 0 1rpx 0 rgba(255, 255, 255, 0.06);
+				0 8rpx 28rpx rgba(0, 0, 0, 0.25),
+				0 2rpx 8rpx rgba(0, 0, 0, 0.15),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
 
 			&:active {
 				box-shadow:
-					0 4rpx 12rpx rgba(0, 0, 0, 0.3),
-					inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+					0 12rpx 36rpx rgba(0, 0, 0, 0.3),
+					0 4rpx 12rpx rgba(0, 0, 0, 0.2);
+			}
+		}
+
+		.function-tag {
+			box-shadow:
+				0 8rpx 24rpx rgba(0, 0, 0, 0.35),
+				0 2rpx 8rpx rgba(0, 0, 0, 0.2),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.1);
+		}
+
+		.function-name {
+			color: #f0f2f8;
+		}
+
+		.function-desc {
+			color: #8a92a8;
+		}
+
+		.faq-section {
+			background: #252830;
+			box-shadow:
+				0 8rpx 32rpx rgba(0, 0, 0, 0.25),
+				0 2rpx 8rpx rgba(0, 0, 0, 0.15),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
+		}
+
+		.section-header {
+			.section-title {
+				color: #f0f2f8;
+			}
+		}
+
+		.faq-item {
+			background: #2e323c;
+			box-shadow:
+				0 2rpx 8rpx rgba(0, 0, 0, 0.15),
+				inset 0 1rpx 0 rgba(255, 255, 255, 0.03);
+
+			&:active {
+				background: #363b47;
 			}
 
 			.faq-question {
-				color: #e4e9f5;
+				color: #e8ebf2;
 			}
 
 			.faq-arrow {
-				color: #7c8498;
+				color: #8ea9ff;
 			}
 		}
 	}

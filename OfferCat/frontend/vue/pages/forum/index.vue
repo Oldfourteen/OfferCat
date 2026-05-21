@@ -1,5 +1,6 @@
 <template>
 	<view class="forum-page" :class="themeClass">
+		<ForumCollectNoticeStack v-if="noticeLayerVisible" :theme="theme" />
 		<view class="forum-header-sticky">
 			<view class="header-content">
 				<text class="page-title">校园论坛</text>
@@ -35,6 +36,7 @@
 <script>
 import ForumList from '@/pages/forum/components/ForumList.vue'
 import AppLiquidTabBar from '@/components/AppLiquidTabBar.vue'
+import ForumCollectNoticeStack from '@/components/ForumCollectNoticeStack.vue'
 import themeMixin from '@/utils/themeMixin.js'
 import liquidTabBarPageMixin from '@/mixins/liquidTabBarPageMixin.js'
 import { getForumUnreadCounts } from '@/api/forum.js'
@@ -44,15 +46,21 @@ export default {
 	mixins: [themeMixin, liquidTabBarPageMixin],
 	components: {
 		AppLiquidTabBar,
-		ForumList
+		ForumList,
+		ForumCollectNoticeStack
 	},
 	data() {
 		return {
-			replyInboxCount: 0
+			replyInboxCount: 0,
+			noticeLayerVisible: false
 		}
 	},
 	onShow() {
+		this.noticeLayerVisible = true
 		this.loadReplyInboxCount()
+	},
+	onHide() {
+		this.noticeLayerVisible = false
 	},
 	methods: {
 		async loadReplyInboxCount() {

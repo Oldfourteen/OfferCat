@@ -1,5 +1,6 @@
 <template>
 	<view class="forum-detail-page" :class="themeClass">
+		<ForumCollectNoticeStack v-if="noticeLayerVisible" :theme="theme" />
 		<view class="detail-overlay" :class="{ 'is-leaving': isLeaving }" @click="goBack"></view>
 		<view class="detail-shell" :class="{ 'is-leaving': isLeaving }">
 			<!-- 顶部导航栏 -->
@@ -209,6 +210,7 @@
 
 <script>
 	import { BASE_URL } from '@/api/config.js'
+	import ForumCollectNoticeStack from '@/components/ForumCollectNoticeStack.vue'
 	import {
 		getForumPostDetail,
 		getForumComments,
@@ -223,12 +225,17 @@
 		likeForumComment,
 		unlikeForumComment
 	} from '@/api/forum.js'
+	import { emitForumCollectNotice } from '@/utils/forumCollectNotice.js'
+	import { removeCollectedForumPost, upsertCollectedForumPost } from '@/utils/forumFavorites.js'
 	import themeMixin from '@/utils/themeMixin.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 	import { syncForumPostViews } from '@/utils/forumViewCount.js'
 
 	export default {
 		mixins: [themeMixin],
+		components: {
+			ForumCollectNoticeStack
+		},
 		data() {
 			return {
 				postId: null,
@@ -257,7 +264,8 @@
 				viewRecorded: false,
 				allowNativeBack: false,
 				emptyCommentMinHeight: 0,
-				scrollIntoView: ''
+				scrollIntoView: '',
+				noticeLayerVisible: false
 			}
 		},
 		computed: {
@@ -334,6 +342,12 @@
 				console.error('没有获取到有效的帖子ID参数，当前 options:', options)
 				uni.showToast({ title: '帖子参数错误', icon: 'none' })
 			}
+		},
+		onShow() {
+			this.noticeLayerVisible = true
+		},
+		onHide() {
+			this.noticeLayerVisible = false
 		},
 		methods: {
 			goBack() {
@@ -916,9 +930,15 @@
 					),
 				})
 				try {
-					if (nextCol) await collectForumPost(pid, uid)
-					else await uncollectForumPost(pid, uid)
-					uni.showToast({ title: nextCol ? '收藏成功' : '已取消收藏', icon: 'none' })
+					if (nextCol) {
+						await collectForumPost(pid, uid)
+						upsertCollectedForumPost(this.post, uid)
+						emitForumCollectNotice()
+					} else {
+						await uncollectForumPost(pid, uid)
+						removeCollectedForumPost(pid, uid)
+						uni.showToast({ title: '已取消收藏', icon: 'none' })
+					}
 					uni.$emit('refreshForumList')
 				} catch (e) {
 					this.post = syncForumPostViews(prevPost)
@@ -1633,15 +1653,15 @@
 			flex: 1;
 			height: 72rpx;
 			background: #f5f5f5;
-			border-radius: 36rpx;
-			padding: 0 30rpx;
+			border-radius: 20rpx;
+			padding: 0 24rpx;
 			font-size: 28rpx;
 		}
 
 		.send-btn {
-			width: 120rpx;
+			width: 132rpx;
 			height: 72rpx;
-			border-radius: 36rpx;
+			border-radius: 20rpx;
 			background: #e0e0e0;
 			color: #fff;
 			display: flex;

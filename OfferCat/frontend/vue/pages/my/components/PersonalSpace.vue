@@ -72,7 +72,7 @@
 					},
 					favorites: () => {
 						uni.navigateTo({
-							url: '/subPages/questionBank/favorites?type=all'
+							url: '/subPages/forum/favorites'
 						})
 					},
 					friends: () => {

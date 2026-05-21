@@ -372,6 +372,16 @@
 					}
 				},
 				{
+					"path": "forum/favorites",
+					"style": {
+						"navigationBarTitleText": "我的收藏",
+						"navigationStyle": "custom",
+						"app-plus": {
+							"titleNView": false
+						}
+					}
+				},
+				{
 					"path": "forum/publish",
 					"style": {
 						"navigationBarTitleText": "发布动态",

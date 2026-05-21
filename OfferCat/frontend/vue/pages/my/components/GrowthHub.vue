@@ -11,7 +11,7 @@
 			<!-- 主功能网格聚合成长档案、打卡、冲刺营和收藏等入口。 -->
 			<view v-for="(item, index) in primaryTools" :key="item.name" class="main-item animate-float-up" :style="{ animationDelay: (0.05 + index * 0.033) + 's' }" @click="handleToolClick(item)">
 				<view class="tool-icon" :class="item.uiClass">
-					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
+					<image v-if="item.icon && /^data:image|^\/|^https?:\/\//.test(item.icon)" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
 				</view>
 				<text class="tool-name">{{ item.name }}</text>

@@ -11,7 +11,7 @@
 			<!-- 两列网格渲染帮助、资料编辑、反馈和系统设置四类入口。 -->
 			<view v-for="(item, index) in tools" :key="item.name" class="setting-item animate-float-up" :style="{ animationDelay: (0.05 + index * 0.05) + 's' }" @click="handleToolClick(item)">
 				<view class="setting-icon" :class="item.uiClass">
-					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="setting-icon-img" mode="aspectFit" />
+					<image v-if="item.icon && /^data:image|^\/|^https?:\/\//.test(item.icon)" :src="item.icon" class="setting-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
 				</view>
 				<text class="setting-name">{{ item.name }}</text>

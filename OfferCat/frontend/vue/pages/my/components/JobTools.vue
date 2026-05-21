@@ -69,7 +69,7 @@
 				'competition-item': item.name === '竞赛奖项'
 			}" :style="{ animationDelay: (0.16 + index * 0.01) + 's' }" @click="handleToolClick(item)">
 				<view class="tool-icon" :class="item.uiClass">
-					<image v-if="item.icon.startsWith('data:image')" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
+					<image v-if="item.icon && /^data:image|^\/|^https?:\/\//.test(item.icon)" :src="item.icon" class="tool-icon-img" mode="aspectFit" />
 					<text v-else>{{ item.icon }}</text>
 				</view>
 				<text class="tool-name">{{ item.name }}</text>

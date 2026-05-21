@@ -97,7 +97,7 @@ if not exist "%APP%\%JAR%" (
 echo Starting %NAME% (%JAR%)...
 
 start "%NAME%" cmd /k ^
-  "title %NAME% && cd /d "%APP%" && java -jar "%APP%\%JAR%" --spring.profiles.active=prod --spring.config.additional-location="%CFG%\" 1>>"%LOG%\%NAME%.log" 2>>&1"
+  "title %NAME% && cd /d "%APP%" && java -jar "%APP%\%JAR%" --spring.profiles.active=prod --spring.config.additional-location=optional:file:%CFG%/ 1>>"%LOG%\%NAME%.log" 2>>&1"
 
 goto :eof
 

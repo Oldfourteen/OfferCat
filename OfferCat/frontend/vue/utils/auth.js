@@ -16,7 +16,7 @@ export async function completeOneClickLoginWithPhone(phone) {
 	if (!/^1\d{10}$/.test(target)) {
 		throw new Error('手机号格式无效')
 	}
-	await ensureApiWarmBeforeLogin(5000)
+	await ensureApiWarmBeforeLogin(22000)
 	const result = await login({ loginType: 'oneClick', target, phone: target })
 
 	const token = (result && result.token) || (result && result.data && result.data.token) || ''

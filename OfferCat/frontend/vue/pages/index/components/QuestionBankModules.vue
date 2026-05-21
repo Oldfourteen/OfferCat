@@ -61,8 +61,8 @@
 <script>
 	import QuestionBankTypeGauge from './QuestionBankTypeGauge.vue'
 	import { getQuestionHistory, QUESTION_HISTORY_UPDATED_EVENT, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
-	import { cumulativeAccuracyPercentForKind } from '@/utils/growthTrendScore.js'
-	import { getUser, resolveStoredStudentId, resolveStoredUserId, scheduleLoginProfileSync } from '@/utils/user.js'
+	import { accuracyPercentForKind } from '@/utils/growthTrendScore.js'
+	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		name: 'QuestionBankModules',
@@ -94,19 +94,16 @@
 			this.refreshPracticeScores()
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
-				uni.$on('pageShow', this.handlePageShow)
 			}
 		},
 		beforeDestroy() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
-				uni.$off('pageShow', this.handlePageShow)
 			}
 		},
 		beforeUnmount() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
-				uni.$off('pageShow', this.handlePageShow)
 			}
 		},
 		data() {
@@ -146,40 +143,44 @@
 		methods: {
 			applyPracticeScoresFromHistory() {
 				const history = getQuestionHistory()
-				this.writtenAccuracy = cumulativeAccuracyPercentForKind(history, 'written')
-				this.interviewAccuracy = cumulativeAccuracyPercentForKind(history, 'interview')
+				this.writtenAccuracy = accuracyPercentForKind(history, 'written')
+				this.interviewAccuracy = accuracyPercentForKind(history, 'interview')
 			},
 			async refreshPracticeScores() {
-				// 先用本地缓存展示，避免 App 端网络/身份未就绪时长期显示「暂未统计」。
 				this.applyPracticeScoresFromHistory()
 
 				let studentId = resolveStoredStudentId()
 				let userId = resolveStoredUserId(getUser())
 				if (!studentId && !userId) {
-					scheduleLoginProfileSync({ timeout: 8000 })
-				} else {
+					await syncUserProfileFromServer({ timeout: 8000 })
+					studentId = resolveStoredStudentId()
+					userId = resolveStoredUserId(getUser())
+				}
+
+				if (studentId || userId) {
 					try {
 						await syncQuestionHistoryFromServer()
 					} catch (e) {
 						console.warn('[QuestionBankModules] syncQuestionHistoryFromServer 失败', e)
 					}
-					this.applyPracticeScoresFromHistory()
 				}
+
+				this.applyPracticeScoresFromHistory()
+				this.$nextTick(() => this.syncGaugeDisplays())
+			},
+			syncGaugeDisplays() {
+				this.modules.forEach((item) => {
+					const ref = this.$refs[`gauge-${item.key}`]
+					const gauge = Array.isArray(ref) ? ref[0] : ref
+					if (gauge && typeof gauge.syncDisplayFromProps === 'function') {
+						gauge.syncDisplayFromProps()
+					}
+				})
 			},
 			goModule(item) {
 				// 按配置跳转到对应题库子页面。
 				uni.navigateTo({
 					url: item.url
-				})
-			},
-			handlePageShow() {
-				this.$nextTick(() => {
-					this.modules.forEach(item => {
-						const gauge = this.$refs[`gauge-${item.key}`]
-						if (gauge && typeof gauge.resetAnimation === 'function') {
-							gauge.resetAnimation()
-						}
-					})
 				})
 			}
 		}

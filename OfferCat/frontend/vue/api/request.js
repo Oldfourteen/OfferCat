@@ -12,7 +12,7 @@ function getDefaultRetryTimes(method, url) {
 	const m = String(method || 'GET').toUpperCase()
 	const u = String(url || '')
 	if (m === 'GET') return 2
-	if (m === 'POST' && /^\/auth\/login(\?|$|\/)/.test(u)) return 2
+	if (m === 'POST' && /^\/auth\/login(\?|$|\/)/.test(u)) return 0
 	return 0
 }
 

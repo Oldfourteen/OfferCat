@@ -22,7 +22,7 @@
 	import confirmAgreement from './components/confirmAgreement.vue';
 	import loginArea from './components/loginArea.vue';
 	import logoArea from '../../pages/loginAndRegister/components/logoArea.vue';
-	import { warmApiConnection } from '@/utils/apiWarmup.js';
+	import { warmApiConnection, ensureApiWarmBeforeLogin } from '@/utils/apiWarmup.js';
 	export default{
 		data() {
 			return {
@@ -33,9 +33,18 @@
 			}
 		},
 		onLoad() {
-			void warmApiConnection()
+			void warmApiConnection(true)
+			this._warmTimer = setInterval(() => {
+				void warmApiConnection(true)
+			}, 20000)
 			// 页面加载时检查是否在72小时免验证期内
 			this.checkAgreementExpire();
+		},
+		onUnload() {
+			if (this._warmTimer) {
+				clearInterval(this._warmTimer)
+				this._warmTimer = null
+			}
 		},
 		methods:{
 			checkAgreementExpire() {
@@ -90,8 +99,10 @@
 				}
 			},
 			async doLogin() {
-				uni.showLoading({ title: '登录中', mask: true })
+				uni.showLoading({ title: '正在连接服务器…', mask: true })
 				try {
+					await ensureApiWarmBeforeLogin(22000)
+					uni.showLoading({ title: '登录中', mask: true })
 					const area = this.$refs.loginAreaRef
 					if (!area || typeof area.runOneClickLogin !== 'function') {
 						throw new Error('一键登录初始化失败')

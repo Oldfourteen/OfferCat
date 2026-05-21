@@ -59,7 +59,7 @@
 	import confirmAgreement from './confirmAgreement.vue';
 	import humanVerify from './humanVerify.vue';
 	import { login } from '../../../api/auth'
-	import { ensureApiWarmBeforeLogin } from '../../../utils/apiWarmup'
+	import { runWithServerWarmup } from '../../../utils/loginFlow'
 	import { setToken } from '../../../utils/token'
 	import { setUser, scheduleLoginProfileSync } from '../../../utils/user'
 	
@@ -132,13 +132,16 @@
 			},
 			async doLogin() {
 				// 密码登录成功后写入 token 和用户信息，并按资料完整度分流跳转。
-				uni.showLoading({ title: '登录中', mask: true })
 				try {
-					await ensureApiWarmBeforeLogin(5000)
-					const result = await login({
-						loginType: 'password',
-						target: (this.account || '').trim(),
-						password: (this.password || '').trim()
+					const result = await runWithServerWarmup({
+						warmMaxMs: 22000,
+						busyTitle: '登录中',
+						run: () =>
+							login({
+								loginType: 'password',
+								target: (this.account || '').trim(),
+								password: (this.password || '').trim(),
+							}),
 					})
 
 					const token = (result && result.token) || (result && result.data && result.data.token) || ''

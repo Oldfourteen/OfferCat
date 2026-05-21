@@ -9,6 +9,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import javax.sql.DataSource;
+import java.sql.Connection;
 import java.util.Map;
 
 /**
@@ -23,11 +25,20 @@ public class AuthController {
     @Autowired
     private AuthService authService;
 
+    @Autowired
+    private DataSource dataSource;
+
     /**
      * 轻量存活探针，供 App 启动/登录页预热网关与用户服务，避免首包登录卡在冷启动。
+     * 顺带 SELECT 1 预热连接池，使后续 /auth/login 不再首查库阻塞。
      */
     @GetMapping("/ping")
     public ResponseEntity<Map<String, String>> ping() {
+        try (Connection c = dataSource.getConnection()) {
+            c.isValid(2);
+        } catch (Exception ignored) {
+            // 探活仍以 HTTP 200 响应，避免前端因 DB 瞬断无法完成链路预热
+        }
         return ResponseEntity.ok(Map.of(
                 "status", "UP",
                 "service", "user-service"));

@@ -77,6 +77,34 @@ export function cumulativeAccuracyPercentForKind(history, practiceType) {
 	return Math.round((correct / attempted) * 1000) / 10
 }
 
+/**
+ * 首页题库圆环统计：优先按作答数加权；若无 correct/answered 字段则回退场次 accuracy 加权平均。
+ */
+export function accuracyPercentForKind(history, practiceType) {
+	const weighted = cumulativeAccuracyPercentForKind(history, practiceType)
+	if (weighted != null) return weighted
+	if (!Array.isArray(history)) return null
+
+	let sumAcc = 0
+	let weight = 0
+	for (const item of history) {
+		if (item.type !== practiceType) continue
+		const ans = Number(item.answeredCount) || Number(item.totalCount) || 0
+		if (ans <= 0) continue
+		let acc = Number(item.accuracy)
+		if (!Number.isFinite(acc) || acc <= 0) {
+			const correct = Number(item.correctCount) || 0
+			acc = (correct / ans) * 100
+		} else if (acc <= 1) {
+			acc = acc * 100
+		}
+		sumAcc += acc * ans
+		weight += ans
+	}
+	if (!weight) return null
+	return Math.round((sumAcc / weight) * 10) / 10
+}
+
 function startOfDayMs(d) {
 	const x = new Date(d)
 	x.setHours(0, 0, 0, 0)

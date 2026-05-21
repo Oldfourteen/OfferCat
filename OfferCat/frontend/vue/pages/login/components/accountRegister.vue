@@ -78,7 +78,7 @@
 	import phoneCode from './phoneCode.vue';
 	import humanVerify from './humanVerify.vue';
 	import { register } from '../../../api/auth'
-	import { ensureApiWarmBeforeLogin } from '../../../utils/apiWarmup'
+	import { runWithServerWarmup } from '../../../utils/loginFlow'
 	import { setToken } from '../../../utils/token'
 	import { setUser, scheduleLoginProfileSync } from '../../../utils/user'
 	
@@ -228,15 +228,18 @@
 				this.doRegister();
 			},
 			async doRegister() {
-				uni.showLoading({ title: '注册中', mask: true })
 				try {
-					await ensureApiWarmBeforeLogin(5000)
-					const result = await register({
-						phone: (this.phone || '').trim(),
-						email: (this.email || '').trim(),
-						password: (this.password || '').trim(),
-						confirmPassword: (this.confirmPassword || '').trim(),
-						code: (this.code || '').trim()
+					const result = await runWithServerWarmup({
+						warmMaxMs: 22000,
+						busyTitle: '注册中',
+						run: () =>
+							register({
+								phone: (this.phone || '').trim(),
+								email: (this.email || '').trim(),
+								password: (this.password || '').trim(),
+								confirmPassword: (this.confirmPassword || '').trim(),
+								code: (this.code || '').trim(),
+							}),
 					})
 
 					const token = (result && result.token) || (result && result.data && result.data.token) || ''

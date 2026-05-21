@@ -129,7 +129,7 @@
 				submitError: '',
 				// 枚举选项统一放在本地，供 picker 文案与提交值复用。
 				genderOptions: [
-					{ label: '未知', value: 0 },
+					{ label: '隐私', value: 0 },
 					{ label: '男', value: 1 },
 					{ label: '女', value: 2 }
 				],

@@ -1,5 +1,5 @@
 <template>
-	<view class="BasicInfo" :class="themeClass" :key="animationKey">
+	<view class="BasicInfo" :class="[themeClass, { 'is-guest': !isLoggedIn }]" :key="animationKey">
 		<!-- 整卡蓝色渐变区背后的星系装饰，铺满 BasicInfo -->
 		<!-- 矢量柔光星系：模板须与 stylesheet 中 galaxy-soft-* / galaxy-pin-star 对应 -->
 		<view class="galaxy-backdrop">
@@ -47,27 +47,38 @@
 				</view>
 			</view>
 			<view class="Profile animate-float-up" :style="{ animationDelay: '0.05s' }">
-				<!-- 用户昵称、专业摘要和求职标签构成个人身份信息区。 -->
-				<text class="Username">{{ userProfile.nickname }}</text>
-				<view class="Major">
-					<text class="major">
-						{{ profileSummary }}
-					</text>
-				</view>
-				<view class="JobInfo">
-					<view class="jobInfo animate-float-up" v-for="(item, index) in tagList" 
-					:key="index" :style="{ animationDelay: (0.1 + index * 0.033) + 's' }">
-						{{item}}
+				<template v-if="isLoggedIn">
+					<!-- 用户昵称、专业摘要和求职标签构成个人身份信息区。 -->
+					<text class="Username">{{ userProfile.nickname }}</text>
+					<view class="Major">
+						<text class="major">
+							{{ profileSummary }}
+						</text>
 					</view>
+					<view class="JobInfo">
+						<view class="jobInfo animate-float-up" v-for="(item, index) in tagList" 
+						:key="index" :style="{ animationDelay: (0.1 + index * 0.033) + 's' }">
+							{{item}}
+						</view>
+					</view>
+				</template>
+				<view v-else class="GuestState" @click="goToLogin">
+					<text class="Username">未登录</text>
+					<view class="Major">
+						<text class="major">
+							登录后查看个人资料、成长数据和个人主页
+						</text>
+					</view>
+					<view class="login-entry">去登录</view>
 				</view>
 			</view>
 		</view>
-		<view class="PersonalBio" @click="showBioPopup = true">
+		<view v-if="isLoggedIn" class="PersonalBio" @click="showBioPopup = true">
 			<!-- 个人简介默认单行展示，点击后展开完整弹窗。 -->
 			<text class="bio-text">{{ userProfile.bio || '点击这里添加个人简介，展示更好的自己...' }}</text>
 		</view>
 
-		<view class="StatsBar animate-float-up" :style="{ animationDelay: '0.15s' }">
+		<view v-if="isLoggedIn" class="StatsBar animate-float-up" :style="{ animationDelay: '0.15s' }">
 			<!-- 四项统计直接读取成长档案聚合数据，展示当前活跃度。 -->
 			<view class="statsBar animate-float-up" v-for="(item,index) in stats" :key="item.label" :class="{ noBorder: index === 3 }" :style="{ animationDelay: (0.15 + index * 0.05) + 's' }">
 				<view class="statsBar1">
@@ -172,6 +183,9 @@
 				// 头部信息卡根据主题切换浅色/深色背景方案。
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			},
+			isLoggedIn() {
+				return resolveStoredUserId(getUser()) != null
+			},
 			profileSummary() {
 				// 将专业和学校压缩成一行摘要文案，如果未填写则显示默认提示。
 				const school = this.userProfile.school || '暂未填写学校'
@@ -196,6 +210,21 @@
 		},
 		methods: {
 			async loadUserInfo() {
+				if (!this.isLoggedIn) {
+					this.avatarUrl = DEFAULT_AVATAR
+					this.userProfile = {
+						...this.userProfile,
+						nickname: '',
+						school: '',
+						idCard: '',
+						major: '',
+						graduationYear: '',
+						jobStatus: '',
+						bio: ''
+					}
+					this.tagList = []
+					return
+				}
 				await syncUserProfileFromServer({ timeout: 12000 })
 				// 从本地资料缓存回填头像、昵称、简介和期望标签信息。
 				const user = getUserProfile()
@@ -227,6 +256,15 @@
 				]
 			},
 			async refreshDashboardStats() {
+				if (!this.isLoggedIn) {
+					this.stats = [
+						{ label: '简历优化', value: '0', unit: '次' },
+						{ label: '模拟面试', value: '0', unit: '场' },
+						{ label: '连续打卡', value: '0', unit: '天' },
+						{ label: '收藏题库', value: '0', unit: '个' }
+					]
+					return
+				}
 				// 与成长档案 `/growth/stats` 对齐：服务端可用 userId 反查 student_id，避免仅存 userId 时仍回退本地全 0。
 				let studentId = resolveStoredStudentId()
 				let userId = resolveStoredUserId(getUser())
@@ -265,9 +303,18 @@
 				}
 			},
 			goToProfile() {
-				// 点击头像后进入个人主页。
+				// 未登录时头像点击跳转登录，已登录则进入个人主页。
+				if (!this.isLoggedIn) {
+					this.goToLogin()
+					return
+				}
 				uni.navigateTo({
 					url: '/subPages/userCard/userCard'
+				})
+			},
+			goToLogin() {
+				uni.navigateTo({
+					url: '/pages/login/login'
 				})
 			},
 			updateCheckInDays() {}
@@ -312,6 +359,33 @@
 		opacity: 1;
 		transform: translateY(0);
 		padding-bottom: 40rpx;
+	}
+
+	.BasicInfo.is-guest {
+		min-height: calc(310rpx + var(--status-bar-height));
+		padding-bottom: 28rpx;
+
+		.UserInfo {
+			padding-top: 34rpx;
+			padding-bottom: 8rpx;
+			align-items: center;
+		}
+
+		.Profile {
+			padding-top: 0;
+		}
+
+		.GuestState {
+			justify-content: center;
+		}
+
+		.Major {
+			margin-top: 10rpx;
+		}
+
+		.login-entry {
+			margin-top: 20rpx;
+		}
 	}
 
 	.BasicInfo-content {
@@ -825,6 +899,12 @@
 				padding-top: 6rpx;
 				animation: slideInRight 0.8s ease-out 0.4s both;
 			}
+
+			.GuestState {
+				display: flex;
+				flex-direction: column;
+				align-items: flex-start;
+			}
 			
 			@keyframes slideInRight {
 				from {
@@ -877,6 +957,18 @@
 						box-shadow: inset 0 2rpx 10rpx rgba(255, 255, 255, 0.16);
 						backdrop-filter: blur(8rpx);
 					}
+				}
+
+				.login-entry {
+					margin-top: 18rpx;
+					padding: 10rpx 24rpx;
+					border-radius: 999rpx;
+					font-size: 24rpx;
+					font-weight: 600;
+					line-height: 1.2;
+					color: #3165d7;
+					background: rgba(255, 255, 255, 0.92);
+					box-shadow: 0 8rpx 18rpx rgba(34, 97, 193, 0.12);
 				}
 
 			.PersonalBio {

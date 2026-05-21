@@ -122,6 +122,13 @@
 						>
 							<text>女</text>
 						</view>
+						<view 
+							class="gender-option private-option" 
+							:class="{ active: gender === 'private' }"
+							@click="gender = 'private'"
+						>
+							<text>隐私</text>
+						</view>
 				</view>
 			</view>
 			
@@ -184,7 +191,7 @@ const school = ref('')
 const idCard = ref('')
 const phone = ref('')
 const email = ref('')
-const gender = ref('male')
+const gender = ref('private')
 const bio = ref('')
 const desiredPosition = ref('')
 const desiredCity = ref('')
@@ -192,6 +199,12 @@ const expectedSalary = ref('')
 const theme = ref('light')
 const gradeOptions = ['大一', '大二', '大三', '大四', '大五']
 const jobStatusOptions = ['求职中', '未求职', '已就业']
+
+const normalizeGenderValue = (value) => {
+	if (value === 1 || value === '1' || value === 'male') return 'male'
+	if (value === 2 || value === '2' || value === 'female') return 'female'
+	return 'private'
+}
 
 // 选择器选项
 const themeClass = computed(() => (theme.value === 'dark' ? 'theme-dark' : 'theme-light'))
@@ -239,7 +252,7 @@ const loadUserInfo = () => {
 	idCard.value = user.idCard || ''
 	phone.value = user.phone || ''
 	email.value = user.email || ''
-	gender.value = user.gender || 'male'
+	gender.value = normalizeGenderValue(user.gender)
 	bio.value = user.bio || ''
 	desiredPosition.value = String(user.desiredPosition || '').slice(0, 15)
 	desiredCity.value = String(user.desiredCity || '').slice(0, 15)
@@ -845,7 +858,8 @@ $grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
 		}
 
 		.male-option.active,
-		.female-option.active {
+		.female-option.active,
+		.private-option.active {
 			background: #647CBF;
 			box-shadow: 0 6rpx 16rpx rgba(100, 124, 191, 0.38);
 		}
@@ -940,7 +954,8 @@ $grad-blue-b: rgba(0, 122, 252, 0.7) 0%, rgba(1, 188, 255, 0) 100%;
 		}
 
 		.male-option.active,
-		.female-option.active {
+		.female-option.active,
+		.private-option.active {
 			background: #647CBF;
 			box-shadow: 0 6rpx 16rpx rgba(100, 124, 191, 0.38);
 		}

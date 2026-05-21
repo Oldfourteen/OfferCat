@@ -8,7 +8,7 @@
         <view class="back-btn" @click="goBack">
           <image
             class="back-icon-img"
-            src="/static/icons/chevron-left.svg"
+            src="/static/png/icons/chevron-left.png"
             mode="aspectFit"
           />
         </view>

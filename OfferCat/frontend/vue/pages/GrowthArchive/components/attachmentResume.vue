@@ -58,12 +58,12 @@
 				return this.isDarkTheme ? 'theme-dark' : ''
 			},
 			makeIconSrc() {
-				return 'data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgZmlsbD0iI2ZmZmZmZiI+PHBhdGggZD0iTTMgMTcuMjVWMjFoMy43NUwxNy44MSA5Ljk0bC0zLjc1LTMuNzVMMyAxNy4yNXpNMjAuNzEgNy4wNGMuMzktLjM5LjM5LTEuMDIgMC0xLjQxbC0yLjM0LTIuMzRjLS4zOS0uMzktMS4wMi0uMzktMS40MSAwbC0xLjgzIDEuODMgMy43NSAzLjc1IDEuODMtMS44M3oiLz48L3N2Zz4='
+				return '/static/png/inline/99c52c9cef65.png'
 			},
 			uploadIconSrc() {
-				const fill = this.isDarkTheme ? '#8fa4e8' : '#5d76bd'
-				const svg = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="${fill}"><path d="M9 16h6v-6h4l-7-7-7 7h4v6zm-4 2h14v2H5v-2z"/></svg>`
-				return `data:image/svg+xml,${encodeURIComponent(svg)}`
+				return this.isDarkTheme
+					? '/static/png/inline/upload-dark.png'
+					: '/static/png/inline/upload-light.png'
 			}
 		},
 		methods: {

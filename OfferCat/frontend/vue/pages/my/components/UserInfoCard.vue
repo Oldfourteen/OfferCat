@@ -556,7 +556,7 @@
 		width: 100%;
 		height: 100%;
 		opacity: 0.93;
-		background-image: url('/static/icons/galaxy-soft-orbits.svg');
+		background-image: url('/static/png/icons/galaxy-soft-orbits.png');
 		background-repeat: no-repeat;
 		background-position: center center;
 		background-size: contain;

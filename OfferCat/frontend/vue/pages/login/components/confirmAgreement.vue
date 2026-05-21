@@ -15,8 +15,8 @@
 			</text>
 		</view>
 
-		<!-- 未勾选时弹出的二次确认框，防止用户跳过协议直接登录。 -->
-		<view class="custom-modal" v-if="showAgreementModal">
+		<!-- 未勾选时弹出的二次确认框（modalHost=inline 时显示） -->
+		<view class="custom-modal" v-if="modalHost === 'inline' && showAgreementModal">
 			<view class="modal-mask" @click="showAgreementModal = false"></view>
 			<view class="modal-content">
 				<view class="modal-title">服务协议与隐私政策</view>
@@ -38,6 +38,11 @@
 			agreed: {
 				type: Boolean,
 				default: false
+			},
+			/** inline：组件内弹窗；emit：由父页面在根节点渲染弹窗（登录页用） */
+			modalHost: {
+				type: String,
+				default: 'inline'
 			}
 		},
 		data() {
@@ -52,8 +57,11 @@
 				this.$emit('change', !this.agreed);
 			},
 			showModal() {
-				// 暴露给父组件的弹窗打开方法，用于登录前补充确认。
-				this.showAgreementModal = true;
+				if (this.modalHost === 'emit') {
+					this.$emit('open-modal')
+					return
+				}
+				this.showAgreementModal = true
 			},
 			handleAgree() {
 				// 用户在弹窗中同意后，既更新勾选状态，也通知父组件保存同意记录并继续执行登录。
@@ -176,6 +184,7 @@
 		.modal-content {
 			position: relative;
 			z-index: 2;
+			flex-shrink: 0;
 			width: 78%;
 			max-width: 320px;
 			background-color: #fff;

@@ -525,7 +525,7 @@ export default {
 			width: 28rpx;
 			height: 28rpx;
 			flex-shrink: 0;
-			background-image: url("data:image/svg+xml;charset=utf-8,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 24 24' fill='none' stroke='%23ffffff' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='7'/%3E%3Cpath d='M16.65 16.65 21 21'/%3E%3C/svg%3E");
+			background-image: url('/static/png/inline/search-white.png');
 			background-repeat: no-repeat;
 			background-position: center center;
 			background-size: 26rpx 26rpx;

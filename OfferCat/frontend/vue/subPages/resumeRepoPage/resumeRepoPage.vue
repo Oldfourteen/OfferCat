@@ -68,6 +68,7 @@
 </template>
 
 <script>
+import { PNG_ICONS } from '@/utils/staticIcons.js'
 // 简历卡片组件
 import ResumeCard from './components/ResumeCard.vue'
 // 简历仓库数据工具
@@ -75,13 +76,7 @@ import { fetchResumeRepoListPreferServer, deleteResumes } from '../../utils/resu
 // 主题混入
 import themeMixin from '@/utils/themeMixin.js'
 
-const RESUME_REPO_BACK_ICON =
-  'data:image/svg+xml;charset=utf-8,' +
-  encodeURIComponent(
-    '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-      '<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-      '</svg>'
-  )
+const RESUME_REPO_BACK_ICON = PNG_ICONS.chevronLeft
 
 /** 管理模式下单次删除上限 */
 const MAX_DELETE_PER_BATCH = 5

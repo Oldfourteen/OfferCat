@@ -10,7 +10,7 @@
 		</view>
 		<view class="right-section">
 			<!-- 右侧区域仅用于模拟 reCAPTCHA 的品牌说明与提示。 -->
-			<image class="recaptcha-logo" src="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9IjAgMCAyNCAyNCIgd2lkdGg9IjMyIiBoZWlnaHQ9IjMyIj4KICA8cGF0aCBmaWxsPSIjNDI4NUY0IiBkPSJNMTIgMi41YTkuNSA5LjUgMCAwIDAtOS41IDkuNUgwbDMuNSAzLjVMNyAxMkg0LjVhNy41IDcuNSAwIDEgMSAyLjIgNS4zbC0xLjQgMS40QTkuNSA5LjUgMCAxIDAgMTIgMi41eiIvPgo8L3N2Zz4=" mode="aspectFit"></image>
+			<image class="recaptcha-logo" src="/static/png/inline/590cbcf2be5f.png" mode="aspectFit"></image>
 			<view class="privacy-text">reCAPTCHA</view>
 			<view class="privacy-links">隐私权 - 使用条款</view>
 		</view>

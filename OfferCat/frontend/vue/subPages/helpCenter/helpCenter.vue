@@ -56,7 +56,8 @@
 </template>
 
 <script>
-	import themeMixin from '@/utils/themeMixin.js'
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+import themeMixin from '@/utils/themeMixin.js'
 	import { request } from '@/api/request.js'
 
 	const DEFAULT_FAQ_LIST = [
@@ -67,13 +68,7 @@
 		{ question: '如何注销账号？', answer: '进入设置 -> 账号安全 -> 注销账号。' }
 	]
 
-	const HELP_CENTER_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const HELP_CENTER_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		mixins: [themeMixin],

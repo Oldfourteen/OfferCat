@@ -17,100 +17,73 @@
 			</view>
 		</view>
 
-		<!-- 数据统计卡片：显示当前录入总数 -->
-		<view class="summary-card">
-			<text class="summary-label">当前已录入</text>
-			<text class="summary-value">{{ itemCount }} 项</text>
-			<text class="summary-desc">{{ pageHint }}</text>
-		</view>
+		<scroll-view class="manage-scroll" scroll-y :show-scrollbar="false" :enable-back-to-top="false">
+			<view class="manage-scroll-inner">
+				<!-- 数据统计卡片：显示当前录入总数 -->
+				<view class="summary-card">
+					<text class="summary-label">当前已录入</text>
+					<text class="summary-value">{{ itemCount }} 项</text>
+					<text class="summary-desc">{{ pageHint }}</text>
+				</view>
 
-		<!-- 编辑区域：新增 / 编辑档案表单 -->
-		<view class="section-card editor-card">
-			<view class="section-head">
-				<text class="section-title">{{ isEditing ? '编辑档案' : '新增档案' }}</text>
-				<text class="section-link" @click="toggleEditor">{{ editorVisible ? '收起' : '+ 新增' }}</text>
-			</view>
-
-			<view v-if="editorVisible" class="editor-form">
-				<!-- 动态渲染表单字段 -->
-				<view v-for="field in fields" :key="field.key" class="form-item">
-					<view class="form-label-row">
-						<text class="form-label">{{ field.label }}</text>
-						<text v-if="field.maxlength" class="form-word-count">
-							{{ (formData[field.key] || '').length }}/{{ field.maxlength }}
-						</text>
+				<!-- 编辑区域：新增 / 编辑档案表单 -->
+				<view class="section-card editor-card">
+					<view class="section-head">
+						<text class="section-title">{{ isEditing ? '编辑档案' : '新增档案' }}</text>
+						<text class="section-link" @click="toggleEditor">{{ editorVisible ? '收起' : '+ 新增' }}</text>
 					</view>
-					<textarea
-						v-if="field.type === 'textarea'"
-						class="form-textarea"
-						:placeholder="field.placeholder"
-						placeholder-class="form-placeholder"
-						:maxlength="field.maxlength || 300"
-						:show-confirm-bar="false"
-						:adjust-position="false"
-						:cursor-spacing="0"
-						:hold-keyboard="true"
-						:value="formData[field.key]"
-						@input="updateField(field.key, $event.detail.value)"
-					/>
-					<input
-						v-else
-						class="form-input"
-						:type="field.type || 'text'"
-						:placeholder="field.placeholder"
-						placeholder-class="form-placeholder"
-						:maxlength="field.maxlength || -1"
-						:adjust-position="false"
-						:cursor-spacing="0"
-						:hold-keyboard="true"
-						:value="formData[field.key]"
-						@input="updateField(field.key, $event.detail.value)"
+
+					<archive-editor-form
+						v-if="editorVisible"
+						:key="editorSessionKey"
+						:fields="fields"
+						:seed="formSeed"
+						:archive-type="type"
+						:theme-class="themeClass"
+						@save="saveRecord"
+						@cancel="cancelEdit"
 					/>
 				</view>
 
-				<!-- 表单操作按钮：取消 / 保存 -->
-				<view class="form-actions">
-					<view class="ghost-btn" @click="cancelEdit">取消</view>
-					<view class="primary-btn" @click="saveRecord">保存</view>
+				<!-- 历史记录列表：展示所有已保存档案 -->
+				<view class="section-card">
+					<view class="section-head">
+						<text class="section-title">历史记录</text>
+						<text class="section-link">共 {{ itemCount }} 项</text>
+					</view>
+
+					<view v-if="records.length">
+						<!-- 列表项循环渲染 -->
+						<view v-for="(item, index) in records" :key="item.id" class="record-item">
+							<view class="record-copy">
+								<text class="record-title">{{ item.title }}</text>
+								<text class="record-desc">{{ item.desc }}</text>
+							</view>
+							<view class="record-actions">
+								<text class="record-action" @click="startEdit(index)">编辑</text>
+								<text class="record-action delete-action" @click="removeRecord(index)">删除</text>
+							</view>
+						</view>
+					</view>
+
+					<!-- 空数据状态 -->
+					<view v-else class="empty-state">
+						<text class="empty-title">还没有档案记录</text>
+						<text class="empty-desc">先新增一条内容，后续 AI 会基于这些资料做更准确的分析。</text>
+					</view>
 				</view>
 			</view>
-		</view>
-
-		<!-- 历史记录列表：展示所有已保存档案 -->
-		<view class="section-card">
-			<view class="section-head">
-				<text class="section-title">历史记录</text>
-				<text class="section-link">共 {{ itemCount }} 项</text>
-			</view>
-
-			<view v-if="records.length">
-				<!-- 列表项循环渲染 -->
-				<view v-for="(item, index) in records" :key="item.id" class="record-item">
-					<view class="record-copy">
-						<text class="record-title">{{ item.title }}</text>
-						<text class="record-desc">{{ item.desc }}</text>
-					</view>
-					<view class="record-actions">
-						<text class="record-action" @click="startEdit(index)">编辑</text>
-						<text class="record-action delete-action" @click="removeRecord(index)">删除</text>
-					</view>
-				</view>
-			</view>
-
-			<!-- 空数据状态 -->
-			<view v-else class="empty-state">
-				<text class="empty-title">还没有档案记录</text>
-				<text class="empty-desc">先新增一条内容，后续 AI 会基于这些资料做更准确的分析。</text>
-			</view>
-		</view>
+		</scroll-view>
 	</view>
 </template>
 
 	<script>
-		// 主题样式混入
+		import { PNG_ICONS } from '@/utils/staticIcons.js'
+// 主题样式混入
 		import themeMixin from '@/utils/themeMixin.js'
 		// 档案数据本地存储工具方法
 		import { getArchiveRecords, saveArchiveRecords } from '@/utils/archiveData.js'
+		import ArchiveEditorForm from './components/ArchiveEditorForm.vue'
 
 	/*
 	页面类型配置映射表
@@ -263,15 +236,12 @@
 		}, {})
 	}
 
-	const ARCHIVE_MANAGE_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const ARCHIVE_MANAGE_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
+		components: {
+			ArchiveEditorForm
+		},
 		mixins: [themeMixin],
 		data() {
 			return {
@@ -279,7 +249,8 @@
 				recordsState: [], // 档案列表数据
 				editorVisible: false, // 编辑面板显隐
 				editingIndex: -1, // 正在编辑的索引，-1=新增
-				formData: {}, // 表单数据
+				formSeed: {}, // 打开编辑器时的初始表单快照
+				editorSessionKey: 0, // 每次打开编辑器递增，隔离输入状态
 				archiveManageBackIcon: ARCHIVE_MANAGE_BACK_ICON
 			}
 		},
@@ -325,7 +296,7 @@
 
 			// 初始化数据
 			this.resetRecords()
-			this.resetForm()
+			this.resetFormSeed()
 		},
 		methods: {
 			// 返回上一页
@@ -336,50 +307,42 @@
 			resetRecords() {
 				this.recordsState = getArchiveRecords(this.type).map(item => ({ ...item }))
 			},
-			// 重置表单为空
-			resetForm() {
-				this.formData = createEmptyForm(this.fields)
+			// 重置表单种子数据
+			resetFormSeed() {
+				this.formSeed = createEmptyForm(this.fields)
 				this.editingIndex = -1
+			},
+			// 打开编辑器并刷新子组件会话
+			openEditor(seed) {
+				this.formSeed = seed || createEmptyForm(this.fields)
+				this.editorSessionKey += 1
+				this.editorVisible = true
 			},
 			// 切换编辑面板显隐
 			toggleEditor() {
-				this.editorVisible = !this.editorVisible
-				if (!this.editorVisible) {
-					this.resetForm()
-				}
-			},
-			// 更新表单字段值（就地更新，避免移动端输入框重渲染抖动）
-			updateField(key, value) {
-				let finalValue = value
-
-				// 对竞赛名称进行特殊字符过滤（仅允许中英文和数字）
-				if (this.type === 'awards' && key === 'name') {
-					finalValue = finalValue.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '')
-				}
-
-				if (this.formData[key] === finalValue) {
+				if (this.editorVisible) {
+					this.cancelEdit()
 					return
 				}
-
-				this.$set(this.formData, key, finalValue)
+				this.resetFormSeed()
+				this.openEditor(this.formSeed)
 			},
 			// 开始编辑某条记录
 			startEdit(index) {
 				const record = this.records[index]
 				this.editingIndex = index
-				this.editorVisible = true
-				this.formData = this.pageConfig.toForm(record)
+				this.openEditor(this.pageConfig.toForm(record))
 			},
 			// 取消编辑
 			cancelEdit() {
-				this.resetForm()
+				this.resetFormSeed()
 				this.editorVisible = false
 			},
 			// 保存档案（新增/编辑）
-			saveRecord() {
+			saveRecord(formData) {
 				// 校验第一个必填字段
 				const primaryField = this.fields[0]
-				const primaryValue = (this.formData[primaryField.key] || '').trim()
+				const primaryValue = (formData[primaryField.key] || '').trim()
 
 				if (!primaryValue) {
 					uni.showToast({
@@ -392,7 +355,7 @@
 				// 生成记录ID
 				const nextId = this.isEditing ? this.records[this.editingIndex].id : Date.now()
 				// 格式化数据
-				const nextRecord = this.pageConfig.toRecord(this.formData, nextId)
+				const nextRecord = this.pageConfig.toRecord(formData, nextId)
 
 				// 编辑 / 新增逻辑
 				if (this.isEditing) {
@@ -409,8 +372,7 @@
 				})
 
 				// 重置表单并收起面板
-				this.resetForm()
-				this.editorVisible = false
+				this.cancelEdit()
 			},
 			// 删除单条记录
 			removeRecord(index) {
@@ -435,8 +397,13 @@
 	}
 
 	.manage-page {
-		min-height: 100vh;
-		padding: calc(var(--status-bar-height) + 16rpx) 24rpx 32rpx;
+		height: 100vh;
+		height: 100dvh;
+		display: flex;
+		flex-direction: column;
+		overflow: hidden;
+		padding: calc(var(--status-bar-height) + 16rpx) 0 0;
+		box-sizing: border-box;
 		background:
 			radial-gradient(circle at top right, rgba(255, 196, 176, 0.18) 0%, rgba(255, 196, 176, 0) 24%),
 			linear-gradient(180deg, #ffffff 0%, #f7f8fb 24%, #f5f7fb 100%);
@@ -449,6 +416,19 @@
 		align-items: center;
 		gap: 18rpx;
 		width: 100%;
+		padding: 0 24rpx;
+		box-sizing: border-box;
+		flex-shrink: 0;
+	}
+
+	.manage-scroll {
+		flex: 1;
+		height: 0;
+		width: 100%;
+	}
+
+	.manage-scroll-inner {
+		padding: 0 24rpx calc(32rpx + env(safe-area-inset-bottom));
 		box-sizing: border-box;
 	}
 
@@ -494,7 +474,6 @@
 	.record-title,
 	.record-desc,
 	.record-action,
-	.form-label,
 	.empty-title,
 	.empty-desc {
 		display: block;
@@ -560,86 +539,6 @@
 		font-size: 26rpx;
 		font-weight: 700;
 		color: #3165d7;
-	}
-
-	.editor-form {
-		margin-top: 22rpx;
-	}
-
-	.form-item + .form-item {
-		margin-top: 18rpx;
-	}
-
-	.form-label-row {
-		display: flex;
-		justify-content: space-between;
-		align-items: center;
-		margin-bottom: 10rpx;
-	}
-
-	.form-label {
-		font-size: 24rpx;
-		font-weight: 700;
-		color: #42526d;
-	}
-
-	.form-word-count {
-		font-size: 22rpx;
-		color: #a1aec4;
-	}
-
-	.form-input,
-	.form-textarea {
-		width: 100%;
-		box-sizing: border-box;
-		padding: 20rpx 22rpx;
-		border-radius: 20rpx;
-		background: #f7f9fc;
-		font-size: 26rpx;
-		line-height: 1.5;
-		color: #24345b;
-		border: 2rpx solid rgba(49, 101, 215, 0.08);
-	}
-
-	.form-input {
-		min-height: 88rpx;
-	}
-
-	.form-textarea {
-		min-height: 180rpx;
-	}
-
-	.form-placeholder {
-		color: #a1aec4;
-	}
-
-	.form-actions {
-		margin-top: 24rpx;
-		display: flex;
-		gap: 16rpx;
-	}
-
-	.ghost-btn,
-	.primary-btn {
-		flex: 1;
-		height: 84rpx;
-		border-radius: 999rpx;
-		display: flex;
-		align-items: center;
-		justify-content: center;
-		font-size: 28rpx;
-		font-weight: 700;
-	}
-
-	.ghost-btn {
-		background: #eef2f8;
-		color: #5f6f8e;
-	}
-
-	.primary-btn {
-		background: linear-gradient(135deg, #4d65f7, #4151de);
-		color: #ffffff;
-		box-shadow: 0 14rpx 28rpx rgba(74, 103, 247, 0.18);
 	}
 
 	.record-item {
@@ -722,17 +621,13 @@
 	.manage-page.theme-dark .topbar-title,
 	.manage-page.theme-dark .summary-value,
 	.manage-page.theme-dark .section-title,
-	.manage-page.theme-dark .record-title,
-	.manage-page.theme-dark .form-input,
-	.manage-page.theme-dark .form-textarea {
+	.manage-page.theme-dark .record-title {
 		color: #f4f7fb;
 	}
 
 	.manage-page.theme-dark .topbar-subtitle,
 	.manage-page.theme-dark .summary-label,
 	.manage-page.theme-dark .summary-desc,
-	.manage-page.theme-dark .form-label,
-	.manage-page.theme-dark .form-word-count,
 	.manage-page.theme-dark .record-desc,
 	.manage-page.theme-dark .empty-title,
 	.manage-page.theme-dark .empty-desc {
@@ -743,21 +638,6 @@
 	.manage-page.theme-dark .section-card {
 		background: rgba(29, 31, 36, 0.96);
 		box-shadow: 0 12rpx 34rpx rgba(0, 0, 0, 0.2);
-	}
-
-	.manage-page.theme-dark .form-input,
-	.manage-page.theme-dark .form-textarea {
-		background: #23252b;
-		border-color: rgba(255, 255, 255, 0.06);
-	}
-
-	.manage-page.theme-dark .form-placeholder {
-		color: rgba(255, 255, 255, 0.34);
-	}
-
-	.manage-page.theme-dark .ghost-btn {
-		background: #23252b;
-		color: #dce6f8;
 	}
 
 	.manage-page.theme-dark .record-item + .record-item {

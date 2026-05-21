@@ -90,7 +90,8 @@
 </template>
 
 <script>
-	// 主题混入
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+// 主题混入
 	import themeMixin from '@/utils/themeMixin.js'
 	import { searchForumPosts } from '@/api/forum.js'
 	import { syncForumPostViews, syncForumPostsViews } from '@/utils/forumViewCount.js'
@@ -99,13 +100,7 @@
 	const SEARCH_HISTORY_KEY = 'home_search_history'
 	const MAX_HISTORY_COUNT = 10
 
-	const FORUM_SEARCH_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const FORUM_SEARCH_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		mixins: [themeMixin],

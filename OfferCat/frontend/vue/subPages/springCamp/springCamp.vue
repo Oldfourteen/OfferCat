@@ -102,17 +102,12 @@
 </template>
 
 <script>
-	import { requestAiChatStream } from '@/utils/ai.js'
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+import { requestAiChatStream } from '@/utils/ai.js'
 	import { getRecruitmentSeason, getCurrentYear } from '@/utils/date.js'
 	import themeMixin from '@/utils/themeMixin.js'
 
-	const SPRING_CAMP_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const SPRING_CAMP_BACK_ICON = PNG_ICONS.chevronLeft
 
 	// 如果需要解析 markdown，可以使用类似 marked 或者自行简单处理，这里我们用基础的替换
 	export default {

@@ -26,15 +26,10 @@
 </template>
 
 <script>
-	import { applyTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT } from '@/utils/theme.js'
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+import { applyTheme, THEME_CHANGE_EVENT, THEME_DARK, THEME_LIGHT } from '@/utils/theme.js'
 
-	const LEGAL_TOP_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const LEGAL_TOP_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		data() {

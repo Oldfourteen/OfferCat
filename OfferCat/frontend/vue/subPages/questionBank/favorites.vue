@@ -86,20 +86,15 @@
 </template>
 
 <script>
-	// 主题切换
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+// 主题切换
 	import themeMixin from '@/utils/themeMixin.js'
 	// 收藏工具类
 	import { getQuestionFavorites, removeQuestionFavorite } from '@/utils/questionFavorites.js'
 	import { getCollectedQuestionIds, uncollectQuestion } from '@/api/growth.js'
 	import { getQuestionDetail } from './data'
 
-	const FAVORITES_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const FAVORITES_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		mixins: [themeMixin],

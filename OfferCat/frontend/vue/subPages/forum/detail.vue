@@ -40,15 +40,15 @@
 					<text class="view-count">浏览 {{ post.views || 0 }}</text>
 					<view class="actions">
 						<view class="action-btn" @click="likePost">
-							<image class="icon-svg" :src="post.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+							<image class="icon-svg" :src="post.isLiked ? '/static/png/icons/like-active.png' : '/static/png/icons/like.png'"></image>
 							<text class="count" :class="{ 'active-color': post.isLiked }">{{ post.likeCount || 0 }}</text>
 						</view>
 						<view class="action-btn" @click="scrollToComments">
-							<image class="icon-svg" src="/static/icons/comment.svg"></image>
+							<image class="icon-svg" src="/static/png/icons/comment.png"></image>
 							<text class="count">{{ displayPostCommentCount }}</text>
 						</view>
 						<view class="action-btn" @click="toggleCollect">
-							<image class="icon-svg" :src="post.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
+							<image class="icon-svg" :src="post.isCollected ? '/static/png/icons/star-active.png' : '/static/png/icons/star.png'"></image>
 							<text class="count" :class="{ 'collect-active-color': post.isCollected }">{{ post.favoriteCount || 0 }}</text>
 						</view>
 					</view>
@@ -83,7 +83,7 @@
 							</view>
 							<view class="c-actions-row">
 								<view class="reply-like-action" @click.stop="toggleCommentLike(item)">
-									<image class="mini-like-icon" :src="isCommentLiked(item) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+									<image class="mini-like-icon" :src="isCommentLiked(item) ? '/static/png/icons/like-active.png' : '/static/png/icons/like.png'"></image>
 									<text class="reply-like-count" :class="{ active: isCommentLiked(item) }">{{ getCommentLikeCount(item) }}</text>
 								</view>
 								<text class="reply-action" @click.stop="startReplyToComment(item)">回复</text>
@@ -137,7 +137,7 @@
 								</view>
 								<view class="c-actions-row">
 									<view class="reply-like-action" @click.stop="toggleCommentLike(activeReplyComment)">
-										<image class="mini-like-icon" :src="isCommentLiked(activeReplyComment) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+										<image class="mini-like-icon" :src="isCommentLiked(activeReplyComment) ? '/static/png/icons/like-active.png' : '/static/png/icons/like.png'"></image>
 										<text class="reply-like-count" :class="{ active: isCommentLiked(activeReplyComment) }">{{ getCommentLikeCount(activeReplyComment) }}</text>
 									</view>
 									<text class="reply-action" @click.stop="startReplyToComment(activeReplyComment, true)">回复</text>
@@ -168,7 +168,7 @@
 								</view>
 								<view class="c-actions-row">
 									<view class="reply-like-action" @click.stop="toggleCommentLike(reply, activeReplyComment)">
-										<image class="mini-like-icon" :src="isCommentLiked(reply) ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+										<image class="mini-like-icon" :src="isCommentLiked(reply) ? '/static/png/icons/like-active.png' : '/static/png/icons/like.png'"></image>
 										<text class="reply-like-count" :class="{ active: isCommentLiked(reply) }">{{ getCommentLikeCount(reply) }}</text>
 									</view>
 									<text class="reply-action" @click.stop="startReplyToReply(activeReplyComment, reply)">回复</text>

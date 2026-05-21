@@ -102,18 +102,13 @@
 </template>
 
 <script>
-	import themeMixin from '@/utils/themeMixin.js'
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+import themeMixin from '@/utils/themeMixin.js'
 	import { getUserProfile } from '@/utils/userProfile.js'
 	import { createForumPost, uploadForumImage, generateForumCaption } from '@/api/forum.js'
 	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 
-	const PUBLISH_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const PUBLISH_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		mixins: [themeMixin],

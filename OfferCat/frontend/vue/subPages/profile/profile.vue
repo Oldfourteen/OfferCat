@@ -6,7 +6,7 @@
 			<view class="header-inner">
 				<view class="header-side header-left">
 					<view class="back-btn" @click="goBack">
-						<image class="back-icon-img" src="/static/icons/chevron-left.svg" mode="aspectFit" />
+						<image class="back-icon-img" src="/static/png/icons/chevron-left.png" mode="aspectFit" />
 					</view>
 				</view>
 				<text class="header-title">编辑个人信息</text>

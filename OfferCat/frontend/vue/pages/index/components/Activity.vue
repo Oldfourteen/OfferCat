@@ -5,7 +5,7 @@
 			<text class="banner-title">{{ currentYear }} {{ seasonText }}</text>
 			<text class="banner-title">AI 冲刺营</text>
 			<text class="banner-desc">提升拿到 Offer 的概率高达 80%</text>
-			<view class="banner-action">开始规划</view>
+			<view class="banner-action">开始规划 →</view>
 		</view>
 		<view class="banner-graphic">
 			<!-- 光晕在最底层；箭头置顶，避免被裁切与白点盖住 -->
@@ -21,7 +21,7 @@
 			<text class="banner-title">专业交叉星图</text>
 			<text class="banner-title">Galaxy H5</text>
 			<text class="banner-desc">选择主修与交叉意向，进入你的专属星域</text>
-			<view class="banner-action galaxy-action">开启星图</view>
+			<view class="banner-action galaxy-action">开启星图 →</view>
 		</view>
 		<view class="banner-graphic">
 			<view class="graphic-orbit orbit-1"></view>
@@ -47,7 +47,7 @@
 		},
 		computed: {
 			springTrendArrowSvg() {
-				// 底上两段与同向向量（严格平行）+中间右下一折；整体偏下并从右侧冲出；三角与躯干 fuse 拼接（base64）
+				// 首页冲刺营折线装饰：该 SVG 在 Android 上显示正常，保留矢量以保证渐变与线条清晰
 				return (
 					'data:image/svg+xml;base64,' +
 					'PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHZpZXdCb3g9Ii0yOSA1MiAyODIgMjIxIiBwcmVzZXJ2ZUFzcGVjdFJhdGlvPSJ4TWlkWU1pZCBtZWV0Ij48ZGVmcz48bGluZWFyR3JhZGllbnQgaWQ9InNwcmluZ0Fycm93R3JhZCIgZ3JhZGllbnRVbml0cz0idXNlclNwYWNlT25Vc2UiIHgxPSItMTciIHkxPSIyNTUiIHgyPSIyMjciIHkyPSI2OCI+PHN0b3Agb2Zmc2V0PSIwJSIgc3RvcC1jb2xvcj0iI2ZmZjdhMCIvPjxzdG9wIG9mZnNldD0iNTAlIiBzdG9wLWNvbG9yPSIjZmZlNDVkIi8+PHN0b3Agb2Zmc2V0PSIxMDAlIiBzdG9wLWNvbG9yPSIjZmZjOTI4Ii8+PC9saW5lYXJHcmFkaWVudD48L2RlZnM+PHBhdGggZmlsbD0ibm9uZSIgc3Ryb2tlPSJ1cmwoI3NwcmluZ0Fycm93R3JhZCkiIHN0cm9rZS13aWR0aD0iMzAiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJtaXRlciIgc3Ryb2tlLW1pdGVybGltaXQ9IjE4IiBkPSJNIDIuMDAgMjIyLjAwIEwgNDEuNjkgMTc0LjM3IEwgNjkuNjkgMTk4LjM3IEwgMTE5LjYzIDEzOC40NSIvPjxwb2x5Z29uIGZpbGw9InVybCgjc3ByaW5nQXJyb3dHcmFkKSIgcG9pbnRzPSIxNjUuMTcgODMuNzkgMTUxLjg5IDE2MC42NSA5MS45NyAxMTAuNzIiLz48L3N2Zz4='
@@ -179,7 +179,7 @@
 			bottom: 22rpx;
 			width: 158rpx;
 			height: 200rpx;
-			border-radius: 12rpx;
+			border-radius: 36rpx;
 			background:
 				linear-gradient(135deg, rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.03)),
 				repeating-linear-gradient(135deg, rgba(255, 255, 255, 0.12) 0 8rpx, rgba(255, 255, 255, 0.02) 8rpx 22rpx);
@@ -200,13 +200,28 @@
 			&::before {
 				content: '';
 				position: absolute;
-				left: -6rpx;
-				bottom: 16rpx;
-				width: 52rpx;
+			}
+
+			&::before {
+				left: -40rpx;
+				top: 50%;
+				width: 56rpx;
 				height: 6rpx;
 				border-radius: 3rpx;
 				background: rgba(255, 240, 106, 0.42);
-				box-shadow: -22rpx 8rpx 0 rgba(255, 240, 106, 0.22), -12rpx -14rpx 0 rgba(255, 240, 106, 0.14);
+				box-shadow: -20rpx -12rpx 0 rgba(255, 240, 106, 0.18), -34rpx 12rpx 0 rgba(255, 240, 106, 0.12);
+				transform: translateY(-50%);
+			}
+
+			&::after {
+				right: -32rpx;
+				top: 50%;
+				width: 0;
+				height: 0;
+				border-top: 34rpx solid transparent;
+				border-bottom: 34rpx solid transparent;
+				border-left: 42rpx solid #ffc928;
+				transform: translateY(-50%);
 			}
 
 			.graphic-arrow-img {
@@ -218,16 +233,19 @@
 		
 		.graphic-glow {
 			position: absolute;
-			z-index: 0;
 			right: 0;
-			bottom: 16rpx;
+			bottom: 20rpx;
 			width: 176rpx;
 			height: 176rpx;
 			border-radius: 50%;
-			pointer-events: none;
-			// 避免白点叠在黄箭头上「像没了箭头」——只保留柔光
-			background: radial-gradient(circle, rgba(255, 239, 111, 0.28) 0%, rgba(255, 239, 111, 0) 68%);
-			opacity: 0.92;
+			background:
+				radial-gradient(circle, rgba(255, 239, 111, 0.28) 0%, rgba(255, 239, 111, 0) 72%),
+				linear-gradient(rgba(255, 255, 255, 0.22), rgba(255, 255, 255, 0.22)) 18rpx 112rpx / 42rpx 2rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.18), rgba(255, 255, 255, 0.18)) 38rpx 92rpx / 2rpx 24rpx no-repeat,
+				linear-gradient(rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.12)) 32rpx 128rpx / 28rpx 2rpx no-repeat,
+				radial-gradient(circle, rgba(255, 255, 255, 0.9) 0 4rpx, transparent 5rpx) 16rpx 106rpx / 20rpx 20rpx no-repeat,
+				radial-gradient(circle, rgba(255, 255, 255, 0.68) 0 4rpx, transparent 5rpx) 138rpx 18rpx / 20rpx 20rpx no-repeat;
+			opacity: 0.9;
 		}
 	}
 

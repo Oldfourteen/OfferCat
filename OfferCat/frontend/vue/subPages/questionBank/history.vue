@@ -96,20 +96,15 @@
 </template>
 
 <script>
-	// 主题切换混入
+	import { PNG_ICONS } from '@/utils/staticIcons.js'
+// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
 	// 做题历史工具类
 	import { getQuestionHistory, syncQuestionHistoryFromServer } from '@/utils/questionHistory.js'
 	// 引入 request
 	import { request } from '@/api/request.js'
 
-	const HISTORY_BACK_ICON =
-		'data:image/svg+xml;charset=utf-8,' +
-		encodeURIComponent(
-			'<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none">' +
-				'<path d="M14.5 6.5 9 12l5.5 5.5" stroke="#171A1F" stroke-width="2.35" stroke-linecap="round" stroke-linejoin="round"/>' +
-				'</svg>'
-		)
+	const HISTORY_BACK_ICON = PNG_ICONS.chevronLeft
 
 	export default {
 		mixins: [themeMixin],

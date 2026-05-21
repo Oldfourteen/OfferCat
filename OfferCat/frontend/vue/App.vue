@@ -55,6 +55,11 @@
 
 	uni-page-body,
 	uni-page-wrapper {
+		width: 100% !important;
+		left: 0 !important;
+		right: 0 !important;
+		margin: 0 !important;
+		padding: 0 !important;
 		box-sizing: border-box;
 	}
 

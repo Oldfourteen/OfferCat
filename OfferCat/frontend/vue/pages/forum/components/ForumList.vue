@@ -54,15 +54,15 @@
 							<text class="view-count">浏览 {{ item.views || 0 }}</text>
 							<view class="action-right">
 								<view class="action-item" @click.stop="likePost(item)">
-									<image class="icon-svg" :src="item.isLiked ? '/static/icons/like-active.svg' : '/static/icons/like.svg'"></image>
+									<image class="icon-svg" :src="item.isLiked ? '/static/png/icons/like-active.png' : '/static/png/icons/like.png'"></image>
 									<text class="count" :class="{ 'count--like-on': item.isLiked }">{{ item.likeCount || 0 }}</text>
 								</view>
 								<view class="action-item">
-									<image class="icon-svg" src="/static/icons/comment.svg"></image>
+									<image class="icon-svg" src="/static/png/icons/comment.png"></image>
 									<text class="count count--muted">{{ item.commentCount || 0 }}</text>
 								</view>
 								<view class="action-item" @click.stop="toggleCollect(item, index)">
-									<image class="icon-svg" :src="item.isCollected ? '/static/icons/star-active.svg' : '/static/icons/star.svg'"></image>
+									<image class="icon-svg" :src="item.isCollected ? '/static/png/icons/star-active.png' : '/static/png/icons/star.png'"></image>
 									<text class="count" :class="{ 'count--star-on': item.isCollected }">{{ item.favoriteCount || 0 }}</text>
 								</view>
 							</view>

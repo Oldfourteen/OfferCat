@@ -74,10 +74,6 @@
 				type: String,
 				default: 'light'
 			},
-			refreshSeed: {
-				type: Number,
-				default: 0
-			}
 		},
 		computed: {
 			themeClass() {
@@ -85,25 +81,23 @@
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
-		watch: {
-			refreshSeed() {
-				this.refreshPracticeScores()
-			}
-		},
 		mounted() {
 			this.refreshPracticeScores()
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$on('index-page-show', this.refreshPracticeScores)
 			}
 		},
 		beforeDestroy() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$off('index-page-show', this.refreshPracticeScores)
 			}
 		},
 		beforeUnmount() {
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(QUESTION_HISTORY_UPDATED_EVENT, this.refreshPracticeScores)
+				uni.$off('index-page-show', this.refreshPracticeScores)
 			}
 		},
 		data() {

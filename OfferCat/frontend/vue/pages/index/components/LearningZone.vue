@@ -1,6 +1,6 @@
 <template>
 	<scroll-view class="learning-scroll" scroll-y :show-scrollbar="false" @scroll="emitScroll">
-		<view class="learning-page" :key="refreshSeed">
+		<view class="learning-page">
 			<!-- 公告区滚动展示平台通知和功能更新提示。 -->
 			<view class="animate-item" style="animation-delay: 0.1s;">
 				<NoticeBar :theme="theme" />
@@ -11,7 +11,7 @@
 			</view>
 			<!-- 题库模块聚合笔试和面试两类刷题入口。 -->
 			<view class="animate-item" style="animation-delay: 0.3s;">
-				<QuestionBankModules :theme="theme" :refresh-seed="refreshSeed" />
+				<QuestionBankModules :theme="theme" />
 			</view>
 		</view>
 	</scroll-view>
@@ -29,10 +29,6 @@
 				type: String,
 				default: 'light'
 			},
-			refreshSeed: {
-				type: Number,
-				default: 0
-			}
 		},
 		components: {
 			// 首页模块都由学习区统一编排，父页面只关心滚动和主题透传。

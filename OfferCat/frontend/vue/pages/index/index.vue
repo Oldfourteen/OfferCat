@@ -1,12 +1,12 @@
 <template>
 	<view class="job-page" :class="themeClass">
 		<!-- 顶部固定头部负责展示个人信息，并根据滚动状态做折叠过渡。 -->
-		<LearningHeader :collapse-progress="headerCollapseProgress" :theme="theme" :refresh-seed="refreshSeed" />
+		<LearningHeader :collapse-progress="headerCollapseProgress" :theme="theme" />
 		<!-- 占位块用于给 fixed 头部留出空间，避免内容被遮挡。 -->
 		<view class="header-spacer" :style="headerSpacerStyle"></view>
 
 		<!-- 主内容区交给滚动容器承载，并向外透传滚动事件。 -->
-		<LearningZone :theme="theme" :refresh-seed="refreshSeed" @scroll="handleZoneScroll" />
+		<LearningZone :theme="theme" @scroll="handleZoneScroll" />
 		<AppLiquidTabBar tab-page-path="pages/index/index" :theme="theme" />
 
 		<!-- 公告弹窗 -->
@@ -34,25 +34,24 @@
 		data() {
 			return {
 				// 控制头部从展开到收起的过渡进度，范围为 0~1。
-				headerCollapseProgress: 0,
-				// 页面每次显示时递增，用来触发子组件重新拉取或重建视图。
-				refreshSeed: 0
+				headerCollapseProgress: 0
 			}
 		},
 		onShow() {
-			void warmApiConnection()
-			// 返回首页时刷新子组件依赖的 key，保证头部和内容区展示最新状态。
-			this.refreshSeed += 1
-			// 通知子组件页面已显示，用于重置动画状态
+			// 延后非关键任务，避免阻塞 switchTab 后的首帧渲染
+			setTimeout(() => {
+				void warmApiConnection()
+			}, 0)
 			if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
-				uni.$emit('pageShow')
+				uni.$emit('index-page-show')
 			}
-			// 检查并显示公告弹窗（内部会判断是否登录及是否今天已弹出）
-			this.$nextTick(() => {
-				if (this.$refs.announcementPopup) {
-					this.$refs.announcementPopup.checkAndShow()
-				}
-			})
+			setTimeout(() => {
+				this.$nextTick(() => {
+					if (this.$refs.announcementPopup) {
+						this.$refs.announcementPopup.checkAndShow()
+					}
+				})
+			}, 120)
 		},
 		computed: {
 			headerSpacerStyle() {

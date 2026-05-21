@@ -54,7 +54,7 @@
 				/>
 				<view class="composer-send" :class="{ active: canSend, 'is-sending': sending }" @click="emitSend">
 					<text v-if="!sending">发送</text>
-					<image v-else class="sending-icon" src="data:image/svg+xml;base64,PHN2ZyB0PSIxNzc3MTE4NDE4OTEzIiBjbGFzcz0iaWNvbiIgdmlld0JveD0iMCAwIDEwMjQgMTAyNCIgdmVyc2lvbj0iMS4xIiB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHAtaWQ9IjUxNjMiIHdpZHRoPSIyMDAiIGhlaWdodD0iMjAwIj48cGF0aCBkPSJNNTEyIDEwMjRhNTEyLjU2ODg4OSA1MTIuNTY4ODg5IDAgMCAxLTUxMi01MTIgNTEyLjYyNTc3OCA1MTIuNjI1Nzc4IDAgMCAxIDUxMi01MTIgNTEyLjU2ODg4OSA1MTIuNTY4ODg5IDAgMCAxIDUxMiA1MTIgNTEyLjU2ODg4OSA1MTIuNTY4ODg5IDAgMCAxLTUxMiA1MTJ6TTUxMiA3My4zMjk3NzhjLTI0MS45NDg0NDQgMC00MzguNjcwMjIyIDE5Ni44MzU1NTYtNDM4LjY3MDIyMiA0MzguNjcwMjIyUzI3MC4wNTE1NTYgOTUwLjY3MDIyMiA1MTIgOTUwLjY3MDIyMnM0MzguNjcwMjIyLTE5Ni44MzU1NTYgNDM4LjY3MDIyMi00MzguNjcwMjIyUzc1My45NDg0NDQgNzMuMzI5Nzc4IDUxMiA3My4zMjk3Nzh6IG0wIDY4Ni41OTJhMjQ1LjE5MTExMSAyNDUuMTkxMTExIDAgMSAxIDAtNDkwLjM4MjIyMiAyNDUuMTkxMTExIDI0NS4xOTExMTEgMCAwIDEgMCA0OTAuMzgyMjIyeiIgZmlsbD0iI2Q4MWUwNiIgcC1pZD0iNTE2NCI+PC9wYXRoPjwvc3ZnPg==" mode="aspectFit" />
+					<view v-else class="sending-spinner" />
 				</view>
 			</view>
 		</view>
@@ -585,15 +585,20 @@
 		box-sizing: border-box;
 	}
 
-	.sending-icon {
-		width: 32rpx;
-		height: 32rpx;
-		animation: pulse-scale 0.8s infinite alternate ease-in-out;
+	.sending-spinner {
+		width: 28rpx;
+		height: 28rpx;
+		border: 4rpx solid rgba(255, 255, 255, 0.35);
+		border-top-color: #ffffff;
+		border-radius: 50%;
+		box-sizing: border-box;
+		animation: sending-spin 0.75s linear infinite;
 	}
 
-	@keyframes pulse-scale {
-		0% { transform: scale(0.7); }
-		100% { transform: scale(1.1); }
+	@keyframes sending-spin {
+		to {
+			transform: rotate(360deg);
+		}
 	}
 
 	.composer-send.active,

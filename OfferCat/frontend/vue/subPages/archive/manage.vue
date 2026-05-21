@@ -48,6 +48,8 @@
 						:maxlength="field.maxlength || 300"
 						:show-confirm-bar="false"
 						:adjust-position="false"
+						:cursor-spacing="0"
+						:hold-keyboard="true"
 						:value="formData[field.key]"
 						@input="updateField(field.key, $event.detail.value)"
 					/>
@@ -58,6 +60,9 @@
 						:placeholder="field.placeholder"
 						placeholder-class="form-placeholder"
 						:maxlength="field.maxlength || -1"
+						:adjust-position="false"
+						:cursor-spacing="0"
+						:hold-keyboard="true"
 						:value="formData[field.key]"
 						@input="updateField(field.key, $event.detail.value)"
 					/>
@@ -343,19 +348,20 @@
 					this.resetForm()
 				}
 			},
-			// 更新表单字段值
+			// 更新表单字段值（就地更新，避免移动端输入框重渲染抖动）
 			updateField(key, value) {
 				let finalValue = value
-				
+
 				// 对竞赛名称进行特殊字符过滤（仅允许中英文和数字）
 				if (this.type === 'awards' && key === 'name') {
 					finalValue = finalValue.replace(/[^\u4e00-\u9fa5a-zA-Z0-9]/g, '')
 				}
-				
-				this.formData = {
-					...this.formData,
-					[key]: finalValue
+
+				if (this.formData[key] === finalValue) {
+					return
 				}
+
+				this.$set(this.formData, key, finalValue)
 			},
 			// 开始编辑某条记录
 			startEdit(index) {
@@ -596,7 +602,6 @@
 	}
 
 	.form-input {
-		height: 88rpx;
 		min-height: 88rpx;
 	}
 

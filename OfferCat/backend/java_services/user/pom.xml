@@ -125,25 +125,27 @@
                     </execution>
                 </executions>
             </plugin>
-            <!-- 打包时把 secrets/application-dypns.yml 复制到 target，便于与 exec.jar 一并收集到 dist/secrets -->
+            <!-- 打包：将 secrets/application-dypns.yml 写入 jar 的 classpath -->
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-antrun-plugin</artifactId>
-                <version>3.1.0</version>
+                <artifactId>maven-resources-plugin</artifactId>
                 <executions>
                     <execution>
-                        <id>copy-dypns-secrets</id>
-                        <phase>package</phase>
+                        <id>copy-dypns-into-jar</id>
+                        <phase>prepare-package</phase>
                         <goals>
-                            <goal>run</goal>
+                            <goal>copy-resources</goal>
                         </goals>
                         <configuration>
-                            <target>
-                                <mkdir dir="${project.basedir}/../dist/secrets"/>
-                                <copy file="${project.basedir}/secrets/application-dypns.yml"
-                                      tofile="${project.basedir}/../dist/secrets/application-dypns.yml"
-                                      failonerror="false"/>
-                            </target>
+                            <outputDirectory>${project.build.outputDirectory}</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}/secrets</directory>
+                                    <includes>
+                                        <include>application-dypns.yml</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>

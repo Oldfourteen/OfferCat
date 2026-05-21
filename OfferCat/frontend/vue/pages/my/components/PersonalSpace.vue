@@ -20,6 +20,14 @@
 </template>
 
 <script>
+	import {
+		ICON_DIANZAN,
+		ICON_GEREN,
+		ICON_HAOYOU,
+		ICON_SHOUCANG,
+		ICON_XIAOXI
+	} from '@/utils/personalSpaceIcons.js'
+
 	export default {
 		name: 'PersonalSpace',
 		props: {
@@ -35,11 +43,11 @@
 		data() {
 			return {
 				tools: [
-					{ name: '好友', iconImage: '/static/haoyou.svg', desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
-					{ name: '个人名片', iconImage: '/static/geren.svg', desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
-					{ name: '消息', iconImage: '/static/xiaoxi.svg', desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
-					{ name: '收到喜欢', iconImage: '/static/dianzan.svg', desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
-					{ name: '收藏', iconImage: '/static/shoucang.svg', desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
+					{ name: '好友', iconImage: ICON_HAOYOU, desc: '查看好友关系', uiClass: 'ui-blue', action: 'friends' },
+					{ name: '个人名片', iconImage: ICON_GEREN, desc: '进入个人名片页', uiClass: 'ui-gold', action: 'card' },
+					{ name: '消息', iconImage: ICON_XIAOXI, desc: '查看互动消息', uiClass: 'ui-violet', action: 'message' },
+					{ name: '收到喜欢', iconImage: ICON_DIANZAN, desc: '查看收到喜欢', uiClass: 'ui-red', action: 'likes' },
+					{ name: '收藏', iconImage: ICON_SHOUCANG, desc: '打开收藏列表', uiClass: 'ui-orange', action: 'favorites' }
 				]
 			}
 		},

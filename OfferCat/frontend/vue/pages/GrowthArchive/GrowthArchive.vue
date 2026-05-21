@@ -88,14 +88,12 @@
 				radarData: null
 			}
 		},
-		async onShow() {
+		onShow() {
 			const user = getUser() || uni.getStorageSync('user_v2') || {}
 			const cacheKey = this.resolveRadarCacheKey(user)
 			this.consumeArchiveManageReturnSkip()
-			// 每次回到页面都尝试恢复目标滚动位置和最新测评数据。
 			this.handlePendingScroll()
 			this.checkFirstTimeRadar()
-			// 先尝试从全局数据加载（APK中setStorageSync跨页面不可靠）
 			if (cacheKey != null && cacheKey !== '') {
 				const app = getApp()
 				const c = app && app.globalData && app.globalData.radarDataCache
@@ -103,19 +101,10 @@
 					this.radarData = c[cacheKey]
 				}
 			}
-			try {
-				// 异步拉取最新数据；内部可能再次触发 checkFirstTimeRadar，需与本页 suppress 标志协同。
-				await this.fetchRadarData()
-			} finally {
-				this.suppressAssessmentAfterArchiveManageReturn = false
-			}
-			// 总览四项统计独立于雷达测评；每次进入页面同步一次，避免仅显示占位「-」。
-			this.$nextTick(() => {
-				const card = this.$refs.archiveHeroCard
-				if (card && typeof card.fetchStats === 'function') {
-					void card.fetchStats()
-				}
-			})
+			// 延后网络请求与统计刷新，让 switchTab 先完成首帧展示
+			setTimeout(() => {
+				void this.refreshGrowthArchiveOnShow(cacheKey)
+			}, 0)
 		},
 		methods: {
 			consumeArchiveManageReturnSkip() {
@@ -124,6 +113,19 @@
 					app.globalData.growthArchiveSkipAssessmentAfterManageNav = false
 					this.suppressAssessmentAfterArchiveManageReturn = true
 				}
+			},
+			async refreshGrowthArchiveOnShow() {
+				try {
+					await this.fetchRadarData()
+				} finally {
+					this.suppressAssessmentAfterArchiveManageReturn = false
+				}
+				this.$nextTick(() => {
+					const card = this.$refs.archiveHeroCard
+					if (card && typeof card.fetchStats === 'function') {
+						void card.fetchStats()
+					}
+				})
 			},
 			resolveRadarCacheKey(user) {
 				const u = user && typeof user === 'object' ? user : {}

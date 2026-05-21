@@ -1,5 +1,5 @@
 <template>
-	<view class="learning-header" :class="[themeClass, switchAnimClass]" :key="refreshSeed">
+	<view class="learning-header" :class="[themeClass, switchAnimClass]">
 		<!-- 主题切换提示框 -->
 		<view class="theme-toast" :class="{ 'toast-show': toastVisible }">
 			<text class="toast-text">{{ toastMessage }}</text>
@@ -64,10 +64,6 @@
 				type: Number,
 				default: 0
 			},
-			refreshSeed: {
-				type: Number,
-				default: 0
-			}
 		},
 		data() {
 			return {

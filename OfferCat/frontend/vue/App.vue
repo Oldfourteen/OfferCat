@@ -53,6 +53,11 @@
 		// 取消了背景和文字的 transition 以保证与底部栏瞬间换色同步
 	}
 
+	uni-page-body,
+	uni-page-wrapper {
+		box-sizing: border-box;
+	}
+
 	/* 文本防溢出安全换行工具类（用于长串数字/字母） */
 	.text-wrap-safe {
 		word-break: break-all !important;

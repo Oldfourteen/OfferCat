@@ -1,42 +1,13 @@
 <template>
-	<!-- 纯色底 + 单色进度弧 + 外发光 -->
-	<view class="qbg-card qbg-observe-target" :class="[toneClazz, themeClazz]" @tap.stop>
+	<view class="qbg-card" :class="[toneClazz, themeClazz]" @tap.stop>
 		<view class="qbg-inner">
 			<view class="qbg-chart">
-				<!-- #ifdef H5 -->
-				<svg class="qbg-svg" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-					<g transform="translate(50 50) rotate(135)">
-						<circle
-							cx="0"
-							cy="0"
-							:r="radius"
-							fill="none"
-							:stroke="trackColor"
-							:stroke-width="strokeW"
-							stroke-linecap="round"
-							:stroke-dasharray="trackDash"
-						/>
-						<circle
-							class="qbg-prog"
-							cx="0"
-							cy="0"
-							:r="radius"
-							fill="none"
-							:stroke="progColor"
-							:stroke-width="strokeW"
-							:stroke-linecap="progressLinecap"
-							:stroke-dasharray="progDash"
-							:style="progressStyle"
-						/>
-					</g>
-				</svg>
-				<!-- #endif -->
-				<!-- #ifndef H5 -->
-				<view class="qbg-arc-native">
-					<view class="qbg-arc-track" :style="nativeTrackStyle"></view>
-					<view class="qbg-arc-progress" :style="nativeProgressStyle"></view>
-				</view>
-				<!-- #endif -->
+				<canvas
+					:canvas-id="canvasId"
+					:id="canvasId"
+					class="qbg-canvas"
+					:style="{ width: canvasPx + 'px', height: canvasPx + 'px' }"
+				/>
 				<view class="qbg-center" :class="{ 'has-hint': !hasValue }">
 					<view class="qbg-metric-row" :class="{ 'is-untracked': !hasValue }">
 						<text class="qbg-num">{{ displayPercentText }}</text>
@@ -44,7 +15,6 @@
 					</view>
 					<text v-if="!hasValue" class="qbg-metric-hint">暂未统计</text>
 				</view>
-				<!-- 弧底留空处放类目名，不占卡片下方额外高度 -->
 				<text class="qbg-foot">{{ categoryLabel }}</text>
 			</view>
 		</view>
@@ -52,6 +22,10 @@
 </template>
 
 <script>
+	const CANVAS_UPX = 208
+	const ARC_START = 0.75 * Math.PI
+	const ARC_SPAN = 1.5 * Math.PI
+
 	export default {
 		name: 'QuestionBankTypeGauge',
 		props: {
@@ -74,10 +48,12 @@
 		},
 		data() {
 			return {
+				canvasId: `qbg-${Date.now()}-${Math.random().toString(36).slice(2, 9)}`,
+				canvasPx: 104,
 				animatedProgress: 0,
 				animatedNum: 0,
 				animationTriggered: false,
-				observer: null
+				drawPending: false
 			}
 		},
 		computed: {
@@ -86,21 +62,6 @@
 			},
 			toneClazz() {
 				return this.tone === 'interview' ? 'is-tone-interview' : 'is-tone-written'
-			},
-			radius() {
-				return 40
-			},
-			strokeW() {
-				return 10
-			},
-			C() {
-				return 2 * Math.PI * this.radius
-			},
-			arcLen() {
-				return this.C * 0.75
-			},
-			trackDash() {
-				return `${this.arcLen} ${this.C}`
 			},
 			trackColor() {
 				return this.tone === 'interview'
@@ -128,28 +89,6 @@
 				if (this.animationTriggered) return this.animatedProgress
 				return this.targetProgress
 			},
-			nativeTrackStyle() {
-				return {
-					background: `conic-gradient(from 135deg, ${this.trackColor} 0deg 270deg, transparent 270deg)`
-				}
-			},
-			nativeProgressStyle() {
-				const deg = Math.max(0, Math.min(270, this.progress01 * 270))
-				return {
-					background: `conic-gradient(from 135deg, ${this.progColor} 0deg, ${this.progColor} ${deg}deg, transparent ${deg}deg)`
-				}
-			},
-			progressLinecap() {
-				return this.progress01 > 0.004 ? 'round' : 'butt'
-			},
-			progDash() {
-				return `${this.arcLen * this.progress01} ${this.C}`
-			},
-			progressStyle() {
-				return {
-					transition: this.animationTriggered ? 'stroke-dasharray 0.5s ease-out' : 'none'
-				}
-			},
 			displayPercentText() {
 				if (!this.hasValue) return '0'
 				const n = this.animationTriggered ? this.animatedNum : this.numericPct
@@ -159,36 +98,37 @@
 		watch: {
 			accuracyPercent: {
 				handler() {
-					if (this.animationTriggered) {
-						this.triggerAnimation()
-					} else {
-						this.applyStaticMetrics()
-					}
+					this.applyStaticMetrics()
+					this.scheduleDraw()
 				},
 				immediate: true
+			},
+			progress01() {
+				this.scheduleDraw()
+			},
+			tone() {
+				this.scheduleDraw()
 			}
 		},
 		mounted() {
-			this.setupIntersectionObserver()
-			if (this.hasValue) {
+			this.canvasPx = typeof uni !== 'undefined' && uni.upx2px
+				? uni.upx2px(CANVAS_UPX)
+				: CANVAS_UPX / 2
+			this.$nextTick(() => {
 				this.applyStaticMetrics()
-			}
-		},
-		beforeDestroy() {
-			this.teardownObserver()
-		},
-		beforeUnmount() {
-			this.teardownObserver()
+				this.scheduleDraw(true)
+				// App 端 canvas 首帧偶发空白，延迟重绘确保圆环可见
+				setTimeout(() => this.scheduleDraw(true), 80)
+				setTimeout(() => this.scheduleDraw(true), 320)
+				if (this.hasValue) {
+					this.triggerAnimation()
+				}
+			})
 		},
 		methods: {
-			teardownObserver() {
-				if (this.observer) {
-					this.observer.disconnect()
-					this.observer = null
-				}
-			},
 			syncDisplayFromProps() {
 				this.applyStaticMetrics()
+				this.scheduleDraw(true)
 			},
 			applyStaticMetrics() {
 				if (!this.hasValue) {
@@ -199,53 +139,88 @@
 				this.animatedNum = this.numericPct
 				this.animatedProgress = this.targetProgress
 			},
-			setupIntersectionObserver() {
-				this.$nextTick(() => {
-					if (typeof uni === 'undefined' || typeof uni.createIntersectionObserver !== 'function') {
-						if (this.hasValue) this.triggerAnimation()
-						return
-					}
-					try {
-						this.observer = uni.createIntersectionObserver(this)
-						this.observer
-							.relativeToViewport({ bottom: 50 })
-							.observe('.qbg-observe-target', (res) => {
-								const ratio = res && res.intersectionRatio
-								if (ratio > 0.3 && !this.animationTriggered) {
-									this.triggerAnimation()
-								}
-							})
-					} catch (e) {
-						console.warn('[QuestionBankTypeGauge] IntersectionObserver 不可用', e)
-						if (this.hasValue) this.triggerAnimation()
-					}
-				})
+			scheduleDraw(immediate = false) {
+				if (this.drawPending && !immediate) return
+				this.drawPending = true
+				const run = () => {
+					this.drawPending = false
+					this.paintRing()
+				}
+				if (immediate) {
+					this.$nextTick(run)
+				} else {
+					this.$nextTick(run)
+				}
+			},
+			paintRing() {
+				if (typeof uni === 'undefined' || typeof uni.createCanvasContext !== 'function') {
+					return
+				}
+				const size = this.canvasPx
+				const cx = size / 2
+				const cy = size / 2
+				const r = size * 0.384
+				const lineWidth = size * 0.096
+				const trackEnd = ARC_START + ARC_SPAN
+				const progEnd = ARC_START + ARC_SPAN * this.progress01
+
+				const ctx = uni.createCanvasContext(this.canvasId, this)
+				ctx.clearRect(0, 0, size, size)
+				ctx.setLineWidth(lineWidth)
+				ctx.setLineCap('round')
+
+				ctx.setStrokeStyle(this.trackColor)
+				ctx.beginPath()
+				ctx.arc(cx, cy, r, ARC_START, trackEnd, false)
+				ctx.stroke()
+
+				if (this.progress01 > 0.004) {
+					ctx.setStrokeStyle(this.progColor)
+					ctx.beginPath()
+					ctx.arc(cx, cy, r, ARC_START, progEnd, false)
+					ctx.stroke()
+				}
+
+				ctx.draw(false, () => {})
 			},
 			triggerAnimation() {
 				if (this.animationTriggered) return
 				this.animationTriggered = true
-				if (!this.hasValue) return
+				if (!this.hasValue) {
+					this.scheduleDraw(true)
+					return
+				}
 				const duration = 500
 				const startTime = Date.now()
-				const startValue = this.animatedNum || 0
+				const startValue = 0
 				const endValue = this.numericPct
-				const startProgress = this.animatedProgress || 0
+				const startProgress = 0
 				const targetProg = this.targetProgress
-				const animate = () => {
+				const step = () => {
 					const elapsed = Date.now() - startTime
-					const progress = Math.min(elapsed / duration, 1)
-					const eased = 1 - Math.pow(1 - progress, 3)
+					const t = Math.min(elapsed / duration, 1)
+					const eased = 1 - Math.pow(1 - t, 3)
 					this.animatedNum = startValue + (endValue - startValue) * eased
 					this.animatedProgress = startProgress + (targetProg - startProgress) * eased
-					if (progress < 1) {
-						requestAnimationFrame(animate)
+					this.scheduleDraw(true)
+					if (t < 1) {
+						if (typeof requestAnimationFrame === 'function') {
+							requestAnimationFrame(step)
+						} else {
+							setTimeout(step, 16)
+						}
 					}
 				}
-				requestAnimationFrame(animate)
+				if (typeof requestAnimationFrame === 'function') {
+					requestAnimationFrame(step)
+				} else {
+					step()
+				}
 			},
 			resetAnimation() {
 				this.animationTriggered = false
 				this.applyStaticMetrics()
+				this.scheduleDraw(true)
 			}
 		}
 	}
@@ -310,34 +285,13 @@
 		height: 208rpx;
 	}
 
-	.qbg-svg {
-		width: 208rpx;
-		height: 208rpx;
-		display: block;
-		overflow: visible;
-	}
-
-	.qbg-arc-native {
-		position: relative;
-		width: 208rpx;
-		height: 208rpx;
-		border-radius: 50%;
-	}
-
-	.qbg-arc-track,
-	.qbg-arc-progress {
+	.qbg-canvas {
 		position: absolute;
 		left: 0;
 		top: 0;
 		width: 208rpx;
 		height: 208rpx;
-		border-radius: 50%;
-		mask: radial-gradient(circle, transparent 62%, #000 63%);
-		-webkit-mask: radial-gradient(circle, transparent 62%, #000 63%);
-	}
-
-	.qbg-arc-progress {
-		transition: background 0.35s ease-out;
+		z-index: 0;
 	}
 
 	.qbg-center {
@@ -352,7 +306,7 @@
 		justify-content: center;
 		text-align: center;
 		pointer-events: none;
-		z-index: 1;
+		z-index: 2;
 	}
 
 	.qbg-center.has-hint {
@@ -412,7 +366,6 @@
 		right: 0;
 		bottom: 10rpx;
 		z-index: 2;
-		margin-top: 0;
 		text-align: center;
 		font-size: 26rpx;
 		font-weight: 700;
@@ -423,12 +376,5 @@
 			0 1rpx 3rpx rgba(0, 40, 70, 0.25),
 			0 2rpx 8rpx rgba(0, 30, 55, 0.12);
 		pointer-events: none;
-	}
-
-	.qbg-card.is-tone-written :deep(.qbg-prog),
-	.qbg-card.is-tone-interview :deep(.qbg-prog) {
-		filter:
-			drop-shadow(0 0 14rpx rgba(214, 222, 235, 0.45))
-			drop-shadow(0 0 6rpx rgba(255, 255, 255, 0.35));
 	}
 </style>

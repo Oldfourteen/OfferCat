@@ -6,12 +6,12 @@
 				v-for="(item, index) in items"
 				:key="item.pagePath"
 				class="liquid-tab-item"
-				:class="{ 'is-active': routeSelected === index, 'is-center': index === 2 }"
+				:class="{ 'is-active': displaySelected === index, 'is-center': index === 2 }"
 				@click="index !== 2 ? onTap(index) : null"
 			>
 				<view class="liquid-tab-item-content">
-					<image class="liquid-tab-icon" :src="routeSelected === index ? item.iconActive : item.icon" mode="aspectFit" />
-					<text class="liquid-tab-text" :class="{ active: routeSelected === index }">{{ item.text }}</text>
+					<image class="liquid-tab-icon" :src="displaySelected === index ? item.iconActive : item.icon" mode="aspectFit" />
+					<text class="liquid-tab-text" :class="{ active: displaySelected === index }">{{ item.text }}</text>
 				</view>
 			</view>
 
@@ -26,7 +26,7 @@
 <script>
 	import {
 		LIQUID_TAB_ITEMS,
-		normalizePageRoute,
+		resolveLiquidTabIndexFromPages,
 		setTabBarSlideIntent,
 		clearTabBarSlideStartIndex,
 		commitTabBarMirrorIndex
@@ -49,7 +49,9 @@
 			return {
 				items: LIQUID_TAB_ITEMS,
 				resolvedTheme: 'light',
-				_themeChangeHandler: null
+				_themeChangeHandler: null,
+				// 点击瞬间更新，避免等 switchTab 完成才高亮
+				pendingSelected: -1
 			}
 		},
 		computed: {
@@ -57,25 +59,26 @@
 				return this.resolvedTheme === 'dark'
 			},
 			routeSelected() {
-				try {
-					const pages = getCurrentPages()
-					if (!pages.length) return 0
-					const page = pages[pages.length - 1]
-					let raw = ''
-					if (page && typeof page.route === 'string') {
-						raw = page.route
-					} else if (page && page.$page && typeof page.$page.fullPath === 'string') {
-						raw = page.$page.fullPath
-					}
-					const routeNorm = normalizePageRoute(raw)
-					if (!routeNorm) return 0
-					const idx = this.items.findIndex(
-						(item) => normalizePageRoute(item.pagePath) === routeNorm
-					)
-					return idx >= 0 ? idx : 0
-				} catch (e) {
-					return 0
+				const idx = resolveLiquidTabIndexFromPages()
+				return idx >= 0 ? idx : 0
+			},
+			displaySelected() {
+				if (this.pendingSelected >= 0) {
+					return this.pendingSelected
 				}
+				try {
+					const app = getApp()
+					const gd = app && app.globalData
+					if (gd && typeof gd.tabBarSlideTo === 'number' && gd.tabBarSlideTo >= 0) {
+						return gd.tabBarSlideTo
+					}
+					if (gd && typeof gd.tabBarMirrorIndex === 'number' && gd.tabBarMirrorIndex >= 0) {
+						return gd.tabBarMirrorIndex
+					}
+				} catch (e) {
+					// ignore
+				}
+				return this.routeSelected
 			}
 		},
 		watch: {
@@ -83,6 +86,11 @@
 				if (next === 'dark' || next === 'light') {
 					this.resolvedTheme = next
 				}
+			},
+			routeSelected(next) {
+				this.pendingSelected = -1
+				commitTabBarMirrorIndex(next)
+				clearTabBarSlideStartIndex()
 			}
 		},
 		created() {
@@ -122,12 +130,18 @@
 				this._themeChangeHandler = null
 			},
 			onTap(index) {
-				if (index === this.routeSelected) return
-				setTabBarSlideIntent(this.routeSelected, index)
+				if (index === this.displaySelected) return
+				const fromIndex = this.displaySelected
+				this.pendingSelected = index
+				setTabBarSlideIntent(fromIndex, index)
+				commitTabBarMirrorIndex(index)
 				const path = this.items[index].pagePath
 				uni.switchTab({
 					url: `/${path}`,
-					fail: () => clearTabBarSlideStartIndex()
+					fail: () => {
+						this.pendingSelected = -1
+						clearTabBarSlideStartIndex()
+					}
 				})
 			}
 		}
@@ -203,7 +217,7 @@
 		justify-content: center;
 		width: 100%;
 		height: 100%;
-		transition: transform 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+		transition: transform 0.12s ease-out;
 	}
 
 	.liquid-tab-item.is-active .liquid-tab-item-content {
@@ -226,7 +240,7 @@
 		line-height: 1.2;
 		color: #8fa196;
 		font-weight: 500;
-		transition: color 0.3s ease;
+		transition: color 0.12s ease;
 	}
 
 	.liquid-tab-text.active {

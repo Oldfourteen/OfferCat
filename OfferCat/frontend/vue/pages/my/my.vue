@@ -66,10 +66,9 @@
 			if (getToken() && getUser() && !resolveStoredStudentId()) {
 				void syncUserProfileFromServer()
 			}
-			// 每次回到我的页先同步最新主题，再重播卡片动画并恢复滚动位置。
+			// 每次回到我的页同步主题；不再递增 animationKey，避免整页卡片销毁重建导致切换卡顿。
 			this.currentTheme = applyTheme(getTheme())
-			this.animationKey += 1
-			
+
 			if (this.savedScrollTop > 0) {
 				this.shouldRestoreScroll = true
 				setTimeout(() => {

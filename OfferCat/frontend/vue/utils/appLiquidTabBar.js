@@ -63,6 +63,33 @@ export function getLiquidTabBarOverlapPx() {
 	return inner + safe
 }
 
+/** 从当前页面栈解析 Tab 下标，解析失败返回 -1 */
+export function resolveLiquidTabIndexFromPages() {
+	try {
+		const pages = getCurrentPages()
+		if (!pages.length) {
+			return -1
+		}
+		const page = pages[pages.length - 1]
+		let raw = ''
+		if (page && typeof page.route === 'string') {
+			raw = page.route
+		} else if (page && page.$page && typeof page.$page.fullPath === 'string') {
+			raw = page.$page.fullPath
+		}
+		const routeNorm = normalizePageRoute(raw)
+		if (!routeNorm) {
+			return -1
+		}
+		const idx = LIQUID_TAB_ITEMS.findIndex(
+			(item) => normalizePageRoute(item.pagePath) === routeNorm
+		)
+		return idx >= 0 ? idx : -1
+	} catch (e) {
+		return -1
+	}
+}
+
 export function hideNativeTabBar() {
 	if (typeof uni === 'undefined' || typeof uni.hideTabBar !== 'function') {
 		return

@@ -400,27 +400,26 @@ export function requestAiChat(messages = [], options = {}) {
 }
 
 // 缓存当前的音频播放实例，便于重复播放前先停止上一次语音。
-let innerAudioContext = null;
-let plusAudioPlayer = null;
+let innerAudioContext = null
+let voiceStopTimer = null
+
+function sleep(ms) {
+	return new Promise(resolve => setTimeout(resolve, ms))
+}
 
 // 停止并销毁当前 AI 语音播放实例。
 export function stopAiVoice() {
+	if (voiceStopTimer) {
+		clearTimeout(voiceStopTimer)
+		voiceStopTimer = null
+	}
 	if (innerAudioContext) {
 		try {
-			innerAudioContext.stop();
-			innerAudioContext.destroy();
+			innerAudioContext.stop()
+			innerAudioContext.destroy()
 		} catch (e) {}
-		innerAudioContext = null;
+		innerAudioContext = null
 	}
-	// #ifdef APP-PLUS
-	if (plusAudioPlayer) {
-		try {
-			plusAudioPlayer.stop();
-			plusAudioPlayer.close && plusAudioPlayer.close();
-		} catch (e) {}
-		plusAudioPlayer = null;
-	}
-	// #endif
 }
 
 function getTtsStorageDir() {
@@ -433,18 +432,61 @@ function getTtsStorageDir() {
 	return '_doc'
 }
 
-// APP 端 innerAudioContext 需要可访问的本地绝对路径，不能依赖 data: URI。
+function normalizeTtsArrayBuffer(data) {
+	if (!data) return null
+	if (data instanceof ArrayBuffer) return data
+	if (ArrayBuffer.isView(data)) {
+		return data.buffer.slice(data.byteOffset, data.byteOffset + data.byteLength)
+	}
+	if (typeof data === 'string') {
+		try {
+			if (typeof uni.base64ToArrayBuffer === 'function') {
+				return uni.base64ToArrayBuffer(data)
+			}
+		} catch (e) {}
+	}
+	return null
+}
+
+function looksLikeMp3(buffer) {
+	const u8 = new Uint8Array(buffer)
+	if (u8.length < 4) return false
+	if (u8[0] === 0x49 && u8[1] === 0x44 && u8[2] === 0x33) return true
+	if (u8[0] === 0xff && (u8[1] & 0xe0) === 0xe0) return true
+	return false
+}
+
+function parseTtsErrorBody(data) {
+	try {
+		const uint8Array = new Uint8Array(data)
+		let errText = ''
+		for (let i = 0; i < uint8Array.length; i++) {
+			errText += String.fromCharCode(uint8Array[i])
+		}
+		errText = decodeURIComponent(escape(errText))
+		const errData = JSON.parse(errText)
+		return errData.error || errData.message || ''
+	} catch (e) {
+		return ''
+	}
+}
+
+// App/小程序端 innerAudioContext 需要可访问的本地绝对路径，不能依赖 data: URI。
 function resolveNativeAudioSrc(filePath) {
+	let src = filePath
 	// #ifdef APP-PLUS
 	if (typeof plus !== 'undefined' && plus.io && plus.io.convertLocalFileSystemURL) {
 		try {
-			return plus.io.convertLocalFileSystemURL(filePath)
+			src = plus.io.convertLocalFileSystemURL(filePath)
 		} catch (e) {
 			console.warn('convertLocalFileSystemURL failed', e)
 		}
 	}
+	if (src && !/^https?:\/\//i.test(src) && !/^file:\/\//i.test(src) && src.startsWith('/')) {
+		src = `file://${src}`
+	}
 	// #endif
-	return filePath
+	return src
 }
 
 function saveTtsMp3ToLocal(arrayBuffer) {
@@ -454,51 +496,42 @@ function saveTtsMp3ToLocal(arrayBuffer) {
 			reject(new Error('当前环境不支持保存语音文件'))
 			return
 		}
-		const filePath = `${getTtsStorageDir()}/ai_voice_${Date.now()}.mp3`
-		const done = () => resolve(resolveNativeAudioSrc(filePath))
-		const base64 = typeof uni.arrayBufferToBase64 === 'function'
-			? uni.arrayBufferToBase64(arrayBuffer)
-			: null
-		if (base64) {
-			fs.writeFile({
-				filePath,
-				data: base64,
-				encoding: 'base64',
-				success: done,
-				fail: () => {
-					fs.writeFile({
-						filePath,
-						data: arrayBuffer,
-						encoding: 'binary',
-						success: done,
-						fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
-					})
-				}
-			})
+		const dir = getTtsStorageDir()
+		const filePath = `${dir}/ai_voice_${Date.now()}.mp3`
+		if (typeof uni.arrayBufferToBase64 !== 'function') {
+			reject(new Error('当前环境不支持语音编码'))
 			return
 		}
 		fs.writeFile({
 			filePath,
-			data: arrayBuffer,
-			encoding: 'binary',
-			success: done,
+			data: uni.arrayBufferToBase64(arrayBuffer),
+			encoding: 'base64',
+			success: () => resolve(resolveNativeAudioSrc(filePath)),
 			fail: err => reject(new Error(err.errMsg || '保存语音文件失败'))
 		})
 	})
 }
 
 function prepareTtsAudioSrc(arrayBuffer) {
+	const buffer = normalizeTtsArrayBuffer(arrayBuffer)
+	if (!buffer || buffer.byteLength < 16) {
+		return Promise.reject(new Error('TTS 返回的音频数据无效'))
+	}
+	if (!looksLikeMp3(buffer)) {
+		const msg = parseTtsErrorBody(buffer)
+		return Promise.reject(new Error(msg || 'TTS 返回的不是有效 MP3 音频'))
+	}
 	// #ifdef H5
-	const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
+	const blob = new Blob([buffer], { type: 'audio/mpeg' })
 	return Promise.resolve(URL.createObjectURL(blob))
 	// #endif
 	// #ifndef H5
-	return saveTtsMp3ToLocal(arrayBuffer)
+	return saveTtsMp3ToLocal(buffer)
 	// #endif
 }
 
 function playWithInnerAudio(src, onPlay) {
-	return new Promise((resolve, reject) => {
+	return sleep(220).then(() => new Promise((resolve, reject) => {
 		// #ifdef APP-PLUS
 		if (uni.setInnerAudioOption) {
 			uni.setInnerAudioOption({
@@ -524,6 +557,14 @@ function playWithInnerAudio(src, onPlay) {
 			if (err) reject(err)
 			else resolve()
 		}
+		innerAudioContext.onCanplay(() => {
+			if (!innerAudioContext || settled) return
+			try {
+				innerAudioContext.play()
+			} catch (e) {
+				finish(new Error(e.message || '音频播放启动失败'))
+			}
+		})
 		innerAudioContext.onPlay(() => {
 			if (onPlay) onPlay()
 		})
@@ -531,61 +572,25 @@ function playWithInnerAudio(src, onPlay) {
 		innerAudioContext.onError((err) => {
 			const { errMsg, errCode } = err || {}
 			console.error('innerAudio 播放失败', { errMsg, errCode, src })
-			finish(new Error(`音频播放失败: ${errMsg || 'unknown'} (${errCode || ''})`))
+			const code = errCode != null ? errCode : ''
+			const hint = code === -99 || code === '-99'
+				? '（多为本地音频路径无效或文件未写完，请重试）'
+				: ''
+			finish(new Error(`音频播放失败: ${errMsg || 'MediaError'} (${code})${hint}`))
 		})
-		setTimeout(() => {
-			if (innerAudioContext) {
-				innerAudioContext.play()
+		voiceStopTimer = setTimeout(() => {
+			if (!settled && innerAudioContext) {
+				try {
+					innerAudioContext.play()
+				} catch (e) {}
 			}
-		}, 120)
-	})
-}
-
-function playWithPlusAudio(src, onPlay) {
-	return new Promise((resolve, reject) => {
-		// #ifdef APP-PLUS
-		if (typeof plus !== 'undefined' && plus.audio && typeof plus.audio.createPlayer === 'function') {
-			stopAiVoice()
-			try {
-				plusAudioPlayer = plus.audio.createPlayer(src)
-				let settled = false
-				const finish = (err) => {
-					if (settled) return
-					settled = true
-					stopAiVoice()
-					if (err) reject(err)
-					else resolve()
-				}
-				const onPlayStart = () => {
-					if (onPlay) onPlay()
-				}
-				plusAudioPlayer.addEventListener('play', onPlayStart, false)
-				plusAudioPlayer.addEventListener('ended', () => finish(), false)
-				plusAudioPlayer.addEventListener('error', () => {
-					finish(new Error('原生播放器播放失败'))
-				}, false)
-				plusAudioPlayer.play(() => {}, (e) => {
-					finish(new Error((e && e.message) || '原生播放器启动失败'))
-				})
-				return
-			} catch (e) {
-				console.warn('plus.audio 不可用，回退 innerAudio', e)
-				plusAudioPlayer = null
-			}
-		}
-		// #endif
-		playWithInnerAudio(src, onPlay).then(resolve).catch(reject)
-	})
+		}, 360)
+	}))
 }
 
 function playPreparedTts(src, onPlay) {
 	stopAiVoice()
-	// #ifdef APP-PLUS
-	return playWithPlusAudio(src, onPlay)
-	// #endif
-	// #ifndef APP-PLUS
 	return playWithInnerAudio(src, onPlay)
-	// #endif
 }
 
 // 调用 TTS 接口并播放 AI 生成的语音结果。
@@ -613,18 +618,8 @@ export function playAiVoice(text, onPlay) {
 						.catch(err => reject(err instanceof Error ? err : new Error(String(err))))
 					return
 				}
-				let errMsg = `请求TTS失败（HTTP ${res.statusCode}）`
-				try {
-					const uint8Array = new Uint8Array(res.data)
-					let errText = ''
-					for (let i = 0; i < uint8Array.length; i++) {
-						errText += String.fromCharCode(uint8Array[i])
-					}
-					errText = decodeURIComponent(escape(errText))
-					const errData = JSON.parse(errText)
-					if (errData.error) errMsg = errData.error
-					else if (errData.message) errMsg = errData.message
-				} catch (e) {}
+				const bodyMsg = parseTtsErrorBody(res.data)
+				const errMsg = bodyMsg || `请求TTS失败（HTTP ${res.statusCode}）`
 				reject(new Error(formatHttpErrorMessage(res.statusCode, errMsg)))
 			},
 			fail: (err) => reject(new Error(err.errMsg || '请求TTS失败'))

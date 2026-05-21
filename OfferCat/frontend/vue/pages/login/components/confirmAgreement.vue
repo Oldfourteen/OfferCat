@@ -87,7 +87,7 @@
 		display: flex;
 		justify-content: center;
 		width: 100%;
-		margin-top: 40px;
+		margin-top: 16px;
 
 		.radio-label {
 			display: flex;
@@ -149,8 +149,10 @@
 		position: fixed;
 		top: 0;
 		left: 0;
-		width: 100vw;
-		height: 100vh;
+		right: 0;
+		bottom: 0;
+		width: 100%;
+		height: 100%;
 		z-index: 99999;
 		display: flex;
 		justify-content: center;
@@ -158,20 +160,22 @@
 		pointer-events: auto;
 
 		.modal-mask {
-			position: fixed;
+			position: absolute;
 			top: 0;
 			left: 0;
-			width: 100vw;
-			height: 100vh;
+			right: 0;
+			bottom: 0;
+			width: 100%;
+			height: 100%;
 			background-color: rgba(0, 0, 0, 0.5);
 			animation: fadeIn 0.2s ease;
 			pointer-events: auto;
-			z-index: 99999;
+			z-index: 1;
 		}
 
 		.modal-content {
-			position: fixed;
-			z-index: 999999;
+			position: relative;
+			z-index: 2;
 			width: 78%;
 			max-width: 320px;
 			background-color: #fff;

@@ -46,6 +46,7 @@ if exist "%DYPNS_SRC%" (
     if not exist "%SCRIPT_DIR%deploy\config" mkdir "%SCRIPT_DIR%deploy\config"
     copy /Y "%DYPNS_SRC%" "%SCRIPT_DIR%deploy\config\application-dypns.yml" >nul
     echo   Collected: deploy\config\application-dypns.yml
+    echo   [user] Dypns keys are also packaged into user-exec.jar classpath when you run mvn package
 ) else (
     echo   [WARN] Missing %DYPNS_SRC%
     echo          Copy user\secrets\application-dypns.yml.example and fill AccessKey first.

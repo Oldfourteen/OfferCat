@@ -57,7 +57,9 @@ export default {
 	},
 	onShow() {
 		this.noticeLayerVisible = true
-		this.loadReplyInboxCount()
+		setTimeout(() => {
+			void this.loadReplyInboxCount()
+		}, 0)
 	},
 	onHide() {
 		this.noticeLayerVisible = false

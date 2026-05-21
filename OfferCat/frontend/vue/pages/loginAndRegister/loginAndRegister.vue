@@ -40,8 +40,8 @@
 				setTimeout(() => {
 					uni.navigateTo({
 						url: "/pages/login/login",
-						animationType: 'slide-in-bottom',
-						animationDuration: 300
+						animationType: 'fade-in',
+						animationDuration: 200
 					});
 				}, 100);
 			}

@@ -4,8 +4,12 @@
 			"path": "pages/login/login",
 			"style": {
 				"navigationStyle": "custom",
+				"disableScroll": true,
+				"backgroundColor": "#f8f9fd",
 				"app-plus": {
-					"titleNView": false
+					"titleNView": false,
+					"background": "#f8f9fd",
+					"popGesture": "none"
 				}
 			}
 		},

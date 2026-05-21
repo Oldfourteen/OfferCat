@@ -16,6 +16,8 @@
 </template>
 
 <script>
+	import { switchLiquidTabByPath } from '@/utils/appLiquidTabBar.js'
+
 	export default {
 		props: {
 			theme: {
@@ -32,9 +34,7 @@
 		methods:{
 			goAI(){
 				// 点击后切换到底部 AI 页面开始模拟面试。
-				uni.switchTab({
-					url:"/pages/AI/AI"
-				})
+				switchLiquidTabByPath('pages/AI/AI')
 			}
 		}
 	}

@@ -40,6 +40,7 @@
 	import { getHeaderInspirationalQuote } from '@/utils/headerInspirationalQuotes.js'
 	import CommonAvatar from '@/components/CommonAvatar.vue'
 	import { setTheme } from '@/utils/theme.js'
+	import { switchLiquidTabByPath } from '@/utils/appLiquidTabBar.js'
 
 	/** 按设备本地时钟的小时段落划分问候语，全天 24 小时均有对应文案。 */
 	function greetingByLocalHour(date) {
@@ -217,9 +218,7 @@
 			},
 			goMy() {
 				// 头像入口跳转到底部 tab 的“我的”页面。
-				uni.switchTab({
-					url: '/pages/my/my'
-				})
+				switchLiquidTabByPath('pages/my/my')
 			}
 		}
 	}

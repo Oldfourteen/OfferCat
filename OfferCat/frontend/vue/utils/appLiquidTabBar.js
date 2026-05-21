@@ -147,3 +147,96 @@ export function commitTabBarMirrorIndex(index) {
 		// ignore
 	}
 }
+
+/** 底栏选中态变更事件（globalData 非响应式，须配合 uni.$emit 驱动各页 AppLiquidTabBar 实例） */
+export const LIQUID_TAB_BAR_SELECTED_EVENT = 'liquid-tab-bar-selected-change'
+
+let _cachedSelectedIndex = -1
+
+/** 读取当前应高亮的 Tab 下标（内存缓存 → globalData → 页面栈） */
+export function getLiquidTabSelectedIndex() {
+	if (_cachedSelectedIndex >= 0 && _cachedSelectedIndex < LIQUID_TAB_ITEMS.length) {
+		return _cachedSelectedIndex
+	}
+	try {
+		const app = getApp()
+		const gd = app && app.globalData
+		if (gd && typeof gd.tabBarSlideTo === 'number' && gd.tabBarSlideTo >= 0) {
+			return gd.tabBarSlideTo
+		}
+		if (gd && typeof gd.tabBarMirrorIndex === 'number' && gd.tabBarMirrorIndex >= 0) {
+			return gd.tabBarMirrorIndex
+		}
+	} catch (e) {
+		// ignore
+	}
+	const routeIdx = resolveLiquidTabIndexFromPages()
+	return routeIdx >= 0 ? routeIdx : 0
+}
+
+/**
+ * 发布底栏选中下标并广播，供 switchTab 过渡与各页自定义底栏同步。
+ * @param {number} index
+ * @param {{ slideFrom?: number }} [options]
+ */
+export function publishLiquidTabSelectedIndex(index, options = {}) {
+	if (typeof index !== 'number' || index < 0 || index >= LIQUID_TAB_ITEMS.length) {
+		return
+	}
+	_cachedSelectedIndex = index
+	commitTabBarMirrorIndex(index)
+	const slideFrom = options.slideFrom
+	if (typeof slideFrom === 'number' && slideFrom >= 0 && slideFrom !== index) {
+		setTabBarSlideIntent(slideFrom, index)
+	} else {
+		clearTabBarSlideStartIndex()
+	}
+	if (typeof uni !== 'undefined' && typeof uni.$emit === 'function') {
+		uni.$emit(LIQUID_TAB_BAR_SELECTED_EVENT, { index, from: slideFrom })
+	}
+}
+
+/** 根据 pagePath（与 LIQUID_TAB_ITEMS 一致）解析 Tab 下标 */
+export function resolveLiquidTabIndexFromPath(pagePath) {
+	const norm = normalizePageRoute(pagePath)
+	if (!norm) {
+		return -1
+	}
+	const idx = LIQUID_TAB_ITEMS.findIndex(
+		(item) => normalizePageRoute(item.pagePath) === norm
+	)
+	return idx >= 0 ? idx : -1
+}
+
+/**
+ * 切换 Tab 前先更新底栏高亮，避免等新页 onShow / 页面栈刷新才跟随。
+ * @param {number} index
+ * @param {{ onFail?: () => void }} [options]
+ */
+export function switchLiquidTab(index, options = {}) {
+	const item = LIQUID_TAB_ITEMS[index]
+	if (!item || typeof uni === 'undefined' || typeof uni.switchTab !== 'function') {
+		return
+	}
+	const fromIndex = getLiquidTabSelectedIndex()
+	publishLiquidTabSelectedIndex(index, { slideFrom: fromIndex })
+	uni.switchTab({
+		url: `/${item.pagePath}`,
+		fail: () => {
+			if (fromIndex >= 0) {
+				publishLiquidTabSelectedIndex(fromIndex)
+			}
+			if (typeof options.onFail === 'function') {
+				options.onFail()
+			}
+		}
+	})
+}
+
+/** 按 pages.json 路径切换 Tab（如 pages/my/my） */
+export function switchLiquidTabByPath(pagePath) {
+	const idx = resolveLiquidTabIndexFromPath(pagePath)
+	if (idx >= 0) {
+		switchLiquidTab(idx)
+	}
+}

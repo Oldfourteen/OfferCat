@@ -32,6 +32,7 @@
 	import { getRecruitmentSeason, getCurrentYear } from '@/utils/date.js'
 	import { getGrowthRecordStats } from '@/api/growth.js'
 	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
+	import { switchLiquidTabByPath } from '@/utils/appLiquidTabBar.js'
 
 	export default {
 		name: 'GrowthHub',
@@ -76,9 +77,7 @@
 				// 不同成长入口分发到成长档案、历史记录、收藏和冲刺营等页面。
 				const actions = {
 					'成长档案': () => {
-						uni.switchTab({
-							url: '/pages/GrowthArchive/GrowthArchive'
-						})
+						switchLiquidTabByPath('pages/GrowthArchive/GrowthArchive')
 					},
 					'打卡天数': async () => {
 						let studentId = resolveStoredStudentId()

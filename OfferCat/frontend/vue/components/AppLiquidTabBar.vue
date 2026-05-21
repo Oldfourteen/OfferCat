@@ -26,10 +26,11 @@
 <script>
 	import {
 		LIQUID_TAB_ITEMS,
-		resolveLiquidTabIndexFromPages,
-		setTabBarSlideIntent,
-		clearTabBarSlideStartIndex,
-		commitTabBarMirrorIndex
+		LIQUID_TAB_BAR_SELECTED_EVENT,
+		resolveLiquidTabIndexFromPath,
+		getLiquidTabSelectedIndex,
+		publishLiquidTabSelectedIndex,
+		switchLiquidTab
 	} from '@/utils/appLiquidTabBar.js'
 	import { applyTheme, THEME_CHANGE_EVENT } from '@/utils/theme.js'
 
@@ -50,35 +51,34 @@
 				items: LIQUID_TAB_ITEMS,
 				resolvedTheme: 'light',
 				_themeChangeHandler: null,
+				_tabSelectedHandler: null,
 				// 点击瞬间更新，避免等 switchTab 完成才高亮
-				pendingSelected: -1
+				pendingSelected: -1,
+				// 跨页 switchTab（非本栏点击）时的全局选中下标；-1 表示尚未同步
+				syncedSelected: -1
 			}
 		},
 		computed: {
 			isDarkUi() {
 				return this.resolvedTheme === 'dark'
 			},
-			routeSelected() {
-				const idx = resolveLiquidTabIndexFromPages()
-				return idx >= 0 ? idx : 0
+			/** 本页挂载的底栏对应 Tab 下标（不依赖 getCurrentPages，避免缓存页栈延迟） */
+			hostTabIndex() {
+				const idx = resolveLiquidTabIndexFromPath(this.tabPagePath)
+				return idx >= 0 ? idx : -1
 			},
 			displaySelected() {
 				if (this.pendingSelected >= 0) {
 					return this.pendingSelected
 				}
-				try {
-					const app = getApp()
-					const gd = app && app.globalData
-					if (gd && typeof gd.tabBarSlideTo === 'number' && gd.tabBarSlideTo >= 0) {
-						return gd.tabBarSlideTo
-					}
-					if (gd && typeof gd.tabBarMirrorIndex === 'number' && gd.tabBarMirrorIndex >= 0) {
-						return gd.tabBarMirrorIndex
-					}
-				} catch (e) {
-					// ignore
+				if (this.syncedSelected >= 0 && this.syncedSelected < this.items.length) {
+					return this.syncedSelected
 				}
-				return this.routeSelected
+				if (this.hostTabIndex >= 0) {
+					return this.hostTabIndex
+				}
+				const fallback = getLiquidTabSelectedIndex()
+				return fallback >= 0 ? fallback : 0
 			}
 		},
 		watch: {
@@ -87,10 +87,13 @@
 					this.resolvedTheme = next
 				}
 			},
-			routeSelected(next) {
-				this.pendingSelected = -1
-				commitTabBarMirrorIndex(next)
-				clearTabBarSlideStartIndex()
+			hostTabIndex(next) {
+				if (next >= 0 && this.pendingSelected === next) {
+					this.pendingSelected = -1
+				}
+				if (next >= 0 && this.syncedSelected === next) {
+					this.syncedSelected = next
+				}
 			}
 		},
 		created() {
@@ -112,8 +115,22 @@
 					this.resolvedTheme = t
 				}
 			}
+			this._tabSelectedHandler = (payload) => {
+				const index = payload && payload.index
+				if (typeof index !== 'number' || index < 0 || index >= this.items.length) {
+					return
+				}
+				this.syncedSelected = index
+				if (this.hostTabIndex >= 0 && index === this.hostTabIndex) {
+					this.pendingSelected = -1
+				}
+			}
 			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
 				uni.$on(THEME_CHANGE_EVENT, this._themeChangeHandler)
+				uni.$on(LIQUID_TAB_BAR_SELECTED_EVENT, this._tabSelectedHandler)
+			}
+			if (this.hostTabIndex >= 0) {
+				this.syncedSelected = this.hostTabIndex
 			}
 		},
 		beforeDestroy() {
@@ -124,23 +141,24 @@
 		},
 		methods: {
 			teardownLiquidTabBar() {
-				if (typeof uni !== 'undefined' && typeof uni.$off === 'function' && this._themeChangeHandler) {
-					uni.$off(THEME_CHANGE_EVENT, this._themeChangeHandler)
+				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+					if (this._themeChangeHandler) {
+						uni.$off(THEME_CHANGE_EVENT, this._themeChangeHandler)
+					}
+					if (this._tabSelectedHandler) {
+						uni.$off(LIQUID_TAB_BAR_SELECTED_EVENT, this._tabSelectedHandler)
+					}
 				}
 				this._themeChangeHandler = null
+				this._tabSelectedHandler = null
 			},
 			onTap(index) {
 				if (index === this.displaySelected) return
-				const fromIndex = this.displaySelected
 				this.pendingSelected = index
-				setTabBarSlideIntent(fromIndex, index)
-				commitTabBarMirrorIndex(index)
-				const path = this.items[index].pagePath
-				uni.switchTab({
-					url: `/${path}`,
-					fail: () => {
+				this.syncedSelected = index
+				switchLiquidTab(index, {
+					onFail: () => {
 						this.pendingSelected = -1
-						clearTabBarSlideStartIndex()
 					}
 				})
 			}

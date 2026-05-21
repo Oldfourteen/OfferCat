@@ -245,8 +245,9 @@
 				})
 			},
 			goConversation(item) {
+				const avatar = item && item.avatar ? encodeURIComponent(item.avatar) : ''
 				uni.navigateTo({
-					url: `/subPages/forum/privateChat?id=${item.id}&name=${encodeURIComponent(item.name)}`,
+					url: `/subPages/forum/privateChat?id=${item.id}&name=${encodeURIComponent(item.name)}${avatar ? `&avatar=${avatar}` : ''}`,
 					animationType: 'slide-in-right',
 					animationDuration: 300
 				})

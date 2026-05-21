@@ -66,7 +66,8 @@
 				inputText: '',
 				scrollTarget: '',
 				myAvatar: DEFAULT_AVATAR,
-				targetAvatar: DEFAULT_AVATAR
+				targetAvatar: DEFAULT_AVATAR,
+				cacheKey: ''
 			}
 		},
 		onLoad(options) {
@@ -82,23 +83,67 @@
 			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
 			this.myUserId = u.userId || u.id
 			this.myAvatar = u.avatar || DEFAULT_AVATAR
+			if (this.myUserId && this.targetUserId) {
+				this.cacheKey = `forum_private_chat_${String(this.myUserId)}_${String(this.targetUserId)}`
+				this.restoreCachedMessages()
+			}
 		},
 		async onShow() {
+			this.restoreCachedMessages()
 			await this.loadHistory()
 		},
 		methods: {
-			async loadHistory() {
+			restoreCachedMessages() {
+				if (!this.cacheKey) return
+				const cached = uni.getStorageSync(this.cacheKey)
+				if (!cached) return
+				if (Array.isArray(cached)) {
+					this.messages = cached
+					this.scrollToBottom()
+					return
+				}
+				if (cached && Array.isArray(cached.messages)) {
+					this.messages = cached.messages
+					this.scrollToBottom()
+				}
+			},
+			saveCachedMessages() {
+				if (!this.cacheKey) return
+				const list = Array.isArray(this.messages) ? this.messages.slice(-120) : []
+				uni.setStorageSync(this.cacheKey, { messages: list, updatedAt: Date.now() })
+			},
+			async loadHistory(options = {}) {
 				if (!this.myUserId || !this.targetUserId) return
+				const keepLocal = options.keepLocal !== false
 				try {
 					const res = await getPrivateChatHistory(this.myUserId, this.targetUserId)
-					if (res && res.data) {
-						this.messages = res.data.map(m => ({
+					const raw = res && res.data
+					const list = Array.isArray(raw)
+						? raw
+						: raw && Array.isArray(raw.list)
+							? raw.list
+							: raw && Array.isArray(raw.records)
+								? raw.records
+								: []
+					if (list.length) {
+						const local = keepLocal ? (this.messages || []).filter(m => String(m.id || '').startsWith('local-')) : []
+						const serverMessages = list.map(m => ({
 							id: m.id,
 							isSelf: String(m.senderId) === String(this.myUserId),
 							avatar: String(m.senderId) === String(this.myUserId) ? this.myAvatar : this.targetAvatar,
 							content: m.content,
 							time: this.formatTime(m.createTime)
 						}))
+						const merged = [...serverMessages]
+						for (const lm of local) {
+							const duplicated = serverMessages.some(sm => sm.isSelf && sm.content === lm.content)
+							if (!duplicated) merged.push(lm)
+						}
+						this.messages = merged
+						this.saveCachedMessages()
+						this.scrollToBottom()
+					} else if (keepLocal) {
+						this.saveCachedMessages()
 						this.scrollToBottom()
 					}
 				} catch (e) {
@@ -107,21 +152,45 @@
 			},
 			formatTime(t) {
 				if (!t) return ''
-				return t.substring(11, 16) // e.g. "10:30" from "2023-10-10T10:30:00"
+				if (typeof t === 'number') {
+					const d = new Date(t)
+					const hh = String(d.getHours()).padStart(2, '0')
+					const mm = String(d.getMinutes()).padStart(2, '0')
+					return `${hh}:${mm}`
+				}
+				const s = String(t)
+				if (s.length >= 16) return s.substring(11, 16)
+				return s
+			},
+			getNowTime() {
+				const d = new Date()
+				const hh = String(d.getHours()).padStart(2, '0')
+				const mm = String(d.getMinutes()).padStart(2, '0')
+				return `${hh}:${mm}`
 			},
 			async handleSend() {
 				if (!this.inputText.trim()) return
 				if (!this.myUserId || !this.targetUserId) return
 				const content = this.inputText.trim()
+				const localId = `local-${Date.now()}-${Math.random().toString(16).slice(2)}`
+				this.messages.push({
+					id: localId,
+					isSelf: true,
+					avatar: this.myAvatar,
+					content,
+					time: this.getNowTime()
+				})
+				this.saveCachedMessages()
 				this.inputText = '' // 先清空输入框
+				this.scrollToBottom()
 				try {
 					await sendPrivateMessage({
 						senderId: this.myUserId,
 						receiverId: this.targetUserId,
 						content: content
 					})
-					// 重新加载或者直接 push
-					await this.loadHistory()
+					await this.loadHistory({ keepLocal: true })
+					this.saveCachedMessages()
 				} catch (e) {
 					uni.showToast({ title: '发送失败', icon: 'none' })
 					console.error('发送私信失败', e)
@@ -129,7 +198,11 @@
 			},
 			scrollToBottom() {
 				this.$nextTick(() => {
-					this.scrollTarget = 'scroll-bottom'
+					const t = 'scroll-bottom'
+					this.scrollTarget = this.scrollTarget === t ? '' : t
+					this.$nextTick(() => {
+						this.scrollTarget = t
+					})
 				})
 			},
 			goBack() {

@@ -25,7 +25,8 @@ export function register(payload) {
 		url: '/auth/register',
 		method: 'POST',
 		data,
-		timeout: 45000
+		timeout: 40000,
+		retryTimes: 0,
 	})
 }
 
@@ -43,9 +44,8 @@ export function login(payload) {
 		url: '/auth/login',
 		method: 'POST',
 		data,
-		timeout: 28000,
-		retryTimes: 1,
-		retryDelayMs: 450
+		timeout: 40000,
+		retryTimes: 0,
 	})
 }
 

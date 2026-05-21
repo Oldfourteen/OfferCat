@@ -41,7 +41,16 @@
 			}
 		},
 		onLoad() {
-			void warmApiConnection()
+			void warmApiConnection(true)
+			this._warmTimer = setInterval(() => {
+				void warmApiConnection(true)
+			}, 20000)
+		},
+		onUnload() {
+			if (this._warmTimer) {
+				clearInterval(this._warmTimer)
+				this._warmTimer = null
+			}
 		},
 		computed: {
 			title() {

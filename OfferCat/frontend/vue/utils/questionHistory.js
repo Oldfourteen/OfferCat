@@ -18,6 +18,26 @@ function padNumber(value) {
 	return String(value).padStart(2, '0')
 }
 
+/** 解析服务端/本地练习时间（兼容 ISO 字符串、毫秒时间戳、Java LocalDateTime 数组） */
+function parsePracticeTimestamp(value) {
+	if (value == null || value === '') return Date.now()
+	if (typeof value === 'number' && Number.isFinite(value)) {
+		return value > 1e12 ? value : value * 1000
+	}
+	if (Array.isArray(value) && value.length >= 3) {
+		const y = Number(value[0])
+		const m = Number(value[1]) - 1
+		const d = Number(value[2])
+		const h = Number(value[3]) || 0
+		const min = Number(value[4]) || 0
+		const sec = Number(value[5]) || 0
+		const ms = new Date(y, m, d, h, min, sec).getTime()
+		return Number.isFinite(ms) ? ms : Date.now()
+	}
+	const parsed = Date.parse(String(value))
+	return Number.isFinite(parsed) ? parsed : Date.now()
+}
+
 // 将时间戳格式化为历史记录展示时间。
 function formatDateTime(timestamp) {
 	const date = new Date(Number(timestamp) || Date.now())
@@ -99,8 +119,12 @@ export function syncQuestionHistoryFromServer({ paperType, limit } = {}) {
 		}
 		const list = await getPracticeSessions({ paperType, limit: limit || MAX_HISTORY_COUNT })
 		const items = (Array.isArray(list) ? list : (list && list.data) ? list.data : []).map((row) => {
-			const submittedAt = row.submittedAt || row.createTime || ''
-			const ts = Date.parse(submittedAt) || Date.now()
+			const submittedRaw = row.submittedAt || row.createTime || ''
+			const ts = parsePracticeTimestamp(submittedRaw)
+			const submittedAt =
+				typeof submittedRaw === 'string' && submittedRaw.trim()
+					? submittedRaw
+					: formatDateTime(ts)
 			const type = row.paperType === 2 ? 'interview' : 'written'
 			return {
 				sessionId: row.sessionId || `${row.paperId || 'paper'}_${ts}`,

@@ -1,0 +1,9 @@
+{
+  "name": "phonelogin",
+  "version": "1.0.0",
+  "description": "手机号一键登录获取",
+  "main": "index.js",
+  "extensions": {
+    "uni-cloud-verify": {}
+  }
+}

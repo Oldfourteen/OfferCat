@@ -9,11 +9,11 @@
 				</view>
 				<text class="header-title">个人主页</text>
 				<view class="header-side header-right">
-					<view v-if="isSelf" class="menu-btn" @click="openSelfMenu">
+					<view v-if="shouldShowSelfMenu" class="menu-btn" @click="openSelfMenu">
 						<view class="menu-dots">
-							<text class="menu-dot"></text>
-							<text class="menu-dot"></text>
-							<text class="menu-dot"></text>
+							<view class="menu-dot"></view>
+							<view class="menu-dot"></view>
+							<view class="menu-dot"></view>
 						</view>
 					</view>
 				</view>
@@ -169,7 +169,8 @@
 				userPosts: [],
 				isLeaving: false,
 				allowNativeBack: false,
-				pageTransitionMs: 260
+				pageTransitionMs: 260,
+				hasExplicitTargetUserId: false
 			}
 		},
 		computed: {
@@ -179,6 +180,11 @@
 			},
 			isSelf() {
 				return this.targetUserId && this.currentUserId && this.targetUserId === this.currentUserId
+			},
+			shouldShowSelfMenu() {
+				if (!this.currentUserId) return false
+				if (!this.hasExplicitTargetUserId) return true
+				return this.isSelf
 			},
 			displayName() {
 				return this.profileName || (this.isSelf ? '我自己' : '匿名用户')
@@ -215,6 +221,7 @@
 			}
 		},
 		onLoad(options) {
+			this.hasExplicitTargetUserId = Boolean(options.userId)
 			this.targetUserId = String(options.userId || this.currentUserId || '')
 			this.profileName = decodeURIComponent(options.name || '')
 			this.profileAvatar = decodeURIComponent(options.avatar || '')

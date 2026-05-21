@@ -89,6 +89,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getForumUnreadCounts, getPrivateConversations } from '@/api/forum.js'
 	import { MSG_ICON_FRIEND, MSG_ICON_LIKE } from '@/utils/personalSpaceIcons.js'
+	import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	const BADGE_STORAGE_KEY = 'forum_message_center_badges'
 
@@ -141,14 +142,24 @@
 			await this.loadConversations()
 		},
 		methods: {
+			async getUid() {
+				const cached = getUser() || uni.getStorageSync('user') || {}
+				let uid = resolveStoredUserId(cached)
+				if (uid == null) {
+					const synced = await syncUserProfileFromServer({ timeout: 8000 })
+					if (synced) uid = resolveStoredUserId(synced)
+					if (uid == null) uid = resolveStoredUserId(getUser() || cached)
+				}
+				return uid
+			},
 			async loadConversations() {
-				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
-				const uid = u.userId || u.id
+				const uid = await this.getUid()
 				if (!uid) return
 				try {
 					const res = await getPrivateConversations(uid)
-					if (res && res.data) {
-						this.conversations = res.data.map(c => ({
+					const list = res && Array.isArray(res.data) ? res.data : []
+					if (list.length) {
+						this.conversations = list.map(c => ({
 							id: c.targetUserId,
 							name: c.targetUserName,
 							avatar: c.targetUserAvatar || '/static/default-avatar.jpg',
@@ -156,14 +167,16 @@
 							preview: c.lastMessageContent,
 							pinned: false
 						}))
+					} else {
+						this.conversations = []
 					}
 				} catch (e) {
 					console.error('获取私信列表失败', e)
+					this.conversations = []
 				}
 			},
 			async loadUnreadCounts() {
-				const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
-				const uid = u.userId || u.id
+				const uid = await this.getUid()
 				if (uid) {
 					try {
 						const res = await getForumUnreadCounts(uid)

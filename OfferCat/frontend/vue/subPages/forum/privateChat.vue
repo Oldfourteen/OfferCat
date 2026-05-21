@@ -54,6 +54,7 @@
 <script>
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getPrivateChatHistory, sendPrivateMessage } from '@/api/forum.js'
+	import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	const DEFAULT_AVATAR = '/static/default-avatar.jpg'
 
@@ -69,7 +70,8 @@
 				scrollTarget: '',
 				myAvatar: DEFAULT_AVATAR,
 				targetAvatar: DEFAULT_AVATAR,
-				cacheKey: ''
+				cacheKey: '',
+				pollTimer: null
 			}
 		},
 		onLoad(options) {
@@ -82,19 +84,53 @@
 			if (options && options.avatar) {
 				this.targetAvatar = decodeURIComponent(options.avatar) || DEFAULT_AVATAR
 			}
-			const u = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
-			this.myUserId = u.userId || u.id
-			this.myAvatar = u.avatar || DEFAULT_AVATAR
-			if (this.myUserId && this.targetUserId) {
-				this.cacheKey = `forum_private_chat_${String(this.myUserId)}_${String(this.targetUserId)}`
-				this.restoreCachedMessages()
-			}
 		},
 		async onShow() {
+			await this.ensureUserContext()
 			this.restoreCachedMessages()
 			await this.loadHistory()
+			this.startPolling()
+		},
+		onHide() {
+			this.stopPolling()
+		},
+		onUnload() {
+			this.stopPolling()
 		},
 		methods: {
+			async ensureUserContext() {
+				if (this.myUserId) {
+					if (!this.cacheKey && this.targetUserId) {
+						this.cacheKey = `forum_private_chat_${String(this.myUserId)}_${String(this.targetUserId)}`
+					}
+					return
+				}
+				const cached = getUser() || uni.getStorageSync('user') || {}
+				let uid = resolveStoredUserId(cached)
+				let nextUser = cached
+				if (uid == null) {
+					const synced = await syncUserProfileFromServer({ timeout: 8000 })
+					if (synced) nextUser = synced
+					uid = resolveStoredUserId(nextUser)
+				}
+				this.myUserId = uid || ''
+				this.myAvatar = (nextUser && nextUser.avatar) || DEFAULT_AVATAR
+				if (this.myUserId && this.targetUserId) {
+					this.cacheKey = `forum_private_chat_${String(this.myUserId)}_${String(this.targetUserId)}`
+				}
+			},
+			startPolling() {
+				this.stopPolling()
+				this.pollTimer = setInterval(() => {
+					this.loadHistory({ keepLocal: true })
+				}, 4000)
+			},
+			stopPolling() {
+				if (this.pollTimer) {
+					clearInterval(this.pollTimer)
+					this.pollTimer = null
+				}
+			},
 			restoreCachedMessages() {
 				if (!this.cacheKey) return
 				const cached = uni.getStorageSync(this.cacheKey)
@@ -115,6 +151,7 @@
 				uni.setStorageSync(this.cacheKey, { messages: list, updatedAt: Date.now() })
 			},
 			async loadHistory(options = {}) {
+				await this.ensureUserContext()
 				if (!this.myUserId || !this.targetUserId) return
 				const keepLocal = options.keepLocal !== false
 				try {
@@ -171,6 +208,7 @@
 				return `${hh}:${mm}`
 			},
 			async handleSend() {
+				await this.ensureUserContext()
 				if (!this.inputText.trim()) return
 				if (!this.myUserId || !this.targetUserId) return
 				const content = this.inputText.trim()

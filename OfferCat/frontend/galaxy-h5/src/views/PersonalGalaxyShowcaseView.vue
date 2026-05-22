@@ -21,8 +21,6 @@ import {
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
 import { postRouteToShell } from '@/utils/bridge'
 import { goBackOrReplace, goToPersonalDesign } from '@/utils/navigation'
-import { isUniAppAppShell } from '@/utils/shellEnv'
-
 const router = useRouter()
 const route = useRoute()
 
@@ -34,8 +32,8 @@ const leaderboardOpen = ref(false)
 const starlitTick = ref(0)
 const packKeysForLb = ref<string[]>([])
 const galaxyUser = computed(() => galaxyUserId())
-/** App 壳：顶栏/右下角由原生 cover-view 承担，避免与 H5 重复两个「排行榜」 */
-const showLbInH5Chrome = computed(() => !isUniAppAppShell())
+/** 展示页仅保留右下角一个排行榜入口（顶栏不再重复） */
+const showLbFab = computed(() => true)
 
 const canvasHost = ref<HTMLElement | null>(null)
 const rt = shallowRef<ReturnType<typeof mountGalaxyThree> | null>(null)
@@ -207,9 +205,6 @@ onBeforeUnmount(() => {
         <p v-if="selectedLabel" class="sub">{{ selectedLabel }}</p>
         <p v-else class="sub muted">点击小行星查看四象与点亮星辰</p>
       </div>
-      <button v-if="showLbInH5Chrome" type="button" class="lb-trigger" @click="openLeaderboard">
-        排行榜 · {{ canvasStarsTotal }} 星
-      </button>
     </header>
 
     <div v-if="phase === 'loading'" class="overlay">加载…</div>
@@ -222,7 +217,7 @@ onBeforeUnmount(() => {
 
     <teleport to="body">
       <button
-        v-if="phase === 'ready' && showLbInH5Chrome"
+        v-if="phase === 'ready' && showLbFab"
         type="button"
         class="lb-fab"
         aria-label="打开点亮排行榜"

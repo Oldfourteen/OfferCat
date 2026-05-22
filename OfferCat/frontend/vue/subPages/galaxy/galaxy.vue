@@ -11,15 +11,6 @@
 		<!-- #endif -->
 		<!-- #ifndef H5 -->
 		<web-view class="galaxy-webview" :src="galaxyUrl" @message="handleWebViewMessage"></web-view>
-		<cover-view
-			v-if="galaxyShowLbFab"
-			class="galaxy-lb-cover"
-			@tap="openLeaderboardInWebView"
-		>
-			<cover-view class="galaxy-lb-cover-inner">
-				<cover-view class="galaxy-lb-cover-title">排行榜</cover-view>
-			</cover-view>
-		</cover-view>
 		<!-- #endif -->
 	</view>
 </template>
@@ -32,15 +23,12 @@
 		data() {
 			return {
 				_galaxyFrameWin: null,
-				/** App web-view 上叠原生按钮（H5 内页 fixed 在部分机型被挡） */
-				galaxyShowLbFab: false,
-				_galaxyLbRoutePollTimer: null,
 			}
 		},
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260522-apk-catalog-bundle-v1'
+				return '20260522-apk-fix-init-v3'
 			},
 			/**
 			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。
@@ -63,6 +51,9 @@
 					}
 				} catch (_) {}
 				qs.push(`v=${this.galaxyAssetVersion}`)
+				// #ifndef H5
+				qs.push('appShell=1')
+				// #endif
 				const rel = `${path}?${qs.join('&')}`
 				try {
 					if (typeof window !== 'undefined' && window.location) {
@@ -80,24 +71,11 @@
 			// #ifdef H5
 			window.addEventListener('message', this.handleWindowPostMessage, false)
 			// #endif
-			// #ifndef H5
-			this.galaxyShowLbFab = false
-			this.startGalaxyLbRoutePoll()
-			// #endif
-		},
-		onShow() {
-			// #ifndef H5
-			this.pollGalaxyRouteFromWebView()
-			// #endif
 		},
 		onUnload() {
 			// #ifdef H5
 			window.removeEventListener('message', this.handleWindowPostMessage, false)
 			this._galaxyFrameWin = null
-			// #endif
-			// #ifndef H5
-			this.stopGalaxyLbRoutePoll()
-			this.galaxyShowLbFab = false
 			// #endif
 		},
 		methods: {
@@ -120,33 +98,6 @@
 						})
 					},
 				})
-			},
-			/** 从 @message 的 detail.data 里递归查找关闭载荷（各端/版本可能套一层或多层） */
-			findGalaxyRoutePayload(node, depth) {
-				if (depth > 6 || node == null) return null
-				if (typeof node === 'string') {
-					try {
-						return this.findGalaxyRoutePayload(JSON.parse(node), depth + 1)
-					} catch (e) {
-						return null
-					}
-				}
-				if (Array.isArray(node)) {
-					for (let i = 0; i < node.length; i++) {
-						const hit = this.findGalaxyRoutePayload(node[i], depth + 1)
-						if (hit) return hit
-					}
-					return null
-				}
-				if (typeof node === 'object') {
-					if (node.type === 'galaxy-route' && node.source === 'galaxy-h5') return node
-					const keys = Object.keys(node)
-					for (let k = 0; k < keys.length; k++) {
-						const hit = this.findGalaxyRoutePayload(node[keys[k]], depth + 1)
-						if (hit) return hit
-					}
-				}
-				return null
 			},
 			findGalaxyClosePayload(node, depth) {
 				if (depth > 6 || node == null) return null
@@ -174,105 +125,19 @@
 				}
 				return null
 			},
-			/** 仅个人星图展示页需要原生 cover-view「排行榜」（其它页由 H5 自管或不需要） */
-			applyGalaxyLbFabForRoute(routeName) {
-				const raw = routeName == null ? '' : String(routeName)
-				const isShowcase =
-					raw === 'personalShowcase' || raw.includes('/personal/showcase')
-				this.galaxyShowLbFab = isShowcase
-			},
-			startGalaxyLbRoutePoll() {
-				// #ifndef H5
-				this.stopGalaxyLbRoutePoll()
-				this.pollGalaxyRouteFromWebView()
-				this._galaxyLbRoutePollTimer = setInterval(() => {
-					this.pollGalaxyRouteFromWebView()
-				}, 450)
-				// #endif
-			},
-			stopGalaxyLbRoutePoll() {
-				// #ifndef H5
-				if (this._galaxyLbRoutePollTimer) {
-					clearInterval(this._galaxyLbRoutePollTimer)
-					this._galaxyLbRoutePollTimer = null
-				}
-				// #endif
-			},
-			getGalaxyAppWebviewChild() {
-				try {
-					const pages = getCurrentPages()
-					const page = pages[pages.length - 1]
-					const wv = page && page.$getAppWebview && page.$getAppWebview()
-					if (!wv || !wv.children) return null
-					const children = wv.children()
-					for (let i = 0; i < children.length; i++) {
-						const child = children[i]
-						if (child && typeof child.evalJS === 'function') return child
-					}
-				} catch (e) {
-					console.warn('[galaxy] getGalaxyAppWebviewChild failed', e)
-				}
-				return null
-			},
-			/** Android 上 @message 可能延迟；轮询 H5 写入的 __GALAXY_ROUTE_NAME__ / hash */
-			pollGalaxyRouteFromWebView() {
-				// #ifndef H5
-				const child = this.getGalaxyAppWebviewChild()
-				if (!child) return
-				const js =
-					"(function(){try{var n=window.__GALAXY_ROUTE_NAME__;if(n)return String(n);var h=location.hash||'';if(h.indexOf('/personal/showcase')>=0)return 'personalShowcase';return h;}catch(e){return '';}})()"
-				try {
-					child.evalJS(js, (res) => {
-						this.applyGalaxyLbFabForRoute(res)
-					})
-				} catch (e) {
-					console.warn('[galaxy] pollGalaxyRouteFromWebView failed', e)
-				}
-				// #endif
-			},
-			/** App / 小程序等：子网页通过 uni.postMessage 上报，在 @message 中接收，detail.data 为数组 */
+			/** App / 小程序：子网页 uni.postMessage 关闭星图 */
 			handleWebViewMessage(event) {
 				const root = event && event.detail && event.detail.data
-				const routeMsg = this.findGalaxyRoutePayload(root, 0)
-				if (routeMsg) {
-					this.applyGalaxyLbFabForRoute(routeMsg.name)
-					return
-				}
 				if (this.findGalaxyClosePayload(root, 0)) {
 					this.closeGalaxyFromChild()
 				}
 			},
-			/** App：原生 cover-view 点在 web-view 上，通过 evalJS 打开 H5 内排行榜 */
-			openLeaderboardInWebView() {
-				const js =
-					"typeof window.__GALAXY_OPEN_LEADERBOARD__==='function'&&window.__GALAXY_OPEN_LEADERBOARD__()"
-				try {
-					const pages = getCurrentPages()
-					const page = pages[pages.length - 1]
-					const wv = page && page.$getAppWebview && page.$getAppWebview()
-					if (!wv || !wv.children) return
-					const children = wv.children()
-					for (let i = 0; i < children.length; i++) {
-						const child = children[i]
-						if (child && typeof child.evalJS === 'function') {
-							child.evalJS(js)
-							return
-						}
-					}
-				} catch (e) {
-					console.warn('[galaxy] openLeaderboardInWebView failed', e)
-				}
-			},
-			/** H5：子页 iframe 使用 window.parent.postMessage；仅处理来自当前 iframe 的关闭消息 */
+			/** H5：iframe postMessage 关闭星图 */
 			handleWindowPostMessage(event) {
 				// #ifdef H5
 				const data = (event && event.data) || {}
 				if (data.source !== 'galaxy-h5') return
 				if (this._galaxyFrameWin && event.source && event.source !== this._galaxyFrameWin) return
-				if (data.type === 'galaxy-route') {
-					this.applyGalaxyLbFabForRoute(data.name)
-					return
-				}
 				if (data.type === 'close') {
 					this.closeGalaxyFromChild()
 				}
@@ -305,28 +170,4 @@
 		background: #070b12;
 	}
 
-	/* App web-view 为原生层，H5 内 fixed 按钮可能被挡；用 cover-view 叠在 web-view 上 */
-	.galaxy-lb-cover {
-		position: fixed;
-		right: 12px;
-		bottom: calc(16px + env(safe-area-inset-bottom));
-		z-index: 99999;
-	}
-
-	.galaxy-lb-cover-inner {
-		padding: 10px 14px;
-		border-radius: 14px;
-		background-color: rgba(32, 24, 12, 0.92);
-		border-width: 1px;
-		border-style: solid;
-		border-color: rgba(232, 184, 106, 0.55);
-	}
-
-	.galaxy-lb-cover-title {
-		font-size: 14px;
-		font-weight: 700;
-		color: #f0d090;
-		line-height: 1.2;
-		text-align: center;
-	}
 </style>

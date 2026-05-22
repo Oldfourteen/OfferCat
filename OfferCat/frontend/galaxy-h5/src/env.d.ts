@@ -13,6 +13,8 @@ interface Window {
   __GALAXY_USER_ID__?: string | number
   /** 当前 hash 路由名，供 App 壳轮询同步 cover-view 排行榜按钮 */
   __GALAXY_ROUTE_NAME__?: string
+  /** 由壳页 URL `appShell=1` 注入，WebView 内 plus 可能晚于首屏 */
+  __GALAXY_APP_SHELL__?: string | boolean
 }
 
 declare module '*.tsv?raw' {

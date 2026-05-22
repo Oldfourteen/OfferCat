@@ -13,6 +13,18 @@ function url(path: string): string {
 
 type ApiResult<T> = { code: number; msg: string; data: T }
 
+async function safeFetch(input: string, init?: RequestInit): Promise<Response> {
+  try {
+    return await fetch(input, init)
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e)
+    if (/failed to fetch/i.test(msg)) {
+      throw new Error('无法连接星图服务，请检查网络与网关地址')
+    }
+    throw e instanceof Error ? e : new Error(msg)
+  }
+}
+
 async function parseJson<T>(r: Response): Promise<T> {
   let j: ApiResult<T> & { message?: string; error?: string; status?: number; timestamp?: string }
   try {
@@ -47,7 +59,7 @@ export async function fetchRecommend(selectedNodeId?: string | null) {
   const qs = new URLSearchParams()
   if (selectedNodeId) qs.set('selectedNodeId', selectedNodeId)
   const q = qs.toString()
-  const r = await fetch(url(`/recommend.json${q ? `?${q}` : ''}`))
+  const r = await safeFetch(url(`/recommend.json${q ? `?${q}` : ''}`))
   if (!r.ok) throw new Error(`recommend ${r.status}`)
   return r.json() as Promise<{
     suggestions: { nodeId: string; reason: string }[]
@@ -57,7 +69,7 @@ export async function fetchRecommend(selectedNodeId?: string | null) {
 }
 
 export async function loadPersonalGalaxy(userId: number): Promise<PersonalGalaxyV1 | null> {
-  const r = await fetch(url(`/personal?userId=${userId}`))
+  const r = await safeFetch(url(`/personal?userId=${userId}`))
   const j = (await r.json()) as ApiResult<PersonalGalaxyV1> & { status?: number; error?: string }
   if (typeof j.code !== 'number' && (j.status != null || (j as { timestamp?: string }).timestamp != null)) {
     throw new Error(
@@ -70,7 +82,7 @@ export async function loadPersonalGalaxy(userId: number): Promise<PersonalGalaxy
 }
 
 export async function savePersonalGalaxy(userId: number, galaxy: PersonalGalaxyV1): Promise<void> {
-  const r = await fetch(url('/personal'), {
+  const r = await safeFetch(url('/personal'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, galaxy }),
@@ -79,7 +91,7 @@ export async function savePersonalGalaxy(userId: number, galaxy: PersonalGalaxyV
 }
 
 export async function fetchPersonalPackKeys(userId: number): Promise<string[]> {
-  const r = await fetch(url(`/personal/pack-keys?userId=${userId}`))
+  const r = await safeFetch(url(`/personal/pack-keys?userId=${userId}`))
   return parseJson<string[]>(r)
 }
 
@@ -90,7 +102,7 @@ export type StarlitProgressRow = {
 }
 
 export async function fetchStarlitProgress(userId: number): Promise<StarlitProgressRow[]> {
-  const r = await fetch(url(`/starlit/progress?userId=${userId}`))
+  const r = await safeFetch(url(`/starlit/progress?userId=${userId}`))
   return parseJson<StarlitProgressRow[]>(r)
 }
 
@@ -100,7 +112,7 @@ export async function upsertStarlitProgress(
   starsLit: number,
   lastQuestionNo?: number,
 ): Promise<void> {
-  const r = await fetch(url('/starlit/progress'), {
+  const r = await safeFetch(url('/starlit/progress'), {
     method: 'PUT',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ userId, packKey, starsLit, lastQuestionNo }),
@@ -117,10 +129,10 @@ export type StarlitQuestionDto = {
 
 export async function fetchStarlitQuestions(packKey: string): Promise<StarlitQuestionDto[]> {
   const qs = new URLSearchParams({ packKey })
-  let r = await fetch(url(`/starlit/questions?${qs}`))
+  let r = await safeFetch(url(`/starlit/questions?${qs}`))
   if (r.status === 404) {
     const enc = encodeURIComponent(packKey)
-    r = await fetch(url(`/starlit/pack/${enc}/questions`))
+    r = await safeFetch(url(`/starlit/pack/${enc}/questions`))
   }
   return parseJson<StarlitQuestionDto[]>(r)
 }
@@ -128,7 +140,7 @@ export async function fetchStarlitQuestions(packKey: string): Promise<StarlitQue
 export async function fetchStarlitLeaderboard(userId: number, packKeys?: string[]) {
   const qs = new URLSearchParams({ userId: String(userId), limit: '30' })
   if (packKeys?.length) qs.set('packKeys', packKeys.join(','))
-  const r = await fetch(url(`/starlit/leaderboard?${qs}`))
+  const r = await safeFetch(url(`/starlit/leaderboard?${qs}`))
   return parseJson<{
     rows: { rank: number; userId: number; displayName: string; totalStars: number; self: boolean }[]
     selfTotalStars: number

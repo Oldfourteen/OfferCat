@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, nextTick, onBeforeUnmount, onMounted, ref, shallowRef, watch } from 'vue'
 import { useRouter } from 'vue-router'
+import { loadCrossJobCatalog } from '@/data/crossJobCatalog'
 import { MAJORS } from '@/data/majors'
 import { threeJobsForMajorPair, type CrossJobRow } from '@/data/crossJobCatalog'
 import {
@@ -190,11 +191,15 @@ onMounted(async () => {
     return
   }
   try {
-    await threeJobsForMajorPair('major_electrical', 'major_law')
+    await loadCrossJobCatalog()
+    err.value = ''
   } catch (e) {
-    phase.value = 'error'
-    err.value = e instanceof Error ? e.message : '预加载岗位表失败'
-    return
+    err.value =
+      e instanceof Error && /failed to fetch/i.test(e.message)
+        ? '岗位表加载失败（请重新安装含最新星图资源的 APK）'
+        : e instanceof Error
+          ? e.message
+          : '岗位表加载失败'
   }
 
   const stored = await loadPersonalGalaxyHydrated()
@@ -217,7 +222,7 @@ onBeforeUnmount(() => {
 <template>
   <div class="personal-root">
     <div v-if="phase === 'loading'" class="loading-overlay">加载岗位数据…</div>
-    <div v-if="phase === 'error'" class="err-banner">{{ err }}</div>
+    <div v-if="err" class="err-banner" role="alert">{{ err }}</div>
 
     <header class="top-bar">
       <button type="button" class="back-btn" @click="goBack">返回</button>

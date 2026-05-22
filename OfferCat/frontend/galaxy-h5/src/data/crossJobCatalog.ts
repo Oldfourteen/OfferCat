@@ -60,6 +60,16 @@ function indexCanonicalOrders(rows: CrossJobRow[]) {
   }
 }
 
+function tryInitCacheFromBundle(): void {
+  if (cache) return
+  const raw = bundledCrossJobTsv != null ? String(bundledCrossJobTsv).trim() : ''
+  if (!raw) return
+  cache = parseCrossJobTsv(raw)
+  indexCanonicalOrders(cache)
+}
+
+tryInitCacheFromBundle()
+
 export function getCanonicalMajorCodes(codeA: string, codeB: string, pairHint?: string): [string, string] {
   if (pairHint) {
     const fromHint = majorCodesFromPairLabel(pairHint)

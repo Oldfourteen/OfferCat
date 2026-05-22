@@ -15,12 +15,14 @@
           if (apiBase) window.__GALAXY_API_BASE__ = decodeURIComponent(apiBase).replace(/\/+$/, '')
           var userId = sp.get('userId')
           if (userId) window.__GALAXY_USER_ID__ = userId
+          var appShell = sp.get('appShell')
+          if (appShell === '1' || appShell === 'true' || appShell === 'app') window.__GALAXY_APP_SHELL__ = '1'
         } catch (_) {}
       })()
     </script>
     <script src="./assets/uni.webview.js"></script>
-    <script type="module" crossorigin src="./assets/galaxy-app.js?v=20260522-apk-catalog-bundle-v1"></script>
-    <link rel="stylesheet" crossorigin href="./assets/galaxy.css?v=20260522-apk-catalog-bundle-v1" />
+    <script type="module" crossorigin src="./assets/galaxy-app.js?v=20260522-apk-fix-init-v3"></script>
+    <link rel="stylesheet" crossorigin href="./assets/galaxy.css?v=20260522-apk-fix-init-v3" />
   </head>
   <body>
     <div id="app"></div>

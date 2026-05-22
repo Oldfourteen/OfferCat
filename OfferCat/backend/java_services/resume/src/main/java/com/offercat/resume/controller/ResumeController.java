@@ -266,19 +266,23 @@ public class ResumeController {
     @GetMapping("/export/pdf/cpp/{id}")
     public ResponseEntity<byte[]> exportResumeToPdfWithCpp(
             @PathVariable("id") Long id,
-            @RequestParam(value = "keywords", required = false) String keywords) {
+            @RequestParam(value = "keywords", required = false) String keywords,
+            @RequestParam(value = "highlightEngine", required = false) String highlightEngine) {
         /**
          * 解析关键词参数
          */
         String[] keywordArray = null;
         if (keywords != null && !keywords.isEmpty()) {
-            keywordArray = keywords.split(",");
+            keywordArray = Arrays.stream(keywords.split("[,\\s]+"))
+                    .filter(s -> s != null && !s.isBlank())
+                    .toArray(String[]::new);
         }
 
         /**
          * 调用服务生成PDF
          */
-        byte[] pdfBytes = resumeService.exportResumeToPdfWithCpp(id, keywordArray);
+        String engine = (highlightEngine == null || highlightEngine.isEmpty()) ? "ac" : highlightEngine;
+        byte[] pdfBytes = resumeService.exportResumeToPdfWithCpp(id, keywordArray, engine);
 
         /**
          * 如果PDF生成成功
@@ -308,7 +312,9 @@ public class ResumeController {
          */
         String[] keywordArray = null;
         if (keywords != null && !keywords.isEmpty()) {
-            keywordArray = keywords.split(",");
+            keywordArray = Arrays.stream(keywords.split("[,\\s]+"))
+                    .filter(s -> s != null && !s.isBlank())
+                    .toArray(String[]::new);
         }
 
         /**

@@ -38,6 +38,11 @@ function normalizeResumeRecord(record = {}) {
 		parseTimeToTimestamp(record.create_time || record.createTime) ||
 		Date.now()
 	const resumeId = Number(record.resume_id || record.resumeId || timestamp)
+	const backendResumeIdRaw = record.backend_resume_id || record.backendResumeId || record.backendResumeID
+	const backendResumeId =
+		backendResumeIdRaw != null && backendResumeIdRaw !== '' && Number.isFinite(Number(backendResumeIdRaw))
+			? Number(backendResumeIdRaw)
+			: null
 	let skillsItems = record.skills_items || record.skillsItems || []
 	if (typeof skillsItems === 'string') {
 		const trimmed = skillsItems.trim()
@@ -56,6 +61,7 @@ function normalizeResumeRecord(record = {}) {
 	}
 	return {
 		resume_id: resumeId,
+		backend_resume_id: backendResumeId,
 		student_id: Number(record.student_id || 0),
 		resume_name: record.resume_name || record.resumeName || '未命名简历',
 		real_name: record.real_name || record.realName || '',

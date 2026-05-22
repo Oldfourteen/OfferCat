@@ -58,7 +58,9 @@
             gender = #{gender},
             phone = #{phone},
             email = #{email},
-            photo = #{photo},
+            <if test="photo != null and photo != ''">
+                photo = #{photo},
+            </if>
             job_intention = #{jobIntention},
             certificates = #{certificates},
             campus_experience = #{campusExperience},

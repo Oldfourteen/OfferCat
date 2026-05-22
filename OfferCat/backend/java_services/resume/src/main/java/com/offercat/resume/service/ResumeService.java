@@ -103,6 +103,13 @@ public interface ResumeService {
     byte[] exportResumeToPdfWithCpp(Long id, String[] keywords);
 
     /**
+     * 使用C++服务导出简历为PDF（可指定高亮引擎）
+     * 输入：简历ID、关键词列表、高亮引擎（naive/ac）
+     * 输出：PDF文件的字节数组
+     */
+    byte[] exportResumeToPdfWithCpp(Long id, String[] keywords, String highlightEngine);
+
+    /**
      * 使用C++服务对简历进行关键词高亮
      * 输入：简历ID、关键词列表
      * 输出：高亮结果响应对象

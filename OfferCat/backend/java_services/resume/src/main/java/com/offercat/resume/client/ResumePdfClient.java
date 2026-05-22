@@ -52,13 +52,19 @@ public class ResumePdfClient {
      * @return 高亮结果Map，包含spansById和htmlById
      */
     public Map<String, Object> highlightResume(Map<String, Object> resumeJson, String[] keywords, Long userId) {
+        return highlightResume(resumeJson, keywords, userId, "ac");
+    }
+
+    public Map<String, Object> highlightResume(Map<String, Object> resumeJson, String[] keywords, Long userId, String highlightEngine) {
         try {
             String url = pdfServiceUrl + "/api/v1/resume/highlight";
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("resume", resumeJson);
             requestBody.put("keywords", keywords);
-            requestBody.put("highlightEngine", "ac");
+            if (highlightEngine != null && !highlightEngine.isEmpty()) {
+                requestBody.put("highlightEngine", highlightEngine);
+            }
             if (userId != null) {
                 requestBody.put("userId", userId);
             }
@@ -91,13 +97,19 @@ public class ResumePdfClient {
      * @return PDF文件字节数组
      */
     public byte[] generateResumePdf(Map<String, Object> resumeJson, String[] keywords, Long userId) {
+        return generateResumePdf(resumeJson, keywords, userId, "ac");
+    }
+
+    public byte[] generateResumePdf(Map<String, Object> resumeJson, String[] keywords, Long userId, String highlightEngine) {
         try {
             String url = pdfServiceUrl + "/api/v1/resume/pdf";
 
             Map<String, Object> requestBody = new HashMap<>();
             requestBody.put("resume", resumeJson);
             requestBody.put("keywords", keywords);
-            requestBody.put("highlightEngine", "ac");
+            if (highlightEngine != null && !highlightEngine.isEmpty()) {
+                requestBody.put("highlightEngine", highlightEngine);
+            }
             if (userId != null) {
                 requestBody.put("userId", userId);
             }

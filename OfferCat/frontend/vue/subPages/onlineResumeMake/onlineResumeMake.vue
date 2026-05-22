@@ -10,9 +10,10 @@
 				:resumeName="resumeData.resumeName"
 				:photoUrl="resumeData.photo"
 				:resumeData="resumeData"
-				:resumeId="currentResumeId"
+				:resumeId="backendResumeId"
 				@updatePhoto="handleUpdatePhoto"
 				@updateResumeName="handleUpdateResumeName"
+				@updateBackendResumeId="handleUpdateBackendResumeId"
 				:theme="theme"
 			/>
 			<!-- 基本信息：姓名、性别、电话、邮箱 -->
@@ -71,6 +72,32 @@
 					</view>
 				</view>
 				<view class="export-mode-popup__footer" @tap.stop="closeExportModePopup">取消</view>
+			</view>
+		</view>
+		<view v-if="showPlainKeywordPopup" class="plain-keyword-popup">
+			<view
+				class="plain-keyword-popup__mask"
+				@tap="closePlainKeywordPopup"
+				@touchmove.stop.prevent
+			></view>
+			<view class="plain-keyword-popup__panel" @tap.stop>
+				<view class="plain-keyword-popup__header">
+					<text class="plain-keyword-popup__title">朴素生成关键词</text>
+					<text class="plain-keyword-popup__desc">请输入关键词，空格隔开（例如：Java Spring SQL）</text>
+				</view>
+				<view class="plain-keyword-popup__input-wrap">
+					<input
+						v-model="plainKeywordText"
+						class="plain-keyword-popup__input"
+						type="text"
+						placeholder="关键词1 关键词2 关键词3"
+						confirm-type="done"
+					/>
+				</view>
+				<view class="plain-keyword-popup__actions">
+					<view class="plain-keyword-popup__btn plain-keyword-popup__btn--ghost" @tap.stop="closePlainKeywordPopup">取消</view>
+					<view class="plain-keyword-popup__btn plain-keyword-popup__btn--primary" @tap.stop="confirmPlainKeywordExport">开始生成</view>
+				</view>
 			</view>
 		</view>
 	</view>
@@ -139,6 +166,8 @@
 				currentResumeId: null,
 				fullResumeRecord: null,
 				showExportModePopup: false,
+				showPlainKeywordPopup: false,
+				plainKeywordText: '',
 				backendResumeId: null
 			}
 		},
@@ -370,6 +399,11 @@
 			handleUpdateResumeName(newName) {
 				this.resumeData.resumeName = newName || '在线简历'
 			},
+			handleUpdateBackendResumeId(resumeId) {
+				if (resumeId) {
+					this.backendResumeId = Number(resumeId)
+				}
+			},
 			// 保存简历到本地仓库
 			handleSaveResume() {
 				const resumeName = (this.resumeData.resumeName || '').trim() || '未命名简历'
@@ -383,6 +417,7 @@
 
 				const record = {
 					resume_id: nextId,
+					backend_resume_id: this.backendResumeId,
 					resume_name: resumeName,
 					real_name: this.resumeData.name,
 					photo: this.resumeData.photo,
@@ -425,7 +460,7 @@
 					itemList: ['朴素生成 PDF', '智能生成 PDF (Beta)'],
 					success: (res) => {
 						if (res.tapIndex === 0) {
-							this.performExportPdf('plain')
+							this.openPlainKeywordPopup()
 						} else if (res.tapIndex === 1) {
 							this.performExportPdf('smart')
 						}
@@ -441,18 +476,35 @@
 			handleSelectExportMode(mode) {
 				const exportMode = mode === 'smart' ? 'smart' : 'plain'
 				this.closeExportModePopup()
+				if (exportMode === 'plain') {
+					this.openPlainKeywordPopup()
+					return
+				}
 				this.performExportPdf(exportMode)
 			},
-			async performExportPdf(mode = 'plain') {
+			openPlainKeywordPopup() {
+				this.plainKeywordText = ''
+				this.showPlainKeywordPopup = true
+			},
+			closePlainKeywordPopup() {
+				this.showPlainKeywordPopup = false
+			},
+			confirmPlainKeywordExport() {
+				const raw = String(this.plainKeywordText || '').trim()
+				const keywords = raw ? raw.split(/\s+/).filter(Boolean) : []
+				this.closePlainKeywordPopup()
+				this.performExportPdf('plain', keywords)
+			},
+			async performExportPdf(mode = 'plain', keywords = []) {
 				const record = this.handleSaveResume()
 				uni.showLoading({ title: '正在同步并生成 PDF...', mask: true })
 				try {
-					const result = await exportResumePdf(record, mode, this.backendResumeId)
+					const result = await exportResumePdf(record, mode, this.backendResumeId, keywords)
 					this.backendResumeId = result.backendResumeId
 					uni.hideLoading()
 					if (result.usedFallback) {
 						uni.showToast({
-							title: '智能服务不可用，已用朴素方式生成',
+							title: mode === 'smart' ? '智能服务不可用，已回退本地导出' : 'C++服务不可用，已回退本地导出',
 							icon: 'none',
 							duration: 2800
 						})
@@ -483,6 +535,11 @@
 			},
 			// 数据库结构 → 页面渲染结构
 			mapDatabaseToView(resume) {
+				if (resume && (resume.backend_resume_id || resume.backendResumeId || resume.backendResumeID)) {
+					this.backendResumeId = Number(resume.backend_resume_id || resume.backendResumeId || resume.backendResumeID)
+				} else if (resume && (resume.resumeId || resume.resume_id) && !this.backendResumeId) {
+					this.backendResumeId = Number(resume.resumeId || resume.resume_id)
+				}
 				
 				// 姓名解析
 				if (resume.resume_name) {
@@ -857,6 +914,90 @@
 		color: #475569;
 	}
 
+	.plain-keyword-popup {
+		position: fixed;
+		inset: 0;
+		z-index: 1250;
+	}
+
+	.plain-keyword-popup__mask {
+		position: absolute;
+		inset: 0;
+		z-index: 1;
+		background: rgba(15, 23, 42, 0.48);
+	}
+
+	.plain-keyword-popup__panel {
+		position: absolute;
+		left: 24rpx;
+		right: 24rpx;
+		bottom: calc(28rpx + env(safe-area-inset-bottom));
+		z-index: 2;
+		border-radius: 32rpx;
+		background: #ffffff;
+		padding: 30rpx 26rpx 24rpx;
+		box-shadow: 0 24rpx 64rpx rgba(15, 23, 42, 0.18);
+	}
+
+	.plain-keyword-popup__header {
+		text-align: center;
+	}
+
+	.plain-keyword-popup__title {
+		display: block;
+		font-size: 34rpx;
+		font-weight: 700;
+		color: #1f2a44;
+	}
+
+	.plain-keyword-popup__desc {
+		display: block;
+		margin-top: 10rpx;
+		font-size: 24rpx;
+		line-height: 1.6;
+		color: #73809b;
+	}
+
+	.plain-keyword-popup__input-wrap {
+		margin-top: 26rpx;
+		padding: 18rpx 20rpx;
+		border-radius: 22rpx;
+		background: #f8fafc;
+		border: 2rpx solid rgba(15, 23, 42, 0.06);
+	}
+
+	.plain-keyword-popup__input {
+		font-size: 28rpx;
+		color: #1f2a44;
+	}
+
+	.plain-keyword-popup__actions {
+		display: flex;
+		gap: 16rpx;
+		margin-top: 24rpx;
+	}
+
+	.plain-keyword-popup__btn {
+		flex: 1;
+		height: 88rpx;
+		border-radius: 999rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		font-size: 28rpx;
+		font-weight: 700;
+	}
+
+	.plain-keyword-popup__btn--ghost {
+		background: #f1f5f9;
+		color: #475569;
+	}
+
+	.plain-keyword-popup__btn--primary {
+		background: #5d76bd;
+		color: #ffffff;
+	}
+
 	.online-resume-page.theme-dark {
 		.export-mode-popup__panel {
 			background: #1b1d23;
@@ -889,6 +1030,33 @@
 		}
 
 		.export-mode-popup__footer {
+			background: #23252b;
+			color: #d3dceb;
+		}
+
+		.plain-keyword-popup__panel {
+			background: #1b1d23;
+			box-shadow: 0 24rpx 64rpx rgba(0, 0, 0, 0.34);
+		}
+
+		.plain-keyword-popup__title {
+			color: #f4f7fb;
+		}
+
+		.plain-keyword-popup__desc {
+			color: #95a3be;
+		}
+
+		.plain-keyword-popup__input-wrap {
+			background: #23252b;
+			border-color: rgba(255, 255, 255, 0.06);
+		}
+
+		.plain-keyword-popup__input {
+			color: #f4f7fb;
+		}
+
+		.plain-keyword-popup__btn--ghost {
 			background: #23252b;
 			color: #d3dceb;
 		}

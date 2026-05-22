@@ -20,7 +20,7 @@
 			<view class="card-right">
 				<view class="avatar-wrap" @click="handleUploadPhoto">
 					<!-- 根据是否有真实照片来决定显示默认头像还是用户上传的头像 -->
-					<image class="avatar" :src="photoUrl || DEFAULT_AVATAR" mode="aspectFill"></image>
+					<image class="avatar" :src="resolvedPhotoUrl || DEFAULT_AVATAR" mode="aspectFill"></image>
 					<view class="avatar-tag">
 						<text>{{ photoUrl ? '更换简历照' : '添加简历照' }}</text>
 					</view>
@@ -58,7 +58,7 @@
 			editResumeNamePopup,
 			avatarCropPopup
 		},
-		emits: ['updatePhoto', 'updateResumeName'],
+		emits: ['updatePhoto', 'updateResumeName', 'updateBackendResumeId'],
 		props: {
 			resumeName: {
 				type: String,
@@ -121,6 +121,17 @@
 				const r = this.completionStatus && typeof this.completionStatus.rate === 'number' ? this.completionStatus.rate : 0
 				const clamped = Math.min(100, Math.max(0, r))
 				return `${clamped}%`
+			},
+			resolvedPhotoUrl() {
+				if (!this.photoUrl) return ''
+				const raw = String(this.photoUrl)
+				if (raw.startsWith('data:image')) return raw
+				if (raw.startsWith('http://') || raw.startsWith('https://')) return raw
+				if (raw.startsWith('/')) return raw
+				if (this.resumeId) {
+					return `${BASE_URL}/api/resume/${this.resumeId}/avatar?v=${this.avatarVersion}`
+				}
+				return ''
 			}
 		},
 		data() {
@@ -129,7 +140,8 @@
 				isPopupVisible: false,
 				isCropPopupVisible: false,
 				cropSource: '',
-				localResumeName: ''
+				localResumeName: '',
+				avatarVersion: 0
 			}
 		},
 		watch: {
@@ -148,6 +160,14 @@
 			}
 		},
 		methods: {
+			pickResumeId(body) {
+				if (!body || typeof body !== 'object') return null
+				if (body.resumeId != null && body.resumeId !== '') return Number(body.resumeId)
+				if (body.resume_id != null && body.resume_id !== '') return Number(body.resume_id)
+				if (body.data && body.data.resumeId != null) return Number(body.data.resumeId)
+				if (body.data && body.data.resume_id != null) return Number(body.data.resume_id)
+				return null
+			},
 			openEditPopup() {
 				this.isPopupVisible = true
 			},
@@ -203,8 +223,14 @@
 								resumeStatus: 1
 							}
 						});
-						targetResumeId = createRes.resumeId;
+						targetResumeId = this.pickResumeId(createRes);
+					} else {
+						targetResumeId = Number(targetResumeId)
 					}
+					if (!targetResumeId) {
+						throw new Error('创建简历失败：未获取到 resumeId')
+					}
+					this.$emit('updateBackendResumeId', targetResumeId)
 					
 					// 上传头像
 					const hdr = {}
@@ -233,8 +259,9 @@
 										: null
 								if (data && data.photo) {
 									uni.showToast({ title: '头像上传成功', icon: 'success' });
-									const avatarUrl = `${BASE_URL}/api/resume/${targetResumeId}/avatar`;
-									this.$emit('updatePhoto', avatarUrl);
+									this.avatarVersion += 1
+									this.$emit('updateBackendResumeId', targetResumeId)
+									this.$emit('updatePhoto', data.photo);
 								} else {
 									const msg = data && data.message ? String(data.message) : '上传失败'
 									uni.showToast({ title: msg, icon: 'none' });

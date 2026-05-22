@@ -96,6 +96,12 @@ public class ResumeServiceImplement implements ResumeService {
      */
     @Override
     public Resume updateResume(Resume resume) {// 更新简历
+        if (resume != null && resume.getPhoto() != null) {
+            String p = resume.getPhoto();
+            if (p.startsWith("http://") || p.startsWith("https://") || p.contains("/api/resume/")) {
+                resume.setPhoto(null);
+            }
+        }
         resume.setUpdateTime(LocalDateTime.now());
         resumeMapper.update(resume);
         return resume;
@@ -618,6 +624,11 @@ public class ResumeServiceImplement implements ResumeService {
      */
     @Override
     public byte[] exportResumeToPdfWithCpp(Long id, String[] keywords) {
+        return exportResumeToPdfWithCpp(id, keywords, "ac");
+    }
+
+    @Override
+    public byte[] exportResumeToPdfWithCpp(Long id, String[] keywords, String highlightEngine) {
         Resume resume = resumeMapper.findById(id);
         if (resume == null) {
             log.warn("简历不存在: {}", id);
@@ -628,7 +639,7 @@ public class ResumeServiceImplement implements ResumeService {
         Map<String, Object> resumeJson = resumeToJsonMap(resume);
 
         /** 调用C++服务生成PDF */
-        return resumePdfClient.generateResumePdf(resumeJson, keywords, resume.getUserId());
+        return resumePdfClient.generateResumePdf(resumeJson, keywords, resume.getUserId(), highlightEngine);
     }
 
     /**

@@ -25,6 +25,15 @@ function pickResumeId(body) {
 /** 将本地简历记录转为后端 Resume 实体字段 */
 export function buildResumeApiPayload(record) {
 	const storedUser = getUser() || {}
+	let photo = record.photo
+	if (typeof photo === 'string') {
+		const p = photo.trim()
+		if (!p || p.startsWith('http://') || p.startsWith('https://') || p.includes('/api/resume/')) {
+			photo = null
+		} else {
+			photo = p
+		}
+	}
 	// 处理证书数据：转换为JSON字符串
 	let certificatesJson = null
 	if (record.certificates && Array.isArray(record.certificates)) {
@@ -41,7 +50,7 @@ export function buildResumeApiPayload(record) {
 		gender: record.gender,
 		phone: record.phone,
 		email: record.email,
-		photo: record.photo,
+		photo,
 		jobIntention: record.job_intention || '',
 		certificates: certificatesJson,
 		campusExperience: stripHtml(record.campus_experience),
@@ -246,10 +255,17 @@ export function saveAndOpenPdf(payload, fileName = 'resume') {
  * 完整导出：同步 → 生成 PDF → 保存/打开
  * @param {'plain'|'smart'} mode
  */
-export async function exportResumePdf(record, mode = 'plain', backendResumeId = null) {
+export async function exportResumePdf(record, mode = 'plain', backendResumeId = null, keywords = []) {
 	const { resumeId, backendResumeId: newBackendId } = await syncResumeToBackend(record, backendResumeId)
-	const plainPath = `/api/resume/export/pdf/${resumeId}`
-	const smartPath = `/api/resume/export/pdf/cpp/${resumeId}`
+	const fallbackPath = `/api/resume/export/pdf/${resumeId}`
+	const normalizedKeywords = Array.isArray(keywords)
+		? keywords.map((k) => (k == null ? '' : String(k)).trim()).filter((k) => k)
+		: []
+	const keywordParam = normalizedKeywords.length > 0
+		? `&keywords=${encodeURIComponent(normalizedKeywords.join(','))}`
+		: ''
+	const plainPath = `/api/resume/export/pdf/cpp/${resumeId}?highlightEngine=naive${keywordParam}`
+	const smartPath = `/api/resume/export/pdf/cpp/${resumeId}?highlightEngine=ac${keywordParam}`
 
 	let pdfPayload
 	let usedFallback = false
@@ -257,12 +273,18 @@ export async function exportResumePdf(record, mode = 'plain', backendResumeId = 
 		try {
 			pdfPayload = await fetchResumePdfBytes(smartPath)
 		} catch (e) {
-			console.warn('智能 PDF 导出失败，回退朴素导出', e)
+			console.warn('智能 PDF 导出失败，回退本地导出', e)
 			usedFallback = true
-			pdfPayload = await fetchResumePdfBytes(plainPath)
+			pdfPayload = await fetchResumePdfBytes(fallbackPath)
 		}
 	} else {
-		pdfPayload = await fetchResumePdfBytes(plainPath)
+		try {
+			pdfPayload = await fetchResumePdfBytes(plainPath)
+		} catch (e) {
+			console.warn('朴素 PDF 导出失败，回退本地导出', e)
+			usedFallback = true
+			pdfPayload = await fetchResumePdfBytes(fallbackPath)
+		}
 	}
 
 	const safeName = (record.resume_name || 'resume').replace(/[\\/:*?"<>|]/g, '_')

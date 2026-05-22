@@ -315,42 +315,49 @@
 				return this.handlePlayVoice({ id: messageId, text })
 			},
 			// 把 AI 文本交给语音接口播报，再维护当前播放状态。
-			async handlePlayVoice(item) {
-				if (this.playingId === item.id) {
-					// 如果正在播放当前音频，则停止
-					stopAiVoice()
-					this.playingId = null
-					this.loadingId = null
-					return
-				}
-				
-				// 停止其他正在播放的
+		async handlePlayVoice(item) {
+			if (this.playingId === item.id) {
+				// 如果正在播放当前音频，则停止
 				stopAiVoice()
 				this.playingId = null
-				
-				// 清除可能带有的 markdown 标记、特殊字符、URL等
-				let text = item.text.replace(/[#*_`>-]/g, '').trim()
-				// 过滤掉URL
-				text = text.replace(/https?:\/\/[^\s]+/g, '')
-				
-				if (!text) {
-					uni.showToast({ title: '没有可播报的文本', icon: 'none' })
-					return
-				}
-				
-				this.loadingId = item.id
-				try {
-					await playAiVoice(text, () => {
-						this.loadingId = null
-						this.playingId = item.id
-					})
-					this.playingId = null
-				} catch (e) {
+				this.loadingId = null
+				return
+			}
+			
+			// 停止其他正在播放的
+			stopAiVoice()
+			this.playingId = null
+			this.loadingId = null
+			
+			// 清除可能带有的 markdown 标记、特殊字符、URL等
+			let text = item.text.replace(/[#*_`>-]/g, '').trim()
+			// 过滤掉URL
+			text = text.replace(/https?:\/\/[^\s]+/g, '')
+			
+			if (!text) {
+				uni.showToast({ title: '没有可播报的文本', icon: 'none' })
+				return
+			}
+			
+			this.loadingId = item.id
+			try {
+				await playAiVoice(text, () => {
 					this.loadingId = null
+					this.playingId = item.id
+				})
+				// 播放结束
+				this.playingId = null
+			} catch (e) {
+				console.error('语音播放失败:', e)
+				uni.showToast({ title: e.message || '语音播报失败', icon: 'none', duration: 3000 })
+			} finally {
+				// 确保状态被重置
+				this.loadingId = null
+				if (this.playingId === item.id) {
 					this.playingId = null
-					uni.showToast({ title: e.message || '语音播报失败', icon: 'none' })
 				}
-			},
+			}
+		},
 			// 点击图片后打开系统预览器，同时避免返回页面时误刷新聊天页。
 			previewImages(urls, index = 0) {
 				const list = Array.isArray(urls) ? urls.filter(Boolean) : []

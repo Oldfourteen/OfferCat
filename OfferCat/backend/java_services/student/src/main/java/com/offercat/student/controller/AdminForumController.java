@@ -18,7 +18,7 @@ import java.util.Map;
  * 管理员论坛管理控制器
  */
 @RestController
-@RequestMapping("/api/admin/forum")
+@RequestMapping("/admin/forum")
 @CrossOrigin(origins = "*")
 public class AdminForumController {
 

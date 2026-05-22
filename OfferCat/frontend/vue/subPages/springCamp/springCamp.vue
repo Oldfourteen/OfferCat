@@ -158,25 +158,29 @@ import { requestAiChatStream } from '@/utils/ai.js'
 				this.loading = true;
 				this.resultText = '';
 				
-				const messages = [
-					{ role: 'user', content: `我是【${this.userMajor.trim()}】专业的学生。请给我一份针对${this.currentYear}届${this.seasonText}的建议和冲刺时间安排表。` }
-				];
+				// 获取用户信息
+				const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+				const userId = user.userId || user.id || user.studentId
+				const majorCode = user.majorCode || user.major || this.userMajor.trim() || 'DEFAULT'
+				
+				const question = `我是【${this.userMajor.trim()}】专业的学生。请给我一份针对${this.currentYear}届${this.seasonText}的建议和冲刺时间安排表。`;
 				
 				requestAiChatStream(
-					messages,
-					{ mode: 'SPRING_CAMP' },
+					{
+						userId: userId ? parseInt(userId) : 1,
+						majorCode: majorCode,
+						mode: 'SPRING_CAMP',
+						question: question
+					},
 					(chunkText) => {
 						this.resultText = chunkText;
-					},
-					(finalText) => {
-						this.resultText = finalText;
-						this.loading = false;
-					},
-					(err) => {
-						uni.showToast({ title: '生成失败，请重试', icon: 'none' });
-						this.loading = false;
 					}
-				);
+				).then(() => {
+					this.loading = false;
+				}).catch((err) => {
+					uni.showToast({ title: '生成失败，请重试', icon: 'none' });
+					this.loading = false;
+				});
 			}
 		}
 	}

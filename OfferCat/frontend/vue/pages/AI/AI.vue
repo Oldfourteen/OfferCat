@@ -430,7 +430,7 @@
 					
 					// 2. 从服务端拉取同步的会话状态
 					if (userId !== 'guest') {
-						const serverData = await fetchAiConversationsFromServer()
+						const serverData = await fetchAiConversationsFromServer(userId)
 						if (serverData && serverData.length > 0) {
 							this.conversations = serverData
 							this.activeConversationId = serverData[0].id
@@ -449,7 +449,7 @@
 					
 					// 同步到服务端（跨设备漫游）
 					if (userId !== 'guest') {
-						syncAiConversationsToServer(this.conversations).catch(e => console.error('同步会话到服务端失败', e))
+						syncAiConversationsToServer(this.conversations, userId).catch(e => console.error('同步会话到服务端失败', e))
 					}
 				} catch (e) {
 					console.error('保存本地会话失败', e)
@@ -627,33 +627,44 @@
 				this.handleBottomLayoutChange(true)
 				this.userHasScrolled = false
 
-				requestAiChatStream(
-					aiMessages,
-					{ mode: this.currentMode },
-					chunkText => {
-						this.replaceAssistantReply(convId, assistantMessageId, chunkText)
-					},
-					fullText => {
-						this.sending = false
-						this.replaceAssistantReply(convId, assistantMessageId, fullText)
-						this.handleBottomLayoutChange(false)
-						this.maybeAutoPlayAiVoice(assistantMessageId, fullText)
-						this.maybeArmHrTimedRespondWindow(fullText)
-					},
-					error => {
-						this.sending = false
-						this.replaceAssistantReply(
-							convId,
-							assistantMessageId,
-							`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
-						)
-						uni.showToast({
-							title: 'AI 接口调用失败',
-							icon: 'none'
-						})
-						this.handleBottomLayoutChange(false)
-					}
+				// 获取用户信息
+			const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const userId = user.userId || user.id || user.studentId
+			const majorCode = user.majorCode || user.major || 'DEFAULT'
+			
+			// 构建问题文本（取最后一条用户消息）
+			const lastUserMessage = aiMessages.filter(m => m.role === 'user').pop()
+			const question = lastUserMessage ? (lastUserMessage.text || lastUserMessage.content || '') : ''
+			
+			requestAiChatStream(
+				{
+					userId: userId ? parseInt(userId) : 1,
+					majorCode: majorCode,
+					mode: this.currentMode || 'GENERAL',
+					question: question
+				},
+				chunkText => {
+					this.replaceAssistantReply(convId, assistantMessageId, chunkText)
+				}
+			).then(() => {
+				this.sending = false
+				this.handleBottomLayoutChange(false)
+				const fullText = this.currentConversation.messages.find(m => m.id === assistantMessageId)?.text || ''
+				this.maybeAutoPlayAiVoice(assistantMessageId, fullText)
+				this.maybeArmHrTimedRespondWindow(fullText)
+			}).catch(error => {
+				this.sending = false
+				this.replaceAssistantReply(
+					convId,
+					assistantMessageId,
+					`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
 				)
+				uni.showToast({
+					title: 'AI 接口调用失败',
+					icon: 'none'
+				})
+				this.handleBottomLayoutChange(false)
+			})
 			},
 			// 修改用户气泡：截断其后消息并按新正文重新生成 AI 回复
 			onUserMessageEdit({ messageId, text }) {
@@ -710,34 +721,45 @@
 				this.handleBottomLayoutChange(true)
 				this.userHasScrolled = false
 
-				requestAiChatStream(
-					aiMessages,
-					{ mode: this.currentMode },
-					chunkText => {
-						this.replaceAssistantReply(convId, pendingId, chunkText)
-					},
-					fullText => {
-						this.sending = false
-						this.replaceAssistantReply(convId, pendingId, fullText)
-						this.handleBottomLayoutChange(false)
-						this.maybeAutoPlayAiVoice(pendingId, fullText)
-						this.maybeArmHrTimedRespondWindow(fullText)
-					},
-					error => {
-						this.sending = false
-						this.replaceAssistantReply(
-							convId,
-							pendingId,
-							`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
-						)
-						uni.showToast({
-							title: 'AI 接口调用失败',
-							icon: 'none'
-						})
-						this.handleBottomLayoutChange(false)
-					}
+				// 获取用户信息
+			const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const userId = user.userId || user.id || user.studentId
+			const majorCode = user.majorCode || user.major || 'DEFAULT'
+			
+			// 构建问题文本（取最后一条用户消息）
+			const lastUserMessage = aiMessages.filter(m => m.role === 'user').pop()
+			const question = lastUserMessage ? (lastUserMessage.text || lastUserMessage.content || '') : ''
+			
+			requestAiChatStream(
+				{
+					userId: userId ? parseInt(userId) : 1,
+					majorCode: majorCode,
+					mode: this.currentMode || 'GENERAL',
+					question: question
+				},
+				chunkText => {
+					this.replaceAssistantReply(convId, pendingId, chunkText)
+				}
+			).then(() => {
+				this.sending = false
+				this.handleBottomLayoutChange(false)
+				const fullText = this.currentConversation.messages.find(m => m.id === pendingId)?.text || ''
+				this.maybeAutoPlayAiVoice(pendingId, fullText)
+				this.maybeArmHrTimedRespondWindow(fullText)
+			}).catch(error => {
+				this.sending = false
+				this.replaceAssistantReply(
+					convId,
+					pendingId,
+					`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
 				)
-			},
+				uni.showToast({
+					title: 'AI 接口调用失败',
+					icon: 'none'
+				})
+				this.handleBottomLayoutChange(false)
+			})
+		},
 			showInterviewLockedToast() {
 				// 将原本简单的 Toast 提示改为直接弹窗确认
 				this.showGiveUpModal = true
@@ -1141,36 +1163,47 @@
 					text: value || '[图片]'
 				})
 
-				requestAiChatStream(
-					aiMessages,
-					{ mode: this.currentMode, ...streamOptions },
-					(chunkText) => {
-						// 收到流式数据块
-						this.replaceAssistantReply(current.id, pendingAssistantMessage.id, chunkText)
-					},
-					(fullText) => {
-						// 完成
-						this.sending = false
-						this.replaceAssistantReply(current.id, pendingAssistantMessage.id, fullText)
-						this.handleBottomLayoutChange(false)
-						this.maybeAutoPlayAiVoice(pendingAssistantMessage.id, fullText)
-						this.maybeArmHrTimedRespondWindow(fullText)
-					},
-					(error) => {
-						// 失败
-						this.sending = false
-						this.replaceAssistantReply(
-							current.id,
-							pendingAssistantMessage.id,
-							`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
-						)
-						uni.showToast({
-							title: 'AI 接口调用失败',
-							icon: 'none'
-						})
-						this.handleBottomLayoutChange(false)
-					}
+				// 获取用户信息
+			const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+			const userId = user.userId || user.id || user.studentId
+			const majorCode = user.majorCode || user.major || 'DEFAULT'
+			
+			// 构建问题文本
+			const question = value || '[图片]'
+			
+			requestAiChatStream(
+				{
+					userId: userId ? parseInt(userId) : 1,
+					majorCode: majorCode,
+					mode: this.currentMode || 'GENERAL',
+					question: question,
+					...streamOptions
+				},
+				(chunkText) => {
+					// 收到流式数据块
+					this.replaceAssistantReply(current.id, pendingAssistantMessage.id, chunkText)
+				}
+			).then(() => {
+				// 完成
+				this.sending = false
+				this.handleBottomLayoutChange(false)
+				const fullText = this.currentConversation.messages.find(m => m.id === pendingAssistantMessage.id)?.text || ''
+				this.maybeAutoPlayAiVoice(pendingAssistantMessage.id, fullText)
+				this.maybeArmHrTimedRespondWindow(fullText)
+			}).catch((error) => {
+				// 失败
+				this.sending = false
+				this.replaceAssistantReply(
+					current.id,
+					pendingAssistantMessage.id,
+					`### 接口调用失败\n\n- ${error.message}\n- 请在 \`utils/ai.js\` 或本地存储 \`ai_chat_config\` 中配置真实接口地址与密钥。`
 				)
+				uni.showToast({
+					title: 'AI 接口调用失败',
+					icon: 'none'
+				})
+				this.handleBottomLayoutChange(false)
+			})
 			},
 			// AI 回复回填：流式更新文本，同时判断模拟面试是否已经结束。
 			replaceAssistantReply(conversationId, messageId, text) {

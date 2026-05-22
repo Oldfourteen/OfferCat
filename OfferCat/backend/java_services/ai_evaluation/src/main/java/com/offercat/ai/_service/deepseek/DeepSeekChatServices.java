@@ -326,7 +326,37 @@ public class DeepSeekChatServices {
                 String currentUserQuestion = finalUserQuestion;
 
                 List<Map<String, String>> messages = new ArrayList<>();
+                
+                // 1. 添加系统提示
                 messages.add(Map.of("role", "system", "content", currentSystemPrompt != null ? currentSystemPrompt : ""));
+                
+                // 2. 加载历史对话（最近10轮）
+                if (userId != null) {
+                    try {
+                        List<AiConsult> history = aiMessageMapper.selectHistoryByUserId(userId);
+                        // 取最近10条，按时间正序排列
+                        int start = Math.max(0, history.size() - 10);
+                        List<AiConsult> recentHistory = history.subList(start, history.size());
+                        // 反转，让最早的在前
+                        Collections.reverse(recentHistory);
+                        
+                        for (AiConsult consult : recentHistory) {
+                            // 添加用户消息
+                            if (consult.getUserContent() != null && !consult.getUserContent().isEmpty()) {
+                                messages.add(Map.of("role", "user", "content", consult.getUserContent()));
+                            }
+                            // 添加AI回复
+                            if (consult.getAiContent() != null && !consult.getAiContent().isEmpty()) {
+                                messages.add(Map.of("role", "assistant", "content", consult.getAiContent()));
+                            }
+                        }
+                        log.info("已加载 {} 轮历史对话", recentHistory.size());
+                    } catch (Exception e) {
+                        log.warn("加载历史对话失败: {}", e.getMessage());
+                    }
+                }
+                
+                // 3. 添加当前用户问题
                 messages.add(Map.of("role", "user", "content", currentUserQuestion != null ? currentUserQuestion : ""));
                 requestBody.put("messages", messages);
 

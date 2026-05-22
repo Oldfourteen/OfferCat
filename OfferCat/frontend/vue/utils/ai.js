@@ -1,4 +1,6 @@
 import { getApiBase } from '@/api/config.js'
+import { request } from '@/api/request'
+import { getToken } from '@/utils/token'
 
 const BASE_URL = getApiBase()
 
@@ -351,6 +353,203 @@ function formatHttpErrorMessage(code, msg) {
 
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))
+}
+
+function resolveAiUserMeta() {
+	try {
+		const user = uni.getStorageSync('user_v2') || uni.getStorageSync('user') || {}
+		const userId = user.userId || user.id || user.studentId || null
+		const majorCode = user.majorCode || 'GENERAL'
+		return { userId, majorCode }
+	} catch (e) {
+		return { userId: null, majorCode: 'GENERAL' }
+	}
+}
+
+function resolveAiQuestionFromMessages(messages) {
+	if (!Array.isArray(messages) || messages.length === 0) return ''
+	for (let i = messages.length - 1; i >= 0; i -= 1) {
+		const m = messages[i]
+		if (m && m.role === 'user') {
+			const text = String(m.text || '').trim()
+			return text
+		}
+	}
+	return ''
+}
+
+function resolveAiUserImagesFromMessages(messages) {
+	if (!Array.isArray(messages) || messages.length === 0) return []
+	for (let i = messages.length - 1; i >= 0; i -= 1) {
+		const m = messages[i]
+		if (m && m.role === 'user') {
+			const list = m.filePaths
+			if (Array.isArray(list) && list.length > 0) {
+				return list.filter(Boolean).map((x) => String(x))
+			}
+			return []
+		}
+	}
+	return []
+}
+
+function normalizeAiMode(mode) {
+	const v = mode == null ? '' : String(mode).trim()
+	return v ? v : 'GENERAL'
+}
+
+export async function requestAiChat(messages, options = {}) {
+	const { userId, majorCode } = resolveAiUserMeta()
+	if (!userId) {
+		throw new Error('请先登录后再使用 AI 对话')
+	}
+	const mode = normalizeAiMode(options.mode)
+	let question = resolveAiQuestionFromMessages(messages)
+	if (!question) {
+		question = resolveAiUserImagesFromMessages(messages).length ? '[图片]' : ''
+	}
+	if (!question) {
+		throw new Error('问题不能为空')
+	}
+	const userImages = resolveAiUserImagesFromMessages(messages)
+	return request({
+		url: '/api/ai/chat-mode',
+		method: 'POST',
+		timeout: 120000,
+		data: {
+			userId,
+			majorCode,
+			mode,
+			question,
+			userImages,
+			hrIdleTimeout: options.hrIdleTimeout === true,
+		},
+	})
+}
+
+export function requestAiChatStream(messages, options, onChunk, onDone, onError) {
+	requestAiChat(messages, options)
+		.then((text) => {
+			const full = text == null ? '' : String(text)
+			if (typeof onChunk === 'function') onChunk(full)
+			if (typeof onDone === 'function') onDone(full)
+		})
+		.catch((e) => {
+			if (typeof onError === 'function') onError(e instanceof Error ? e : new Error(String(e)))
+		})
+}
+
+export async function requestAiHistory() {
+	const { userId } = resolveAiUserMeta()
+	if (!userId) return []
+	const res = await request({
+		url: `/api/ai/history?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+		timeout: 30000,
+	})
+	if (Array.isArray(res)) return res
+	if (res && Array.isArray(res.data)) return res.data
+	if (res && Array.isArray(res.list)) return res.list
+	return []
+}
+
+export async function setAiConsultRetain(consultId, retained) {
+	const { userId } = resolveAiUserMeta()
+	if (!userId) {
+		throw new Error('请先登录后再设置保留对话')
+	}
+	if (consultId == null) {
+		throw new Error('consultId 不能为空')
+	}
+	await request({
+		url: '/api/ai/history/retain',
+		method: 'PUT',
+		timeout: 30000,
+		data: {
+			userId,
+			consultId,
+			retained: !!retained,
+		},
+	})
+}
+
+export async function syncAiConversationsToServer(conversations) {
+	const { userId } = resolveAiUserMeta()
+	if (!userId) return null
+	return request({
+		url: '/api/ai/sessions/sync',
+		method: 'POST',
+		timeout: 30000,
+		data: {
+			userId,
+			conversations: Array.isArray(conversations) ? conversations : [],
+		},
+	})
+}
+
+export async function fetchAiConversationsFromServer() {
+	const { userId } = resolveAiUserMeta()
+	if (!userId) return []
+	const res = await request({
+		url: `/api/ai/sessions/sync?userId=${encodeURIComponent(String(userId))}`,
+		method: 'GET',
+		timeout: 30000,
+	})
+	const raw =
+		(res && res.conversations !== undefined ? res.conversations : null) ??
+		(res && res.data && res.data.conversations !== undefined ? res.data.conversations : null)
+	if (raw == null) return []
+	if (Array.isArray(raw)) return raw
+	try {
+		const parsed = typeof raw === 'string' ? JSON.parse(raw) : raw
+		return Array.isArray(parsed) ? parsed : []
+	} catch (e) {
+		return []
+	}
+}
+
+export function uploadVoiceAndTranscribe(filePath) {
+	const base = getApiBase()
+	if (!base) {
+		return Promise.reject(new Error('未配置 API 地址'))
+	}
+	if (!filePath) {
+		return Promise.reject(new Error('音频文件路径为空'))
+	}
+	const token = getToken()
+	const header = {}
+	if (token) {
+		header['Authorization'] = `Bearer ${token}`
+	}
+	return new Promise((resolve, reject) => {
+		uni.uploadFile({
+			url: `${base}/api/ai/asr/transcribe`,
+			filePath,
+			name: 'file',
+			header,
+			success: (res) => {
+				if (!res || (res.statusCode && res.statusCode >= 400)) {
+					reject(new Error(`语音识别失败（HTTP ${res && res.statusCode ? res.statusCode : 'unknown'}）`))
+					return
+				}
+				try {
+					const body = res.data ? JSON.parse(res.data) : {}
+					const text = body && body.text != null ? String(body.text) : ''
+					if (!text.trim()) {
+						reject(new Error('语音识别结果为空'))
+						return
+					}
+					resolve(text)
+				} catch (e) {
+					reject(new Error('语音识别响应解析失败'))
+				}
+			},
+			fail: (e) => {
+				const msg = e && (e.errMsg || e.message) ? String(e.errMsg || e.message) : '语音识别请求失败'
+				reject(new Error(msg))
+			},
+		})
+	})
 }
 
 // ========== AI对话相关 ==========

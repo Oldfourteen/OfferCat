@@ -17,7 +17,9 @@
 
 	export default {
 		data() {
-			return {};
+		return {
+			oneClickBusy: false
+		};
 		},
 		methods: {
 			closeAuthViewSafely() {
@@ -39,12 +41,25 @@
 			 */
 			runOneClickLogin() {
 				return new Promise((resolve, reject) => {
+				if (this.oneClickBusy) {
+					reject(new Error('正在登录中，请稍后再试'))
+					return
+				}
+				this.oneClickBusy = true
+
+				const done = (fn) => {
+					return (...args) => {
+						this.oneClickBusy = false
+						return fn(...args)
+					}
+				}
+
 					if (typeof uni.preLogin !== 'function') {
-						reject(new Error('一键登录仅在 App 内可用，请选其他登录方式'))
+					done(reject)(new Error('一键登录仅在 App 内可用，请选其他登录方式'))
 						return
 					}
 					if (typeof uniCloud === 'undefined' || typeof uniCloud.callFunction !== 'function') {
-						reject(new Error('未初始化 uniCloud，无法换取手机号'))
+					done(reject)(new Error('未初始化 uniCloud，无法换取手机号'))
 						return
 					}
 					uni.preLogin({
@@ -63,26 +78,24 @@
 										const payload = cf && cf.result ? cf.result : cf
 										if (!payload || payload.code !== 0 || !payload.phone) {
 											this.closeAuthViewSafely()
-											reject(new Error((payload && payload.msg) || '获取手机号失败'))
+										done(reject)(new Error((payload && payload.msg) || '获取手机号失败'))
 											return
 										}
 										this.closeAuthViewSafely()
 										const session = await completeOneClickLoginWithPhone(payload.phone)
-										resolve(session)
+									done(resolve)(session)
 									} catch (e) {
 										this.closeAuthViewSafely()
-										reject(e)
+									done(reject)(e)
 									}
 								},
-								fail: (err) => {
+							fail: done((err) => {
 									this.closeAuthViewSafely()
-									reject(new Error((err && err.errMsg) || '一键登录授权失败'))
-								}
+								reject(new Error((err && err.errMsg) || '一键登录授权失败'))
+							})
 							})
 						},
-						fail: (err) => {
-							reject(new Error((err && err.errMsg) || '一键登录预校验失败'))
-						}
+					fail: done((err) => reject(new Error((err && err.errMsg) || '一键登录预校验失败')))
 					})
 				})
 			},

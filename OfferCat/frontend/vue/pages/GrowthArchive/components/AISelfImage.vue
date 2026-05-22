@@ -191,7 +191,10 @@ export default {
 				console.log('Selected Style:', this.selectedStyle, 'Custom Prompt:', prompt);
 				
 				// 先压缩图片，降低上传体积并减少生成等待时间。
-				const compressRes = await new Promise((resolve) => {
+				// 注意：uni.compressImage 在 H5 平台不支持，需要判断平台
+				let compressRes = this.originalImage;
+				// #ifndef H5
+				compressRes = await new Promise((resolve) => {
 					uni.compressImage({
 						src: this.originalImage,
 						quality: 80,
@@ -199,6 +202,7 @@ export default {
 						fail: () => resolve(this.originalImage)
 					});
 				});
+				// #endif
 				
 				// 调用后端接口
 				const resData = await new Promise((resolve, reject) => {

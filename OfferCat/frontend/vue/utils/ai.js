@@ -661,12 +661,12 @@ export function playAiVoice(text, onPlay) {
 	}
 
 	return new Promise((resolve, reject) => {
-		uni.request({
+		const requestTask = uni.request({
 			url: `${BASE_URL}/api/ai/tts/speak`,
 			method: 'POST',
 			header: { 'Content-Type': 'application/json' },
 			responseType: 'arraybuffer',
-			timeout: 60000,
+			timeout: 30000,
 			data: {
 				text: text.slice(0, 500),
 				responseFormat: 'mp3'
@@ -683,8 +683,26 @@ export function playAiVoice(text, onPlay) {
 				const errMsg = bodyMsg || `请求TTS失败（HTTP ${res.statusCode}）`
 				reject(new Error(formatHttpErrorMessage(res.statusCode, errMsg)))
 			},
-			fail: (err) => reject(new Error(err.errMsg || '请求TTS失败'))
+			fail: (err) => {
+				console.error('TTS请求失败:', err)
+				let errorMsg = '请求TTS失败'
+				if (err.errMsg && err.errMsg.includes('timeout')) {
+					errorMsg = 'TTS请求超时，请检查网络连接'
+				} else if (err.errMsg) {
+					errorMsg = err.errMsg
+				}
+				reject(new Error(errorMsg))
+			}
 		})
+		
+		// 添加超时保护
+		setTimeout(() => {
+			try {
+				if (requestTask && typeof requestTask.abort === 'function') {
+					requestTask.abort()
+				}
+			} catch (e) {}
+		}, 35000)
 	})
 }
 

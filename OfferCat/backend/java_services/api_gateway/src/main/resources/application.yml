@@ -123,7 +123,16 @@ spring:
         - id: chat-service-admin
           uri: lb://chat-service
           predicates:
-            - Path=/api/admin/**
+            - Path=/api/admin/mute,/api/admin/mute/**,/api/admin/unmute/**,/api/admin/post/**,/api/admin/search/**
+          filters:
+            - StripPrefix=1
+
+        - id: student-service-admin-forum
+          uri: lb://student-service
+          predicates:
+            - Path=/api/admin/forum/**
+          filters:
+            - StripPrefix=1
 
         - id: recruitment-service
           uri: lb://recruitment-service

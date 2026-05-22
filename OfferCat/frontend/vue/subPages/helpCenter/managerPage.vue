@@ -155,20 +155,38 @@
 					header: hdr,
 					data: {},
 					success: (res) => {
-						if (res.data && res.data.code === 200 && res.data.data) {
-							this.postList = res.data.data.map(post => ({
-								postId: post.postId,
-								title: post.title || '无标题',
-								author: post.authorName || '未知用户',
-								content: post.content || '',
-								createTime: this.formatTime(post.createTime)
-							}))
+						console.log('帖子列表响应:', res)
+						if (res.statusCode === 200 && res.data) {
+							// 处理统一响应格式 {code: 200, data: [...], msg: '...'}
+							if (res.data.code === 200 && res.data.data) {
+								const records = res.data.data
+								this.postList = records.map(post => ({
+									postId: post.postId,
+									title: post.title || '无标题',
+									author: post.authorName || '未知用户',
+									content: post.content || '',
+									createTime: this.formatTime(post.createTime)
+								}))
+							} else if (Array.isArray(res.data)) {
+								// 直接返回数组的情况
+								this.postList = res.data.map(post => ({
+									postId: post.postId,
+									title: post.title || '无标题',
+									author: post.authorName || '未知用户',
+									content: post.content || '',
+									createTime: this.formatTime(post.createTime)
+								}))
+							} else {
+								this.postList = []
+								uni.showToast({ title: '加载帖子失败: 数据格式错误', icon: 'none' })
+							}
 						} else {
 							this.postList = []
-							uni.showToast({ title: '加载帖子失败', icon: 'none' })
+							uni.showToast({ title: `加载帖子失败: ${res.statusCode}`, icon: 'none' })
 						}
 					},
-					fail: () => {
+					fail: (err) => {
+						console.error('帖子列表请求失败:', err)
 						this.postList = []
 						uni.showToast({ title: '网络错误', icon: 'none' })
 					},
@@ -342,28 +360,23 @@
 				height: 72rpx;
 				border-radius: 50%;
 				border: none;
-				background: #f5f7fb;
+				background: rgba(240, 242, 245, 0.8);
 				display: flex;
 				align-items: center;
 				justify-content: center;
-				box-shadow:
-					0 4rpx 12rpx rgba(93, 118, 189, 0.15),
-					inset 0 2rpx 0 rgba(255, 255, 255, 0.8);
 				transition: all 0.2s ease;
 
 				&:active {
 					transform: scale(0.95);
-					box-shadow:
-						0 2rpx 6rpx rgba(93, 118, 189, 0.1),
-						inset 0 2rpx 0 rgba(255, 255, 255, 0.6);
+					background: rgba(230, 232, 235, 0.9);
 				}
 			}
 
 			.back-icon {
-				font-size: 28rpx;
-				font-weight: 700;
-				color: #5d76bd;
-				margin-right: 2rpx;
+				font-size: 32rpx;
+				font-weight: 600;
+				color: #333333;
+				margin-right: 4rpx;
 			}
 		}
 
@@ -748,14 +761,11 @@
 			}
 
 			.back-btn {
-				background: #2e323c;
-				box-shadow:
-					0 4rpx 12rpx rgba(0, 0, 0, 0.25),
-					inset 0 1rpx 0 rgba(255, 255, 255, 0.05);
+				background: rgba(60, 64, 72, 0.8);
 			}
 
 			.back-icon {
-				color: #8ea9ff;
+				color: #e0e0e0;
 			}
 		}
 

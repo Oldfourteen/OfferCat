@@ -11,4 +11,11 @@ interface Window {
   __GALAXY_API_BASE__?: string
   /** 由壳页 URL 查询参数 `userId` 注入 */
   __GALAXY_USER_ID__?: string | number
+  /** 当前 hash 路由名，供 App 壳轮询同步 cover-view 排行榜按钮 */
+  __GALAXY_ROUTE_NAME__?: string
+}
+
+declare module '*.tsv?raw' {
+  const content: string
+  export default content
 }

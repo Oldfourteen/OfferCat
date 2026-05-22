@@ -34,12 +34,13 @@
 				_galaxyFrameWin: null,
 				/** App web-view 上叠原生按钮（H5 内页 fixed 在部分机型被挡） */
 				galaxyShowLbFab: false,
+				_galaxyLbRoutePollTimer: null,
 			}
 		},
 		computed: {
 			/** 静态页版本戳：修改 galaxy-h5 后递增，避免 App WebView / H5 iframe 强缓存旧 galaxy-app.js */
 			galaxyAssetVersion() {
-				return '20260521-apk-lb-fab-v1'
+				return '20260522-apk-catalog-bundle-v1'
 			},
 			/**
 			 * 星图数据根与全站网关一致：getGalaxyApiBase()（默认 getApiBase + /api/galaxy）。
@@ -79,6 +80,15 @@
 			// #ifdef H5
 			window.addEventListener('message', this.handleWindowPostMessage, false)
 			// #endif
+			// #ifndef H5
+			this.galaxyShowLbFab = false
+			this.startGalaxyLbRoutePoll()
+			// #endif
+		},
+		onShow() {
+			// #ifndef H5
+			this.pollGalaxyRouteFromWebView()
+			// #endif
 		},
 		onUnload() {
 			// #ifdef H5
@@ -86,6 +96,7 @@
 			this._galaxyFrameWin = null
 			// #endif
 			// #ifndef H5
+			this.stopGalaxyLbRoutePoll()
 			this.galaxyShowLbFab = false
 			// #endif
 		},
@@ -165,7 +176,59 @@
 			},
 			/** 仅个人星图展示页需要原生 cover-view「排行榜」（其它页由 H5 自管或不需要） */
 			applyGalaxyLbFabForRoute(routeName) {
-				this.galaxyShowLbFab = routeName === 'personalShowcase'
+				const raw = routeName == null ? '' : String(routeName)
+				const isShowcase =
+					raw === 'personalShowcase' || raw.includes('/personal/showcase')
+				this.galaxyShowLbFab = isShowcase
+			},
+			startGalaxyLbRoutePoll() {
+				// #ifndef H5
+				this.stopGalaxyLbRoutePoll()
+				this.pollGalaxyRouteFromWebView()
+				this._galaxyLbRoutePollTimer = setInterval(() => {
+					this.pollGalaxyRouteFromWebView()
+				}, 450)
+				// #endif
+			},
+			stopGalaxyLbRoutePoll() {
+				// #ifndef H5
+				if (this._galaxyLbRoutePollTimer) {
+					clearInterval(this._galaxyLbRoutePollTimer)
+					this._galaxyLbRoutePollTimer = null
+				}
+				// #endif
+			},
+			getGalaxyAppWebviewChild() {
+				try {
+					const pages = getCurrentPages()
+					const page = pages[pages.length - 1]
+					const wv = page && page.$getAppWebview && page.$getAppWebview()
+					if (!wv || !wv.children) return null
+					const children = wv.children()
+					for (let i = 0; i < children.length; i++) {
+						const child = children[i]
+						if (child && typeof child.evalJS === 'function') return child
+					}
+				} catch (e) {
+					console.warn('[galaxy] getGalaxyAppWebviewChild failed', e)
+				}
+				return null
+			},
+			/** Android 上 @message 可能延迟；轮询 H5 写入的 __GALAXY_ROUTE_NAME__ / hash */
+			pollGalaxyRouteFromWebView() {
+				// #ifndef H5
+				const child = this.getGalaxyAppWebviewChild()
+				if (!child) return
+				const js =
+					"(function(){try{var n=window.__GALAXY_ROUTE_NAME__;if(n)return String(n);var h=location.hash||'';if(h.indexOf('/personal/showcase')>=0)return 'personalShowcase';return h;}catch(e){return '';}})()"
+				try {
+					child.evalJS(js, (res) => {
+						this.applyGalaxyLbFabForRoute(res)
+					})
+				} catch (e) {
+					console.warn('[galaxy] pollGalaxyRouteFromWebView failed', e)
+				}
+				// #endif
 			},
 			/** App / 小程序等：子网页通过 uni.postMessage 上报，在 @message 中接收，detail.data 为数组 */
 			handleWebViewMessage(event) {

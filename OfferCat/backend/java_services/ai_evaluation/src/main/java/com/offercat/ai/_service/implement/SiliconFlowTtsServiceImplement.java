@@ -18,20 +18,15 @@ import java.util.Map;
  * @author: Ofteen
  * @data: 2026/4/23 - 15:21
  * @mail: oldfourteen41@gmail.com
- * @info: 对应硅基流动文档，
- * 格式为：
- * {
- *   "model": "fnlp/MOSS-TTSD-v0.5",
- *   "input": "...",
- *   "voice": "fnlp/MOSS-TTSD-v0.5:alex",
- *   "response_format": "mp3",
- *   "stream": false
- * }
+ * @info: 对应硅基流动文档， 格式为： { "model": "fnlp/MOSS-TTSD-v0.5", "input": "...",
+ * "voice": "fnlp/MOSS-TTSD-v0.5:alex", "response_format": "mp3", "stream":
+ * false }
  */
 @Service
 @RequiredArgsConstructor
 @Slf4j
 public class SiliconFlowTtsServiceImplement {
+
     private final RestTemplate restTemplate;
 
     @Value("${siliconFlow.api-key}")
@@ -58,13 +53,13 @@ public class SiliconFlowTtsServiceImplement {
     @Value("${siliconFlow.tts.speed:1.0}")
     private float defaultSpeed;
 
-    // 最大重试次数
-    private static final int MAX_RETRIES = 3;
+    // 最大重试次数（减少为1次，避免APK长时间等待）
+    private static final int MAX_RETRIES = 1;
     // 重试间隔（毫秒）
-    private static final long RETRY_DELAY_MS = 1000;
+    private static final long RETRY_DELAY_MS = 500;
 
-    public ResponseEntity<byte[]> speak(TtsSpeakRequest req){
-        if(req == null || req.getText() == null || req.getText().isBlank()){
+    public ResponseEntity<byte[]> speak(TtsSpeakRequest req) {
+        if (req == null || req.getText() == null || req.getText().isBlank()) {
             throw new IllegalArgumentException("文本不能为空");
         }
 
@@ -89,8 +84,8 @@ public class SiliconFlowTtsServiceImplement {
         body.put("stream", req.getStream() == null ? defaultStream : req.getStream());
         body.put("speed", req.getSpeed() == null ? defaultSpeed : req.getSpeed());
 
-        log.info("TTS请求参数: model={}, voice={}, format={}, speed={}", 
-                defaultModel, resolvedVoice, 
+        log.info("TTS请求参数: model={}, voice={}, format={}, speed={}",
+                defaultModel, resolvedVoice,
                 (req.getResponseFormat() == null || req.getResponseFormat().isBlank()) ? defaultResponseFormat : req.getResponseFormat(),
                 req.getSpeed() == null ? defaultSpeed : req.getSpeed());
 
@@ -117,15 +112,15 @@ public class SiliconFlowTtsServiceImplement {
 
             try {
                 ResponseEntity<byte[]> response = restTemplate.exchange(url, HttpMethod.POST, entity, byte[].class);
-                log.info("TTS请求成功，响应状态: {}, 数据长度: {}", 
-                        response.getStatusCode(), 
+                log.info("TTS请求成功，响应状态: {}, 数据长度: {}",
+                        response.getStatusCode(),
                         response.getBody() != null ? response.getBody().length : 0);
                 return response;
             } catch (ResourceAccessException e) {
                 // 网络连接问题（Connection reset, timeout等）
                 lastException = e;
                 log.warn("TTS请求第 {} 次失败（网络问题）: {}", attempt, e.getMessage());
-                
+
                 if (isRetryableException(e) && attempt < MAX_RETRIES) {
                     log.info("等待 {}ms 后重试...", RETRY_DELAY_MS);
                     try {
@@ -150,8 +145,8 @@ public class SiliconFlowTtsServiceImplement {
 
         // 所有重试都失败了
         log.error("TTS请求在 {} 次尝试后仍然失败", MAX_RETRIES);
-        throw new RuntimeException("TTS服务暂时不可用，请稍后重试。错误: " + 
-                (lastException != null ? lastException.getMessage() : "未知错误"), lastException);
+        throw new RuntimeException("TTS服务暂时不可用，请稍后重试。错误: "
+                + (lastException != null ? lastException.getMessage() : "未知错误"), lastException);
     }
 
     /**
@@ -159,10 +154,12 @@ public class SiliconFlowTtsServiceImplement {
      */
     private boolean isRetryableException(ResourceAccessException e) {
         String message = e.getMessage();
-        if (message == null) return false;
-        
+        if (message == null) {
+            return false;
+        }
+
         // Connection reset, Connection refused, timeout 等可以重试
-        return message.contains("Connection reset") 
+        return message.contains("Connection reset")
                 || message.contains("Connection refused")
                 || message.contains("timeout")
                 || message.contains("I/O error")
@@ -170,8 +167,7 @@ public class SiliconFlowTtsServiceImplement {
     }
 
     /**
-     * 配置里可写短音色名（如 alex），自动补全为 defaultModel + ":" + voice；
-     * 若已是「模型:音色」格式则原样使用。
+     * 配置里可写短音色名（如 alex），自动补全为 defaultModel + ":" + voice； 若已是「模型:音色」格式则原样使用。
      */
     private String resolveVoice(String requestedVoice) {
         String v = (requestedVoice == null || requestedVoice.isBlank()) ? defaultVoice : requestedVoice.trim();

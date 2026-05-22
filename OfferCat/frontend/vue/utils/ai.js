@@ -2,7 +2,7 @@ import { getApiBase } from '@/api/config.js'
 import { request } from '@/api/request'
 import { getToken } from '@/utils/token'
 
-const BASE_URL = getApiBase()
+const getBaseUrl = () => getApiBase()
 
 // ========== 语音合成相关 ==========
 
@@ -11,9 +11,7 @@ let audioContext = null
 let audioSource = null
 let voiceStopTimer = null
 let innerAudioContext = null
-// #ifdef APP-PLUS
-let plusAudioPlayer = null
-// #endif
+let currentTtsRequest = null
 
 /**
  * 将文本转为语音并播放
@@ -29,16 +27,30 @@ export function playAiVoice(text, onPlay) {
 	return new Promise((resolve, reject) => {
 		console.log('开始TTS请求，文本长度:', text?.length)
 		
-		const requestTask = uni.request({
-			url: `${BASE_URL}/api/ai/tts/speak`,
+		// 中止之前的 TTS 请求
+		if (currentTtsRequest && typeof currentTtsRequest.abort === 'function') {
+			try {
+				currentTtsRequest.abort()
+			} catch (e) {}
+		}
+		
+		const baseUrl = getBaseUrl()
+		console.log('TTS请求BaseURL:', baseUrl)
+		
+		// 构建请求数据
+		const requestData = {
+			text: text.slice(0, 500),
+			responseFormat: 'mp3'
+		}
+		console.log('TTS请求数据:', JSON.stringify(requestData))
+		
+		currentTtsRequest = uni.request({
+			url: `${baseUrl}/api/ai/tts/speak`,
 			method: 'POST',
 			header: { 'Content-Type': 'application/json' },
 			responseType: 'arraybuffer',
-			timeout: 30000,
-			data: {
-				text: text.slice(0, 500),
-				responseFormat: 'mp3'
-			},
+			timeout: 300000,
+			data: requestData,
 			success: (res) => {
 				console.log('TTS请求成功，状态码:', res.statusCode, '数据长度:', res.data?.byteLength)
 				
@@ -74,14 +86,15 @@ export function playAiVoice(text, onPlay) {
 			}
 		})
 		
-		// 添加超时保护
+		// 添加超时保护（比 request 的 timeout 稍长）
 		setTimeout(() => {
 			try {
-				if (requestTask && typeof requestTask.abort === 'function') {
-					requestTask.abort()
+				if (currentTtsRequest && typeof currentTtsRequest.abort === 'function') {
+					currentTtsRequest.abort()
+					currentTtsRequest = null
 				}
 			} catch (e) {}
-		}, 35000)
+		}, 305000)
 	})
 }
 
@@ -91,15 +104,13 @@ export function playAiVoice(text, onPlay) {
 export function stopAiVoice() {
 	console.log('停止语音播放')
 
-	// #ifdef APP-PLUS
-	if (plusAudioPlayer) {
+	// 中止正在进行的 TTS 请求
+	if (currentTtsRequest && typeof currentTtsRequest.abort === 'function') {
 		try {
-			plusAudioPlayer.stop()
-			plusAudioPlayer.close()
+			currentTtsRequest.abort()
 		} catch (e) {}
-		plusAudioPlayer = null
+		currentTtsRequest = null
 	}
-	// #endif
 
 	if (innerAudioContext) {
 		try {
@@ -171,73 +182,7 @@ function arrayBufferToBase64Url(arrayBuffer) {
 function playPreparedTts(src, onPlay) {
 	console.log('播放准备好的音频:', src?.substring(0, 50) + '...')
 	stopAiVoice()
-
-	// #ifdef APP-PLUS
-	// App 平台使用 5+ Audio 播放器
-	return playWithPlusAudio(src, onPlay)
-	// #endif
-
-	// #ifndef APP-PLUS
-	// 其他平台使用 InnerAudioContext
 	return playWithInnerAudio(src, onPlay)
-	// #endif
-}
-
-// App 平台使用 5+ Audio 播放器
-function playWithPlusAudio(src, onPlay) {
-	console.log('使用 plus.audio 播放')
-
-	return new Promise((resolve, reject) => {
-		try {
-			// 停止之前的播放器
-			if (plusAudioPlayer) {
-				try {
-					plusAudioPlayer.stop()
-					plusAudioPlayer.close()
-				} catch (e) {}
-			}
-
-			// 创建音频播放器
-			plusAudioPlayer = plus.audio.createPlayer(src)
-
-			plusAudioPlayer.addEventListener('canplay', () => {
-				console.log('音频可以播放')
-			})
-
-			plusAudioPlayer.addEventListener('play', () => {
-				console.log('音频开始播放')
-				if (onPlay) onPlay()
-			})
-
-			plusAudioPlayer.addEventListener('ended', () => {
-				console.log('音频播放结束')
-				if (plusAudioPlayer) {
-					try {
-						plusAudioPlayer.close()
-					} catch (e) {}
-					plusAudioPlayer = null
-				}
-				resolve()
-			})
-
-			plusAudioPlayer.addEventListener('error', (e) => {
-				console.error('音频播放错误:', e)
-				if (plusAudioPlayer) {
-					try {
-						plusAudioPlayer.close()
-					} catch (e) {}
-					plusAudioPlayer = null
-				}
-				reject(new Error('音频播放失败: ' + (e.message || '未知错误')))
-			})
-
-			// 开始播放
-			plusAudioPlayer.play()
-		} catch (e) {
-			console.error('创建播放器失败:', e)
-			reject(new Error('创建音频播放器失败'))
-		}
-	})
 }
 
 function playWithInnerAudio(src, onPlay) {
@@ -274,17 +219,17 @@ function playWithInnerAudio(src, onPlay) {
 				finish(new Error(e.message || '音频播放启动失败'))
 			}
 		})
-		
+
 		innerAudioContext.onPlay(() => {
 			console.log('音频开始播放')
 			if (onPlay) onPlay()
 		})
-		
+
 		innerAudioContext.onEnded(() => {
 			console.log('音频播放结束')
 			finish()
 		})
-		
+
 		innerAudioContext.onError((err) => {
 			const { errMsg, errCode } = err || {}
 			console.error('innerAudio 播放失败', { errMsg, errCode, src: src?.substring(0, 50) })
@@ -294,15 +239,17 @@ function playWithInnerAudio(src, onPlay) {
 				: ''
 			finish(new Error(`音频播放失败: ${errMsg || 'MediaError'} (${code})${hint}`))
 		})
-		
+
 		// App 平台有时不会触发 onCanplay，添加延迟自动播放
 		voiceStopTimer = setTimeout(() => {
 			if (!settled && innerAudioContext) {
 				console.log('播放超时，强制尝试播放')
-				tryPlay()
+				try {
+					innerAudioContext.play()
+				} catch (e) {}
 			}
 		}, 800)
-		
+
 		// 额外的安全超时
 		setTimeout(() => {
 			if (!settled) {
@@ -355,6 +302,8 @@ function formatHttpErrorMessage(code, msg) {
 function sleep(ms) {
 	return new Promise(resolve => setTimeout(resolve, ms))
 }
+
+// ========== AI对话相关 ==========
 
 function resolveAiUserMeta() {
 	try {
@@ -424,43 +373,8 @@ export async function requestAiChat(messages, options = {}) {
 			question,
 			userImages,
 			hrIdleTimeout: options.hrIdleTimeout === true,
-	},
-})
-}
-
-/**
- * 解析SSE数据流，提取实际的文本内容
- * @param {string} chunk - SSE数据块
- * @returns {string} 提取的文本内容
- */
-function parseSSEChunk(chunk) {
-	if (!chunk) return ''
-	
-	const lines = chunk.split('\n')
-	let result = ''
-	
-	for (const line of lines) {
-		const trimmed = line.trim()
-		// SSE格式: data: {...} 或 data: [DONE]
-		if (trimmed.startsWith('data:')) {
-			const data = trimmed.slice(5).trim()
-			// 跳过结束标记
-			if (data === '[DONE]') continue
-			// 尝试解析JSON
-			try {
-				const json = JSON.parse(data)
-				// 提取choices[0].delta.content
-				if (json.choices && json.choices[0] && json.choices[0].delta) {
-					result += json.choices[0].delta.content || ''
-				}
-			} catch (e) {
-				// 如果不是JSON，直接追加
-				result += data
-			}
-		}
-	}
-	
-	return result
+		},
+	})
 }
 
 /**
@@ -497,6 +411,8 @@ export function requestAiChatStream(params, onChunk) {
 	// 旧版调用方式：params 是对象 { userId, majorCode, mode, question, userImages }
 	const { userId, majorCode, mode, question, userImages, ...otherOptions } = params || {}
 	
+	console.log('AI请求开始:', { userId, majorCode, mode, question: question?.substring(0, 50) })
+
 	return new Promise((resolve, reject) => {
 		if (!userId) {
 			reject(new Error('请先登录后再使用 AI 对话'))
@@ -506,60 +422,48 @@ export function requestAiChatStream(params, onChunk) {
 			reject(new Error('问题不能为空'))
 			return
 		}
+
+		// App 平台使用 /api/ai/chat-mode 接口，它使用 JSON 格式
+		const requestUrl = `${getBaseUrl()}/api/ai/chat-mode`
+		console.log('AI请求URL:', requestUrl)
 		
-		let accumulatedText = ''
+		const requestData = {
+			userId: userId,
+			majorCode: majorCode || 'GENERAL',
+			mode: mode || 'GENERAL',
+			question: question,
+			userImages: userImages || []
+		}
+		console.log('请求参数:', requestData)
 		
-		const requestTask = uni.request({
-			url: `${BASE_URL}/api/ai/chat-stream`,
+		uni.request({
+			url: requestUrl,
 			method: 'POST',
-			header: { 
-				'Content-Type': 'application/json',
-				'Accept': 'text/event-stream'
+			header: {
+				'Content-Type': 'application/json'
 			},
-			responseType: 'text',
-			enableChunked: true,
 			timeout: 120000,
-			data: {
-				userId,
-				majorCode: majorCode || 'GENERAL',
-				mode: mode || 'GENERAL',
-				question,
-				userImages: userImages || [],
-				...otherOptions
-			},
+			data: requestData,
 			success: (res) => {
-				if (res.statusCode === 200) {
-					// 如果onChunkReceived没有触发，尝试从res.data解析
-					if (res.data && accumulatedText === '') {
-						const text = parseSSEChunk(res.data)
-						if (text && typeof onChunk === 'function') {
-							onChunk(text)
-						}
+				console.log('AI请求成功:', res.statusCode, '数据:', res.data)
+				
+				if (res.statusCode === 200 && res.data) {
+					// 直接返回完整文本
+					const text = typeof res.data === 'string' ? res.data : (res.data.text || res.data.message || res.data.content || JSON.stringify(res.data))
+					console.log('AI返回文本:', text?.substring(0, 100))
+					if (typeof onChunk === 'function') {
+						onChunk(text)
 					}
 					resolve()
 				} else {
-					reject(new Error(res.data?.message || `AI流式对话请求失败（HTTP ${res.statusCode}）`))
+					reject(new Error(res.data?.message || `AI对话请求失败（HTTP ${res.statusCode}）`))
 				}
 			},
 			fail: (err) => {
-				reject(new Error(err.errMsg || 'AI流式对话请求失败'))
+				console.error('AI请求失败:', err)
+				reject(new Error(err.errMsg || 'AI对话请求失败'))
 			}
 		})
-
-		// 监听数据块
-		if (requestTask && requestTask.onChunkReceived) {
-			requestTask.onChunkReceived((res) => {
-				const chunk = new TextDecoder().decode(res.data)
-				
-				if (typeof onChunk === 'function' && chunk) {
-					const text = parseSSEChunk(chunk)
-					if (text) {
-						accumulatedText += text
-						onChunk(accumulatedText)
-					}
-				}
-			})
-		}
 	})
 }
 

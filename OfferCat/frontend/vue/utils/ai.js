@@ -135,68 +135,68 @@ function prepareTtsAudioSrc(arrayBuffer) {
 }
 
 function saveTtsMp3ToLocal(arrayBuffer) {
-	console.log('保存MP3到本地，数据大小:', arrayBuffer?.byteLength)
+	console.log('准备音频数据，数据大小:', arrayBuffer?.byteLength)
 	
 	return new Promise((resolve, reject) => {
+		// App 平台直接使用 base64 data URL，避免文件路径问题
 		// #ifdef APP-PLUS
+		console.log('App 平台：使用 base64 data URL 播放')
+		tryBase64Fallback(arrayBuffer, resolve, reject)
+		// #endif
+		
+		// #ifndef APP-PLUS
+		// 非 App 平台（H5/小程序）使用文件系统
 		try {
 			const fileName = `ai_voice_${Date.now()}.mp3`
 			const savePath = `_doc/${fileName}`
 			
 			plus.io.requestFileSystem(plus.io.PRIVATE_DOC, (fs) => {
-				console.log('请求文件系统成功')
-				
 				fs.root.getFile(savePath, { create: true }, (fileEntry) => {
-					console.log('创建文件成功:', savePath)
-					
 					fileEntry.createWriter((writer) => {
 						writer.onwrite = () => {
-							console.log('文件写入成功')
-							const fullPath = plus.io.convertLocalFileSystemURL(savePath)
-							console.log('转换后的路径:', fullPath)
+							const fullPath = fileEntry.toURL()
+							console.log('文件路径:', fullPath)
 							resolve(fullPath)
 						}
 						writer.onerror = (e) => {
-							console.error('写入文件失败:', e)
-							reject(new Error('写入语音文件失败: ' + (e.message || '未知错误')))
+							console.error('写入失败:', e)
+							tryBase64Fallback(arrayBuffer, resolve, reject)
 						}
 						
-						const blob = new Blob([arrayBuffer], { type: 'audio/mpeg' })
-						console.log('创建Blob成功，大小:', blob.size)
-						writer.write(blob)
+						const uint8Array = new Uint8Array(arrayBuffer)
+						writer.write(uint8Array)
 					}, (e) => {
-						console.error('创建文件写入器失败:', e)
-						reject(new Error('创建文件写入器失败: ' + (e.message || '未知错误')))
+						tryBase64Fallback(arrayBuffer, resolve, reject)
 					})
 				}, (e) => {
-					console.error('创建文件失败:', e)
-					reject(new Error('创建文件失败: ' + (e.message || '未知错误')))
+					tryBase64Fallback(arrayBuffer, resolve, reject)
 				})
 			}, (e) => {
-				console.error('请求文件系统失败:', e)
-				reject(new Error('请求文件系统失败: ' + (e.message || '未知错误')))
+				tryBase64Fallback(arrayBuffer, resolve, reject)
 			})
 		} catch (e) {
-			console.error('保存语音文件异常:', e)
-			reject(new Error('保存语音文件异常: ' + (e.message || '未知错误')))
+			tryBase64Fallback(arrayBuffer, resolve, reject)
 		}
-		// #endif
-		
-		// #ifndef APP-PLUS
-		try {
-			if (typeof uni.arrayBufferToBase64 === 'function') {
-				const base64 = uni.arrayBufferToBase64(arrayBuffer)
-				const dataUrl = `data:audio/mpeg;base64,${base64}`
-				console.log('使用 base64 data URL')
-				resolve(dataUrl)
-				return
-			}
-		} catch (e) {
-			console.warn('尝试使用 data URL 播放失败:', e)
-		}
-		reject(new Error('当前环境不支持保存语音文件'))
 		// #endif
 	})
+}
+
+/**
+ * 尝试使用 base64 data URL 作为备选方案播放音频
+ */
+function tryBase64Fallback(arrayBuffer, resolve, reject) {
+	try {
+		if (typeof uni.arrayBufferToBase64 === 'function') {
+			const base64 = uni.arrayBufferToBase64(arrayBuffer)
+			const dataUrl = `data:audio/mpeg;base64,${base64}`
+			console.log('使用 base64 data URL 作为备选方案')
+			resolve(dataUrl)
+			return
+		}
+	} catch (e) {
+		console.warn('base64 备选方案也失败:', e)
+	}
+	reject(new Error('当前环境不支持保存或播放语音文件'))
 }
 
 function playPreparedTts(src, onPlay) {
@@ -211,25 +211,40 @@ function playWithInnerAudio(src, onPlay) {
 	return sleep(220).then(() => new Promise((resolve, reject) => {
 		// #ifdef APP-PLUS
 		if (uni.setInnerAudioOption) {
-			uni.setInnerAudioOption({
-				obeyMuteSwitch: false,
-				sessionCategory: 'playback'
-			})
+			try {
+				uni.setInnerAudioOption({
+					obeyMuteSwitch: false,
+					sessionCategory: 'playback'
+				})
+			} catch (e) {
+				console.warn('设置音频选项失败:', e)
+			}
 		}
 		// #endif
 
 		innerAudioContext = uni.createInnerAudioContext()
+		
+		// #ifdef APP-PLUS
+		// App 平台需要设置更多属性
+		innerAudioContext.autoplay = true
+		// #endif
+		// #ifndef APP-PLUS
 		innerAudioContext.autoplay = false
+		// #endif
+		
 		innerAudioContext.src = src
 		
 		console.log('设置音频源:', src?.substring(0, 50) + '...')
 		
 		let settled = false
+		let playAttempted = false
+		
 		const finish = (err) => {
 			if (settled) return
 			settled = true
 			if (innerAudioContext) {
 				try {
+					innerAudioContext.stop()
 					innerAudioContext.destroy()
 				} catch (e) {}
 				innerAudioContext = null
@@ -238,15 +253,23 @@ function playWithInnerAudio(src, onPlay) {
 			else resolve()
 		}
 		
-		innerAudioContext.onCanplay(() => {
-			console.log('音频可以播放')
-			if (!innerAudioContext || settled) return
+		// App 平台有时不会触发 onCanplay，添加自动播放逻辑
+		const tryPlay = () => {
+			if (playAttempted || settled || !innerAudioContext) return
+			playAttempted = true
+			console.log('尝试播放音频')
 			try {
 				innerAudioContext.play()
 			} catch (e) {
 				console.error('播放启动失败:', e)
 				finish(new Error(e.message || '音频播放启动失败'))
 			}
+		}
+		
+		innerAudioContext.onCanplay(() => {
+			console.log('音频可以播放')
+			if (!innerAudioContext || settled) return
+			tryPlay()
 		})
 		
 		innerAudioContext.onPlay(() => {
@@ -269,14 +292,21 @@ function playWithInnerAudio(src, onPlay) {
 			finish(new Error(`音频播放失败: ${errMsg || 'MediaError'} (${code})${hint}`))
 		})
 		
+		// App 平台有时不会触发 onCanplay，添加延迟自动播放
 		voiceStopTimer = setTimeout(() => {
 			if (!settled && innerAudioContext) {
-				console.log('播放超时，强制开始播放')
-				try {
-					innerAudioContext.play()
-				} catch (e) {}
+				console.log('播放超时，强制尝试播放')
+				tryPlay()
 			}
-		}, 1000)
+		}, 800)
+		
+		// 额外的安全超时
+		setTimeout(() => {
+			if (!settled) {
+				console.log('播放整体超时，强制结束')
+				finish(new Error('音频播放超时'))
+			}
+		}, 30000)
 	}))
 }
 

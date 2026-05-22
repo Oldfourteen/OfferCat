@@ -413,7 +413,7 @@
 	.avatar {
 		width: 80rpx;
 		height: 80rpx;
-		border-radius: 28rpx;
+		border-radius: 50%;
 		background: #5d76bd;
 		color: #ffffff;
 		display: flex;
@@ -493,13 +493,13 @@
 
 	.msg-pill--assistant {
 		background: #ffffff;
-		border-bottom-left-radius: 12rpx;
+		border-top-left-radius: 12rpx;
 	}
 
 	.msg-pill--user {
 		background: linear-gradient(145deg, #6b8ad8 0%, #5d76bd 100%);
 		color: #ffffff;
-		border-bottom-right-radius: 12rpx;
+		border-top-right-radius: 12rpx;
 		box-shadow:
 			0 4rpx 12rpx rgba(93, 118, 189, 0.35),
 			0 8rpx 24rpx rgba(93, 118, 189, 0.2),

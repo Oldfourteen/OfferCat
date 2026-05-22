@@ -1,4 +1,6 @@
 import { majorCodesFromPairLabel, pairKeysFromMajorIds, unorderedPairKey } from '@/data/majorTxtMap'
+/** 打包进 bundle，避免 App WebView（file://）下 fetch 本地 tsv 报 Failed to fetch */
+import bundledCrossJobTsv from '../../public/data/cross_job_catalog.tsv?raw'
 
 export type CrossJobRow = {
   idx: number
@@ -70,11 +72,20 @@ export function getCanonicalMajorCodes(codeA: string, codeB: string, pairHint?: 
 
 export async function loadCrossJobCatalog(): Promise<CrossJobRow[]> {
   if (cache) return cache
+  if (bundledCrossJobTsv && String(bundledCrossJobTsv).trim().length > 0) {
+    cache = parseCrossJobTsv(String(bundledCrossJobTsv))
+    indexCanonicalOrders(cache)
+    return cache
+  }
   const url = `${import.meta.env.BASE_URL}data/cross_job_catalog.tsv`.replace(/\/{2,}/g, '/')
-  const r = await fetch(url)
-  if (!r.ok) throw new Error(`无法加载岗位表: ${r.status}`)
-  const text = await r.text()
-  cache = parseCrossJobTsv(text)
+  try {
+    const r = await fetch(url)
+    if (!r.ok) throw new Error(`无法加载岗位表: ${r.status}`)
+    cache = parseCrossJobTsv(await r.text())
+  } catch (e) {
+    const hint = e instanceof Error ? e.message : '网络异常'
+    throw new Error(`无法加载岗位表（${hint}）`)
+  }
   indexCanonicalOrders(cache)
   return cache
 }

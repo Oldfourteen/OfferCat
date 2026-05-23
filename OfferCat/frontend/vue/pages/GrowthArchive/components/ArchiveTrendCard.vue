@@ -15,14 +15,17 @@
 		</view>
 
 		<!-- 折线图统一读取当前选中区间的数据源。 -->
-		<qiun-data-charts
-			v-if="showChart"
-			type="line"
-			:opts="chartOpts"
-			:chartData="currentChartData"
-			canvas2d
-			:canvasId="'growthTrend_' + canvasKey"
-		/>
+		<view class="trend-chart-box">
+			<qiun-data-charts
+				v-if="showChart"
+				type="line"
+				:opts="chartOpts"
+				:chartData="currentChartData"
+				:inScrollView="true"
+				canvas2d
+				:canvasId="'growthTrend_' + canvasKey"
+			/>
+		</view>
 
 		<view class="trend-intro" :class="{ 'trend-intro--no-chart': !showChart }">
 			<text class="trend-intro-title">数据说明</text>
@@ -236,6 +239,11 @@
 </script>
 
 <style lang="scss">
+	.trend-chart-box {
+		height: 420rpx;
+		width: 100%;
+	}
+
 	.section-card {
 		padding: 28rpx;
 		border-radius: 30rpx;

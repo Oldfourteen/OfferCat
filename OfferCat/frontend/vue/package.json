@@ -11,6 +11,7 @@
   "license": "ISC",
   "type": "commonjs",
   "dependencies": {
-    "@qiun/ucharts": "^2.5.0-20230101"
+    "@qiun/ucharts": "^2.5.0-20230101",
+    "ch-ucharts": "^1.0.3"
   }
 }

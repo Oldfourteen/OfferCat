@@ -1,4 +1,10 @@
 {
+	"easycom": {
+		"autoscan": true,
+		"custom": {
+			"^qiun-(.*)": "ch-ucharts/components/qiun-$1/qiun-$1.vue"
+		}
+	},
 	"pages": [
 		{
 			"path": "pages/login/login",

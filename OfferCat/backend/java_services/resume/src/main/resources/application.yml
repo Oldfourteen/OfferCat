@@ -61,3 +61,6 @@ resume:
   pdf:
     service:
       url: http://localhost:22570
+
+file:
+  resume-avatars-dir: D:/offercat/photo

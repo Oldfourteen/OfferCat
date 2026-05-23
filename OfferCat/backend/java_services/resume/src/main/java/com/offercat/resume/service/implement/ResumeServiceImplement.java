@@ -57,7 +57,7 @@ public class ResumeServiceImplement implements ResumeService {
     /**
      * 头像存储目录
      */
-    @Value("${file.resume-avatars-dir:D:/offercat/photo/resume-avatars}")
+    @Value("${file.resume-avatars-dir:D:/offercat/photo}")
     private String avatarStorageDir;
 
     /**
@@ -805,26 +805,49 @@ public class ResumeServiceImplement implements ResumeService {
 
         /** 生成文件存储路径 */
         String extension = getFileExtension(file.getOriginalFilename());
-        String fileName = "avatar_" + resumeId + "_" + System.currentTimeMillis() + extension;
+        Long userId = resume.getUserId();
+        if (userId == null) {
+            throw new IllegalArgumentException("简历缺少用户ID");
+        }
+        String fileName = userId + extension;
         String uploadDir = avatarStorageDir;
-        File dir = new File(uploadDir);
+        String normalizedDir = uploadDir == null ? "" : uploadDir.replace("\\", "/").replaceAll("/+$", "");
+        String nodePhotoDir = uploadDir;
+        if (normalizedDir.endsWith("/resume-avatars")) {
+            int idx = normalizedDir.lastIndexOf("/resume-avatars");
+            nodePhotoDir = normalizedDir.substring(0, idx);
+            if (nodePhotoDir.isEmpty()) {
+                nodePhotoDir = uploadDir;
+            }
+        }
+        File dir = new File(nodePhotoDir);
 
         /** 创建目录（如果不存在） */
         if (!dir.exists()) {
             if (!dir.mkdirs()) {
-                log.error("创建头像目录失败: {}", uploadDir);
+                log.error("创建头像目录失败: {}", nodePhotoDir);
                 throw new RuntimeException("创建头像存储目录失败");
             }
         }
 
         /** 完整的文件路径 */
-        String filePath = uploadDir + "/" + fileName;
+        String filePath = nodePhotoDir + "/" + fileName;
         File destFile = new File(filePath);
 
         /** 保存文件 */
         try {
             log.info("保存头像文件: {}", filePath);
             file.transferTo(destFile);
+            if (uploadDir != null && !uploadDir.isBlank() && !uploadDir.equals(nodePhotoDir)) {
+                File legacyDir = new File(uploadDir);
+                if (!legacyDir.exists()) {
+                    legacyDir.mkdirs();
+                }
+                File legacyFile = new File(uploadDir + "/" + fileName);
+                if (!legacyFile.getAbsolutePath().equals(destFile.getAbsolutePath())) {
+                    Files.copy(destFile.toPath(), legacyFile.toPath(), java.nio.file.StandardCopyOption.REPLACE_EXISTING);
+                }
+            }
         } catch (Exception e) {
             log.error("头像上传失败", e);
             throw new RuntimeException("头像上传失败", e);
@@ -846,18 +869,47 @@ public class ResumeServiceImplement implements ResumeService {
     @Override
     public byte[] getResumeAvatar(Long resumeId) {
         Resume resume = resumeMapper.findById(resumeId);
-        if (resume == null || resume.getPhoto() == null || resume.getPhoto().isEmpty()) {
+        if (resume == null) {
             return null;
         }
 
         /** 读取头像文件 */
-        String filePath = avatarStorageDir + "/" + resume.getPhoto();
-        Path path = Paths.get(filePath);
+        Path path = null;
+        if (resume.getPhoto() != null && !resume.getPhoto().isEmpty()) {
+            path = Paths.get(avatarStorageDir + "/" + resume.getPhoto());
+            if (!Files.exists(path)) {
+                Path legacy = Paths.get(avatarStorageDir + "/resume-avatars/" + resume.getPhoto());
+                if (Files.exists(legacy)) {
+                    path = legacy;
+                } else {
+                    path = null;
+                }
+            }
+        }
+        if (path == null && resume.getUserId() != null) {
+            String uid = String.valueOf(resume.getUserId());
+            String[] exts = new String[]{".png", ".jpg", ".jpeg", ".webp"};
+            for (String ext : exts) {
+                Path p = Paths.get(avatarStorageDir + "/" + uid + ext);
+                if (Files.exists(p)) {
+                    path = p;
+                    break;
+                }
+                Path legacy = Paths.get(avatarStorageDir + "/resume-avatars/" + uid + ext);
+                if (Files.exists(legacy)) {
+                    path = legacy;
+                    break;
+                }
+            }
+        }
+        if (path == null) {
+            return null;
+        }
 
         try {
             return Files.readAllBytes(path);
         } catch (IOException e) {
-            log.error("读取头像文件失败: {}", filePath, e);
+            log.error("读取头像文件失败: {}", path.toString(), e);
             return null;
         }
     }
@@ -871,6 +923,6 @@ public class ResumeServiceImplement implements ResumeService {
         if (fileName == null || !fileName.contains(".")) {
             return ".png";
         }
-        return fileName.substring(fileName.lastIndexOf("."));
+        return fileName.substring(fileName.lastIndexOf(".")).toLowerCase();
     }
 }

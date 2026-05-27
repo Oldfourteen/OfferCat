@@ -195,7 +195,8 @@ function pick(choiceIndex: number) {
 }
 
 function goExit() {
-  goExitFromStarlitQuiz(router)
+  const src = typeof route.query.source === 'string' ? route.query.source : 'showcase'
+  goExitFromStarlitQuiz(router, src)
 }
 
 function goQuestionBankPlaceholder() {

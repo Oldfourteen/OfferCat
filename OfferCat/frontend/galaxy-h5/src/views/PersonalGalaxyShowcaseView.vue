@@ -13,10 +13,12 @@ import { galaxyUserId } from '@/utils/galaxySession'
 import { packKeyFromFusion } from '@/utils/packKey'
 import StarlitLeaderboardPanel from '@/components/StarlitLeaderboardPanel.vue'
 import {
+  buildStarsLitMap,
   computeAmbientStarBoost,
   getStarsLit,
   getTotalStarsLitForFusions,
   STARLIT_MAX_STARS_PER_FUSION,
+  STARLIT_UPDATED_EVENT,
 } from '@/data/personalStarlitStore'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
 import { postRouteToShell } from '@/utils/bridge'
@@ -85,11 +87,6 @@ const canvasStarsTotal = computed(() => {
   return getTotalStarsLitForFusions(fusionIdsOnCanvas.value)
 })
 
-function refreshStarlitProgress() {
-  starlitTick.value += 1
-  if (phase.value === 'ready') remount()
-}
-
 async function openLeaderboard() {
   refreshStarlitProgress()
   const fusions = saved.value?.fusions ?? []
@@ -103,6 +100,14 @@ function onStarlitStorage(e: StorageEvent) {
   if (e.key === null || e.key === 'offercat_personal_starlit_v1') refreshStarlitProgress()
 }
 
+function starsLitMapForCanvas(): Record<string, number> {
+  return buildStarsLitMap(fusionIdsOnCanvas.value)
+}
+
+function applyStarlitToScene() {
+  rt.value?.setStarsLitByNodeId(starsLitMapForCanvas())
+}
+
 function remount() {
   const el = canvasHost.value
   const b = bundle.value
@@ -112,9 +117,22 @@ function remount() {
   const ambientStarBoost = computeAmbientStarBoost(b.nodes)
   rt.value = mountGalaxyThree(el, b, visual.value, (id) => {
     selectedId.value = id
-  }, { ambientStarBoost })
+  }, {
+    ambientStarBoost,
+    starsLitByNodeId: starsLitMapForCanvas(),
+    maxStarsPerFusion: STARLIT_MAX_STARS_PER_FUSION,
+  })
   rt.value.setVisualState(visual.value)
   rt.value.frameBounds(b.nodes.map((n) => n.id))
+}
+
+function refreshStarlitProgress() {
+  starlitTick.value += 1
+  if (phase.value === 'ready' && rt.value) {
+    applyStarlitToScene()
+    return
+  }
+  if (phase.value === 'ready') remount()
 }
 
 function goDesignFromEmpty() {
@@ -138,7 +156,12 @@ function goStarlit() {
     ''
   void router.push({
     name: 'personalStarlit',
-    query: { fusionId: f.id, title: f.title, ...(pk ? { packKey: pk } : {}) },
+    query: {
+      fusionId: f.id,
+      title: f.title,
+      source: 'showcase',
+      ...(pk ? { packKey: pk } : {}),
+    },
   })
 }
 
@@ -160,8 +183,13 @@ watch(
 
 const onOpenLeaderboardEvent = () => openLeaderboard()
 
+function onStarlitUpdated() {
+  refreshStarlitProgress()
+}
+
 onMounted(async () => {
   window.addEventListener('storage', onStarlitStorage)
+  window.addEventListener(STARLIT_UPDATED_EVENT, onStarlitUpdated)
   window.addEventListener('galaxy-open-leaderboard', onOpenLeaderboardEvent)
   ;(window as Window & { __GALAXY_OPEN_LEADERBOARD__?: () => void }).__GALAXY_OPEN_LEADERBOARD__ =
     () => window.dispatchEvent(new CustomEvent('galaxy-open-leaderboard'))
@@ -188,6 +216,7 @@ onMounted(async () => {
 
 onBeforeUnmount(() => {
   window.removeEventListener('storage', onStarlitStorage)
+  window.removeEventListener(STARLIT_UPDATED_EVENT, onStarlitUpdated)
   window.removeEventListener('galaxy-open-leaderboard', onOpenLeaderboardEvent)
   delete (window as Window & { __GALAXY_OPEN_LEADERBOARD__?: () => void }).__GALAXY_OPEN_LEADERBOARD__
   postRouteToShell(route.name)

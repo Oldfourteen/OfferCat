@@ -65,6 +65,10 @@ export interface GalaxyVisualState {
 export interface GalaxyMountOptions {
   /** 0~1：随「点亮」进度加厚远景星尘，充盈整幅 3D 画面（不挂在小行星轨道上） */
   ambientStarBoost?: number
+  /** 小行星节点 id → 已点亮星数（答对一题 +1，用于轨道星可视化） */
+  starsLitByNodeId?: Record<string, number>
+  /** 每颗小行星轨道星上限，默认 50 */
+  maxStarsPerFusion?: number
 }
 
 export function mountGalaxyThree(
@@ -182,6 +186,7 @@ export function mountGalaxyThree(
   }
 
   const ambientBoost = Math.min(1, Math.max(0, opts?.ambientStarBoost ?? 0))
+  const maxOrbitStars = Math.min(50, Math.max(1, Math.floor(opts?.maxStarsPerFusion ?? 50)))
 
   const nodeMeshes = new Map<string, THREE.Group>()
   const haloMeshes = new Map<string, THREE.Mesh>()
@@ -433,6 +438,31 @@ export function mountGalaxyThree(
         cap.userData.isFusionQuadrantLabel = true
         g.add(cap)
       }
+
+      const orbitStars: THREE.Mesh[] = []
+      const starOrbitR = orbitRadius * 1.38
+      const starR = Math.max(coreRadius * 0.2, 0.026)
+      for (let si = 0; si < maxOrbitStars; si++) {
+        const ang = (si / maxOrbitStars) * Math.PI * 2 - Math.PI / 2
+        const geo = new THREE.SphereGeometry(starR, 8, 6)
+        const mat = new THREE.MeshBasicMaterial({
+          color: 0x9aa8c8,
+          transparent: true,
+          opacity: 0.14,
+          depthWrite: false,
+          fog: false,
+          blending: THREE.AdditiveBlending,
+        })
+        const star = new THREE.Mesh(geo, mat)
+        const lift = 0.015 * (si % 4)
+        star.position.set(Math.cos(ang) * starOrbitR, lift, Math.sin(ang) * starOrbitR)
+        star.userData.part = 'starlit'
+        star.userData.starIndex = si
+        g.add(star)
+        orbitStars.push(star)
+      }
+      g.userData.starlitStars = orbitStars
+      g.userData.currentStarsLit = 0
     }
 
     const labelEl = makeNodeLabelElement(labelText, nodeType)
@@ -614,7 +644,39 @@ export function mountGalaxyThree(
   }
   window.addEventListener('resize', onResize)
 
+  const applyStarlitToNode = (nodeId: string, count: number) => {
+    const group = nodeMeshes.get(nodeId)
+    if (!group) return
+    const stars = group.userData.starlitStars as THREE.Mesh[] | undefined
+    if (!stars?.length) return
+    const lit = Math.max(0, Math.min(stars.length, Math.floor(count)))
+    group.userData.currentStarsLit = lit
+    for (let i = 0; i < stars.length; i++) {
+      const mat = stars[i]!.material as THREE.MeshBasicMaterial
+      if (i < lit) {
+        mat.color.setHex(0xffe8a8)
+        mat.opacity = 0.94
+      } else {
+        mat.color.setHex(0x8a9ab8)
+        mat.opacity = 0.12
+      }
+    }
+  }
+
+  const applyAllStarlit = (map: Record<string, number>) => {
+    for (const n of data.nodes) {
+      if (n.type === 'fusion') {
+        applyStarlitToNode(n.id, map[n.id] ?? 0)
+      }
+    }
+  }
+
+  applyAllStarlit(opts?.starsLitByNodeId ?? {})
+
+  let lastVisual: GalaxyVisualState = initial
+
   const applyVisual = (st: GalaxyVisualState) => {
+    lastVisual = st
     if (pathLine) {
       scene.remove(pathLine)
       pathLine.geometry.dispose()
@@ -707,6 +769,22 @@ export function mountGalaxyThree(
           else if (part === 'shard') base = 0.36
           else if (part === 'ring') base = nodeType === 'major' ? 0.48 : 0.52
           else if (part === 'satellite') base = 0.9
+          else if (part === 'starlit') {
+            const idx = (obj.userData.starIndex as number) ?? 0
+            const litCount = (group.userData.currentStarsLit as number) ?? 0
+            const isLit = idx < litCount
+            let op = isLit ? 0.92 : 0.1
+            if (dim && !isLit) op = 0.05
+            else if (dim && isLit) op = 0.55
+            if (selected && isLit) op = 1
+            if (onPath || inHyper) {
+              op = isLit ? Math.max(op, 0.88) : Math.max(op, 0.14)
+            }
+            mat.opacity = op
+            mat.transparent = true
+            mat.color.set(isLit ? 0xffe8a8 : 0x8a9ab8)
+            return
+          }
           let op = base * opacityFactor
           if (onPath || inHyper) {
             if (part === 'glow' || part === 'shard') op = Math.max(op, 0.22)
@@ -820,6 +898,10 @@ export function mountGalaxyThree(
     },
     setVisualState(st: GalaxyVisualState) {
       applyVisual(st)
+    },
+    setStarsLitByNodeId(map: Record<string, number>) {
+      applyAllStarlit(map)
+      applyVisual(lastVisual)
     },
     frameBounds,
     getCamera: () => camera,

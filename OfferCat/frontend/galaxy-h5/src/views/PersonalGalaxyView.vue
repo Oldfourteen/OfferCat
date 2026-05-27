@@ -16,7 +16,7 @@ import { hyperedgesContainingNode } from '@/utils/graph'
 import { goBackOrReplace } from '@/utils/navigation'
 import { packKeyFromFusion } from '@/utils/packKey'
 import { detectWebGL, mountGalaxyThree, type GalaxyVisualState } from '@/lib/galaxyThree'
-import { computeAmbientStarBoost } from '@/data/personalStarlitStore'
+import { buildStarsLitMap, computeAmbientStarBoost, STARLIT_MAX_STARS_PER_FUSION } from '@/data/personalStarlitStore'
 
 const router = useRouter()
 
@@ -83,6 +83,7 @@ function remountThree() {
   rt.value = null
   if (!el || data.nodes.length === 0) return
   const ambientStarBoost = computeAmbientStarBoost(data.nodes)
+  const starsLitByNodeId = buildStarsLitMap(fusions.value.map((f) => f.id))
   rt.value = mountGalaxyThree(el, data, visual.value, (id) => {
     selectedId.value = id
     if (!id || !linkMode.value) return
@@ -97,7 +98,11 @@ function remountThree() {
     const b = majorsOnCanvas.value.find((m) => m.id === id)
     if (!a || !b) return
     void openJobModal(a, b)
-  }, { ambientStarBoost })
+  }, {
+    ambientStarBoost,
+    starsLitByNodeId,
+    maxStarsPerFusion: STARLIT_MAX_STARS_PER_FUSION,
+  })
   rt.value.setVisualState(visual.value)
   rt.value.frameBounds(data.nodes.map((n) => n.id))
 }

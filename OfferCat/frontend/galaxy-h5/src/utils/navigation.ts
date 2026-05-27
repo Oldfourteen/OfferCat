@@ -86,7 +86,21 @@ export function goBackOrReplace(router: Router, fallback: RouteLocationRaw): voi
   void router.replace(fallback)
 }
 
-/** 点亮星辰页「退出」：回到大星图「专业星系」（无起止专业会话时回选择页，与 GalaxyView 一致）。 */
-export function goExitFromStarlitQuiz(router: Router): void {
-  goToMainGalaxy(router)
+/**
+ * 点亮星辰页「退出」：
+ * - source=showcase → 个人展示星图
+ * - source=galaxy → 大星图专业星系
+ * - 其它 → 优先返回上一页，否则个人展示星图
+ */
+export function goExitFromStarlitQuiz(router: Router, source?: string): void {
+  const from = (source || '').trim().toLowerCase()
+  if (from === 'showcase') {
+    void router.replace({ name: 'personalShowcase' })
+    return
+  }
+  if (from === 'galaxy') {
+    goToMainGalaxy(router)
+    return
+  }
+  goBackOrReplace(router, { name: 'personalShowcase' })
 }

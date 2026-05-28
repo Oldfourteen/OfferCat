@@ -87,42 +87,63 @@ public class AdminServiceImpl implements AdminService {
         String trimmedKeyword = keyword.trim();
 
         try {
-            // 尝试作为用户ID搜索
-            Long userId = null;
+            // 尝试解析为数字（用户ID）
+            Long numericKeyword = null;
             try {
-                userId = Long.parseLong(trimmedKeyword);
+                numericKeyword = Long.parseLong(trimmedKeyword);
             } catch (NumberFormatException e) {
-                // 不是数字，按用户名搜索
+                // 不是纯数字，继续模糊搜索
             }
 
-            if (userId != null) {
-                // 根据ID查询
-                User user = userMapper.selectById(userId);
-                if (user != null) {
-                    Map<String, Object> userMap = new HashMap<>();
-                    userMap.put("userId", user.getUserId());
-                    userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
-                    userMap.put("phone", user.getPhone());
-                    userMap.put("email", user.getEmail());
-                    result.add(userMap);
-                }
-            } else {
-                // 根据手机号搜索
-                User user = userMapper.selectByPhone(trimmedKeyword);
-                if (user != null) {
-                    Map<String, Object> userMap = new HashMap<>();
-                    userMap.put("userId", user.getUserId());
-                    userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
-                    userMap.put("phone", user.getPhone());
-                    userMap.put("email", user.getEmail());
-                    result.add(userMap);
-                }
+            // 构建模糊搜索关键词
+            String likeKeyword = "%" + trimmedKeyword + "%";
+
+            // 使用模糊搜索方法，支持用户ID、昵称、手机号的匹配
+            List<User> users = userMapper.searchUserByKeyword(trimmedKeyword, numericKeyword, likeKeyword);
+
+            for (User user : users) {
+                Map<String, Object> userMap = new HashMap<>();
+                userMap.put("userId", user.getUserId());
+                userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
+                userMap.put("nickname", user.getNickname());
+                userMap.put("phone", user.getPhone());
+                userMap.put("email", user.getEmail());
+                result.add(userMap);
             }
         } catch (Exception e) {
             log.error("搜索用户失败: keyword={}", trimmedKeyword, e);
         }
 
         log.info("搜索用户: keyword={}, resultCount={}", trimmedKeyword, result.size());
+        return result;
+    }
+
+    @Override
+    public List<Map<String, Object>> getMutedUsers() {
+        List<Map<String, Object>> result = new ArrayList<>();
+
+        try {
+            List<UserMute> mutedList = userMuteMapper.selectAllActiveMutes();
+
+            for (UserMute mute : mutedList) {
+                User user = userMapper.selectById(mute.getUserId());
+                if (user != null) {
+                    Map<String, Object> userMap = new HashMap<>();
+                    userMap.put("userId", user.getUserId());
+                    userMap.put("username", user.getNickname() != null ? user.getNickname() : user.getPhone());
+                    userMap.put("phone", user.getPhone());
+                    userMap.put("duration", mute.getDuration());
+                    userMap.put("endTime", mute.getEndTime());
+                    userMap.put("startTime", mute.getStartTime());
+                    userMap.put("reason", mute.getReason());
+                    result.add(userMap);
+                }
+            }
+        } catch (Exception e) {
+            log.error("获取禁言用户列表失败", e);
+        }
+
+        log.info("获取禁言用户列表: count={}", result.size());
         return result;
     }
 }

@@ -74,4 +74,20 @@ public interface UserMapper {
     /** 批量更新用户角色为管理员 */
     @Update("UPDATE `user` SET user_role = 4, update_time = NOW() WHERE user_role = 1")
     int updateAllToAdmin();
+    
+    /** 根据关键词模糊搜索用户（支持用户ID、昵称、手机号） */
+    @Select({"<script>",
+            "SELECT * FROM `user` WHERE user_status = 1",
+            "<if test='keyword != null and keyword != \"\"'>",
+            "AND (user_id = #{numericKeyword} OR nickname LIKE #{likeKeyword} OR phone LIKE #{likeKeyword})",
+            "</if>",
+            "ORDER BY ",
+            "<if test='numericKeyword != null'>user_id = #{numericKeyword} DESC, </if>",
+            "nickname LIKE #{likeKeyword} DESC",
+            "LIMIT 10",
+            "</script>"})
+    List<User> searchUserByKeyword(
+            @Param("keyword") String keyword,
+            @Param("numericKeyword") Long numericKeyword,
+            @Param("likeKeyword") String likeKeyword);
 }

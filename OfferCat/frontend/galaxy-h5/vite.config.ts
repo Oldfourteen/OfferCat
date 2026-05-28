@@ -7,7 +7,7 @@ import { fileURLToPath, URL } from 'node:url'
  * WebView 会强缓存固定路径的 galaxy-app.js / galaxy.css，仅靠入口 index 的 query 不够，必须在 HTML 里给静态资源加 query。
  * H5 入口 `public/iframe.html` 为静态拷贝，需手写与下方相同的 `?v=`。
  */
-const GALAXY_ASSET_QUERY = '?v=20260522-apk-fix-init-v3'
+const GALAXY_ASSET_QUERY = '?v=20260527-starlit-orbit-v1'
 
 export default defineConfig({
   /** 打包到 uni-app `static/galaxy-h5` 后，资源与 index 同目录，需相对路径 */

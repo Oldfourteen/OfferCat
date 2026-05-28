@@ -34,10 +34,8 @@ public interface AdminService {
     boolean deletePost(Long postId);
 
     /**
-     * 搜索用户
+     * 获取所有被禁言的用户列表
      *
-     * @param keyword 关键词（用户名或ID）
-     * @return 用户列表
+     * @return 禁言用户列表
      */
-    java.util.List<java.util.Map<String, Object>> searchUser(String keyword);
-}
+    java.util.List<java.util.Map<String, Object>> getMutedUsers();

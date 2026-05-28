@@ -74,6 +74,29 @@ public class AdminController {
     }
 
     /**
+     * 获取所有被禁言用户列表
+     *
+     * @return 禁言用户列表
+     */
+    @GetMapping("/mute/list")
+    public ResponseEntity<Map<String, Object>> getMutedUsers() {
+        Map<String, Object> response = new HashMap<>();
+        try {
+            List<Map<String, Object>> mutedUsers = adminService.getMutedUsers();
+            response.put("code", 200);
+            response.put("data", mutedUsers);
+            response.put("message", "查询成功");
+            return ResponseEntity.ok(response);
+        } catch (Exception e) {
+            log.error("获取禁言用户列表失败", e);
+            response.put("code", 500);
+            response.put("data", new ArrayList<>());
+            response.put("message", "查询失败");
+            return ResponseEntity.internalServerError().body(response);
+        }
+    }
+
+    /**
      * 删除帖子
      *
      * @param postId 帖子ID

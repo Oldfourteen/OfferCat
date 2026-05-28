@@ -123,6 +123,15 @@ export function getTotalStarsLitForFusions(fusionIds: readonly string[]): number
   return fusionIds.reduce((s, id) => s + getStarsLit(id), 0)
 }
 
+/** 供 3D 星图按 fusion 节点 id 渲染已点亮轨道星 */
+export function buildStarsLitMap(fusionIds: readonly string[]): Record<string, number> {
+  const map: Record<string, number> = {}
+  for (const id of fusionIds) {
+    map[id] = getStarsLit(id)
+  }
+  return map
+}
+
 export function computeAmbientStarBoost(nodes: readonly { id: string; type: string }[]): number {
   const fusions = nodes.filter((n) => n.type === 'fusion')
   if (!fusions.length) return 0
@@ -144,5 +153,10 @@ export function incrementStarlit(fusionId: string): number {
   s.byFusionId[fusionId] = record
   saveStarlitStore(s)
   void syncFusionProgressToServer(fusionId, record)
+  if (typeof window !== 'undefined') {
+    window.dispatchEvent(new CustomEvent('offercat-starlit-updated', { detail: { fusionId, starsLit: next } }))
+  }
   return next
 }
+
+export const STARLIT_UPDATED_EVENT = 'offercat-starlit-updated'

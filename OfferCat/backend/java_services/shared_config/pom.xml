@@ -57,4 +57,21 @@
             <scope>test</scope>
         </dependency>
     </dependencies>
+
+    <build>
+        <resources>
+            <resource>
+                <directory>src/main/resources</directory>
+            </resource>
+            <!-- 将 Vocabulary 下的词库打入 JAR（sensitive/*.enc），供生产环境 classpath 加载 -->
+            <resource>
+                <directory>src/main/java/com/offercat/shared/sensitive/Vocabulary</directory>
+                <targetPath>sensitive</targetPath>
+                <includes>
+                    <include>**/*.enc</include>
+                    <include>**/*.txt</include>
+                </includes>
+            </resource>
+        </resources>
+    </build>
 </project>

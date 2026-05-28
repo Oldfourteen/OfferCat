@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 12:38:05 CST 2026
-jackson-datatype-jsr310-2.15.4.jar>nexus-aliyun=
-jackson-datatype-jsr310-2.15.4.pom>nexus-aliyun=
+#Thu May 28 15:02:29 CST 2026
+jackson-datatype-jsr310-2.15.4.jar>alimaven=
 jackson-datatype-jsr310-2.15.4.jar>central=
+jackson-datatype-jsr310-2.15.4.jar>nexus-aliyun=
+jackson-datatype-jsr310-2.15.4.pom>alimaven=
 jackson-datatype-jsr310-2.15.4.pom>central=
+jackson-datatype-jsr310-2.15.4.pom>nexus-aliyun=

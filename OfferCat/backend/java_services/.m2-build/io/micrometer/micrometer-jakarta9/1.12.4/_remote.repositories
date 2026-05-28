@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:21 CST 2026
+#Thu May 28 15:03:45 CST 2026
+micrometer-jakarta9-1.12.4.jar>alimaven=
 micrometer-jakarta9-1.12.4.jar>central=
 micrometer-jakarta9-1.12.4.jar>nexus-aliyun=
+micrometer-jakarta9-1.12.4.pom>alimaven=
 micrometer-jakarta9-1.12.4.pom>central=
 micrometer-jakarta9-1.12.4.pom>nexus-aliyun=

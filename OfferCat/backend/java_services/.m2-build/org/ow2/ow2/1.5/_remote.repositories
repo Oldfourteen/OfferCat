@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 12:37:38 CST 2026
-ow2-1.5.pom>nexus-aliyun=
+#Thu May 28 15:02:16 CST 2026
+ow2-1.5.pom>alimaven=
 ow2-1.5.pom>central=
+ow2-1.5.pom>nexus-aliyun=

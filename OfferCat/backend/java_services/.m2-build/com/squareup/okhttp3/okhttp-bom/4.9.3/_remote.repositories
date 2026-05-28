@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:01:49 CST 2026
+#Thu May 28 15:04:33 CST 2026
+okhttp-bom-4.9.3.pom>alimaven=
 okhttp-bom-4.9.3.pom>central=
 okhttp-bom-4.9.3.pom>nexus-aliyun=

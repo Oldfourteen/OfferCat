@@ -99,7 +99,7 @@
 					</view>
 				</view>
 				<view class="search-hint" v-if="!hasSearched && searchKeyword === ''">
-					<text class="hint-text">输入用户ID或姓名进行精准查找</text>
+					<text class="hint-text">输入昵称、手机号或用户ID，自动模糊匹配</text>
 				</view>
 				<view class="empty-state" v-if="hasSearched && searchResult.length === 0">
 					<text class="empty-text">未找到匹配的用户</text>
@@ -216,18 +216,20 @@
 						</view>
 					</view>
 					<view class="time-picker-section" v-if="showTimePickerPanel">
-						<text class="picker-label">选择禁言时长</text>
-						<view class="quick-options">
-							<view 
-								class="quick-option" 
-								v-for="option in muteDurationOptions" 
-								:key="option.value"
-								:class="{ selected: selectedDuration === option.value }"
-								@click="selectDuration(option.value)"
-							>
-								<text class="option-text">{{ option.label }}</text>
-							</view>
-						</view>
+						<text class="picker-label">选择禁言时长（滑动选择）</text>
+						<picker-view
+							class="duration-picker-view"
+							:value="durationPickerIndex"
+							@change="onDurationPickerChange"
+							indicator-style="height: 44px;"
+						>
+							<picker-view-column>
+								<view class="duration-picker-item" v-for="option in muteDurationOptions" :key="option.value">
+									<text class="duration-picker-text">{{ option.label }}</text>
+								</view>
+							</picker-view-column>
+						</picker-view>
+						<text class="picker-preview">已选：{{ selectedDurationLabel }}</text>
 						<view class="picker-confirm" @click="confirmMuteDuration">
 							<text class="confirm-text">确认禁言</text>
 						</view>
@@ -328,6 +330,7 @@
 				refreshing: false,
 				currentMutedUser: null,
 				selectedDuration: null,
+				durationPickerIndex: [3],
 				muteDurationOptions: [
 					{ label: '15分钟', value: 900 },
 					{ label: '1小时', value: 3600 },
@@ -345,6 +348,11 @@
 		computed: {
 			themeClass() {
 				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
+			},
+			selectedDurationLabel() {
+				const idx = this.durationPickerIndex && this.durationPickerIndex[0]
+				const opt = this.muteDurationOptions[idx != null ? idx : 0]
+				return opt ? opt.label : '请选择'
 			}
 		},
 		methods: {
@@ -445,6 +453,21 @@
 					this.adminPickerTimer = setTimeout(() => this.fetchStudentSuggest(keyword), 180)
 				}
 			},
+			forumAdminUrl(path) {
+				return `${getApiBase()}/api/forum/admin${path}`
+			},
+			mapUserSuggestList(list, limit) {
+				return (list || [])
+					.map((u) => ({
+						userId: u.userId,
+						nickname: u.nickname,
+						username: u.username || u.nickname,
+						phone: u.phone,
+						email: u.email,
+					}))
+					.filter((u) => u.userId != null)
+					.slice(0, limit)
+			},
 			fetchSuggest(keyword) {
 				const operatorUserId = this.getOperatorUserId()
 				if (!operatorUserId) {
@@ -458,33 +481,21 @@
 				this.suggestLoading = true
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/api/admin/search/user`,
+					url: this.forumAdminUrl('/user-suggest'),
 					method: 'GET',
 					header: hdr,
-					data: { keyword },
+					data: { operatorUserId, keyword, limit: 8 },
 					success: (res) => {
 						if (seq !== this.suggestSeq) return
 						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
-							const list = res.data.data
-								.map((u) => ({
-									userId: u.userId,
-									nickname: u.nickname,
-									username: u.username,
-									phone: u.phone,
-									email: u.email,
-								}))
-								.filter((u) => u.userId != null)
-								.slice(0, 8)
-							if (list.length > 0) {
-								this.searchSuggestions = list
-								return
-							}
+							this.searchSuggestions = this.mapUserSuggestList(res.data.data, 8)
+							return
 						}
-						this.fetchSuggestFallbackByStudentService(operatorUserId, keyword, 8, seq)
+						this.fetchSuggestLegacy(operatorUserId, keyword, 8, seq)
 					},
 					fail: () => {
 						if (seq !== this.suggestSeq) return
-						this.fetchSuggestFallbackByStudentService(operatorUserId, keyword, 8, seq)
+						this.fetchSuggestLegacy(operatorUserId, keyword, 8, seq)
 					},
 					complete: () => {
 						if (seq !== this.suggestSeq) return
@@ -492,7 +503,7 @@
 					}
 				})
 			},
-			fetchSuggestFallbackByStudentService(operatorUserId, keyword, limit, seq) {
+			fetchSuggestLegacy(operatorUserId, keyword, limit, seq) {
 				const hdr = this.getAuthHeader()
 				uni.request({
 					url: `${getApiBase()}/api/admin/forum/user-suggest`,
@@ -502,25 +513,10 @@
 					success: (res) => {
 						if (seq !== this.suggestSeq) return
 						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
-							const list = res.data.data
-								.map((u) => ({
-									userId: u.userId,
-									nickname: u.nickname,
-									username: u.username,
-									phone: u.phone,
-									email: u.email,
-								}))
-								.filter((u) => u.userId != null)
-								.slice(0, limit)
-							this.searchSuggestions = list
+							this.searchSuggestions = this.mapUserSuggestList(res.data.data, limit)
 							return
 						}
 						this.searchSuggestions = []
-						const m = res && res.data && (res.data.msg || res.data.message)
-						if (m && !this.suggestAuthWarned) {
-							this.suggestAuthWarned = true
-							uni.showToast({ title: String(m), icon: 'none' })
-						}
 					},
 					fail: () => {
 						if (seq !== this.suggestSeq) return
@@ -560,39 +556,27 @@
 				this.suggestLoading = true
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/api/admin/search/user`,
+					url: this.forumAdminUrl('/user-suggest'),
 					method: 'GET',
 					header: hdr,
-					data: { keyword },
+					data: { operatorUserId, keyword, limit: 10 },
 					success: (res) => {
 						if (seq !== this.suggestSeq) return
 						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
-							const list = res.data.data
-								.map((u) => ({
-									userId: u.userId,
-									nickname: u.nickname,
-									username: u.username,
-									phone: u.phone,
-									email: u.email,
-								}))
-								.filter((u) => u.userId != null)
+							const list = this.mapUserSuggestList(res.data.data, 10)
 							this.searchSuggestions = list
 							this.searchResult = list.map((u) => this.normalizeUserForActions(u))
 							if (list.length > 0) return
-							this.searchSuggestions = []
-							this.searchResult = []
-							this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
-						} else {
-							this.searchSuggestions = []
-							this.searchResult = []
-							this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
 						}
+						this.searchSuggestions = []
+						this.searchResult = []
+						this.searchUserLegacy(operatorUserId, keyword, seq)
 					},
 					fail: () => {
 						if (seq !== this.suggestSeq) return
 						this.searchSuggestions = []
 						this.searchResult = []
-						this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
+						this.searchUserLegacy(operatorUserId, keyword, seq)
 					},
 					complete: () => {
 						if (seq !== this.suggestSeq) return
@@ -602,7 +586,7 @@
 					}
 				})
 			},
-			searchUserFallbackByStudentService(operatorUserId, keyword, seq) {
+			searchUserLegacy(operatorUserId, keyword, seq) {
 				const hdr = this.getAuthHeader()
 				uni.request({
 					url: `${getApiBase()}/api/admin/forum/user-suggest`,
@@ -612,21 +596,10 @@
 					success: (res) => {
 						if (seq !== this.suggestSeq) return
 						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
-							const list = res.data.data
-								.map((u) => ({
-									userId: u.userId,
-									nickname: u.nickname,
-									username: u.username,
-									phone: u.phone,
-									email: u.email,
-								}))
-								.filter((u) => u.userId != null)
+							const list = this.mapUserSuggestList(res.data.data, 10)
 							this.searchSuggestions = list
 							this.searchResult = list.map((u) => this.normalizeUserForActions(u))
-							return
 						}
-						const m = res && res.data && (res.data.msg || res.data.message)
-						if (m) uni.showToast({ title: String(m), icon: 'none' })
 					},
 				})
 			},
@@ -662,29 +635,44 @@
 			},
 			loadMutedUsers() {
 				this.loading = true
+				const operatorUserId = this.getOperatorUserId()
 				const hdr = this.getAuthHeader()
+				const applyList = (raw) => {
+					this.mutedUserList = (raw || []).map(u => ({
+						...u,
+						isPermanent: u.isPermanent === true || u.endTime === null || u.endTime === undefined || u.duration === -1
+					}))
+				}
+				if (!operatorUserId) {
+					this.mutedUserList = []
+					this.loading = false
+					return
+				}
 				uni.request({
-					url: `${getApiBase()}/api/admin/mute/list`,
+					url: this.forumAdminUrl('/mute/list'),
 					method: 'GET',
 					header: hdr,
+					data: { operatorUserId },
 					success: (res) => {
-						if (res.statusCode === 200 && res.data) {
-							if (res.data.code === 200 && Array.isArray(res.data.data)) {
-								this.mutedUserList = res.data.data.map(u => ({
-									...u,
-									isPermanent: u.endTime === null || u.endTime === undefined || u.duration === -1
-								}))
-							} else if (Array.isArray(res.data)) {
-								this.mutedUserList = res.data.map(u => ({
-									...u,
-									isPermanent: u.endTime === null || u.endTime === undefined || u.duration === -1
-								}))
-							} else {
-								this.mutedUserList = []
-							}
-						} else {
-							this.mutedUserList = []
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							applyList(res.data.data)
+							return
 						}
+						uni.request({
+							url: `${getApiBase()}/api/admin/mute/list`,
+							method: 'GET',
+							header: hdr,
+							success: (r2) => {
+								if (r2.statusCode === 200 && r2.data && r2.data.code === 200 && Array.isArray(r2.data.data)) {
+									applyList(r2.data.data)
+								} else if (Array.isArray(r2.data)) {
+									applyList(r2.data)
+								} else {
+									this.mutedUserList = []
+								}
+							},
+							fail: () => { this.mutedUserList = [] }
+						})
 					},
 					fail: () => { this.mutedUserList = [] },
 					complete: () => { this.loading = false }
@@ -709,6 +697,7 @@
 							if (res.data.code === 200 && Array.isArray(res.data.data)) {
 								this.postList = res.data.data.map(post => ({
 									postId: post.postId,
+									userId: post.userId,
 									title: post.title || '无标题',
 									authorName: post.authorName || '未知用户',
 									content: post.content || '',
@@ -717,6 +706,7 @@
 							} else if (Array.isArray(res.data)) {
 								this.postList = res.data.map(post => ({
 									postId: post.postId,
+									userId: post.userId,
 									title: post.title || '无标题',
 									authorName: post.authorName || '未知用户',
 									content: post.content || '',
@@ -761,30 +751,67 @@
 			},
 			showTimePicker() {
 				this.showTimePickerPanel = true
+				const idx = this.durationPickerIndex && this.durationPickerIndex[0]
+				const opt = this.muteDurationOptions[idx != null ? idx : 0]
+				this.selectedDuration = opt ? opt.value : null
 			},
-			selectDuration(value) {
-				this.selectedDuration = value
+			onDurationPickerChange(e) {
+				const idx = e.detail.value
+				this.durationPickerIndex = idx
+				const i = idx && idx[0] != null ? idx[0] : 0
+				const opt = this.muteDurationOptions[i]
+				this.selectedDuration = opt ? opt.value : null
 			},
 			confirmMuteDuration() {
-				if (!this.currentMutedUser || this.selectedDuration === null) {
+				if (!this.currentMutedUser) {
+					uni.showToast({ title: '请先选择用户', icon: 'none' })
+					return
+				}
+				const idx = this.durationPickerIndex && this.durationPickerIndex[0]
+				const opt = this.muteDurationOptions[idx != null ? idx : 0]
+				this.selectedDuration = opt ? opt.value : null
+				if (this.selectedDuration === null) {
 					uni.showToast({ title: '请选择禁言时长', icon: 'none' })
 					return
 				}
-				const operatorId = this.getOperatorUserId() || 0
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
 				const hdr = this.getAuthHeader()
+				const payload = {
+					userId: this.currentMutedUser.userId,
+					duration: this.selectedDuration,
+					operatorId: operatorUserId,
+					operatorUserId
+				}
+				const onOk = () => {
+					uni.showToast({ title: '禁言设置成功', icon: 'success' })
+					this.closeActionPanel()
+					this.loadMutedUsers()
+				}
 				uni.request({
-					url: `${getApiBase()}/api/admin/mute`,
+					url: this.forumAdminUrl('/mute'),
 					method: 'POST',
 					header: hdr,
-					data: { userId: this.currentMutedUser.userId, duration: this.selectedDuration, operatorId },
+					data: payload,
 					success: (res) => {
 						if (res.data && (res.data.success === true || res.data.code === 200)) {
-							uni.showToast({ title: '禁言设置成功', icon: 'success' })
-							this.closeActionPanel()
-							this.loadMutedUsers()
-						} else {
-							uni.showToast({ title: res.data?.message || res.data?.msg || '设置失败', icon: 'none' })
+							onOk()
+							return
 						}
+						uni.request({
+							url: `${getApiBase()}/api/admin/mute`,
+							method: 'POST',
+							header: hdr,
+							data: { userId: payload.userId, duration: payload.duration, operatorId: operatorUserId },
+							success: (r2) => {
+								if (r2.data && (r2.data.success === true || r2.data.code === 200)) onOk()
+								else uni.showToast({ title: r2.data?.message || r2.data?.msg || '设置失败', icon: 'none' })
+							},
+							fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
+						})
 					},
 					fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
 				})
@@ -799,19 +826,37 @@
 				})
 			},
 			executeUnmute() {
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
 				const hdr = this.getAuthHeader()
+				const userId = this.currentMutedUser.userId
+				const onOk = () => {
+					uni.showToast({ title: '已解除禁言', icon: 'success' })
+					this.closeActionPanel()
+					this.loadMutedUsers()
+				}
 				uni.request({
-					url: `${getApiBase()}/api/admin/unmute/${this.currentMutedUser.userId}`,
+					url: this.forumAdminUrl(`/unmute/${userId}?operatorUserId=${encodeURIComponent(String(operatorUserId))}`),
 					method: 'POST',
 					header: hdr,
 					success: (res) => {
 						if (res.data && (res.data.success === true || res.data.code === 200)) {
-							uni.showToast({ title: '已解除禁言', icon: 'success' })
-							this.closeActionPanel()
-							this.loadMutedUsers()
-						} else {
-							uni.showToast({ title: res.data?.message || res.data?.msg || '操作失败', icon: 'none' })
+							onOk()
+							return
 						}
+						uni.request({
+							url: `${getApiBase()}/api/admin/unmute/${userId}`,
+							method: 'POST',
+							header: hdr,
+							success: (r2) => {
+								if (r2.data && (r2.data.success === true || r2.data.code === 200)) onOk()
+								else uni.showToast({ title: r2.data?.message || r2.data?.msg || '操作失败', icon: 'none' })
+							},
+							fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
+						})
 					},
 					fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
 				})
@@ -821,7 +866,7 @@
 					title: '确认删除',
 					content: `确定要删除帖子"${post.title}"吗？此操作不可恢复。`,
 					confirmColor: '#ff4d4f',
-					success: (res) => { if (res.confirm) this.executeDeletePost(post.postId) }
+					success: (res) => { if (res.confirm) this.executeDeletePost(post) }
 				})
 			},
 			normalizeUserForActions(u) {
@@ -834,27 +879,64 @@
 					email: u.email
 				}
 			},
-			executeDeletePost(postId) {
+			executeDeletePost(post) {
 				const hdr = this.getAuthHeader()
 				const operatorUserId = this.getOperatorUserId()
 				if (!operatorUserId) {
 					uni.showToast({ title: '缺少登录信息', icon: 'none' })
 					return
 				}
-				uni.request({
-					url: `${getApiBase()}/api/admin/forum/delete/${postId}?operatorUserId=${encodeURIComponent(String(operatorUserId))}`,
-					method: 'POST',
-					header: hdr,
-					success: (res) => {
-						if (res.data && (res.data.success === true || res.data.code === 200)) {
-							uni.showToast({ title: '删除成功', icon: 'success' })
-							this.postList = this.postList.filter(p => p.postId !== postId)
-						} else {
-							uni.showToast({ title: res.data?.message || res.data?.msg || '删除失败', icon: 'none' })
-						}
-					},
-					fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
-				})
+				const postId = post && (post.postId != null ? post.postId : post)
+				const authorUserId = post && post.userId != null ? post.userId : null
+				if (postId == null || postId === '') {
+					uni.showToast({ title: '帖子信息无效', icon: 'none' })
+					return
+				}
+				const onDeleteSuccess = () => {
+					uni.showToast({ title: '删除成功', icon: 'success' })
+					const idStr = String(postId)
+					this.postList = this.postList.filter(p => String(p.postId) !== idStr)
+				}
+				const showDeleteError = (res) => {
+					const msg = res?.data?.message || res?.data?.msg || '删除失败'
+					uni.showToast({ title: msg, icon: 'none' })
+				}
+				const isDeleteOk = (res) => {
+					if (!res || res.statusCode !== 200 || !res.data) return false
+					return res.data.success === true || res.data.code === 200
+				}
+				const requestForumDelete = () => {
+					if (authorUserId == null || authorUserId === '') {
+						uni.showToast({ title: '缺少作者信息，请刷新列表后重试', icon: 'none' })
+						return
+					}
+					uni.request({
+						url: `${getApiBase()}/api/forum/post/delete/${encodeURIComponent(String(postId))}?userId=${encodeURIComponent(String(authorUserId))}`,
+						method: 'DELETE',
+						header: hdr,
+						success: (res) => {
+							if (isDeleteOk(res)) onDeleteSuccess()
+							else showDeleteError(res)
+						},
+						fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
+					})
+				}
+				const tryAdminDelete = (adminUrl) => {
+					uni.request({
+						url: adminUrl,
+						method: 'DELETE',
+						header: hdr,
+						success: (res) => {
+							if (isDeleteOk(res)) onDeleteSuccess()
+							else requestForumDelete()
+						},
+						fail: () => { requestForumDelete() }
+					})
+				}
+				const base = getApiBase()
+				const op = encodeURIComponent(String(operatorUserId))
+				const pid = encodeURIComponent(String(postId))
+				tryAdminDelete(`${base}/api/admin/forum/delete-post?operatorUserId=${op}&postId=${pid}`)
 			},
 			openAdminAction(admin) {
 				if (!admin || !admin.userId) return
@@ -940,23 +1022,14 @@
 				this.adminPickerLoading = true
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/api/admin/search/user`,
+					url: this.forumAdminUrl('/user-suggest'),
 					method: 'GET',
 					header: hdr,
-					data: { keyword },
+					data: { operatorUserId, keyword, limit: 12, role: 1 },
 					success: (res) => {
 						if (seq !== this.adminPickerSeq) return
 						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
-							const list = res.data.data
-								.map((u) => ({
-									userId: u.userId,
-									nickname: u.nickname,
-									username: u.username,
-									phone: u.phone,
-									email: u.email,
-								}))
-								.filter((u) => u.userId != null)
-							this.adminPickerList = list
+							this.adminPickerList = this.mapUserSuggestList(res.data.data, 12)
 							return
 						}
 						this.adminPickerList = []
@@ -1879,6 +1952,32 @@
 			font-weight: 600;
 			color: #2d3748;
 			display: block;
+			margin-bottom: 16rpx;
+		}
+
+		.duration-picker-view {
+			width: 100%;
+			height: 360rpx;
+			margin-bottom: 12rpx;
+		}
+
+		.duration-picker-item {
+			height: 44px;
+			display: flex;
+			align-items: center;
+			justify-content: center;
+		}
+
+		.duration-picker-text {
+			font-size: 30rpx;
+			color: #2d3748;
+		}
+
+		.picker-preview {
+			display: block;
+			text-align: center;
+			font-size: 26rpx;
+			color: #5d76bd;
 			margin-bottom: 16rpx;
 		}
 	}

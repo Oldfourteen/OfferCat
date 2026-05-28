@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:36 CST 2026
+#Thu May 28 15:03:50 CST 2026
+maven-dependency-tree-3.2.1.jar>alimaven=
 maven-dependency-tree-3.2.1.jar>central=
 maven-dependency-tree-3.2.1.jar>nexus-aliyun=
+maven-dependency-tree-3.2.1.pom>alimaven=
 maven-dependency-tree-3.2.1.pom>central=
 maven-dependency-tree-3.2.1.pom>nexus-aliyun=

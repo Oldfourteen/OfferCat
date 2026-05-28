@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 12:37:06 CST 2026
-jetty-bom-9.4.53.v20231009.pom>nexus-aliyun=
+#Thu May 28 15:01:59 CST 2026
+jetty-bom-9.4.53.v20231009.pom>alimaven=
 jetty-bom-9.4.53.v20231009.pom>central=
+jetty-bom-9.4.53.v20231009.pom>nexus-aliyun=

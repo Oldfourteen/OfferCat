@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:21 CST 2026
+#Thu May 28 15:03:45 CST 2026
+sshd-osgi-2.10.0.jar>alimaven=
 sshd-osgi-2.10.0.jar>central=
 sshd-osgi-2.10.0.jar>nexus-aliyun=
+sshd-osgi-2.10.0.pom>alimaven=
 sshd-osgi-2.10.0.pom>central=
 sshd-osgi-2.10.0.pom>nexus-aliyun=

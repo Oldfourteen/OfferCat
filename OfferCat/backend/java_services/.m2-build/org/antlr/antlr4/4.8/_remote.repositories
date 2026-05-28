@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:02:53 CST 2026
+#Thu May 28 15:05:20 CST 2026
+antlr4-4.8.jar>alimaven=
 antlr4-4.8.jar>central=
 antlr4-4.8.jar>nexus-aliyun=
+antlr4-4.8.pom>alimaven=
 antlr4-4.8.pom>central=
 antlr4-4.8.pom>nexus-aliyun=

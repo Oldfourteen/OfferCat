@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 12:38:05 CST 2026
-snakeyaml-2.2.jar>nexus-aliyun=
+#Thu May 28 15:02:29 CST 2026
+snakeyaml-2.2.jar>alimaven=
 snakeyaml-2.2.jar>central=
+snakeyaml-2.2.jar>nexus-aliyun=
+snakeyaml-2.2.pom>alimaven=
 snakeyaml-2.2.pom>central=
 snakeyaml-2.2.pom>nexus-aliyun=

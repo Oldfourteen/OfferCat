@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:01:38 CST 2026
+#Thu May 28 15:04:24 CST 2026
+feign-core-13.1.jar>alimaven=
 feign-core-13.1.jar>central=
 feign-core-13.1.jar>nexus-aliyun=
+feign-core-13.1.pom>alimaven=
 feign-core-13.1.pom>central=
 feign-core-13.1.pom>nexus-aliyun=

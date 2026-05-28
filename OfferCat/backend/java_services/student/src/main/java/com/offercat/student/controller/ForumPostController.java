@@ -17,7 +17,9 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 @RestController
@@ -33,6 +35,30 @@ public class ForumPostController {
 
     @Value("${file.forum-images-dir}")
     private String forumImagesDir;
+
+    /**
+     * 论坛内容敏感词过滤（与发帖/评论同一服务，确保走 forum 网关即可用）
+     */
+    @PostMapping("/filter-content")
+    public ResponseResult<Map<String, Object>> filterContent(@RequestBody Map<String, String> body) {
+        String text = body != null ? body.get("text") : null;
+        if (text == null || text.isBlank()) {
+            Map<String, Object> empty = new HashMap<>();
+            empty.put("hasSensitive", false);
+            empty.put("filteredText", text);
+            return ResponseResult.success(empty);
+        }
+        boolean hasSensitive = sensitiveWordService.containsSensitiveWord(text);
+        Map<String, Object> result = new HashMap<>();
+        result.put("hasSensitive", hasSensitive);
+        if (hasSensitive) {
+            result.put("filteredText", sensitiveWordService.getReplacementText());
+            result.put("foundWords", sensitiveWordService.findAllSensitiveWords(text));
+        } else {
+            result.put("filteredText", text);
+        }
+        return ResponseResult.success(result);
+    }
 
     @PostMapping("/search")
     public ResponseResult<PageResult<ForumPostVO>> searchPosts(@RequestBody ForumPostSearchDTO searchDTO) {
@@ -129,11 +155,13 @@ public class ForumPostController {
         if (dto == null || dto.getContent() == null || dto.getContent().isBlank()) {
             return ResponseResult.error("评论内容不能为空");
         }
-        if (sensitiveWordService.containsSensitiveWord(dto.getContent())) {
-            dto.setContent(sensitiveWordService.getReplacementText());
+        dto.setContent(sensitiveWordService.filterText(dto.getContent()));
+        try {
+            forumPostService.addComment(dto);
+            return ResponseResult.success();
+        } catch (IllegalStateException e) {
+            return ResponseResult.error(403, e.getMessage());
         }
-        forumPostService.addComment(dto);
-        return ResponseResult.success();
     }
 
     @DeleteMapping("/comment/{commentId}")
@@ -176,12 +204,15 @@ public class ForumPostController {
         if (dto.getContent().trim().length() > 200) {
             return ResponseResult.error(400, "帖子内容最多不能超过200字");
         }
-        if (sensitiveWordService.containsSensitiveWord(dto.getContent())) {
-            dto.setContent(sensitiveWordService.getReplacementText());
+        dto.setContent(sensitiveWordService.filterText(dto.getContent()));
+        if (dto.getTitle() != null) {
+            dto.setTitle(sensitiveWordService.filterText(dto.getTitle()));
         }
         try {
             forumPostService.createPost(dto);
             return ResponseResult.success();
+        } catch (IllegalStateException e) {
+            return ResponseResult.error(403, e.getMessage());
         } catch (Exception e) {
             return ResponseResult.error(500, "发布失败: " + e.getMessage());
         }

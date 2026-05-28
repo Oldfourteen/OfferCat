@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:21 CST 2026
+#Thu May 28 15:03:45 CST 2026
+eureka-core-jersey3-2.0.1.jar>alimaven=
 eureka-core-jersey3-2.0.1.jar>central=
 eureka-core-jersey3-2.0.1.jar>nexus-aliyun=
+eureka-core-jersey3-2.0.1.pom>alimaven=
 eureka-core-jersey3-2.0.1.pom>central=
 eureka-core-jersey3-2.0.1.pom>nexus-aliyun=

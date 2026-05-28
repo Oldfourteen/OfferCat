@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:02:53 CST 2026
+#Thu May 28 15:05:20 CST 2026
+org.abego.treelayout.core-1.0.3.jar>alimaven=
 org.abego.treelayout.core-1.0.3.jar>central=
 org.abego.treelayout.core-1.0.3.jar>nexus-aliyun=
+org.abego.treelayout.core-1.0.3.pom>alimaven=
 org.abego.treelayout.core-1.0.3.pom>central=
 org.abego.treelayout.core-1.0.3.pom>nexus-aliyun=

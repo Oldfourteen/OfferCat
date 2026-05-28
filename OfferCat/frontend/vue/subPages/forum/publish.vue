@@ -106,7 +106,7 @@
 import themeMixin from '@/utils/themeMixin.js'
 	import { getUserProfile } from '@/utils/userProfile.js'
 	import { createForumPost, uploadForumImage, generateForumCaption } from '@/api/forum.js'
-	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { filterText, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 
 	const PUBLISH_BACK_ICON = PNG_ICONS.chevronLeft
 
@@ -252,11 +252,10 @@ import themeMixin from '@/utils/themeMixin.js'
 				
 				uni.showLoading({ title: '检测中...' })
 				
-				const sensitiveResult = await checkContent(this.content)
+				const sensitiveResult = await filterText(this.content.trim())
 				if (sensitiveResult.hasSensitive) {
-					uni.hideLoading()
-					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
-					this.content = sensitiveResult.replacement || getRandomPoemPair()
+					this.content = sensitiveResult.filteredText || getRandomPoemPair()
+					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none', duration: 2000 })
 				}
 				
 				const title = this.content.substring(0, 20) + (this.content.length > 20 ? '...' : '')
@@ -288,7 +287,8 @@ import themeMixin from '@/utils/themeMixin.js'
 					}, 800)
 				} catch (e) {
 					uni.hideLoading()
-					uni.showToast({ title: '发布失败', icon: 'none' })
+					const msg = (e && e.message) ? String(e.message) : '发布失败'
+					uni.showToast({ title: msg.includes('禁言') ? msg : '发布失败', icon: 'none' })
 				}
 			}
 		}

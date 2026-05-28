@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:21 CST 2026
+#Thu May 28 15:03:45 CST 2026
+hibernate-validator-8.0.1.Final.jar>alimaven=
 hibernate-validator-8.0.1.Final.jar>central=
 hibernate-validator-8.0.1.Final.jar>nexus-aliyun=
+hibernate-validator-8.0.1.Final.pom>alimaven=
 hibernate-validator-8.0.1.Final.pom>central=
 hibernate-validator-8.0.1.Final.pom>nexus-aliyun=

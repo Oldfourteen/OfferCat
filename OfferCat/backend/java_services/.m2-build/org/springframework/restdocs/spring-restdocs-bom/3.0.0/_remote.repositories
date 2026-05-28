@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:01:15 CST 2026
+#Thu May 28 15:04:12 CST 2026
+spring-restdocs-bom-3.0.0.pom>alimaven=
 spring-restdocs-bom-3.0.0.pom>central=
 spring-restdocs-bom-3.0.0.pom>nexus-aliyun=

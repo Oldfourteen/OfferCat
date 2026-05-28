@@ -26,98 +26,25 @@ const ANCIENT_POEMS = [
     '沉舟侧畔千帆过，病树前头万木春。'
 ]
 
-/**
- * 请求后端敏感词检测接口。
- * @param {string} text - 待检测的文本
- * @returns {Promise<Object>} 检测结果对象
- */
-async function checkContent(text) {
-    if (!text || typeof text !== 'string') {
-        return { hasSensitive: false, foundWords: [], category: null, replacement: '' }
-    }
+/** 本地兜底敏感词（与后端 default-words.txt 核心词一致） */
+const LOCAL_SENSITIVE_WORDS = [
+    '习近平', '法轮功', '法轮', '轮子功', '法x功', 'flg',
+    '温家宝', '胡主席', '江泽民', '李洪志', '天安门', '六四',
+    '8964', '台独', '藏独', '疆独', '港独', '法轮大法', '真善忍',
+    '反共', '民运', '上访', '维权', '民主', '自由', '人权'
+]
 
-    try {
-        const response = await request({
-            url: '/api/sensitive/check',
-            method: 'POST',
-            data: { text },
-            timeout: 5000
-        })
-
-        if (response && response.code === 200 && response.data) {
-            const data = response.data
-            return {
-                hasSensitive: data.hasSensitive || false,
-                foundWords: data.foundWords || [],
-                category: data.hasSensitive ? 'sensitive' : null,
-                replacement: data.replacement || getRandomPoemPair()
-            }
-        }
-    } catch (error) {
-        console.warn('后端敏感词检测失败:', error.message)
-    }
-
-    return {
-        hasSensitive: false,
-        foundWords: [],
-        category: null,
-        replacement: ''
-    }
+function normalizeForMatch(text) {
+    if (!text) return ''
+    return String(text).toLowerCase().replace(/\s+/g, '')
 }
 
-/**
- * 判断文本是否命中任意敏感词。
- * @param {string} text - 待检测的文本
- * @returns {Promise<boolean>} 是否包含敏感词
- */
-async function containsAnySensitiveWord(text) {
-    if (!text || typeof text !== 'string') {
-        return false
-    }
-    
-    const result = await checkContent(text)
-    return result.hasSensitive
+function localContainsSensitive(text) {
+    const normalized = normalizeForMatch(text)
+    if (!normalized) return false
+    return LOCAL_SENSITIVE_WORDS.some((word) => normalized.includes(normalizeForMatch(word)))
 }
 
-/**
- * 过滤文本中的敏感内容，使用后端过滤策略。
- * @param {string} text - 待过滤的文本
- * @returns {Promise<Object>} 过滤结果对象
- */
-async function filterText(text) {
-    if (!text || typeof text !== 'string') {
-        return { hasSensitive: false, filteredText: text }
-    }
-
-    try {
-        const response = await request({
-            url: '/api/sensitive/filter',
-            method: 'POST',
-            data: { text },
-            timeout: 5000
-        })
-
-        if (response && response.code === 200 && response.data) {
-            const data = response.data
-            return {
-                hasSensitive: data.hasSensitive || false,
-                filteredText: data.filteredText || text
-            }
-        }
-    } catch (error) {
-        console.warn('后端文本过滤失败:', error.message)
-    }
-
-    return {
-        hasSensitive: false,
-        filteredText: text
-    }
-}
-
-/**
- * 随机返回两句不同古诗，作为替换文案兜底。
- * @returns {string} 两句古诗，用换行分隔
- */
 function getRandomPoemPair() {
     const index1 = Math.floor(Math.random() * ANCIENT_POEMS.length)
     let index2 = Math.floor(Math.random() * ANCIENT_POEMS.length)
@@ -127,13 +54,164 @@ function getRandomPoemPair() {
     return ANCIENT_POEMS[index1] + '\n' + ANCIENT_POEMS[index2]
 }
 
+function parseFilterResponse(response, originalText) {
+    if (!response || response.code !== 200 || !response.data) {
+        return null
+    }
+    const data = response.data
+    const hasSensitive = data.hasSensitive === true
+    return {
+        hasSensitive,
+        foundWords: data.foundWords || [],
+        filteredText: hasSensitive
+            ? (data.filteredText || data.replacement || getRandomPoemPair())
+            : (data.filteredText != null ? data.filteredText : originalText),
+        replacement: data.filteredText || data.replacement || getRandomPoemPair()
+    }
+}
+
 /**
- * 获取单句随机古诗
- * @returns {string} 单句古诗
+ * 优先走论坛服务过滤接口（与发帖同路由，线上最可靠）
  */
+async function filterTextViaForumApi(text) {
+    const response = await request({
+        url: '/api/forum/post/filter-content',
+        method: 'POST',
+        data: { text },
+        timeout: 8000
+    })
+    return parseFilterResponse(response, text)
+}
+
+async function filterTextViaSensitiveApi(text) {
+    const response = await request({
+        url: '/api/sensitive/filter',
+        method: 'POST',
+        data: { text },
+        timeout: 8000
+    })
+    return parseFilterResponse(response, text)
+}
+
+async function checkContentViaForumApi(text) {
+    const response = await request({
+        url: '/api/forum/post/filter-content',
+        method: 'POST',
+        data: { text },
+        timeout: 8000
+    })
+    const parsed = parseFilterResponse(response, text)
+    if (!parsed) return null
+    return {
+        hasSensitive: parsed.hasSensitive,
+        foundWords: parsed.foundWords,
+        category: parsed.hasSensitive ? 'sensitive' : null,
+        replacement: parsed.replacement
+    }
+}
+
+/**
+ * 请求后端敏感词检测（论坛接口优先）
+ */
+async function checkContent(text) {
+    if (!text || typeof text !== 'string') {
+        return { hasSensitive: false, foundWords: [], category: null, replacement: '' }
+    }
+
+    try {
+        const forumResult = await filterTextViaForumApi(text)
+        if (forumResult) {
+            return {
+                hasSensitive: forumResult.hasSensitive,
+                foundWords: forumResult.foundWords,
+                category: forumResult.hasSensitive ? 'sensitive' : null,
+                replacement: forumResult.replacement
+            }
+        }
+    } catch (error) {
+        console.warn('论坛敏感词检测失败:', error.message)
+    }
+
+    try {
+        const response = await request({
+            url: '/api/sensitive/check',
+            method: 'POST',
+            data: { text },
+            timeout: 8000
+        })
+        if (response && response.code === 200 && response.data) {
+            const data = response.data
+            if (data.hasSensitive) {
+                return {
+                    hasSensitive: true,
+                    foundWords: data.foundWords || [],
+                    category: 'sensitive',
+                    replacement: data.replacement || getRandomPoemPair()
+                }
+            }
+        }
+    } catch (error) {
+        console.warn('敏感词检测接口失败:', error.message)
+    }
+
+    if (localContainsSensitive(text)) {
+        return {
+            hasSensitive: true,
+            foundWords: [],
+            category: 'sensitive',
+            replacement: getRandomPoemPair()
+        }
+    }
+
+    return { hasSensitive: false, foundWords: [], category: null, replacement: '' }
+}
+
+async function containsAnySensitiveWord(text) {
+    const result = await checkContent(text)
+    return result.hasSensitive
+}
+
+/**
+ * 过滤文本：论坛接口 → 敏感词服务 → 本地兜底
+ */
+async function filterText(text) {
+    if (!text || typeof text !== 'string') {
+        return { hasSensitive: false, filteredText: text }
+    }
+
+    try {
+        const forumResult = await filterTextViaForumApi(text)
+        if (forumResult) {
+            return {
+                hasSensitive: forumResult.hasSensitive,
+                filteredText: forumResult.filteredText
+            }
+        }
+    } catch (error) {
+        console.warn('论坛敏感词过滤失败:', error.message)
+    }
+
+    try {
+        const sensitiveResult = await filterTextViaSensitiveApi(text)
+        if (sensitiveResult) {
+            return {
+                hasSensitive: sensitiveResult.hasSensitive,
+                filteredText: sensitiveResult.filteredText
+            }
+        }
+    } catch (error) {
+        console.warn('敏感词过滤接口失败:', error.message)
+    }
+
+    if (localContainsSensitive(text)) {
+        return { hasSensitive: true, filteredText: getRandomPoemPair() }
+    }
+
+    return { hasSensitive: false, filteredText: text }
+}
+
 function getRandomPoem() {
-    const index = Math.floor(Math.random() * ANCIENT_POEMS.length)
-    return ANCIENT_POEMS[index]
+    return ANCIENT_POEMS[Math.floor(Math.random() * ANCIENT_POEMS.length)]
 }
 
 export {

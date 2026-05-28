@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:01:38 CST 2026
+#Thu May 28 15:04:24 CST 2026
+feign-form-spring-3.8.0.jar>alimaven=
 feign-form-spring-3.8.0.jar>central=
 feign-form-spring-3.8.0.jar>nexus-aliyun=
+feign-form-spring-3.8.0.pom>alimaven=
 feign-form-spring-3.8.0.pom>central=
 feign-form-spring-3.8.0.pom>nexus-aliyun=

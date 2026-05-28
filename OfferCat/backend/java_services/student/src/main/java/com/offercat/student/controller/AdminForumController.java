@@ -138,6 +138,16 @@ public class AdminForumController {
     }
 
     /**
+     * 管理员删帖（仅 query 参数，兼容未开启 -parameters 的编译产物及 POST 客户端）
+     */
+    @RequestMapping(value = "/delete-post", method = {RequestMethod.DELETE, RequestMethod.POST})
+    public ResponseResult<Void> adminDeletePostByParams(
+            @RequestParam("operatorUserId") Long operatorUserId,
+            @RequestParam("postId") Long postId) {
+        return adminDeletePost(operatorUserId, postId);
+    }
+
+    /**
      * 根据手机号搜索用户
      */
     @GetMapping("/search-user")

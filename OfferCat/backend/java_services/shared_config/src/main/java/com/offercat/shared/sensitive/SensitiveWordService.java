@@ -1,6 +1,8 @@
 package com.offercat.shared.sensitive;
 
 import jakarta.annotation.PostConstruct;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileInputStream;
@@ -39,7 +41,9 @@ import org.springframework.stereotype.Service;
  */
 @Service
 public class SensitiveWordService {
-    
+
+    private static final Logger log = LoggerFactory.getLogger(SensitiveWordService.class);
+
     /** 字典树实例 */
     private Trie trie;
     
@@ -244,44 +248,74 @@ public class SensitiveWordService {
      */
     @PostConstruct
     public void init() {
-        trie = new Trie();
-        loadDefaultWords();
-        loadSensitiveWords();
+        reload();
+    }
+
+    private void insertWord(String word) {
+        if (word == null) {
+            return;
+        }
+        String trimmed = word.trim();
+        if (trimmed.isEmpty()) {
+            return;
+        }
+        trie.insert(trimmed);
+        totalLoadedWords++;
+    }
+
+    private int loadWordsFromStream(InputStream is, boolean encrypted) throws IOException {
+        if (is == null) {
+            return 0;
+        }
+        byte[] content = is.readAllBytes();
+        String contentStr;
+        if (encrypted) {
+            byte[] decrypted = EncryptUtils.decrypt(content);
+            contentStr = new String(decrypted, StandardCharsets.UTF_8);
+        } else {
+            contentStr = new String(content, StandardCharsets.UTF_8);
+        }
+        int count = 0;
+        for (String line : contentStr.split("\\r?\\n")) {
+            String word = line.trim();
+            if (!word.isEmpty() && !word.startsWith("#")) {
+                insertWord(word);
+                count++;
+            }
+        }
+        return count;
     }
     
     /**
-     * 加载默认敏感词（兜底机制）
+     * 加载默认敏感词（classpath 资源 + 代码兜底，确保 JAR 部署可用）
      */
     private void loadDefaultWords() {
+        int fromResource = 0;
+        try (InputStream is = getClass().getClassLoader().getResourceAsStream("sensitive/default-words.txt")) {
+            fromResource = loadWordsFromStream(is, false);
+        } catch (IOException e) {
+            log.warn("加载 classpath 默认敏感词失败", e);
+        }
         String[] defaultWords = {
-            "习近平", "法轮功", "法轮", "轮子功", "法x功", "flg", "潘石屹", "盘古", 
+            "习近平", "法轮功", "法轮", "轮子功", "法x功", "flg", "潘石屹", "盘古",
             "温家宝", "胡主席", "江泽民", "李洪志", "洪志", "法lg", "法x",
             "维权", "上访", "集会", "游行", "示威", "民主", "自由", "人权",
-            "天安门", "六四", "8964", "八九", "民运", "反共", "反共", "台独",
+            "天安门", "六四", "8964", "八九", "民运", "反共", "台独",
             "藏独", "疆独", "港独", "法轮大法", "真善忍", "退党", "退团", "退队",
-            "三退", "九评", "天灭中共", "大法弟子", "法轮佛法", "法轮世界",
-            "法轮法", "法轮圣", "法轮王", "法神圣", "法圣王", "李大师", "李父",
-            "李母", "法轮佛", "法轮圣佛", "法轮圣王", "法轮大佛", "法轮大士",
-            "法轮真人", "法轮天尊", "法轮天仙", "法轮天神", "法轮神圣",
-            "法轮神佛", "法轮神圣佛", "法轮神圣王", "法轮神圣大佛",
-            "法轮神圣大士", "法轮神圣真人", "法轮神圣天尊", "法轮神圣天仙",
-            "法轮神圣天神", "法轮神圣仙佛", "法轮神圣神王", "法轮神圣仙王"
+            "三退", "九评", "天灭中共", "大法弟子", "法轮佛法", "法轮世界"
         };
-        
         for (String word : defaultWords) {
-            trie.insert(word.toLowerCase());
-            totalLoadedWords++;
+            insertWord(word);
         }
+        log.info("默认敏感词加载完成: classpath={}, 内置兜底={}", fromResource, defaultWords.length);
     }
     
     /**
      * 加载所有词库文件中的敏感词
      */
     private void loadSensitiveWords() {
-        totalLoadedWords = 0;
         for (String fileName : VOCABULARY_FILES) {
-            int wordsLoaded = loadWordsFromFile(fileName);
-            totalLoadedWords += wordsLoaded;
+            loadWordsFromFile(fileName);
         }
     }
     
@@ -303,29 +337,7 @@ public class SensitiveWordService {
         for (String path : paths) {
             try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
                 if (is != null) {
-                    byte[] content = is.readAllBytes();
-                    
-                    // 判断是否为加密文件（通过文件后缀判断）
-                    String contentStr;
-                    if (path.endsWith(ENCRYPTED_SUFFIX)) {
-                        // 加密文件，需要解密
-                        byte[] decrypted = EncryptUtils.decrypt(content);
-                        contentStr = new String(decrypted, StandardCharsets.UTF_8);
-                    } else {
-                        // 未加密文件，直接读取
-                        contentStr = new String(content, StandardCharsets.UTF_8);
-                    }
-                    
-                    // 按行解析敏感词
-                    String[] lines = contentStr.split("\\r?\\n");
-                    for (String line : lines) {
-                        String word = line.trim();
-                        if (!word.isEmpty()) {
-                            trie.insert(word.toLowerCase());
-                            count++;
-                        }
-                    }
-                    return count;
+                    return loadWordsFromStream(is, path.endsWith(ENCRYPTED_SUFFIX));
                 }
             } catch (IOException e) {
                 e.printStackTrace();
@@ -370,11 +382,10 @@ public class SensitiveWordService {
                         contentStr = new String(content, StandardCharsets.UTF_8);
                     }
                     
-                    String[] lines = contentStr.split("\\r?\\n");
-                    for (String line : lines) {
+                    for (String line : contentStr.split("\\r?\\n")) {
                         String word = line.trim();
-                        if (!word.isEmpty()) {
-                            trie.insert(word.toLowerCase());
+                        if (!word.isEmpty() && !word.startsWith("#")) {
+                            insertWord(word);
                             count++;
                         }
                     }
@@ -416,18 +427,12 @@ public class SensitiveWordService {
      * @return 两句古诗，用换行分隔
      */
     public String getReplacementText() {
-        int titleIndex = random.nextInt(POEM_TITLES.size());
         int poemIndex1 = random.nextInt(ANCIENT_POEMS.size());
         int poemIndex2;
         do {
             poemIndex2 = random.nextInt(ANCIENT_POEMS.size());
         } while (poemIndex2 == poemIndex1);
-        
-        String title = POEM_TITLES.get(titleIndex);
-        String poem1 = ANCIENT_POEMS.get(poemIndex1);
-        String poem2 = ANCIENT_POEMS.get(poemIndex2);
-        
-        return title + "\n" + poem1 + "\n" + poem2;
+        return ANCIENT_POEMS.get(poemIndex1) + "\n" + ANCIENT_POEMS.get(poemIndex2);
     }
     
     /**
@@ -511,8 +516,11 @@ public class SensitiveWordService {
      * 重新加载词库
      */
     public void reload() {
-        trie.clear();
+        trie = new Trie();
+        totalLoadedWords = 0;
+        loadDefaultWords();
         loadSensitiveWords();
+        log.info("敏感词库加载完成, 词条数={}, trieEmpty={}", totalLoadedWords, trie.isEmpty());
     }
     
     /**

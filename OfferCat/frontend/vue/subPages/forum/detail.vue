@@ -228,7 +228,7 @@
 	import { emitForumCollectNotice } from '@/utils/forumCollectNotice.js'
 	import { removeCollectedForumPost, upsertCollectedForumPost } from '@/utils/forumFavorites.js'
 	import themeMixin from '@/utils/themeMixin.js'
-	import { checkContent, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { filterText, getRandomPoemPair } from '@/utils/sensitiveWords.js'
 	import { syncForumPostViews } from '@/utils/forumViewCount.js'
 
 	export default {
@@ -1033,10 +1033,11 @@
 			async sendComment() {
 				if (!this.commentText.trim()) return
 
-				const sensitiveResult = await checkContent(this.commentText)
+				const trimmedForFilter = String(this.commentText || '').trim()
+				const sensitiveResult = await filterText(trimmedForFilter)
 				if (sensitiveResult.hasSensitive) {
-					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none' })
-					this.commentText = sensitiveResult.replacement || getRandomPoemPair()
+					this.commentText = sensitiveResult.filteredText || getRandomPoemPair()
+					uni.showToast({ title: '内容包含敏感词，已自动替换为古诗', icon: 'none', duration: 2000 })
 				}
 
 				// 修复：兼容本地 user_v2 缓存结构
@@ -1049,6 +1050,7 @@
 
 				const currentReplyContext = this.replyContext
 				const trimmed = String(this.commentText || '').trim()
+				if (!trimmed) return
 				const payload = {
 					postId: this.postId,
 					userId: userId,
@@ -1112,7 +1114,8 @@
 						stack: e.stack,
 					}
 					console.error('sendComment error detail:', JSON.stringify(errDetail, null, 2))
-					uni.showToast({ title: e.message || '评论出错了，请检查日志', icon: 'none' })
+					const msg = (e && e.message) ? String(e.message) : '评论失败'
+					uni.showToast({ title: msg.includes('禁言') ? msg : (msg || '评论失败'), icon: 'none' })
 				}
 			}
 		}

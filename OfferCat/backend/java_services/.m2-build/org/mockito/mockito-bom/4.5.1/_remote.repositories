@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:01:49 CST 2026
+#Thu May 28 15:04:33 CST 2026
+mockito-bom-4.5.1.pom>alimaven=
 mockito-bom-4.5.1.pom>central=
 mockito-bom-4.5.1.pom>nexus-aliyun=

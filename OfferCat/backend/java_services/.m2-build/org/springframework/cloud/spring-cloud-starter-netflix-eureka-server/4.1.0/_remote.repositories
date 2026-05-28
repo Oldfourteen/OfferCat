@@ -1,6 +1,8 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 13:00:21 CST 2026
+#Thu May 28 15:03:45 CST 2026
+spring-cloud-starter-netflix-eureka-server-4.1.0.jar>alimaven=
 spring-cloud-starter-netflix-eureka-server-4.1.0.jar>central=
 spring-cloud-starter-netflix-eureka-server-4.1.0.jar>nexus-aliyun=
+spring-cloud-starter-netflix-eureka-server-4.1.0.pom>alimaven=
 spring-cloud-starter-netflix-eureka-server-4.1.0.pom>central=
 spring-cloud-starter-netflix-eureka-server-4.1.0.pom>nexus-aliyun=

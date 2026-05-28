@@ -1,4 +1,5 @@
 #NOTE: This is a Maven Resolver internal implementation file, its format can be changed without prior notice.
-#Wed May 20 12:38:26 CST 2026
-plexus-compilers-2.13.0.pom>nexus-aliyun=
+#Thu May 28 15:02:35 CST 2026
+plexus-compilers-2.13.0.pom>alimaven=
 plexus-compilers-2.13.0.pom>central=
+plexus-compilers-2.13.0.pom>nexus-aliyun=

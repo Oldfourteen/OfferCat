@@ -7,10 +7,12 @@ import com.offercat.student.dao.ForumPostMapper;
 import com.offercat.student.dto.ForumCommentDTO;
 import com.offercat.student.dto.ForumPostCreateDTO;
 import com.offercat.student.dto.ForumPostSearchDTO;
+import com.offercat.student.service.ForumMuteService;
 import com.offercat.student.service.ForumNotificationService;
 import com.offercat.student.service.ForumPostService;
 import com.offercat.student.vo.ForumCommentVO;
 import com.offercat.student.vo.ForumPostVO;
+import com.offercat.shared.sensitive.SensitiveWordService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -40,6 +42,19 @@ public class ForumPostServiceImpl implements ForumPostService {
 
     @Autowired
     private ForumNotificationService forumNotificationService;
+
+    @Autowired
+    private SensitiveWordService sensitiveWordService;
+
+    @Autowired
+    private ForumMuteService forumMuteService;
+
+    private String sanitizeForumText(String text) {
+        if (text == null) {
+            return null;
+        }
+        return sensitiveWordService.filterText(text);
+    }
 
     @Override
     public PageResult<ForumPostVO> searchPosts(ForumPostSearchDTO searchDTO) {
@@ -201,6 +216,10 @@ public class ForumPostServiceImpl implements ForumPostService {
         if (dto.getMentionUserIds() == null) {
             dto.setMentionUserIds(Collections.emptyList());
         }
+        forumMuteService.assertUserCanPost(dto.getUserId());
+        if (dto.getContent() != null) {
+            dto.setContent(sanitizeForumText(dto.getContent()));
+        }
         forumPostMapper.insertComment(dto);
         forumPostMapper.incrementCommentCount(dto.getPostId());
 
@@ -309,12 +328,17 @@ public class ForumPostServiceImpl implements ForumPostService {
         if (dto.getUserId() == null) {
             throw new IllegalArgumentException("用户ID不能为空");
         }
+        forumMuteService.assertUserCanPost(dto.getUserId());
         if (dto.getMentionUserIds() == null) {
             dto.setMentionUserIds(Collections.emptyList());
         }
         if (dto.getTitle() == null || dto.getTitle().isBlank()) {
             dto.setTitle("校园动态");
         }
+        if (dto.getContent() != null) {
+            dto.setContent(sanitizeForumText(dto.getContent()));
+        }
+        dto.setTitle(sanitizeForumText(dto.getTitle()));
 
         String json = null;
         if (dto.getImages() != null && !dto.getImages().isEmpty()) {

@@ -14,6 +14,45 @@
 		<!-- 页面内容 -->
 		<scroll-view class="page-content" scroll-y>
 			<!-- 客服热线区域 -->
+
+			<!-- 登录弹窗 -->
+			<view class="login-modal-overlay" v-if="showLoginModal" @click="handleLoginCancel">
+				<view class="login-modal" @click.stop>
+					<view class="login-modal-header">
+						<text class="login-modal-title">管理员登录</text>
+					</view>
+					<view class="login-modal-content">
+						<view class="login-input-group">
+							<text class="login-input-label">账号</text>
+							<input 
+								class="login-input" 
+								v-model="loginAccount" 
+								placeholder="请输入账号"
+								confirm-type="next"
+							/>
+						</view>
+						<view class="login-input-group">
+							<text class="login-input-label">密码</text>
+							<input 
+								class="login-input" 
+								v-model="loginPassword" 
+								placeholder="请输入密码"
+								type="password"
+								confirm-type="done"
+								@confirm="handleLoginConfirm"
+							/>
+						</view>
+					</view>
+					<view class="login-modal-footer">
+						<view class="login-btn login-cancel-btn" @click="handleLoginCancel">
+							<text class="login-btn-text">取消</text>
+						</view>
+						<view class="login-btn login-confirm-btn" @click="handleLoginConfirm">
+							<text class="login-btn-text">登录</text>
+						</view>
+					</view>
+				</view>
+			</view>
 			<view class="hotline-card">
 				<view class="hotline-content">
 					<text class="hotline-label">官方客服热线</text>
@@ -72,15 +111,43 @@ import themeMixin from '@/utils/themeMixin.js'
 		data() {
 			return {
 				faqList: [],
-				helpCenterBackIcon: HELP_CENTER_BACK_ICON
+				helpCenterBackIcon: HELP_CENTER_BACK_ICON,
+				showLoginModal: false,
+				loginAccount: '',
+				loginPassword: '',
+				loginFailedCount: 0,
+				lockUntil: 0,
+				lockDuration: 60000
 			}
 		},
 		onLoad() {
 			this.loadFaqList()
+			this.loadLockStatus()
 		},
 		methods: {
 			goBack() {
 				uni.navigateBack()
+			},
+			loadLockStatus() {
+				try {
+					const saved = uni.getStorageSync('admin_login_lock')
+					if (saved) {
+						const data = JSON.parse(saved)
+						this.lockUntil = data.lockUntil || 0
+						this.loginFailedCount = data.loginFailedCount || 0
+					}
+				} catch (_) {
+					this.lockUntil = 0
+					this.loginFailedCount = 0
+				}
+			},
+			saveLockStatus() {
+				try {
+					uni.setStorageSync('admin_login_lock', JSON.stringify({
+						lockUntil: this.lockUntil,
+						loginFailedCount: this.loginFailedCount
+					}))
+				} catch (_) {}
 			},
 			async loadFaqList() {
 				try {
@@ -95,9 +162,42 @@ import themeMixin from '@/utils/themeMixin.js'
 				}
 			},
 			navigateToManager() {
-				uni.navigateTo({
-					url: '/subPages/helpCenter/managerPage'
-				})
+				this.showLoginModal = true
+			},
+			handleLoginConfirm() {
+				const now = Date.now()
+				if (now < this.lockUntil) {
+					const remaining = Math.ceil((this.lockUntil - now) / 1000)
+					uni.showToast({
+						title: `请${remaining}秒后再试`,
+						icon: 'none'
+					})
+					return
+				}
+				if (this.loginAccount === 'root' && this.loginPassword === 'root') {
+					this.loginFailedCount = 0
+					this.lockUntil = 0
+					this.saveLockStatus()
+					this.showLoginModal = false
+					this.loginAccount = ''
+					this.loginPassword = ''
+					uni.navigateTo({
+						url: '/subPages/helpCenter/managerPage'
+					})
+				} else {
+					this.loginFailedCount++
+					this.lockUntil = now + this.lockDuration
+					this.saveLockStatus()
+					uni.showToast({
+						title: '账号或密码错误，请1分钟后再试',
+						icon: 'none'
+					})
+				}
+			},
+			handleLoginCancel() {
+				this.showLoginModal = false
+				this.loginAccount = ''
+				this.loginPassword = ''
 			},
 			navigateToOnlineService() {
 				uni.navigateTo({
@@ -122,6 +222,128 @@ import themeMixin from '@/utils/themeMixin.js'
 		display: flex;
 		flex-direction: column;
 		background: #f0f3f9;
+	}
+
+	.login-modal-overlay {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1000;
+	}
+
+	.login-modal {
+		width: 600rpx;
+		background: #ffffff;
+		border-radius: 28rpx;
+		overflow: hidden;
+		box-shadow: 0 20rpx 60rpx rgba(0, 0, 0, 0.3);
+	}
+
+	.login-modal-header {
+		padding: 32rpx;
+		text-align: center;
+		border-bottom: 1rpx solid rgba(93, 118, 189, 0.1);
+	}
+
+	.login-modal-title {
+		font-size: 32rpx;
+		font-weight: 700;
+		color: #2d3748;
+	}
+
+	.login-modal-content {
+		padding: 32rpx;
+	}
+
+	.login-input-group {
+		margin-bottom: 24rpx;
+	}
+
+	.login-input-group:last-child {
+		margin-bottom: 0;
+	}
+
+	.login-input-label {
+		display: block;
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #4a5568;
+		margin-bottom: 12rpx;
+	}
+
+	.login-input {
+		width: 100%;
+		height: 80rpx;
+		background: #f7f9fc;
+		border-radius: 16rpx;
+		padding: 0 24rpx;
+		font-size: 28rpx;
+		color: #2d3748;
+		border: 2rpx solid rgba(93, 118, 189, 0.1);
+		box-sizing: border-box;
+		transition: all 0.2s ease;
+
+		&:focus {
+			border-color: #5d76bd;
+			background: #ffffff;
+		}
+	}
+
+	.login-modal-footer {
+		display: flex;
+		gap: 20rpx;
+		padding: 0 32rpx 32rpx;
+	}
+
+	.login-btn {
+		flex: 1;
+		height: 80rpx;
+		border-radius: 16rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		transition: all 0.2s ease;
+
+		&:active {
+			transform: scale(0.98);
+		}
+
+		.login-btn-text {
+			font-size: 28rpx;
+			font-weight: 600;
+		}
+	}
+
+	.login-cancel-btn {
+		background: #f0f4fa;
+		border: 1rpx solid rgba(93, 118, 189, 0.2);
+
+		.login-btn-text {
+			color: #5d76bd;
+		}
+
+		&:active {
+			background: #e0e4f0;
+		}
+	}
+
+	.login-confirm-btn {
+		background: #5d76bd;
+		box-shadow: 0 6rpx 20rpx rgba(93, 118, 189, 0.35);
+
+		.login-btn-text {
+			color: #ffffff;
+		}
+
+		&:active {
+			box-shadow: 0 4rpx 12rpx rgba(93, 118, 189, 0.25);
+		}
 	}
 
 	.nav-bar {

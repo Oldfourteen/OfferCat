@@ -34,6 +34,11 @@ public class Trie {
             return;
         }
         
+        word = normalizeText(word);
+        if (word.isEmpty()) {
+            return;
+        }
+        
         TrieNode current = root;
         for (int i = 0; i < word.length(); i++) {
             char c = word.charAt(i);
@@ -161,7 +166,7 @@ public class Trie {
     
     /**
      * 文本规范化处理
-     * 包括：全角转半角、小写转换、去除特殊字符
+     * 包括：全角转半角、小写转换、保留所有字符
      * @param text 原始文本
      * @return 规范化后的文本
      */
@@ -187,13 +192,11 @@ public class Trie {
                 c = (char) (c - '\uFF10' + '0');
             }
             
-            // 转换为小写
+            // 转换为小写（只对字母有效，中文不受影响）
             c = Character.toLowerCase(c);
             
-            // 保留字母、数字和汉字
-            if (Character.isLetterOrDigit(c) || Character.isIdeographic(c)) {
-                sb.append(c);
-            }
+            // 保留所有字符
+            sb.append(c);
         }
         
         return sb.toString();

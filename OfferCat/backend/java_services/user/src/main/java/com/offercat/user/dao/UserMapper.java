@@ -90,4 +90,41 @@ public interface UserMapper {
             @Param("keyword") String keyword,
             @Param("numericKeyword") Long numericKeyword,
             @Param("likeKeyword") String likeKeyword);
+
+    @Update("UPDATE `user` SET user_role = #{userRole}, update_time = NOW() WHERE user_id = #{userId}")
+    int updateUserRole(@Param("userId") Long userId, @Param("userRole") Integer userRole);
+
+    @Select({"<script>",
+            "SELECT * FROM `user`",
+            "WHERE user_status = 1",
+            "<if test='roleFilter != null'>",
+            "AND user_role = #{roleFilter}",
+            "</if>",
+            "<if test='keyword != null and keyword != \"\"'>",
+            "AND (1 = 0",
+            "<if test='numericKeyword != null'> OR user_id = #{numericKeyword} </if>",
+            "<if test='prefixKeyword != null'> OR nickname LIKE #{prefixKeyword} OR phone LIKE #{prefixKeyword} </if>",
+            "<if test='containsLikeKeyword != null'> OR nickname LIKE #{containsLikeKeyword} OR phone LIKE #{containsLikeKeyword} </if>",
+            ")",
+            "</if>",
+            "ORDER BY",
+            "CASE",
+            "<if test='numericKeyword != null'> WHEN user_id = #{numericKeyword} THEN 110 </if>",
+            "WHEN nickname = #{keyword} THEN 100",
+            "WHEN nickname LIKE #{prefixKeyword} THEN 90",
+            "WHEN nickname LIKE #{containsLikeKeyword} THEN 80",
+            "WHEN phone LIKE #{prefixKeyword} THEN 70",
+            "WHEN phone LIKE #{containsLikeKeyword} THEN 60",
+            "ELSE 0 END DESC,",
+            "LENGTH(COALESCE(nickname, '')) ASC,",
+            "user_id DESC",
+            "LIMIT #{limit}",
+            "</script>"})
+    List<User> searchUserSuggestions(
+            @Param("keyword") String keyword,
+            @Param("numericKeyword") Long numericKeyword,
+            @Param("prefixKeyword") String prefixKeyword,
+            @Param("containsLikeKeyword") String containsLikeKeyword,
+            @Param("limit") Integer limit,
+            @Param("roleFilter") Integer roleFilter);
 }

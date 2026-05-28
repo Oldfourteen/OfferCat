@@ -9,10 +9,6 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-/**
- * 敏感词检测控制器
- * 提供敏感词检测和过滤服务
- */
 @RestController
 @RequestMapping("/sensitive")
 @CrossOrigin(origins = "*")
@@ -21,11 +17,6 @@ public class SensitiveWordController {
     @Autowired
     private SensitiveWordService sensitiveWordService;
 
-    /**
-     * 检测文本是否包含敏感词
-     * @param text 待检测文本
-     * @return 检测结果
-     */
     @PostMapping("/check")
     public ResponseResult<Map<String, Object>> checkSensitiveWord(@RequestBody Map<String, String> request) {
         String text = request.get("text");
@@ -43,11 +34,6 @@ public class SensitiveWordController {
         return ResponseResult.success(result);
     }
 
-    /**
-     * 检测并过滤文本（直接返回过滤后的结果）
-     * @param text 待过滤文本
-     * @return 过滤后的文本
-     */
     @PostMapping("/filter")
     public ResponseResult<Map<String, Object>> filterText(@RequestBody Map<String, String> request) {
         String text = request.get("text");
@@ -68,12 +54,39 @@ public class SensitiveWordController {
         return ResponseResult.success(result);
     }
 
-    /**
-     * 获取替换用的古诗
-     * @return 两句随机古诗
-     */
     @GetMapping("/poem")
     public ResponseResult<String> getReplacementPoem() {
         return ResponseResult.success(sensitiveWordService.getReplacementText());
+    }
+    
+    @PostMapping("/test")
+    public ResponseResult<Map<String, Object>> testSensitiveMatch(@RequestBody Map<String, String> request) {
+        String text = request.get("text");
+        Map<String, Object> result = new HashMap<>();
+        
+        boolean containsSensitive = sensitiveWordService.containsSensitiveWord(text);
+        List<String> foundWords = sensitiveWordService.findAllSensitiveWords(text);
+        
+        result.put("inputText", text);
+        result.put("hasSensitive", containsSensitive);
+        result.put("foundWords", foundWords);
+        result.put("foundCount", foundWords.size());
+        
+        if (containsSensitive) {
+            result.put("replacement", sensitiveWordService.getReplacementText());
+        }
+        
+        return ResponseResult.success(result);
+    }
+    
+    @GetMapping("/status")
+    public ResponseResult<Map<String, Object>> getStatus() {
+        return ResponseResult.success(sensitiveWordService.getLoadStats());
+    }
+    
+    @PostMapping("/reload")
+    public ResponseResult<Map<String, Object>> reload() {
+        sensitiveWordService.reload();
+        return ResponseResult.success(sensitiveWordService.getLoadStats());
     }
 }

@@ -13,6 +13,33 @@
 
 		<!-- 页面内容 -->
 		<scroll-view class="page-content" scroll-y @scrolltolower="loadMore" refresher-enabled @refresherrefresh="onRefresh" :refresher-triggered="refreshing">
+			<!-- 1. 管理员展示模块 -->
+			<view class="section-card">
+				<view class="section-header">
+					<text class="section-title">系统管理员</text>
+					<text class="admin-count">共 {{ staticAdminAvatars.length }} 位</text>
+				</view>
+				<view class="admin-list-row">
+					<view class="admin-item" v-for="(avatar, idx) in staticAdminAvatars.slice(0, 4)" :key="idx">
+						<view class="admin-avatar admin-avatar-image">
+							<image class="admin-avatar-img" :src="avatar.src" mode="aspectFill" />
+						</view>
+					</view>
+				</view>
+				<view class="admin-list-row">
+					<view class="admin-item" v-for="(avatar, idx) in staticAdminAvatars.slice(4)" :key="idx">
+						<view class="admin-avatar admin-avatar-image">
+							<image class="admin-avatar-img" :src="avatar.src" mode="aspectFill" />
+						</view>
+					</view>
+					<view class="admin-item admin-add" @click="openAdminPicker">
+						<view class="admin-avatar admin-add-avatar">
+							<text class="admin-add-plus">+</text>
+						</view>
+					</view>
+				</view>
+			</view>
+
 			<!-- 0. 用户搜索模块 -->
 			<view class="section-card">
 				<view class="section-header">
@@ -24,13 +51,33 @@
 						<input 
 							class="search-input" 
 							v-model="searchKeyword" 
-							placeholder="输入用户ID或姓名搜索"
+							placeholder="输入用户名或手机号"
 							confirm-type="search"
+							@input="onSearchInput"
+							@focus="onSearchFocus"
+							@blur="onSearchBlur"
 							@confirm="searchUser"
 						/>
 					</view>
 					<view class="search-btn" @click="searchUser">
 						<text class="search-btn-text">搜索</text>
+					</view>
+				</view>
+				<view class="suggest-dropdown" v-if="showSuggestDropdown">
+					<view class="suggest-item" v-for="u in searchSuggestions" :key="u.userId" @click="selectSuggestedUser(u)">
+						<view class="suggest-avatar">
+							<text class="avatar-text">{{ getAvatarText(u.username || u.nickname || '用户') }}</text>
+						</view>
+						<view class="suggest-info">
+							<text class="suggest-name">{{ u.nickname || u.username || u.phone || '用户' }}</text>
+							<text class="suggest-meta">ID: {{ u.userId }}<text v-if="u.phone"> · {{ u.phone }}</text></text>
+						</view>
+					</view>
+					<view class="suggest-empty" v-if="searchKeyword.trim() !== '' && !suggestLoading && searchSuggestions.length === 0">
+						<text class="suggest-empty-text">暂无匹配用户</text>
+					</view>
+					<view class="suggest-loading" v-if="suggestLoading">
+						<text class="suggest-loading-text">搜索中…</text>
 					</view>
 				</view>
 				<view class="search-result" v-if="searchResult.length > 0">
@@ -56,25 +103,6 @@
 				</view>
 				<view class="empty-state" v-if="hasSearched && searchResult.length === 0">
 					<text class="empty-text">未找到匹配的用户</text>
-				</view>
-			</view>
-
-			<!-- 1. 管理员展示模块 -->
-			<view class="section-card">
-				<view class="section-header">
-					<text class="section-title">系统管理员</text>
-					<text class="admin-count">共 {{ adminList.length }} 位</text>
-				</view>
-				<view class="admin-list" v-if="adminList.length > 0">
-					<view class="admin-item" v-for="admin in adminList" :key="admin.userId">
-						<view class="admin-avatar">
-							<text class="avatar-text">{{ getAvatarText(admin.nickname || admin.username || '管理员') }}</text>
-						</view>
-						<text class="admin-name">{{ admin.nickname || admin.username || '管理员' }}</text>
-					</view>
-				</view>
-				<view class="empty-state" v-else>
-					<text class="empty-text">暂无管理员信息</text>
 				</view>
 			</view>
 
@@ -208,6 +236,42 @@
 			</view>
 		</view>
 
+		<view class="action-panel-overlay" v-if="showAdminPicker" @click="closeAdminPicker">
+			<view class="action-panel admin-picker" @click.stop>
+				<view class="panel-header">
+					<text class="panel-title">添加管理员</text>
+					<view class="panel-close" @click="closeAdminPicker">
+						<text class="close-icon">×</text>
+					</view>
+				</view>
+				<view class="panel-content">
+					<view class="picker-search">
+						<view class="search-input-wrap picker-input">
+							<text class="search-icon">🔍</text>
+							<input class="search-input" v-model="adminPickerKeyword" placeholder="输入用户名或手机号" @input="onAdminPickerInput" />
+						</view>
+					</view>
+					<view class="picker-list" v-if="adminPickerList.length > 0">
+						<view class="picker-item" v-for="u in adminPickerList" :key="u.userId" @click="confirmPromote(u)">
+							<view class="suggest-avatar">
+								<text class="avatar-text">{{ getAvatarText(u.nickname || u.username || '用户') }}</text>
+							</view>
+							<view class="suggest-info">
+								<text class="suggest-name">{{ u.nickname || u.username || u.phone || '用户' }}</text>
+								<text class="suggest-meta">ID: {{ u.userId }}<text v-if="u.phone"> · {{ u.phone }}</text></text>
+							</view>
+						</view>
+					</view>
+					<view class="suggest-loading" v-if="adminPickerLoading">
+						<text class="suggest-loading-text">加载中…</text>
+					</view>
+					<view class="suggest-empty" v-if="!adminPickerLoading && adminPickerKeyword.trim() !== '' && adminPickerList.length === 0">
+						<text class="suggest-empty-text">暂无匹配用户</text>
+					</view>
+				</view>
+			</view>
+		</view>
+
 		<!-- 加载状态提示 -->
 		<view class="loading-toast" v-if="loading">
 			<view class="loading-spinner"></view>
@@ -220,6 +284,7 @@
 	import themeMixin from '@/utils/themeMixin.js'
 	import { getApiBase } from '@/api/config.js'
 	import { getToken } from '@/utils/token.js'
+	import { getUser, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -230,11 +295,35 @@
 				postList: [],
 				searchKeyword: '',
 				searchResult: [],
+				searchSuggestions: [],
+				showSuggestDropdown: false,
+				suggestLoading: false,
+				suggestSeq: 0,
+				suggestTimer: null,
+				suggestHideTimer: null,
+				suggestAuthWarned: false,
+				operatorUserId: null,
+				staticAdminAvatars: [
+					{ src: '/static/admin-avatars/b_07fd36d5bdd3cb7538e7f905863a2ee6.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_2f1809da100a08380609c334bdd6e68e.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_4fff4095e74eb095fff09dc2e4208b80.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_64f428dba014b897c78f91f775229f6f.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_9622b5bf4b33ebcd75f2523a9ea1f6f8.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_d1e72e74c3566d23300e10f279771597.jpg', name: '系统管理员' },
+					{ src: '/static/admin-avatars/b_e60b3feeae90e497c7fe8698ee4b8f6b.jpg', name: '系统管理员' },
+				],
 				hasSearched: false,
 				showMutedDropdown: true,
 				showPostDropdown: true,
 				showActionPanel: false,
 				showTimePickerPanel: false,
+				showAdminPicker: false,
+				adminPickerKeyword: '',
+				adminPickerList: [],
+				adminPickerLoading: false,
+				adminPickerSeq: 0,
+				adminPickerTimer: null,
+				adminPickerAuthWarned: false,
 				loading: false,
 				refreshing: false,
 				currentMutedUser: null,
@@ -251,9 +340,7 @@
 			}
 		},
 		onLoad() {
-			this.loadAdminList()
-			this.loadMutedUsers()
-			this.loadPostList()
+			this.bootstrap()
 		},
 		computed: {
 			themeClass() {
@@ -261,6 +348,27 @@
 			}
 		},
 		methods: {
+			async bootstrap() {
+				await this.ensureOperatorUserId()
+				this.loadAdminList()
+				this.loadMutedUsers()
+				this.loadPostList()
+				this.prefetchAdminPicker()
+			},
+			async ensureOperatorUserId() {
+				let u = getUser() || uni.getStorageSync('user') || null
+				let uid = resolveStoredUserId(u)
+				if (uid == null && getToken()) {
+					await syncUserProfileFromServer({ timeout: 8000 })
+					u = getUser() || uni.getStorageSync('user') || null
+					uid = resolveStoredUserId(u)
+				}
+				this.operatorUserId = uid
+				if (this.operatorUserId == null) {
+					uni.showToast({ title: '请先登录', icon: 'none' })
+					uni.navigateTo({ url: '/pages/login/login' })
+				}
+			},
 			goBack() {
 				uni.navigateBack()
 			},
@@ -296,54 +404,259 @@
 			togglePostDropdown() {
 				this.showPostDropdown = !this.showPostDropdown
 			},
+			getOperatorUserId() {
+				if (this.operatorUserId) return this.operatorUserId
+				const u = getUser() || uni.getStorageSync('user') || null
+				return resolveStoredUserId(u)
+			},
+			onSearchFocus() {
+				if (this.searchKeyword.trim() !== '' && (this.searchSuggestions.length > 0 || this.suggestLoading)) {
+					this.showSuggestDropdown = true
+				}
+			},
+			onSearchBlur() {
+				if (this.suggestHideTimer) clearTimeout(this.suggestHideTimer)
+				this.suggestHideTimer = setTimeout(() => {
+					this.showSuggestDropdown = false
+				}, 120)
+			},
+			onSearchInput(e) {
+				if (e && e.detail && typeof e.detail.value === 'string') {
+					this.searchKeyword = e.detail.value
+				}
+				const k = this.searchKeyword.trim()
+				this.hasSearched = false
+				if (!k) {
+					this.searchSuggestions = []
+					this.showSuggestDropdown = false
+					return
+				}
+				this.showSuggestDropdown = true
+				this.scheduleSuggest(k, 'search')
+			},
+			scheduleSuggest(keyword, mode) {
+				if (mode === 'search') {
+					if (this.suggestTimer) clearTimeout(this.suggestTimer)
+					this.suggestTimer = setTimeout(() => this.fetchSuggest(keyword), 180)
+					return
+				}
+				if (mode === 'picker') {
+					if (this.adminPickerTimer) clearTimeout(this.adminPickerTimer)
+					this.adminPickerTimer = setTimeout(() => this.fetchStudentSuggest(keyword), 180)
+				}
+			},
+			fetchSuggest(keyword) {
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					this.suggestLoading = false
+					this.searchSuggestions = []
+					this.showSuggestDropdown = false
+					uni.showToast({ title: '请先登录管理员账号', icon: 'none' })
+					return
+				}
+				const seq = ++this.suggestSeq
+				this.suggestLoading = true
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/search/user`,
+					method: 'GET',
+					header: hdr,
+					data: { keyword },
+					success: (res) => {
+						if (seq !== this.suggestSeq) return
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							const list = res.data.data
+								.map((u) => ({
+									userId: u.userId,
+									nickname: u.nickname,
+									username: u.username,
+									phone: u.phone,
+									email: u.email,
+								}))
+								.filter((u) => u.userId != null)
+								.slice(0, 8)
+							if (list.length > 0) {
+								this.searchSuggestions = list
+								return
+							}
+						}
+						this.fetchSuggestFallbackByStudentService(operatorUserId, keyword, 8, seq)
+					},
+					fail: () => {
+						if (seq !== this.suggestSeq) return
+						this.fetchSuggestFallbackByStudentService(operatorUserId, keyword, 8, seq)
+					},
+					complete: () => {
+						if (seq !== this.suggestSeq) return
+						this.suggestLoading = false
+					}
+				})
+			},
+			fetchSuggestFallbackByStudentService(operatorUserId, keyword, limit, seq) {
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/forum/user-suggest`,
+					method: 'GET',
+					header: hdr,
+					data: { operatorUserId, keyword, limit },
+					success: (res) => {
+						if (seq !== this.suggestSeq) return
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							const list = res.data.data
+								.map((u) => ({
+									userId: u.userId,
+									nickname: u.nickname,
+									username: u.username,
+									phone: u.phone,
+									email: u.email,
+								}))
+								.filter((u) => u.userId != null)
+								.slice(0, limit)
+							this.searchSuggestions = list
+							return
+						}
+						this.searchSuggestions = []
+						const m = res && res.data && (res.data.msg || res.data.message)
+						if (m && !this.suggestAuthWarned) {
+							this.suggestAuthWarned = true
+							uni.showToast({ title: String(m), icon: 'none' })
+						}
+					},
+					fail: () => {
+						if (seq !== this.suggestSeq) return
+						this.searchSuggestions = []
+					},
+				})
+			},
+			selectSuggestedUser(u) {
+				if (!u) return
+				const selected = this.normalizeUserForActions(u)
+				this.searchKeyword = (selected.username || '').trim()
+				this.hasSearched = true
+				this.showSuggestDropdown = false
+				this.searchResult = [selected]
+				this.showMuteActionPanel(selected)
+			},
 			searchUser() {
-				if (!this.searchKeyword.trim()) {
+				const keyword = this.searchKeyword.trim()
+				if (!keyword) {
 					uni.showToast({ title: '请输入搜索关键词', icon: 'none' })
 					return
 				}
-				this.loading = true
 				this.hasSearched = true
+				if (this.searchSuggestions.length > 0) {
+					this.searchResult = this.searchSuggestions.map((u) => this.normalizeUserForActions(u))
+					this.showSuggestDropdown = false
+					return
+				}
+				this.loading = true
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					this.loading = false
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
+				const seq = ++this.suggestSeq
+				this.suggestLoading = true
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/admin/search/user`,
+					url: `${getApiBase()}/api/admin/search/user`,
 					method: 'GET',
 					header: hdr,
-					data: { keyword: this.searchKeyword.trim() },
+					data: { keyword },
 					success: (res) => {
-						if (res.statusCode === 200 && res.data) {
-							if (res.data.code === 200 && Array.isArray(res.data.data)) {
-								this.searchResult = res.data.data.map(user => ({
-									userId: user.userId,
-									username: user.username || user.nickname || user.phone,
-									phone: user.phone,
-									email: user.email
+						if (seq !== this.suggestSeq) return
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							const list = res.data.data
+								.map((u) => ({
+									userId: u.userId,
+									nickname: u.nickname,
+									username: u.username,
+									phone: u.phone,
+									email: u.email,
 								}))
-							} else {
-								this.searchResult = []
-							}
-						} else {
+								.filter((u) => u.userId != null)
+							this.searchSuggestions = list
+							this.searchResult = list.map((u) => this.normalizeUserForActions(u))
+							if (list.length > 0) return
+							this.searchSuggestions = []
 							this.searchResult = []
+							this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
+						} else {
+							this.searchSuggestions = []
+							this.searchResult = []
+							this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
 						}
 					},
-					fail: () => { this.searchResult = [] },
-					complete: () => { this.loading = false }
+					fail: () => {
+						if (seq !== this.suggestSeq) return
+						this.searchSuggestions = []
+						this.searchResult = []
+						this.searchUserFallbackByStudentService(operatorUserId, keyword, seq)
+					},
+					complete: () => {
+						if (seq !== this.suggestSeq) return
+						this.suggestLoading = false
+						this.loading = false
+						this.showSuggestDropdown = false
+					}
+				})
+			},
+			searchUserFallbackByStudentService(operatorUserId, keyword, seq) {
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/forum/user-suggest`,
+					method: 'GET',
+					header: hdr,
+					data: { operatorUserId, keyword, limit: 10 },
+					success: (res) => {
+						if (seq !== this.suggestSeq) return
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							const list = res.data.data
+								.map((u) => ({
+									userId: u.userId,
+									nickname: u.nickname,
+									username: u.username,
+									phone: u.phone,
+									email: u.email,
+								}))
+								.filter((u) => u.userId != null)
+							this.searchSuggestions = list
+							this.searchResult = list.map((u) => this.normalizeUserForActions(u))
+							return
+						}
+						const m = res && res.data && (res.data.msg || res.data.message)
+						if (m) uni.showToast({ title: String(m), icon: 'none' })
+					},
 				})
 			},
 			loadAdminList() {
 				const hdr = this.getAuthHeader()
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					this.adminList = []
+					uni.showToast({ title: '请先登录管理员账号', icon: 'none' })
+					return
+				}
 				uni.request({
-					url: `${getApiBase()}/admin/forum/admins`,
+					url: `${getApiBase()}/api/admin/forum/admins`,
 					method: 'GET',
 					header: hdr,
+					data: { operatorUserId },
 					success: (res) => {
 						if (res.statusCode === 200 && res.data && res.data.code === 200) {
 							this.adminList = Array.isArray(res.data.data) ? res.data.data : []
-						} else {
-							this.adminList = [{ userId: 1, username: '系统管理员', nickname: '管理员' }]
+							return
+						}
+						this.adminList = []
+						const c = res && res.data && res.data.code
+						if ((c === 401 || c === 403) && !this.adminPickerAuthWarned) {
+							this.adminPickerAuthWarned = true
+							uni.showToast({ title: res.data?.msg || '无管理员权限', icon: 'none' })
 						}
 					},
 					fail: () => {
-						this.adminList = [{ userId: 1, username: '系统管理员', nickname: '管理员' }]
+						this.adminList = []
 					}
 				})
 			},
@@ -351,7 +664,7 @@
 				this.loading = true
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/admin/mute/list`,
+					url: `${getApiBase()}/api/admin/mute/list`,
 					method: 'GET',
 					header: hdr,
 					success: (res) => {
@@ -380,8 +693,14 @@
 			loadPostList() {
 				this.loading = true
 				const hdr = this.getAuthHeader()
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					this.postList = []
+					this.loading = false
+					return
+				}
 				uni.request({
-					url: `${getApiBase()}/admin/forum/search-all`,
+					url: `${getApiBase()}/api/admin/forum/search-all?operatorUserId=${encodeURIComponent(String(operatorUserId))}`,
 					method: 'POST',
 					header: hdr,
 					data: {},
@@ -451,12 +770,13 @@
 					uni.showToast({ title: '请选择禁言时长', icon: 'none' })
 					return
 				}
+				const operatorId = this.getOperatorUserId() || 0
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/admin/mute`,
+					url: `${getApiBase()}/api/admin/mute`,
 					method: 'POST',
 					header: hdr,
-					data: { userId: this.currentMutedUser.userId, duration: this.selectedDuration },
+					data: { userId: this.currentMutedUser.userId, duration: this.selectedDuration, operatorId },
 					success: (res) => {
 						if (res.data && (res.data.success === true || res.data.code === 200)) {
 							uni.showToast({ title: '禁言设置成功', icon: 'success' })
@@ -481,7 +801,7 @@
 			executeUnmute() {
 				const hdr = this.getAuthHeader()
 				uni.request({
-					url: `${getApiBase()}/admin/unmute/${this.currentMutedUser.userId}`,
+					url: `${getApiBase()}/api/admin/unmute/${this.currentMutedUser.userId}`,
 					method: 'POST',
 					header: hdr,
 					success: (res) => {
@@ -504,11 +824,26 @@
 					success: (res) => { if (res.confirm) this.executeDeletePost(post.postId) }
 				})
 			},
+			normalizeUserForActions(u) {
+				if (!u) return null
+				const username = (u.nickname || u.username || u.phone || '用户') + ''
+				return {
+					userId: u.userId,
+					username,
+					phone: u.phone,
+					email: u.email
+				}
+			},
 			executeDeletePost(postId) {
 				const hdr = this.getAuthHeader()
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
 				uni.request({
-					url: `${getApiBase()}/admin/forum/delete/${postId}`,
-					method: 'DELETE',
+					url: `${getApiBase()}/api/admin/forum/delete/${postId}?operatorUserId=${encodeURIComponent(String(operatorUserId))}`,
+					method: 'POST',
 					header: hdr,
 					success: (res) => {
 						if (res.data && (res.data.success === true || res.data.code === 200)) {
@@ -520,7 +855,161 @@
 					},
 					fail: () => { uni.showToast({ title: '网络错误', icon: 'none' }) }
 				})
-			}
+			},
+			openAdminAction(admin) {
+				if (!admin || !admin.userId) return
+				uni.showActionSheet({
+					itemList: ['降级为普通用户'],
+					success: (res) => {
+						if (res.tapIndex === 0) {
+							this.confirmDemote(admin)
+						}
+					}
+				})
+			},
+			confirmDemote(admin) {
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
+				uni.showModal({
+					title: '确认降级',
+					content: `确定将「${admin.nickname || admin.username || '管理员'}」降级为普通用户吗？`,
+					confirmColor: '#ff4d4f',
+					success: (res) => {
+						if (res.confirm) {
+							this.executeDemote(admin.userId, operatorUserId)
+						}
+					}
+				})
+			},
+			executeDemote(userId, operatorUserId) {
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/forum/demote/${encodeURIComponent(String(userId))}?operatorUserId=${encodeURIComponent(String(operatorUserId))}`,
+					method: 'POST',
+					header: hdr,
+					success: (res) => {
+						if (res.statusCode === 200 && res.data && res.data.code === 200) {
+							uni.showToast({ title: '已降级', icon: 'success' })
+							this.loadAdminList()
+						} else {
+							uni.showToast({ title: res.data?.msg || '操作失败', icon: 'none' })
+						}
+					},
+					fail: () => uni.showToast({ title: '网络错误', icon: 'none' }),
+				})
+			},
+			openAdminPicker() {
+				this.showAdminPicker = true
+				this.adminPickerKeyword = ''
+				this.adminPickerList = []
+				this.adminPickerLoading = false
+			},
+			closeAdminPicker() {
+				this.showAdminPicker = false
+				this.adminPickerKeyword = ''
+				this.adminPickerList = []
+				this.adminPickerLoading = false
+			},
+			prefetchAdminPicker() {
+				this.adminPickerKeyword = ''
+				this.adminPickerList = []
+			},
+			onAdminPickerInput(e) {
+				if (e && e.detail && typeof e.detail.value === 'string') {
+					this.adminPickerKeyword = e.detail.value
+				}
+				const k = this.adminPickerKeyword.trim()
+				if (!k) {
+					this.adminPickerList = []
+					return
+				}
+				this.scheduleSuggest(k, 'picker')
+			},
+			fetchStudentSuggest(keyword) {
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					this.adminPickerLoading = false
+					this.adminPickerList = []
+					uni.showToast({ title: '请先登录管理员账号', icon: 'none' })
+					return
+				}
+				const seq = ++this.adminPickerSeq
+				this.adminPickerLoading = true
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/search/user`,
+					method: 'GET',
+					header: hdr,
+					data: { keyword },
+					success: (res) => {
+						if (seq !== this.adminPickerSeq) return
+						if (res.statusCode === 200 && res.data && res.data.code === 200 && Array.isArray(res.data.data)) {
+							const list = res.data.data
+								.map((u) => ({
+									userId: u.userId,
+									nickname: u.nickname,
+									username: u.username,
+									phone: u.phone,
+									email: u.email,
+								}))
+								.filter((u) => u.userId != null)
+							this.adminPickerList = list
+							return
+						}
+						this.adminPickerList = []
+						const c = res && res.data && res.data.code
+						if ((c === 401 || c === 403) && !this.adminPickerAuthWarned) {
+							this.adminPickerAuthWarned = true
+							uni.showToast({ title: res.data?.msg || '无管理员权限', icon: 'none' })
+						}
+					},
+					fail: () => {
+						if (seq !== this.adminPickerSeq) return
+						this.adminPickerList = []
+					},
+					complete: () => {
+						if (seq !== this.adminPickerSeq) return
+						this.adminPickerLoading = false
+					}
+				})
+			},
+			confirmPromote(u) {
+				if (!u || !u.userId) return
+				const operatorUserId = this.getOperatorUserId()
+				if (!operatorUserId) {
+					uni.showToast({ title: '缺少登录信息', icon: 'none' })
+					return
+				}
+				uni.showModal({
+					title: '确认添加管理员',
+					content: `确定将「${u.nickname || u.username || u.phone || '用户'}」升级为管理员吗？`,
+					confirmColor: '#5d76bd',
+					success: (res) => {
+						if (res.confirm) this.executePromote(u.userId, operatorUserId)
+					}
+				})
+			},
+			executePromote(userId, operatorUserId) {
+				const hdr = this.getAuthHeader()
+				uni.request({
+					url: `${getApiBase()}/api/admin/forum/promote/${encodeURIComponent(String(userId))}?operatorUserId=${encodeURIComponent(String(operatorUserId))}`,
+					method: 'POST',
+					header: hdr,
+					success: (res) => {
+						if (res.statusCode === 200 && res.data && res.data.code === 200) {
+							uni.showToast({ title: '已添加', icon: 'success' })
+							this.closeAdminPicker()
+							this.loadAdminList()
+						} else {
+							uni.showToast({ title: res.data?.msg || '操作失败', icon: 'none' })
+						}
+					},
+					fail: () => uni.showToast({ title: '网络错误', icon: 'none' }),
+				})
+			},
 		}
 	}
 </script>
@@ -596,7 +1085,7 @@
 	.section-card {
 		background: #ffffff;
 		border-radius: 28rpx;
-		padding: 28rpx 24rpx 32rpx;
+		padding: 28rpx 24rpx 48rpx;
 		margin-bottom: 28rpx;
 		box-shadow: 0 8rpx 32rpx rgba(93, 118, 189, 0.1), 0 2rpx 8rpx rgba(93, 118, 189, 0.05), inset 0 1rpx 0 rgba(255, 255, 255, 0.8);
 		position: relative;
@@ -659,6 +1148,82 @@
 		display: flex;
 		gap: 16rpx;
 		margin-bottom: 24rpx;
+		position: relative;
+	}
+
+	.suggest-dropdown {
+		margin-top: -8rpx;
+		background: #ffffff;
+		border-radius: 18rpx;
+		border: 1rpx solid rgba(93, 118, 189, 0.12);
+		box-shadow: 0 10rpx 26rpx rgba(93, 118, 189, 0.16);
+		overflow: hidden;
+	}
+
+	.suggest-item {
+		display: flex;
+		align-items: center;
+		padding: 18rpx 18rpx;
+		transition: background 0.2s ease;
+
+		&:active {
+			background: #f0f4fa;
+		}
+	}
+
+	.suggest-avatar {
+		width: 56rpx;
+		height: 56rpx;
+		background: #5d76bd;
+		border-radius: 50%;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		flex-shrink: 0;
+
+		.avatar-text {
+			font-size: 24rpx;
+			color: #ffffff;
+			font-weight: 700;
+		}
+	}
+
+	.suggest-info {
+		flex: 1;
+		margin-left: 14rpx;
+		min-width: 0;
+	}
+
+	.suggest-name {
+		display: block;
+		font-size: 26rpx;
+		font-weight: 600;
+		color: #2d3748;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.suggest-meta {
+		display: block;
+		margin-top: 4rpx;
+		font-size: 22rpx;
+		color: #718096;
+		overflow: hidden;
+		text-overflow: ellipsis;
+		white-space: nowrap;
+	}
+
+	.suggest-empty,
+	.suggest-loading {
+		padding: 18rpx 18rpx;
+		text-align: center;
+	}
+
+	.suggest-empty-text,
+	.suggest-loading-text {
+		font-size: 24rpx;
+		color: #a0aec0;
 	}
 
 	.search-input-wrap {
@@ -813,35 +1378,45 @@
 		color: #a0aec0;
 	}
 
-	.admin-list {
+	.admin-list-row {
 		display: flex;
-		flex-wrap: wrap;
-		gap: 20rpx;
+		gap: 16rpx;
+		justify-content: space-between;
+		margin-bottom: 24rpx;
+	}
+
+	.admin-list-row:last-child {
+		margin-bottom: 0;
 	}
 
 	.admin-item {
 		display: flex;
 		flex-direction: column;
 		align-items: center;
-		gap: 8rpx;
-		min-width: 100rpx;
 	}
 
 	.admin-avatar {
-		width: 80rpx;
-		height: 80rpx;
+		width: 96rpx;
+		height: 96rpx;
 		background: linear-gradient(135deg, #5d76bd 0%, #7c8fd6 100%);
 		border-radius: 50%;
 		display: flex;
 		align-items: center;
 		justify-content: center;
-		box-shadow: 0 6rpx 16rpx rgba(93, 118, 189, 0.35), inset 0 2rpx 0 rgba(255, 255, 255, 0.25);
+		box-shadow: 0 8rpx 20rpx rgba(93, 118, 189, 0.35), inset 0 2rpx 0 rgba(255, 255, 255, 0.25);
+		overflow: hidden;
 
 		.avatar-text {
 			font-size: 32rpx;
 			color: #ffffff;
 			font-weight: 700;
 		}
+	}
+
+	.admin-avatar-img {
+		width: 100%;
+		height: 100%;
+		border-radius: 50%;
 	}
 
 	.admin-name {
@@ -852,6 +1427,50 @@
 		overflow: hidden;
 		text-overflow: ellipsis;
 		white-space: nowrap;
+	}
+
+	.admin-add-avatar {
+		background: #f7f9fc;
+		border: 2rpx dashed rgba(93, 118, 189, 0.4);
+		box-shadow: none;
+	}
+
+	.admin-add-plus {
+		font-size: 44rpx;
+		font-weight: 600;
+		color: #5d76bd;
+		margin-top: -6rpx;
+	}
+
+	.admin-picker {
+		max-height: 72vh;
+	}
+
+	.picker-search {
+		margin-bottom: 16rpx;
+	}
+
+	.picker-input {
+		margin-bottom: 0;
+	}
+
+	.picker-list {
+		display: flex;
+		flex-direction: column;
+		gap: 10rpx;
+	}
+
+	.picker-item {
+		display: flex;
+		align-items: center;
+		padding: 16rpx 12rpx;
+		border-radius: 14rpx;
+		background: #fafbfd;
+		border: 1rpx solid rgba(93, 118, 189, 0.08);
+
+		&:active {
+			background: #f0f4fa;
+		}
 	}
 
 	.muted-dropdown, .post-dropdown {

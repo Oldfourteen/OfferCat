@@ -210,7 +210,7 @@
 				historyPage: 0,
 				adminPhone: '15092730328',
 				userAvatar: DEFAULT_AVATAR,
-				csAvatar: '/static/admin-avatars/admin-guide.jpg',
+				csAvatar: '/static/admin-avatars/admin-cat.png',
 				sessionHistory: []
 			}
 		},

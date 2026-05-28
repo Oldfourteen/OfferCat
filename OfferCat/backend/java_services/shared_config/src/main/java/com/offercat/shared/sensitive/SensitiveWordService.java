@@ -8,6 +8,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -54,25 +55,28 @@ public class SensitiveWordService {
     /** 备用词库路径 */
     private static final String BACKUP_VOCABULARY_PATH = "com/offercat/shared/sensitive/Vocabulary";
     
+    /** 加密词库文件后缀 */
+    private static final String ENCRYPTED_SUFFIX = ".enc";
+    
     /** 词库文件名列表 */
     private static final List<String> VOCABULARY_FILES = Arrays.asList(
-        "COVID-19词库.txt",
-        "GFW补充词库.txt",
-        "其他词库.txt", 
-        "反动词库.txt",
-        "广告类型.txt",
-        "政治类型.txt",
-        "新思想启蒙.txt",
-        "暴恐词库.txt",
-        "民生词库.txt",
-        "涉枪涉爆.txt",
-        "网易前端过滤敏感词库.txt",
-        "色情类型.txt",
-        "色情词库.txt",
-        "补充词库.txt",
-        "贪腐词库.txt",
-        "零时-Tencent.txt",
-        "非法网址.txt"
+        "COVID-19词库",
+        "GFW补充词库",
+        "其他词库", 
+        "反动词库",
+        "广告类型",
+        "政治类型",
+        "新思想启蒙",
+        "暴恐词库",
+        "民生词库",
+        "涉枪涉爆",
+        "网易前端过滤敏感词库",
+        "色情类型",
+        "色情词库",
+        "补充词库",
+        "贪腐词库",
+        "零时-Tencent",
+        "非法网址"
     );
     
     /** 古诗库，用于替换敏感内容 */
@@ -282,7 +286,7 @@ public class SensitiveWordService {
     }
     
     /**
-     * 从指定文件加载敏感词
+     * 从指定文件加载敏感词（支持加密和未加密两种格式）
      * @param fileName 词库文件名
      * @return 加载的词数量
      */
@@ -290,22 +294,35 @@ public class SensitiveWordService {
         int count = 0;
         
         List<String> paths = Arrays.asList(
-            VOCABULARY_PATH + "/" + fileName,
-            BACKUP_VOCABULARY_PATH + "/" + fileName
+            VOCABULARY_PATH + "/" + fileName + ENCRYPTED_SUFFIX,
+            VOCABULARY_PATH + "/" + fileName + ".txt",
+            BACKUP_VOCABULARY_PATH + "/" + fileName + ENCRYPTED_SUFFIX,
+            BACKUP_VOCABULARY_PATH + "/" + fileName + ".txt"
         );
         
         for (String path : paths) {
             try (InputStream is = getClass().getClassLoader().getResourceAsStream(path)) {
                 if (is != null) {
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(is, StandardCharsets.UTF_8))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            String word = line.trim();
-                            if (!word.isEmpty()) {
-                                trie.insert(word.toLowerCase());
-                                count++;
-                            }
+                    byte[] content = is.readAllBytes();
+                    
+                    // 判断是否为加密文件（通过文件后缀判断）
+                    String contentStr;
+                    if (path.endsWith(ENCRYPTED_SUFFIX)) {
+                        // 加密文件，需要解密
+                        byte[] decrypted = EncryptUtils.decrypt(content);
+                        contentStr = new String(decrypted, StandardCharsets.UTF_8);
+                    } else {
+                        // 未加密文件，直接读取
+                        contentStr = new String(content, StandardCharsets.UTF_8);
+                    }
+                    
+                    // 按行解析敏感词
+                    String[] lines = contentStr.split("\\r?\\n");
+                    for (String line : lines) {
+                        String word = line.trim();
+                        if (!word.isEmpty()) {
+                            trie.insert(word.toLowerCase());
+                            count++;
                         }
                     }
                     return count;
@@ -324,26 +341,41 @@ public class SensitiveWordService {
         try {
             String basePath = System.getProperty("user.dir");
             String[] possiblePaths = {
-                basePath + "/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName,
-                basePath + "/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName,
-                basePath + "/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName,
-                "g:/offercat/OfferCat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName,
-                "g:/offercat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName,
-                "g:/offercat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName
+                basePath + "/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                basePath + "/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt",
+                basePath + "/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                basePath + "/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt",
+                basePath + "/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                basePath + "/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt",
+                "g:/offercat/OfferCat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                "g:/offercat/OfferCat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt",
+                "g:/offercat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                "g:/offercat/OfferCat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt",
+                "g:/offercat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ENCRYPTED_SUFFIX,
+                "g:/offercat/backend/java_services/shared_config/src/main/java/com/offercat/shared/sensitive/Vocabulary/" + fileName + ".txt"
             };
             
             for (String filePath : possiblePaths) {
                 File file = new File(filePath);
                 if (file.exists()) {
-                    try (BufferedReader reader = new BufferedReader(
-                            new InputStreamReader(new FileInputStream(file), StandardCharsets.UTF_8))) {
-                        String line;
-                        while ((line = reader.readLine()) != null) {
-                            String word = line.trim();
-                            if (!word.isEmpty()) {
-                                trie.insert(word.toLowerCase());
-                                count++;
-                            }
+                    byte[] content = Files.readAllBytes(file.toPath());
+                    
+                    String contentStr;
+                    if (filePath.endsWith(ENCRYPTED_SUFFIX)) {
+                        // 加密文件，需要解密
+                        byte[] decrypted = EncryptUtils.decrypt(content);
+                        contentStr = new String(decrypted, StandardCharsets.UTF_8);
+                    } else {
+                        // 未加密文件，直接读取
+                        contentStr = new String(content, StandardCharsets.UTF_8);
+                    }
+                    
+                    String[] lines = contentStr.split("\\r?\\n");
+                    for (String line : lines) {
+                        String word = line.trim();
+                        if (!word.isEmpty()) {
+                            trie.insert(word.toLowerCase());
+                            count++;
                         }
                     }
                     return count;

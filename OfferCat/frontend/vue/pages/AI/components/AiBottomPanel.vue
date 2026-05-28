@@ -254,6 +254,9 @@
 					return null
 				}
 				const manager = uni.getRecorderManager()
+				if (!manager) {
+					return null
+				}
 				manager.onStop(res => {
 					const filePath = res && res.tempFilePath
 					this.recording = false
@@ -274,14 +277,19 @@
 				return manager
 			},
 			doStartVoiceRecording(manager) {
-				this.recording = true
-				try {
-					manager.start({ format: 'mp3', duration: 60000 })
-				} catch (error) {
-					this.recording = false
-					uni.showToast({ title: '录音失败', icon: 'none' })
-				}
-			},
+			if (!manager || typeof manager.start !== 'function') {
+				uni.showToast({ title: '录音功能不可用', icon: 'none' })
+				return
+			}
+			this.recording = true
+			try {
+				manager.start({ format: 'mp3', duration: 60000 })
+			} catch (error) {
+				console.error('开始录音失败:', error)
+				this.recording = false
+				uni.showToast({ title: '录音启动失败', icon: 'none' })
+			}
+		},
 			startVoice() {
 				const manager = this.getRecorderManager()
 				if (!manager) {
@@ -318,20 +326,21 @@
 				this.doStartVoiceRecording(manager)
 			},
 			stopVoice() {
-				if (!this.recording) {
-					return
-				}
-				const manager = this.getRecorderManager()
-				if (!manager) {
-					this.recording = false
-					return
-				}
-				try {
-					manager.stop()
-				} catch (error) {
-					this.recording = false
-				}
-			},
+			if (!this.recording) {
+				return
+			}
+			const manager = this.getRecorderManager()
+			if (!manager || typeof manager.stop !== 'function') {
+				this.recording = false
+				return
+			}
+			try {
+				manager.stop()
+			} catch (error) {
+				console.error('停止录音失败:', error)
+				this.recording = false
+			}
+		},
 			toggleVoice() {
 				if (this.recording) {
 					this.stopVoice()

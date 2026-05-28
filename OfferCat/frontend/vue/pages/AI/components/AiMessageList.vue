@@ -186,7 +186,7 @@
 			}, 10000)
 		},
 		beforeDestroy() {
-			stopAiVoice();
+			// 不停止语音播放，避免 abort 错误
 			if (this.timeTickTimer) {
 				clearInterval(this.timeTickTimer)
 				this.timeTickTimer = null
@@ -196,7 +196,7 @@
 			}
 		},
 		beforeUnmount() {
-			stopAiVoice();
+			// 不停止语音播放，避免 abort 错误
 			if (this.timeTickTimer) {
 				clearInterval(this.timeTickTimer)
 				this.timeTickTimer = null
@@ -340,6 +340,15 @@
 			}
 			
 			this.loadingId = item.id
+			const watchdogId = item.id
+			const watchdog = setTimeout(() => {
+				if (this.loadingId === watchdogId) {
+					stopAiVoice()
+					this.loadingId = null
+					this.playingId = null
+					uni.showToast({ title: 'TTS生成超时，请检查网络或后端地址', icon: 'none', duration: 3000 })
+				}
+			}, 150000)
 			try {
 				await playAiVoice(text, () => {
 					this.loadingId = null
@@ -349,8 +358,29 @@
 				this.playingId = null
 			} catch (e) {
 				console.error('语音播放失败:', e)
-				uni.showToast({ title: e.message || '语音播报失败', icon: 'none', duration: 3000 })
+				if (e && e.debugText) {
+					uni.showModal({
+						title: 'TTS失败（可复制排查）',
+						content: String(e.debugText).slice(0, 900),
+						showCancel: true,
+						cancelText: '关闭',
+						confirmText: '复制',
+						success: (r) => {
+							if (r && r.confirm) {
+								uni.setClipboardData({
+									data: String(e.debugText),
+									success: () => {
+										uni.showToast({ title: '已复制', icon: 'none' })
+									},
+								})
+							}
+						},
+					})
+				} else {
+					uni.showToast({ title: (e && e.message) || '语音播报失败', icon: 'none', duration: 3000 })
+				}
 			} finally {
+				clearTimeout(watchdog)
 				// 确保状态被重置
 				this.loadingId = null
 				if (this.playingId === item.id) {

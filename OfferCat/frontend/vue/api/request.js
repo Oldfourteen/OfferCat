@@ -3,6 +3,40 @@ import { getToken } from '@/utils/token'
 
 const DEFAULT_TIMEOUT_MS = 30000
 
+const MAX_CONCURRENT_REQUESTS = 8
+let activeRequests = 0
+const waitQueue = []
+const inflight = new Map()
+
+function stableStringify(value) {
+	if (value == null) return ''
+	if (typeof value === 'string') return value
+	try {
+		return JSON.stringify(value)
+	} catch (_) {
+		return String(value)
+	}
+}
+
+function runWithConcurrency(fn) {
+	return new Promise((resolve, reject) => {
+		const run = () => {
+			activeRequests += 1
+			Promise.resolve()
+				.then(fn)
+				.then(resolve, reject)
+				.finally(() => {
+					activeRequests -= 1
+					const next = waitQueue.shift()
+					if (next) next()
+				})
+		}
+
+		if (activeRequests < MAX_CONCURRENT_REQUESTS) run()
+		else waitQueue.push(run)
+	})
+}
+
 function createRequestId() {
 	const rand = Math.random().toString(16).slice(2)
 	return `${Date.now().toString(16)}-${rand}`
@@ -123,6 +157,13 @@ export function request(options) {
 	const retryDelayMs = options && options.retryDelayMs != null ? Number(options.retryDelayMs) : 650
 
 	const requestUrl = `${base}${url}`
+	const dedupeEnabledRaw = options && options.dedupe != null ? !!options.dedupe : String(method).toUpperCase() === 'GET'
+	const dedupeKey =
+		(options && options.dedupeKey != null ? String(options.dedupeKey) : null) ||
+		`${String(method || 'GET').toUpperCase()} ${requestUrl} ${stableStringify(data)} ${token ? String(token) : ''}`
+	const dedupeEnabled =
+		dedupeEnabledRaw && Number.isFinite(retryAttempt) && retryAttempt === 0 && typeof dedupeKey === 'string'
+	if (dedupeEnabled && inflight.has(dedupeKey)) return inflight.get(dedupeKey)
 
 	const runOnce = () =>
 		new Promise((resolve, reject) => {
@@ -206,26 +247,27 @@ export function request(options) {
 			}
 		})
 
-	return runOnce().catch(async (e) => {
-		const msg = String((e && e.message) || '')
-		const statusCode = e && (e.statusCode || e.bizCode)
-		const looksLikeTimeout = /timeout|超时/i.test(msg)
-		const looksLikeConnIssue =
-			/connection refused|无法连接|ECONNREFUSED|failed to connect|network error|网络请求失败|request:fail/i.test(msg)
-		const canRetry =
-			retryTimes > 0 && Number.isFinite(retryAttempt) && retryAttempt >= 0 && retryAttempt < retryTimes
-		const shouldRetry =
-			canRetry && (looksLikeTimeout || looksLikeConnIssue || isRetryableGatewayStatus(statusCode))
-		if (shouldRetry) {
-			await sleep(computeBackoffDelay(retryAttempt, retryDelayMs))
-			return request({
-				...options,
-				__retryAttempt: retryAttempt + 1,
-				__requestId: requestId,
-				retryTimes,
-				retryDelayMs,
-			})
+	const runWithRetry = async (attempt) => {
+		try {
+			return await runOnce()
+		} catch (e) {
+			const msg = String((e && e.message) || '')
+			const statusCode = e && (e.statusCode || e.bizCode)
+			const looksLikeTimeout = /timeout|超时/i.test(msg)
+			const looksLikeConnIssue =
+				/connection refused|无法连接|ECONNREFUSED|failed to connect|network error|网络请求失败|request:fail/i.test(msg)
+			const canRetry = retryTimes > 0 && Number.isFinite(attempt) && attempt >= 0 && attempt < retryTimes
+			const shouldRetry = canRetry && (looksLikeTimeout || looksLikeConnIssue || isRetryableGatewayStatus(statusCode))
+			if (!shouldRetry) throw e
+			await sleep(computeBackoffDelay(attempt, retryDelayMs))
+			return runWithRetry(attempt + 1)
 		}
-		throw e
-	})
+	}
+
+	const promise = runWithConcurrency(() => runWithRetry(retryAttempt))
+	if (dedupeEnabled) {
+		inflight.set(dedupeKey, promise)
+		promise.finally(() => inflight.delete(dedupeKey))
+	}
+	return promise
 }

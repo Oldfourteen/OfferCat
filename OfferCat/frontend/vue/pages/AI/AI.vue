@@ -1032,43 +1032,71 @@
 				}
 			},
 			async handleVoiceInput(payload) {
-				if (!payload || !payload.filePath) return
-				
-				uni.showLoading({ title: '识别中...' })
-				try {
-					const text = await uploadVoiceAndTranscribe(payload.filePath)
-					uni.hideLoading()
-					if (text) {
-						this.streamTextToDraft(text)
-					} else {
-						uni.showToast({ title: '未能识别出文字', icon: 'none' })
-					}
-				} catch (e) {
-					uni.hideLoading()
-					uni.showToast({ title: e.message || '识别失败', icon: 'none' })
+			if (!payload || !payload.filePath) {
+				uni.showToast({ title: '录音文件无效', icon: 'none' })
+				return
+			}
+			
+			uni.showLoading({ title: '识别中...', mask: true })
+			try {
+				const text = await uploadVoiceAndTranscribe(payload.filePath)
+				uni.hideLoading()
+				if (text && text.trim()) {
+					this.streamTextToDraft(text.trim())
+				} else {
+					uni.showToast({ title: '未能识别出文字', icon: 'none' })
 				}
-			},
+			} catch (e) {
+				uni.hideLoading()
+				const errorMsg = e && e.message ? e.message : '识别失败'
+				console.error('语音识别错误:', errorMsg)
+				uni.showToast({ 
+					title: errorMsg.includes('timeout') ? '识别超时，请重试' : errorMsg,
+					icon: 'none',
+					duration: 2500
+				})
+			}
+		},
 			streamTextToDraft(text) {
-				if (!text) return
-				if (this.streamTimer) {
+			if (!text || typeof text !== 'string') return
+			
+			// 清理之前的定时器
+			if (this.streamTimer) {
+				clearInterval(this.streamTimer)
+				this.streamTimer = null
+			}
+			
+			// 如果当前草稿已接近上限，直接追加剩余空间的内容
+			const maxLength = 250
+			const currentLength = String(this.draft || '').length
+			const availableSpace = maxLength - currentLength
+			
+			if (availableSpace <= 0) {
+				uni.showToast({ title: '输入已达上限', icon: 'none' })
+				return
+			}
+			
+			// 截取可输入的部分
+			const inputText = text.slice(0, availableSpace)
+			if (!inputText) return
+			
+			let i = 0
+			this.streamTimer = setInterval(() => {
+				if (i >= inputText.length) {
 					clearInterval(this.streamTimer)
+					this.streamTimer = null
+					
+					// 如果原文本被截断了，提示用户
+					if (text.length > availableSpace) {
+						uni.showToast({ title: '语音内容过长，已自动截断', icon: 'none' })
+					}
+					return
 				}
-				let i = 0
-				this.streamTimer = setInterval(() => {
-					if (this.draft.length >= 250) {
-						clearInterval(this.streamTimer)
-						this.streamTimer = null
-						uni.showToast({ title: '语音录入最多支持250字', icon: 'none' })
-						return
-					}
-					this.draft += text[i]
-					i++
-					if (i >= text.length) {
-						clearInterval(this.streamTimer)
-						this.streamTimer = null
-					}
-				}, 30)
-			},
+				
+				this.draft += inputText[i]
+				i++
+			}, 25)
+		},
 			// 消息滚动：用户手动上滑时暂停自动滚到底，避免打断阅读。
 			onScroll(e) {
 				const { scrollHeight, scrollTop } = e.detail

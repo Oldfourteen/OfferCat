@@ -1,6 +1,5 @@
 package com.offercat.resume.client;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
@@ -31,16 +30,10 @@ public class ResumePdfClient {
     private final RestTemplate restTemplate;
 
     /**
-     * JSON序列化工具
-     */
-    private final ObjectMapper objectMapper;
-
-    /**
      * 构造函数
      */
-    public ResumePdfClient() {
-        this.restTemplate = new RestTemplate();
-        this.objectMapper = new ObjectMapper();
+    public ResumePdfClient(RestTemplate restTemplate) {
+        this.restTemplate = restTemplate;
     }
 
     /**

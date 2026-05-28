@@ -19,6 +19,10 @@ spring:
       httpclient:
         connect-timeout: 15000
         response-timeout: 120s
+        pool:
+          max-connections: 500
+          acquire-timeout: 45s
+          max-idle-time: 30s
       discovery:
         locator:
           enabled: true

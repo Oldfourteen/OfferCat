@@ -91,7 +91,7 @@ siliconFlow:
   #TTS 语音输入功能
   tts:
     speech-path: "/v1/audio/speech"
-    model: "fnlp/MOSS-TTSD-v0.5"
+    model: "FunAudioLLM/CosyVoice2-0.5B"
     voice: "alex"
     response-format: "mp3"
     stream: false

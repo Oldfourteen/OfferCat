@@ -7,7 +7,7 @@
 					<text class="back-icon">&lt;</text>
 				</view>
 			</view>
-			<text class="nav-title">在线客服</text>
+			<text class="nav-title">智能客服</text>
 			<view class="nav-right" @click="showMenu">
 				<view class="menu-btn">
 					<text class="menu-text">更多</text>
@@ -24,6 +24,12 @@
 					</view>
 					<text class="menu-text">清空聊天记录</text>
 				</view>
+				<view class="menu-item" @click="refreshQuickQuestions">
+					<view class="menu-icon">
+						<text class="icon-text">刷</text>
+					</view>
+					<text class="menu-text">刷新推荐问题</text>
+				</view>
 			</view>
 		</view>
 
@@ -33,9 +39,18 @@
 			scroll-y 
 			:scroll-into-view="scrollToId"
 			scroll-with-animation
+			@scrolltolower="loadMoreHistory"
+			@refresherrefresh="onPullRefresh"
+			:refresher-enabled="true"
+			:refresher-triggered="isRefreshing"
 		>
+			<!-- 下拉刷新指示器 -->
+			<view class="refresh-indicator" v-if="isRefreshing">
+				<text class="refresh-text">正在刷新...</text>
+			</view>
+
 			<!-- 历史消息分隔线 -->
-			<view class="history-divider">
+			<view class="history-divider" v-if="hasMoreHistory">
 				<text class="divider-text">以上为历史消息</text>
 			</view>
 
@@ -46,16 +61,21 @@
 					v-for="(msg, index) in messageList" 
 					:key="index"
 					:id="'msg-' + index"
-					:class="{ 'is-self': msg.isSelf }"
+					:class="{ 'is-self': msg.isSelf, 'is-loading': msg.isLoading }"
 				>
 					<view class="avatar-wrapper">
 						<view class="avatar" :class="{ 'self-avatar': msg.isSelf }">
 							<image v-if="msg.isSelf" class="avatar-img" :src="userAvatar" mode="aspectFill"></image>
-							<text v-else class="avatar-text">客</text>
+							<image v-else class="avatar-img" :src="csAvatar" mode="aspectFill"></image>
 						</view>
 					</view>
 					<view class="message-content">
-						<text class="message-text">{{ msg.content }}</text>
+						<view v-if="msg.isLoading" class="loading-dots">
+							<view class="dot"></view>
+							<view class="dot"></view>
+							<view class="dot"></view>
+						</view>
+						<text v-else class="message-text">{{ msg.content }}</text>
 						<text class="message-time">{{ msg.time }}</text>
 					</view>
 				</view>
@@ -93,18 +113,61 @@
 						class="message-input"
 						type="text"
 						v-model="inputMessage"
-						placeholder="输入消息..."
+						placeholder="输入你想询问的事务"
 						@confirm="sendMessage"
 					/>
-					<view class="send-btn" :class="{ active: inputMessage.trim() }" @click="sendMessage">
-						<text class="send-text">发送</text>
+					<view class="send-btn" :class="{ active: inputMessage.trim(), disabled: isAiThinking }" @click="sendMessage">
+						<text class="send-text">{{ isAiThinking ? '思考中...' : '发送' }}</text>
 					</view>
 				</view>
 				<view class="bottom-links">
-					<text class="link-text">隐私政策</text>
+					<text class="link-text" @click="openPrivacyPolicy">隐私政策</text>
 					<text class="link-divider">|</text>
 					<text class="link-text-primary" @click="showContactOptions">联系管理员</text>
 				</view>
+			</view>
+		</view>
+
+		<!-- 隐私政策弹窗 -->
+		<view class="privacy-modal" v-if="showPrivacyModal" @click="closePrivacyModal">
+			<view class="privacy-content" @click.stop>
+				<view class="privacy-header">
+					<text class="privacy-title">隐私政策</text>
+					<view class="privacy-close" @click="closePrivacyModal">
+						<text class="close-icon">×</text>
+					</view>
+				</view>
+				<scroll-view class="privacy-body" scroll-y>
+					<view class="privacy-text">
+						<view class="privacy-section">
+							<text class="privacy-section-title">一、信息收集</text>
+							<text class="privacy-section-content">
+								我们重视您的隐私保护。在您使用智能客服服务时，我们可能会收集您的对话内容，用于提供更好的服务体验和优化AI模型。
+							</text>
+						</view>
+						<view class="privacy-section">
+							<text class="privacy-section-title">二、信息使用</text>
+							<text class="privacy-section-content">
+								收集的信息仅用于：
+								1. 提供智能客服回复服务；
+								2. 分析用户需求以优化服务；
+								3. 保障服务安全。
+							</text>
+						</view>
+						<view class="privacy-section">
+							<text class="privacy-section-title">三、信息保护</text>
+							<text class="privacy-section-content">
+								我们采用严格的安全措施保护您的信息，未经您的许可，不会向第三方披露您的个人信息。
+							</text>
+						</view>
+						<view class="privacy-section">
+							<text class="privacy-section-title">四、用户权利</text>
+							<text class="privacy-section-content">
+								您有权查看、修改或删除您的对话记录。如需帮助，请联系管理员。
+							</text>
+						</view>
+					</view>
+				</scroll-view>
 			</view>
 		</view>
 	</view>
@@ -117,8 +180,9 @@
 	import { getUser, resolveStoredStudentId, resolveStoredUserId } from '@/utils/user.js'
 	import { getUserProfile, DEFAULT_AVATAR } from '@/utils/userProfile.js'
 
-	/** 与 chat 服务约定：0 表示客服端 */
 	const CS_BOT_ID = 0
+	const DEEPSEEK_API_KEY = 'sk-e2dfa578fab841b79e8e024d269a8497'
+	const DEEPSEEK_API_URL = 'https://api.deepseek.com/v1/chat/completions'
 
 	export default {
 		mixins: [themeMixin],
@@ -129,6 +193,7 @@
 				showMenuModal: false,
 				showContactModal: false,
 				showQuickQuestions: true,
+				showPrivacyModal: false,
 				scrollToId: '',
 				quickQuestions: [
 					'如何创建简历？',
@@ -139,14 +204,22 @@
 					'开始AI面试学习',
 					'模拟面试练习'
 				],
-				isHumanService: false,
+				isAiThinking: false,
+				isRefreshing: false,
+				hasMoreHistory: false,
+				historyPage: 0,
 				adminPhone: '15092730328',
-				userAvatar: DEFAULT_AVATAR
+				userAvatar: DEFAULT_AVATAR,
+				csAvatar: '/static/admin-avatars/admin-guide.jpg',
+				sessionHistory: []
 			}
 		},
 		onLoad() {
 			this.loadUserAvatar()
 			this.loadMessages()
+		},
+		onShow() {
+			this.loadServerHistory()
 		},
 		watch: {
 			messageList() {
@@ -171,56 +244,50 @@
 			},
 			loadMessages() {
 				const userId = resolveStoredUserId(getUser())
-				
-				// 先从本地加载显示
-				const localMessages = uni.getStorageSync('chat_messages') || []
+				const localMessages = uni.getStorageSync('cs_chat_messages') || []
 				if (localMessages.length > 0) {
 					this.messageList = localMessages
 				} else {
 					this.messageList = [
-						{ isSelf: false, content: '您好呀，我是您的智能助理，遇到的产品和购物问题，请您详细描述下，我会尽全力帮您解答的~', time: this.getCurrentTime() }
+						{ isSelf: false, content: '您好呀！我是您的智能客服助手，请问有什么可以帮助您的？', time: this.getCurrentTime() }
 					]
 				}
-				
-				// 然后从服务器加载历史记录
 				if (userId) {
 					this.loadServerHistory(userId)
 				}
 			},
-			loadServerHistory(userId) {
-				const token = getToken()
-				const headers = {
-					'Content-Type': 'application/json'
-				}
-				if (token) {
-					headers['Authorization'] = `Bearer ${token}`
-				}
-				
-				uni.request({
-					url: `${getApiBase()}/api/chat/history/${userId}`,
-					method: 'GET',
-					header: headers,
-					success: (res) => {
-						if (res.statusCode === 200 && Array.isArray(res.data)) {
-							// 将服务器消息转换为本地格式
-							const serverMessages = res.data.map(msg => ({
-								isSelf: msg.senderId === userId,
-								content: msg.content,
-								time: this.formatServerTime(msg.createTime)
-							}))
-							
-							// 合并本地和服务器消息（去重）
-							const mergedMessages = this.mergeMessages(this.messageList, serverMessages)
-							this.messageList = mergedMessages
-							
-							// 保存到本地
-							uni.setStorageSync('chat_messages', this.messageList)
-						}
-					},
-					fail: (err) => {
-						console.log('加载服务器历史记录失败:', err)
+			async loadServerHistory(userId = null) {
+				if (!userId) userId = resolveStoredUserId(getUser())
+				if (!userId) return
+
+				try {
+					const token = getToken()
+					const headers = { 'Content-Type': 'application/json' }
+					if (token) headers['Authorization'] = `Bearer ${token}`
+
+					const res = await new Promise((resolve, reject) => {
+						uni.request({
+							url: `${getApiBase()}/api/chat/history/${userId}`,
+							method: 'GET',
+							header: headers,
+							success: resolve,
+							fail: reject
+						})
+					})
+
+					if (res.statusCode === 200 && Array.isArray(res.data)) {
+						const serverMessages = res.data.map(msg => ({
+							isSelf: msg.senderId === userId,
+							content: msg.content,
+							time: this.formatServerTime(msg.createTime)
+						}))
+						const mergedMessages = this.mergeMessages(this.messageList, serverMessages)
+						this.messageList = mergedMessages
+						this.saveMessages()
 					}
-				})
+				} catch (err) {
+					console.log('加载服务器历史记录失败:', err)
+				}
 			},
 			formatServerTime(timeStr) {
 				if (!timeStr) return this.getCurrentTime()
@@ -230,26 +297,15 @@
 				return `${hours}:${minutes}`
 			},
 			mergeMessages(localMsgs, serverMsgs) {
-				// 创建一个Set来存储已存在的消息内容+时间的组合（简单去重）
 				const existingKeys = new Set(localMsgs.map(m => `${m.content}_${m.time}`))
-				
-				// 添加服务器消息中不存在于本地的
 				const uniqueServerMsgs = serverMsgs.filter(m => !existingKeys.has(`${m.content}_${m.time}`))
-				
-				// 合并并按时间排序（如果有时间戳的话）
 				const allMessages = [...localMsgs, ...uniqueServerMsgs]
-				
-				// 如果合并后消息太多，只保留最近的100条
-				if (allMessages.length > 100) {
-					return allMessages.slice(-100)
-				}
-				
-				return allMessages
+				return allMessages.length > 100 ? allMessages.slice(-100) : allMessages
 			},
 			buildChatPersistencePayload(messageList, userId) {
 				const rows = []
 				for (const msg of messageList || []) {
-					if (!msg || typeof msg.content !== 'string') continue
+					if (!msg || typeof msg.content !== 'string' || msg.isLoading) continue
 					if (msg.isSelf) {
 						rows.push({
 							senderId: userId,
@@ -271,24 +327,18 @@
 				return rows
 			},
 			saveMessages() {
-				uni.setStorageSync('chat_messages', this.messageList)
+				uni.setStorageSync('cs_chat_messages', this.messageList)
 
 				const userId = resolveStoredUserId(getUser())
-				if (!userId) {
-					return
-				}
+				if (!userId) return
+
 				const messages = this.buildChatPersistencePayload(this.messageList, userId)
-				if (!messages.length) {
-					return
-				}
+				if (!messages.length) return
 
 				const token = getToken()
-				const headers = {
-					'Content-Type': 'application/json'
-				}
-				if (token) {
-					headers['Authorization'] = `Bearer ${token}`
-				}
+				const headers = { 'Content-Type': 'application/json' }
+				if (token) headers['Authorization'] = `Bearer ${token}`
+
 				uni.request({
 					url: `${getApiBase()}/api/chat/save`,
 					method: 'POST',
@@ -299,8 +349,8 @@
 					}
 				})
 			},
-			sendMessage() {
-				if (!this.inputMessage.trim()) return
+			async sendMessage() {
+				if (!this.inputMessage.trim() || this.isAiThinking) return
 
 				const newMessage = {
 					isSelf: true,
@@ -312,28 +362,90 @@
 				this.inputMessage = ''
 				this.saveMessages()
 
-				setTimeout(() => {
-					this.receiveReply()
-				}, 1000)
-			},
-			receiveReply() {
-				const replies = [
-					'好的，我明白了，我会尽快帮您处理。',
-					'请稍等，我正在查询相关信息...',
-					'感谢您的反馈，我们会认真处理。',
-					'请问还有其他问题需要帮助吗？',
-					'已收到您的消息，稍后会有专人回复。'
-				]
-				const randomReply = replies[Math.floor(Math.random() * replies.length)]
-				
-				const replyMessage = {
+				this.isAiThinking = true
+				this.messageList.push({
 					isSelf: false,
-					content: randomReply,
-					time: this.getCurrentTime()
-				}
+					content: '',
+					time: this.getCurrentTime(),
+					isLoading: true
+				})
 
-				this.messageList.push(replyMessage)
-				this.saveMessages()
+				try {
+					const reply = await this.requestDeepSeekAI(newMessage.content)
+					const loadingIndex = this.messageList.findIndex(m => m.isLoading)
+					if (loadingIndex !== -1) {
+						this.messageList[loadingIndex] = {
+							isSelf: false,
+							content: reply,
+							time: this.getCurrentTime()
+						}
+					}
+					this.saveMessages()
+				} catch (error) {
+					console.error('AI请求失败:', error)
+					const loadingIndex = this.messageList.findIndex(m => m.isLoading)
+					if (loadingIndex !== -1) {
+						this.messageList[loadingIndex] = {
+							isSelf: false,
+							content: '抱歉，我现在有点忙，请稍后再试~',
+							time: this.getCurrentTime()
+						}
+					}
+				} finally {
+					this.isAiThinking = false
+				}
+			},
+			async requestDeepSeekAI(question) {
+				const systemPrompt = `
+你是一个温柔、随和的智能客服助手，专门为OfferCat项目提供帮助。
+
+请遵循以下规则：
+1. 只回答与OfferCat项目相关的问题，不回答无关问题
+2. 回答要友好、专业、准确，不能胡编乱造
+3. 如果不知道答案，要诚实地告诉用户
+4. 语气要温柔，使用自然的中文表达
+
+项目相关信息：
+- 项目名称：OfferCat
+- 主要功能：简历创建、AI面试、模拟面试、数据备份、账号管理
+- 管理员联系方式：15092730328
+
+请根据用户的问题，提供准确、有用的回答。
+				`.trim()
+
+				const messages = [
+					{ role: 'system', content: systemPrompt },
+					{ role: 'user', content: question }
+				]
+
+				return new Promise((resolve, reject) => {
+					uni.request({
+						url: DEEPSEEK_API_URL,
+						method: 'POST',
+						header: {
+							'Content-Type': 'application/json',
+							'Authorization': `Bearer ${DEEPSEEK_API_KEY}`
+						},
+						timeout: 60000,
+						data: {
+							model: 'deepseek-chat',
+							messages: messages,
+							temperature: 0.7,
+							max_tokens: 1024
+						},
+						success: (res) => {
+							if (res.statusCode === 200 && res.data && res.data.choices) {
+								const reply = res.data.choices[0].message.content
+								resolve(reply)
+							} else {
+								reject(new Error('AI响应格式错误'))
+							}
+						},
+						fail: (err) => {
+							reject(new Error(err.errMsg || '网络请求失败'))
+						}
+					})
+				})
 			},
 			sendQuickQuestion(question) {
 				if (question === '开始AI面试学习' || question === '模拟面试练习') {
@@ -359,12 +471,9 @@
 
 				uni.showLoading({ title: '正在连接AI...' })
 				const token = getToken()
-				const headers = {
-					'Content-Type': 'application/x-www-form-urlencoded'
-				}
-				if (token) {
-					headers['Authorization'] = `Bearer ${token}`
-				}
+				const headers = { 'Content-Type': 'application/x-www-form-urlencoded' }
+				if (token) headers['Authorization'] = `Bearer ${token}`
+
 				uni.request({
 					url: `${getApiBase()}/api/ai/interview/session/init`,
 					method: 'POST',
@@ -412,6 +521,19 @@
 				})
 			},
 			refreshQuickQuestions() {
+				const questions = [
+					'如何创建简历？',
+					'如何修改密码？',
+					'如何联系客服？',
+					'如何备份数据？',
+					'如何注销账号？',
+					'开始AI面试学习',
+					'模拟面试练习',
+					'如何使用AI助手？',
+					'如何查看面试记录？',
+					'如何设置个人资料？'
+				]
+				this.quickQuestions = questions.sort(() => Math.random() - 0.5).slice(0, 7)
 				uni.showToast({ title: '已刷新', icon: 'none' })
 			},
 			showContactOptions() {
@@ -464,7 +586,7 @@
 					confirmColor: '#ff4d4f',
 					success: (res) => {
 						if (res.confirm) {
-							uni.removeStorageSync('chat_messages')
+							uni.removeStorageSync('cs_chat_messages')
 							this.messageList = []
 							this.showMenuModal = false
 							uni.showToast({ title: '已清空本地记录', icon: 'success' })
@@ -482,6 +604,24 @@
 				if (this.messageList.length > 0) {
 					this.scrollToId = 'msg-' + (this.messageList.length - 1)
 				}
+			},
+			loadMoreHistory() {
+				if (this.hasMoreHistory && !this.isAiThinking) {
+					this.historyPage++
+					this.loadServerHistory()
+				}
+			},
+			async onPullRefresh() {
+				this.isRefreshing = true
+				await this.loadServerHistory()
+				this.isRefreshing = false
+				uni.showToast({ title: '已刷新', icon: 'none' })
+			},
+			openPrivacyPolicy() {
+				this.showPrivacyModal = true
+			},
+			closePrivacyModal() {
+				this.showPrivacyModal = false
 			}
 		}
 	}
@@ -583,6 +723,16 @@
 		padding: 28rpx;
 	}
 
+	.refresh-indicator {
+		text-align: center;
+		padding: 20rpx 0;
+	}
+
+	.refresh-text {
+		font-size: 24rpx;
+		color: #718096;
+	}
+
 	.bottom-sheet-stack {
 		flex-shrink: 0;
 		background: #ffffff;
@@ -611,8 +761,7 @@
 		border-radius: 28rpx 28rpx 0 0;
 		padding: 28rpx 24rpx;
 		padding-bottom: calc(28rpx + env(safe-area-inset-bottom));
-		box-shadow:
-			0 -12rpx 48rpx rgba(0, 0, 0, 0.15);
+		box-shadow: 0 -12rpx 48rpx rgba(0, 0, 0, 0.15);
 
 		.menu-item {
 			display: flex;
@@ -629,6 +778,19 @@
 			&:active {
 				transform: scale(0.98);
 				background: #ffdede;
+			}
+
+			& + .menu-item {
+				margin-top: 16rpx;
+				background: #f5f7fb;
+
+				.menu-icon {
+					background: #5d76bd;
+				}
+
+				.menu-text {
+					color: #5d76bd;
+				}
 			}
 		}
 
@@ -715,6 +877,11 @@
 				}
 			}
 		}
+
+		&.is-loading .message-content {
+			background: #e8ecf5;
+			padding: 24rpx;
+		}
 	}
 
 	.avatar-wrapper {
@@ -771,6 +938,36 @@
 			text-align: right;
 			margin-top: 10rpx;
 			font-weight: 500;
+		}
+	}
+
+	.loading-dots {
+		display: flex;
+		gap: 12rpx;
+		align-items: center;
+		padding: 8rpx 0;
+
+		.dot {
+			width: 16rpx;
+			height: 16rpx;
+			border-radius: 50%;
+			background: #5d76bd;
+			animation: loading-bounce 1.4s infinite ease-in-out both;
+
+			&:nth-child(1) { animation-delay: -0.32s; }
+			&:nth-child(2) { animation-delay: -0.16s; }
+			&:nth-child(3) { animation-delay: 0s; }
+		}
+	}
+
+	@keyframes loading-bounce {
+		0%, 80%, 100% {
+			transform: scale(0);
+			opacity: 0.5;
+		}
+		40% {
+			transform: scale(1);
+			opacity: 1;
 		}
 	}
 
@@ -905,7 +1102,7 @@
 			color: #718096;
 		}
 
-		&.active {
+		&.active:not(.disabled) {
 			background: #5d76bd;
 			box-shadow:
 				0 8rpx 24rpx rgba(93, 118, 189, 0.3),
@@ -913,6 +1110,14 @@
 
 			.send-text {
 				color: #ffffff;
+			}
+		}
+
+		&.disabled {
+			background: #e2e8f0;
+
+			.send-text {
+				color: #a0aec0;
 			}
 		}
 
@@ -947,13 +1152,97 @@
 		color: #cbd5e0;
 	}
 
+	.privacy-modal {
+		position: fixed;
+		top: 0;
+		left: 0;
+		right: 0;
+		bottom: 0;
+		background: rgba(0, 0, 0, 0.5);
+		display: flex;
+		align-items: center;
+		justify-content: center;
+		z-index: 1001;
+		padding: 40rpx;
+	}
+
+	.privacy-content {
+		width: 100%;
+		max-height: 80vh;
+		background: #ffffff;
+		border-radius: 24rpx;
+		overflow: hidden;
+		display: flex;
+		flex-direction: column;
+	}
+
+	.privacy-header {
+		display: flex;
+		align-items: center;
+		justify-content: space-between;
+		padding: 28rpx 32rpx;
+		border-bottom: 1rpx solid rgba(0, 0, 0, 0.05);
+	}
+
+	.privacy-title {
+		font-size: 32rpx;
+		font-weight: 700;
+		color: #2d3748;
+	}
+
+	.privacy-close {
+		width: 56rpx;
+		height: 56rpx;
+		display: flex;
+		align-items: center;
+		justify-content: center;
+	}
+
+	.close-icon {
+		font-size: 40rpx;
+		color: #718096;
+	}
+
+	.privacy-body {
+		flex: 1;
+		padding: 28rpx 32rpx;
+	}
+
+	.privacy-text {
+		font-size: 28rpx;
+		line-height: 1.7;
+		color: #4a5568;
+	}
+
+	.privacy-section {
+		margin-bottom: 28rpx;
+
+		&:last-child {
+			margin-bottom: 0;
+		}
+	}
+
+	.privacy-section-title {
+		display: block;
+		font-size: 30rpx;
+		font-weight: 700;
+		color: #2d3748;
+		margin-bottom: 12rpx;
+	}
+
+	.privacy-section-content {
+		display: block;
+		font-size: 28rpx;
+		line-height: 1.7;
+		color: #4a5568;
+	}
+
 	.online-service-page.theme-dark {
 		background: #1a1c23;
 
 		.nav-bar {
 			background: #252830;
-			box-shadow:
-				0 4rpx 20rpx rgba(0, 0, 0, 0.3);
+			box-shadow: 0 4rpx 20rpx rgba(0, 0, 0, 0.3);
 
 			.nav-title {
 				color: #f0f2f8;
@@ -991,8 +1280,7 @@
 
 		.menu-content {
 			background: #252830;
-			box-shadow:
-				0 -12rpx 48rpx rgba(0, 0, 0, 0.3);
+			box-shadow: 0 -12rpx 48rpx rgba(0, 0, 0, 0.3);
 
 			.menu-item {
 				background: rgba(255, 77, 79, 0.15);
@@ -1002,6 +1290,14 @@
 
 				&:active {
 					background: rgba(255, 77, 79, 0.25);
+				}
+
+				& + .menu-item {
+					background: #2e323c;
+
+					.menu-icon {
+						background: #5d76bd;
+					}
 				}
 			}
 
@@ -1099,7 +1395,7 @@
 				color: #6f7688;
 			}
 
-			&.active {
+			&.active:not(.disabled) {
 				background: #5d76bd;
 				box-shadow:
 					0 8rpx 24rpx rgba(93, 118, 189, 0.3),
@@ -1117,6 +1413,26 @@
 
 		.bottom-links .link-text-primary {
 			color: #8ea9ff;
+		}
+
+		.privacy-content {
+			background: #252830;
+
+			.privacy-title {
+				color: #f0f2f8;
+			}
+
+			.close-icon {
+				color: #8a92a8;
+			}
+
+			.privacy-section-title {
+				color: #f0f2f8;
+			}
+
+			.privacy-section-content {
+				color: #e8ebf2;
+			}
 		}
 	}
 </style>

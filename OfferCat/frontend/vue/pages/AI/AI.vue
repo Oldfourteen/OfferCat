@@ -1273,6 +1273,14 @@
 						isInterviewEnded: interviewEndedNow ? true : item.isInterviewEnded
 					}
 				})
+
+				// 通知子组件启动打字机效果
+				this.$nextTick(() => {
+					const messageList = this.$refs.messageList
+					if (messageList && typeof messageList.startTypewriter === 'function') {
+						messageList.startTypewriter(messageId, text)
+					}
+				})
 			}
 		}
 	}

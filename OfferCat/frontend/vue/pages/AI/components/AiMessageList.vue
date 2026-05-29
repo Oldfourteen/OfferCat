@@ -171,7 +171,10 @@
 			editDraft: '',
 			// 依赖此计数周期性重算「刚刚」等相对时间文案
 			timeTick: 0,
-			timeTickTimer: null
+			timeTickTimer: null,
+			// 打字机效果相关
+			typewriterTimers: {},
+			displayTexts: {}
 			}
 		},
 		created() {
@@ -191,6 +194,7 @@
 				clearInterval(this.timeTickTimer)
 				this.timeTickTimer = null
 			}
+			this.clearAllTypewriterTimers()
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.updateProfile)
 			}
@@ -201,8 +205,17 @@
 				clearInterval(this.timeTickTimer)
 				this.timeTickTimer = null
 			}
+			this.clearAllTypewriterTimers()
 			if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
 				uni.$off(USER_PROFILE_UPDATED_EVENT, this.updateProfile)
+			}
+		},
+		watch: {
+			messages: {
+				deep: true,
+				handler(newMessages) {
+					this.handleMessagesChange(newMessages)
+				}
 			}
 		},
 		computed: {
@@ -211,12 +224,19 @@
 			},
 			renderedMessages() {
 			const _t = this.timeTick
-			return this.messages.filter(item => !item.hidden).map(item => ({
-				...item,
-				text: item.text || '',
-				html: item.role === 'assistant' ? renderMarkdown(item.text) : renderPlainText(item.text),
-				displayTime: this.formatMessageTime(item)
-			}))
+			return this.messages.filter(item => !item.hidden).map(item => {
+				let displayText = item.text || ''
+				// 如果有打字机文本，优先使用打字机效果的文本
+				if (item.role === 'assistant' && this.displayTexts[item.id]) {
+					displayText = this.displayTexts[item.id]
+				}
+				return {
+					...item,
+					text: displayText,
+					html: item.role === 'assistant' ? renderMarkdown(displayText) : renderPlainText(item.text),
+					displayTime: this.formatMessageTime(item)
+				}
+			})
 		}
 		},
 		methods: {
@@ -309,6 +329,70 @@
 			const user = getUserProfile()
 			this.userAvatar = user.avatar
 			this.userNickname = user.nickname || user.realName || '我'
+		},
+		// 处理消息变化，启动打字机效果
+		handleMessagesChange(newMessages) {
+			if (!newMessages || newMessages.length === 0) return
+			
+			const lastMessage = newMessages[newMessages.length - 1]
+			if (lastMessage && lastMessage.role === 'assistant' && lastMessage.loading) {
+				// 找到对应的用户消息
+				const userMessage = newMessages.find(m => m.role === 'user' && m.id < lastMessage.id)
+				if (userMessage) {
+					// 检查是否是四种AI对话模式之一
+					const userText = userMessage.text || ''
+					const modes = ['帮我润色简历经历', '开启HR模拟面试', '模拟大厂群面场景', '分析岗位匹配度']
+					if (modes.some(mode => userText.includes(mode))) {
+						this.startTypewriter(lastMessage.id, '')
+					}
+				}
+			}
+		},
+		// 启动打字机效果
+		startTypewriter(messageId, fullText) {
+			// 清除该消息之前的定时器
+			this.stopTypewriter(messageId)
+			
+			// 如果没有完整文本，先显示"AI正在思考中"
+			if (!fullText) {
+				this.$set(this.displayTexts, messageId, '')
+				return
+			}
+			
+			let index = 0
+			const speed = this.getTypingSpeed(fullText.length)
+			
+			this.typewriterTimers[messageId] = setInterval(() => {
+				if (index <= fullText.length) {
+					this.$set(this.displayTexts, messageId, fullText.slice(0, index))
+					index++
+				} else {
+					this.stopTypewriter(messageId)
+				}
+			}, speed)
+		},
+		// 根据文本长度调整打字速度
+		getTypingSpeed(length) {
+			if (length < 50) return 50
+			if (length < 100) return 40
+			if (length < 200) return 35
+			if (length < 500) return 30
+			return 25
+		},
+		// 停止单个消息的打字机效果
+		stopTypewriter(messageId) {
+			if (this.typewriterTimers[messageId]) {
+				clearInterval(this.typewriterTimers[messageId])
+				delete this.typewriterTimers[messageId]
+			}
+		},
+		// 清除所有打字机定时器
+		clearAllTypewriterTimers() {
+			Object.keys(this.typewriterTimers).forEach(id => {
+				clearInterval(this.typewriterTimers[id])
+			})
+			this.typewriterTimers = {}
+			this.displayTexts = {}
 		},
 			// 父组件在流式回复结束后触发，与点击「语音播报」共用同一套 TTS 逻辑。
 			playVoiceForMessage(messageId, text) {

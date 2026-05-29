@@ -57,9 +57,9 @@
             "splashscreen" : {
                 "androidStyle" : "default",
                 "android" : {
-                    "hdpi" : "C:/Users/14101/Desktop/android_1.9/res/drawable-hdpi/android_1.9.png",
-                    "xhdpi" : "C:/Users/14101/Desktop/android_1.9/res/drawable-xhdpi/android_1.9.png",
-                    "xxhdpi" : "C:/Users/14101/Desktop/android_1.9/res/drawable-xxhdpi/android_1.9.png"
+                    "hdpi" : "unpackage/android_1.9/res/drawable-hdpi/android_1.9.png",
+                    "xhdpi" : "unpackage/android_1.9/res/drawable-xhdpi/android_1.9.png",
+                    "xxhdpi" : "unpackage/android_1.9/res/drawable-xxhdpi/android_1.9.png"
                 },
                 "useOriginalMsgbox" : true
             },

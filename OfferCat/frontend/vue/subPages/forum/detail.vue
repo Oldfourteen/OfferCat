@@ -27,7 +27,7 @@
 					<view class="delete-btn" v-if="isAuthor" @click.stop="deletePost">删除</view>
 				</view>
 
-				<view class="post-text text-wrap-safe">{{ post.content || '' }}</view>
+				<view class="post-text text-wrap-safe">{{ displayForumText(post.content) || '' }}</view>
 
 				<!-- 图片展示区 -->
 				<view class="post-images" :class="getImageLayoutClass(postImages)" v-if="postImages.length > 0">
@@ -93,7 +93,7 @@
 									<text class="reply-preview-line text-wrap-safe">
 										<text class="reply-preview-name">{{ getAuthorName(reply.authorName, reply.userId) }}</text>
 										<text v-if="getReplyTargetName(reply, item)"> 回复 {{ getReplyTargetName(reply, item) }}</text>
-										：{{ reply.content }}
+										：{{ displayForumText(reply.content) }}
 									</text>
 								</view>
 								<text class="reply-preview-more" v-if="getReplyCount(item) > 2">共 {{ getReplyCount(item) }} 条回复，点击查看全部</text>
@@ -228,7 +228,7 @@
 	import { emitForumCollectNotice } from '@/utils/forumCollectNotice.js'
 	import { removeCollectedForumPost, upsertCollectedForumPost } from '@/utils/forumFavorites.js'
 	import themeMixin from '@/utils/themeMixin.js'
-	import { filterText, getRandomPoemPair } from '@/utils/sensitiveWords.js'
+	import { filterText, getRandomPoemPair, displayForumText } from '@/utils/sensitiveWords.js'
 	import { syncForumPostViews } from '@/utils/forumViewCount.js'
 
 	export default {
@@ -350,6 +350,7 @@
 			this.noticeLayerVisible = false
 		},
 		methods: {
+			displayForumText,
 			goBack() {
 				if (this.isLeaving) return
 				this.isLeaving = true
@@ -526,14 +527,15 @@
 				return `${trimmed || result}...`
 			},
 			shouldShowExpand(text, limit = 60) {
-				if (!text) return false
-				return this.getTextVisualLength(text) > limit
+				const safe = displayForumText(String(text || ''))
+				if (!safe) return false
+				return this.getTextVisualLength(safe) > limit
 			},
 			isExpanded(key) {
 				return !!this.expandedTextMap[key]
 			},
 			getDisplayText(text, key, limit = 60) {
-				const normalized = String(text || '').replace(/\r/g, '')
+				const normalized = displayForumText(String(text || '').replace(/\r/g, ''))
 				if (!this.shouldShowExpand(normalized, limit) || this.isExpanded(key)) {
 					return normalized
 				}

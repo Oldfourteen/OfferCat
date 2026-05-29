@@ -35,7 +35,7 @@
 								<text class="post-desc" v-if="item.content && item.content.length > 75">
 									{{ getPreviewContent(item.content) }}<text class="suffix-inline">...<text class="expand-btn-inline" @click.stop="goToDetail(item)">全部</text></text>
 								</text>
-								<text class="post-desc" v-else>{{ item.content || '' }}</text>
+								<text class="post-desc" v-else>{{ displayForumText(item.content) || '' }}</text>
 							</view>
 						</view>
 
@@ -80,6 +80,7 @@
 </template>
 
 <script>
+	import { displayForumText } from '@/utils/sensitiveWords.js'
 	import { BASE_URL } from '@/api/config.js'
 	import {
 		searchForumPosts,
@@ -140,10 +141,12 @@
 			this.fetchPosts()
 		},
 		methods: {
+			displayForumText,
 			getPreviewContent(content) {
-				if (!content) return ''
+				const safe = displayForumText(content)
+				if (!safe) return ''
 				// 预留尾部“...全部”的宽度，避免末尾按钮换行。
-				return content.length > 68 ? content.substring(0, 68) : content
+				return safe.length > 68 ? safe.substring(0, 68) : safe
 			},
 			getAuthorProfileText(item) {
 				const currentUser = uni.getStorageSync('user') || uni.getStorageSync('user_v2') || {}

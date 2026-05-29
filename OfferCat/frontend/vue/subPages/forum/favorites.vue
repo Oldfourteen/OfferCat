@@ -38,7 +38,7 @@
 								<text class="favorited-time">{{ formatFavoritedTime(item.favoritedAt) }}</text>
 							</view>
 
-							<text class="post-desc">{{ item.content || '这条帖子暂无正文内容' }}</text>
+							<text class="post-desc">{{ displayForumText(item.content) || '这条帖子暂无正文内容' }}</text>
 
 							<view class="post-images" :class="getImageLayoutClass(getImagesList(item.images))" v-if="getImagesList(item.images).length > 0">
 								<view class="image-wrapper" v-for="(img, index) in getImagesList(item.images).slice(0, 3)" :key="index">
@@ -77,6 +77,7 @@
 		removeCollectedForumPost,
 		replaceCollectedForumPosts
 	} from '@/utils/forumFavorites.js'
+	import { displayForumText } from '@/utils/sensitiveWords.js'
 
 	export default {
 		name: 'ForumFavoritesPage',
@@ -101,6 +102,7 @@
 			this.loadFavorites()
 		},
 		methods: {
+			displayForumText,
 			goBack() {
 				uni.navigateBack({
 					fail: () => {

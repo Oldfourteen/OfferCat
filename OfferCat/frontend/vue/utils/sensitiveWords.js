@@ -91,12 +91,11 @@ function localContainsSensitive(text) {
 }
 
 /**
- * 获取随机古诗（单句）
+ * 获取随机古诗（一句）
  * @returns {string} - 一句古诗
  */
 function getRandomPoemPair() {
-    const index = Math.floor(Math.random() * ANCIENT_POEMS.length)
-    return ANCIENT_POEMS[index]
+    return ANCIENT_POEMS[Math.floor(Math.random() * ANCIENT_POEMS.length)]
 }
 
 /**

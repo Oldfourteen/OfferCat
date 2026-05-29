@@ -5,7 +5,6 @@
 		</view>
 
 		<view class="entry-grid">
-			<!-- 四类档案入口展示类型说明和已录入数量。 -->
 			<view v-for="item in entries" :key="item.type" class="entry-item" @click="openEntry(item)">
 				<view class="entry-icon">
 					<image v-if="item.iconSrc" :src="item.iconSrc" mode="aspectFit" style="width: 56rpx; height: 56rpx;" />
@@ -22,85 +21,102 @@
 </template>
 
 <script>
-		import { getArchiveSummary, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
-		import { getApiBase } from '@/api/config.js'
-		import { getUser, resolveStoredStudentId } from '@/utils/user.js'
+	import { getArchiveSummary, ARCHIVE_DATA_UPDATED_EVENT } from '@/utils/archiveData.js'
+	import { request } from '@/api/request.js'
+	import { getUser, resolveStoredStudentId } from '@/utils/user.js'
 
-		export default {
-			name: 'ArchiveManagerCard',
-			props: {
-				theme: {
-					type: String,
-					default: 'light'
-				}
-			},
-			created() {
-				// 进入页面先拉取四类档案数量，并监听档案更新事件。
-				this.fetchEntryCounts()
-				if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
-					uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
-				}
-			},
-			beforeDestroy() {
-				// 兼容 Vue2 生命周期，离开时移除事件监听。
-				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
-					uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
-				}
-			},
-			beforeUnmount() {
-				// 兼容 Vue3 生命周期，离开时移除事件监听。
-				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
-					uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.fetchEntryCounts)
-				}
-			},
-			computed: {
-				themeClass() {
-					// 根据主题切换档案管理模块的整体视觉风格。
-					return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
-				}
-			},
-			data() {
+	const COUNT_PATHS = [
+		{ type: 'awards', path: '/api/student/profile/competition/list' },
+		{ type: 'certificates', path: '/api/student/profile/certificate/list' },
+		{ type: 'projects', path: '/api/student/profile/project/list' },
+		{ type: 'internships', path: '/api/student/profile/internship/list' }
+	]
+
+	export default {
+		name: 'ArchiveManagerCard',
+		props: {
+			theme: {
+				type: String,
+				default: 'light'
+			}
+		},
+		data() {
 			return {
-				// 档案入口的静态配置，数量字段会在运行时覆盖。
 				entries: [
-				{
-					type: 'awards',
-					iconSrc: '/static/png/inline/08f1e6569d36.png',
-					title: '竞赛奖项',
-					desc: '管理比赛经历，补充国家级/省级奖项',
-					count: 0,
-					iconClass: 'gold'
-				},
 					{
-					type: 'certificates',
-					iconSrc: '/static/png/inline/a49e46296dea.png',
-					title: '证书资质',
-					desc: '管理四六级、技能证书等',
-					count: 0,
-					iconClass: 'blue'
-				},
+						type: 'awards',
+						iconSrc: '/static/png/inline/08f1e6569d36.png',
+						title: '竞赛奖项',
+						desc: '管理比赛经历，补充国家级/省级奖项',
+						count: 0,
+						iconClass: 'gold'
+					},
 					{
-					type: 'projects',
-					iconSrc: '/static/png/inline/be6ca109f204.png',
-					title: '项目经历',
-					desc: '管理课程项目、个人项目、开源项目',
-					count: 0,
-					iconClass: 'cyan'
-				},
+						type: 'certificates',
+						iconSrc: '/static/png/inline/a49e46296dea.png',
+						title: '证书资质',
+						desc: '管理四六级、技能证书等',
+						count: 0,
+						iconClass: 'blue'
+					},
 					{
-					type: 'internships',
-					iconSrc: '/static/png/inline/e8f02b4d2cdf.png',
-					title: '实习经历',
-					desc: '管理实习、实训、兼职工作经历',
-					count: 0,
-					iconClass: 'violet'
-				}
-				]
+						type: 'projects',
+						iconSrc: '/static/png/inline/be6ca109f204.png',
+						title: '项目经历',
+						desc: '管理课程项目、个人项目、开源项目',
+						count: 0,
+						iconClass: 'cyan'
+					},
+					{
+						type: 'internships',
+						iconSrc: '/static/png/inline/e8f02b4d2cdf.png',
+						title: '实习经历',
+						desc: '管理实习、实训、兼职工作经历',
+						count: 0,
+						iconClass: 'violet'
+					}
+				],
+				fetchingCounts: false,
+				fetchTimer: null
+			}
+		},
+		created() {
+			this.scheduleFetchEntryCounts()
+			if (typeof uni !== 'undefined' && typeof uni.$on === 'function') {
+				uni.$on(ARCHIVE_DATA_UPDATED_EVENT, this.scheduleFetchEntryCounts)
+			}
+		},
+		beforeDestroy() {
+			this.teardownFetch()
+		},
+		beforeUnmount() {
+			this.teardownFetch()
+		},
+		computed: {
+			themeClass() {
+				return this.theme === 'dark' ? 'theme-dark' : 'theme-light'
 			}
 		},
 		methods: {
+			teardownFetch() {
+				if (this.fetchTimer) {
+					clearTimeout(this.fetchTimer)
+					this.fetchTimer = null
+				}
+				if (typeof uni !== 'undefined' && typeof uni.$off === 'function') {
+					uni.$off(ARCHIVE_DATA_UPDATED_EVENT, this.scheduleFetchEntryCounts)
+				}
+			},
+			scheduleFetchEntryCounts() {
+				if (this.fetchTimer) {
+					clearTimeout(this.fetchTimer)
+				}
+				this.fetchTimer = setTimeout(() => {
+					this.fetchTimer = null
+					this.fetchEntryCounts()
+				}, 300)
+			},
 			applyLocalCounts() {
-				// 本地汇总作为兜底，避免接口异常时计数全部为空。
 				const summary = getArchiveSummary()
 				const countMap = {
 					awards: summary.awardsCount,
@@ -113,54 +129,52 @@
 					count: countMap[item.type] || 0
 				}))
 			},
-			fetchEntryCounts() {
-				// 四类档案分开请求，全部返回后再一次性更新卡片数量。
-				const user = getUser()
-				const studentId = resolveStoredStudentId(user)
-				console.log('[ArchiveManagerCard] studentId:', studentId, 'apiBase:', getApiBase())
-				if (!studentId || !getApiBase()) {
-					console.warn('[ArchiveManagerCard] 缺少studentId或apiBase，使用本地计数')
+			async fetchEntryCounts() {
+				if (this.fetchingCounts) {
+					return
+				}
+				const studentId = resolveStoredStudentId(getUser())
+				if (!studentId) {
 					this.applyLocalCounts()
 					return
 				}
-				const paths = [
-					{ type: 'awards', path: '/api/student/profile/competition/list' },
-					{ type: 'certificates', path: '/api/student/profile/certificate/list' },
-					{ type: 'projects', path: '/api/student/profile/project/list' },
-					{ type: 'internships', path: '/api/student/profile/internship/list' }
-				]
-				const apiBase = getApiBase()
-				const countMap = {}
-				let done = 0
-				paths.forEach(({ type, path }) => {
-					uni.request({
-						url: `${apiBase}${path}`,
-						method: 'GET',
-						data: { studentId },
-						success: (res) => {
-							if (res.statusCode === 200 && res.data && Array.isArray(res.data.data)) {
-								countMap[type] = res.data.data.length
-							} else {
-								console.warn(`[ArchiveManagerCard] 获取${type}失败:`, res.statusCode, res.data)
+				this.fetchingCounts = true
+				try {
+					const results = await Promise.all(
+						COUNT_PATHS.map(async ({ type, path }) => {
+							try {
+								const res = await request({
+									url: path,
+									method: 'GET',
+									data: { studentId },
+									timeout: 12000
+								})
+								const list = res && Array.isArray(res.data) ? res.data : []
+								return { type, count: list.length }
+							} catch (_) {
+								return { type, count: undefined }
 							}
-						},
-						fail: (err) => {
-							console.error(`[ArchiveManagerCard] 请求${type}失败:`, err)
-						},
-						complete: () => {
-							done++
-							if (done === paths.length) {
-								this.entries = this.entries.map(item => ({
-									...item,
-									count: countMap[item.type] !== undefined ? countMap[item.type] : item.count
-								}))
-							}
+						})
+					)
+					const countMap = {}
+					results.forEach(({ type, count }) => {
+						if (count !== undefined) {
+							countMap[type] = count
 						}
 					})
-				})
+					if (Object.keys(countMap).length === 0) {
+						this.applyLocalCounts()
+						return
+					}
+					this.entries = this.entries.map(item => ({
+						...item,
+						count: countMap[item.type] !== undefined ? countMap[item.type] : item.count
+					}))
+				} finally {
+					this.fetchingCounts = false
+				}
 			},
 			openEntry(item) {
-				// 从四类档案管理页返回成长档案时，跳过当次的问卷引导弹窗（见 GrowthArchive.consumeArchiveManageReturnSkip）。
 				const app = typeof getApp === 'function' ? getApp() : null
 				if (app && app.globalData) {
 					app.globalData.growthArchiveSkipAssessmentAfterManageNav = true
@@ -193,12 +207,6 @@
 		font-size: 40rpx;
 		font-weight: 800;
 		color: #1f2937;
-	}
-
-	.section-link {
-		font-size: 26rpx;
-		font-weight: 700;
-		color: #3165d7;
 	}
 
 	.entry-grid {

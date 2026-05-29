@@ -10,11 +10,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.temporal.ChronoUnit;
 
 import java.time.DayOfWeek;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 /**
  * 成长记录服务实现类
  * 功能：表示成长记录服务实现
@@ -26,6 +27,33 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
      */
     @Autowired
     private GrowthRecordMapper growthRecordMapper;
+
+    /**
+     * 根据打卡明细从今日（或昨日）向前统计连续天数，与周历展示一致。
+     */
+    private int computeContinuousCheckinDays(Long studentId, LocalDate today) {
+        LocalDate start = today.minusDays(400);
+        List<LocalDate> checkinDates = growthRecordMapper.getCheckinDatesBetween(studentId, start, today);
+        if (checkinDates == null || checkinDates.isEmpty()) {
+            return 0;
+        }
+        Set<LocalDate> checkinSet = new HashSet<>(checkinDates);
+        LocalDate cursor = checkinSet.contains(today) ? today : today.minusDays(1);
+        if (!checkinSet.contains(cursor)) {
+            return 0;
+        }
+        int streak = 0;
+        while (checkinSet.contains(cursor)) {
+            streak++;
+            cursor = cursor.minusDays(1);
+        }
+        return streak;
+    }
+
+    private boolean hasCheckedInToday(Long studentId, LocalDate today) {
+        List<LocalDate> todayOnly = growthRecordMapper.getCheckinDatesBetween(studentId, today, today);
+        return todayOnly != null && !todayOnly.isEmpty();
+    }
 
     @Override
     public Long resolveStudentId(Long studentId, Long userId) {
@@ -61,8 +89,8 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
                 growthRecordMapper.sumPracticeAnsweredCount(studentId);
 
         LocalDate today = LocalDate.now();
-        int continuousDays = 0;
-        boolean checkedInToday = false;
+        boolean checkedInToday = hasCheckedInToday(studentId, today);
+        int continuousDays = computeContinuousCheckinDays(studentId, today);
         /**
          * 检查是否签到
          */
@@ -74,29 +102,12 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
             record.setInterviewCount(interviewCount);
             record.setPracticeCount(practiceCount);
             record.setCollectionCount(collectionCount);
-            record.setContinuousCheckinDays(0);
-            record.setLastCheckinDate(null);
+            record.setContinuousCheckinDays(continuousDays);
+            record.setLastCheckinDate(checkedInToday ? today : null);
             growthRecordMapper.insertGrowthRecord(record);
         } else {
             /**
-             * 判断是否断签
-             */
-            if (record.getLastCheckinDate() != null) {
-                long daysBetween = ChronoUnit.DAYS.between(record.getLastCheckinDate(), today);
-                int recordDays = record.getContinuousCheckinDays() == null ? 0 : record.getContinuousCheckinDays();
-                if (daysBetween == 0) {
-                    checkedInToday = true;
-                    continuousDays = recordDays;
-                } else if (daysBetween == 1) {
-                    continuousDays = recordDays;
-                } else {
-                    // 断签，归零
-                    continuousDays = 0;
-                }
-            }
-            
-            /**
-             * 更新数据库
+             * 更新数据库（连续天数以打卡明细为准，避免与周历不一致）
              */
             GrowthRecord updateRecord = new GrowthRecord();
             updateRecord.setStudentId(studentId);
@@ -105,6 +116,9 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
             updateRecord.setPracticeCount(practiceCount);
             updateRecord.setCollectionCount(collectionCount);
             updateRecord.setContinuousCheckinDays(continuousDays);
+            if (checkedInToday) {
+                updateRecord.setLastCheckinDate(today);
+            }
             growthRecordMapper.updateGrowthRecord(updateRecord);
         }
 
@@ -178,7 +192,6 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
         return growthRecordMapper.listPracticeSessions(studentId, paperType, lim);
     }
     /**
-    /**
      * 签到成长记录
      * @param studentId 学生ID
      * @return 打卡结果（包含连续天数和累计天数）
@@ -187,69 +200,40 @@ public class GrowthRecordServiceImpl implements GrowthRecordService {
     public CheckinResultVO checkIn(Long studentId) {
         GrowthRecord record = growthRecordMapper.getByStudentId(studentId);
         LocalDate today = LocalDate.now();
-        
+
         if (record == null) {
-            /**
-             * 没有记录，直接初始化并打卡
-             */
             record = new GrowthRecord();
             record.setStudentId(studentId);
             record.setResumeCount(growthRecordMapper.countPdfResumes(studentId));
             record.setInterviewCount(growthRecordMapper.countAiInterviews(studentId));
-            record.setPracticeCount(growthRecordMapper.countWrittenTestRecords(studentId) + 
+            record.setPracticeCount(growthRecordMapper.countWrittenTestRecords(studentId) +
                                     growthRecordMapper.countInterviewTestRecords(studentId));
             record.setCollectionCount(growthRecordMapper.countCollections(studentId));
-            record.setContinuousCheckinDays(1);
-            record.setLastCheckinDate(today);
+            record.setContinuousCheckinDays(0);
+            record.setLastCheckinDate(null);
             growthRecordMapper.insertGrowthRecord(record);
-            growthRecordMapper.insertCheckinRecord(studentId, today);
-            
+        }
+
+        if (hasCheckedInToday(studentId, today)) {
+            int continuousDays = computeContinuousCheckinDays(studentId, today);
+            int totalDays = growthRecordMapper.countTotalCheckins(studentId);
             CheckinResultVO result = new CheckinResultVO();
-            result.setContinuousCheckinDays(1);
-            result.setTotalCheckinDays(1);
+            result.setContinuousCheckinDays(continuousDays);
+            result.setTotalCheckinDays(totalDays);
             return result;
         }
 
-        int continuousDays = record.getContinuousCheckinDays() == null ? 0 : record.getContinuousCheckinDays();
-        if (record.getLastCheckinDate() != null) {
-            /**
-             * 检查是否断签
-             */
-            long daysBetween = ChronoUnit.DAYS.between(record.getLastCheckinDate(), today);
-            if (daysBetween == 0) {
-                // 今天已经打过卡了，不做操作，返回原打卡天数
-                int totalDays = growthRecordMapper.countTotalCheckins(studentId);
-                CheckinResultVO result = new CheckinResultVO();
-                result.setContinuousCheckinDays(continuousDays);
-                result.setTotalCheckinDays(totalDays);
-                return result;
-            } else if (daysBetween == 1) {
-                // 连续打卡
-                continuousDays += 1;
-            } else {
-                // 漏签了，重新开始计算
-                continuousDays = 1;
-            }
-        } else {
-            /**
-             * 第一次打卡
-             */
-            continuousDays = 1;
-        }
+        growthRecordMapper.insertCheckinRecord(studentId, today);
 
-        /**
-         * 更新数据库
-         */
+        int continuousDays = computeContinuousCheckinDays(studentId, today);
+        int totalDays = growthRecordMapper.countTotalCheckins(studentId);
+
         GrowthRecord updateRecord = new GrowthRecord();
         updateRecord.setStudentId(studentId);
         updateRecord.setContinuousCheckinDays(continuousDays);
         updateRecord.setLastCheckinDate(today);
         growthRecordMapper.updateGrowthRecord(updateRecord);
-        growthRecordMapper.insertCheckinRecord(studentId, today);
 
-        // 计算累计打卡天数
-        int totalDays = growthRecordMapper.countTotalCheckins(studentId);
-        
         CheckinResultVO result = new CheckinResultVO();
         result.setContinuousCheckinDays(continuousDays);
         result.setTotalCheckinDays(totalDays);

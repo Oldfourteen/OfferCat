@@ -92,7 +92,10 @@
 			const user = getUser() || uni.getStorageSync('user_v2') || {}
 			const cacheKey = this.resolveRadarCacheKey(user)
 			this.consumeArchiveManageReturnSkip()
-			this.handlePendingScroll()
+			const tabFromEntry = this.consumeInitialTab()
+			if (!tabFromEntry) {
+				this.handlePendingScroll()
+			}
 			this.checkFirstTimeRadar()
 			if (cacheKey != null && cacheKey !== '') {
 				const app = getApp()
@@ -101,12 +104,26 @@
 					this.radarData = c[cacheKey]
 				}
 			}
-			// 延后网络请求与统计刷新，让 switchTab 先完成首帧展示
-			setTimeout(() => {
-				void this.refreshGrowthArchiveOnShow(cacheKey)
-			}, 0)
+			void this.refreshGrowthArchiveOnShow(cacheKey)
 		},
 		methods: {
+			consumeInitialTab() {
+				const app = typeof getApp === 'function' ? getApp() : null
+				if (!app || !app.globalData) {
+					return false
+				}
+				const tab = app.globalData.growthArchiveInitialTab
+				if (typeof tab !== 'number' || tab < 0 || tab > 2) {
+					return false
+				}
+				this.activeIndex = tab
+				delete app.globalData.growthArchiveInitialTab
+				uni.pageScrollTo({ scrollTop: 0, duration: 0 })
+				if (tab !== 0) {
+					this.showAssessmentModal = false
+				}
+				return true
+			},
 			consumeArchiveManageReturnSkip() {
 				const app = typeof getApp === 'function' ? getApp() : null
 				if (app && app.globalData && app.globalData.growthArchiveSkipAssessmentAfterManageNav) {
@@ -178,19 +195,12 @@
 					if (gotCache) {
 						this.radarData = c[cacheKey]
 					} else {
-						let hint =
-							e && e.statusCode === 503
-								? '雷达测评服务暂时不可用（HTTP 503）。请在服务器确认 radar-evaluation-service 已启动、已注册到 Eureka，且网关能路由到 /api/radar-chart/**。\n'
-								: ''
-						const msg =
-							e && typeof e.message === 'string' ? e.message : e ? String(e) : '未知错误'
-						uni.showModal({
-							title: '档案数据同步失败',
-							content: `${hint}请检查网络连接后重试。\n错误详情: ${msg}`,
-							showCancel: false
-						})
+						if (cacheKey != null && cacheKey !== '') {
+							uni.removeStorageSync('has_submitted_radar_' + cacheKey)
+						}
+						this.checkFirstTimeRadar()
 					}
-					console.error('获取雷达数据失败', e)
+					console.warn('获取雷达数据失败', e)
 				}
 			},
 			checkFirstTimeRadar() {

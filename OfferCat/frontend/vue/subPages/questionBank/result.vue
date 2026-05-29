@@ -88,6 +88,7 @@
 <script>
 	// 主题切换混入
 	import themeMixin from '@/utils/themeMixin.js'
+	import { openGrowthArchiveTab } from '@/utils/appLiquidTabBar.js'
 
 	export default {
 		mixins: [themeMixin],
@@ -126,9 +127,7 @@
 			},
 			// 跳转到成长档案（tabBar页面）
 			goArchive() {
-				uni.switchTab({
-					url: '/pages/GrowthArchive/GrowthArchive'
-				})
+				openGrowthArchiveTab(0)
 			},
 			// 查看该类型的做题历史
 			openHistory() {

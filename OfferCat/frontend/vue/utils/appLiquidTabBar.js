@@ -240,3 +240,20 @@ export function switchLiquidTabByPath(pagePath) {
 		switchLiquidTab(idx)
 	}
 }
+
+/**
+ * 打开成长档案 Tab 页并指定顶部分段（0 成长档案 / 1 简历工坊 / 2 AI 画像）。
+ * Tab 页实例会被缓存，须写入 globalData 供 onShow 恢复分段，避免仍停在上次的简历工坊。
+ */
+export function openGrowthArchiveTab(tabIndex = 0) {
+	const tab = typeof tabIndex === 'number' ? tabIndex : 0
+	const safeTab = tab >= 0 && tab <= 2 ? tab : 0
+	try {
+		const app = getApp()
+		app.globalData = app.globalData || {}
+		app.globalData.growthArchiveInitialTab = safeTab
+	} catch (e) {
+		// ignore
+	}
+	switchLiquidTabByPath('pages/GrowthArchive/GrowthArchive')
+}

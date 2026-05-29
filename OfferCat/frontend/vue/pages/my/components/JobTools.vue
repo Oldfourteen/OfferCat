@@ -86,6 +86,7 @@
 	import { getUser, resolveStoredStudentId, resolveStoredUserId, syncUserProfileFromServer } from '@/utils/user.js'
 	import { getGrowthRecordStats, checkIn, getWeeklyCheckinStatus } from '@/api/growth.js'
 	import { getApiBase } from '@/api/config.js'
+	import { openGrowthArchiveTab } from '@/utils/appLiquidTabBar.js'
 
 	export default {
 		name: "JobTools",
@@ -261,9 +262,7 @@
 			},
 			navigateToGrowth() {
 				// 查看更多入口切到成长档案 tab。
-				uni.switchTab({
-					url: '/pages/GrowthArchive/GrowthArchive'
-				})
+				openGrowthArchiveTab(0)
 			},
 			async syncToolValues() {
 				const metrics = getDashboardMetrics()
@@ -369,10 +368,7 @@
 				// 根据卡片名称跳转到档案、历史记录或对应管理页。
 				const routeMap = {
 					'我的简历': () => {
-						uni.setStorageSync('growth_archive_scroll_target', 'resume')
-						uni.switchTab({
-							url: '/pages/GrowthArchive/GrowthArchive'
-						})
+						openGrowthArchiveTab(1)
 					},
 					'面试记录': () => {
 						uni.navigateTo({

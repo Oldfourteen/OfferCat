@@ -1,8 +1,7 @@
 import { getUser, setUser, resolveStoredStudentId } from './user.js'
-import defaultAvatar from '@/asset/image/avatar.png'
 
 // 默认头像、资料变更事件以及用户资料默认结构。
-export const DEFAULT_AVATAR = defaultAvatar
+export const DEFAULT_AVATAR = '/static/images/default-avatar.jpg'
 export const USER_PROFILE_UPDATED_EVENT = 'user-profile-updated'
 
 export const DEFAULT_USER_PROFILE = {
